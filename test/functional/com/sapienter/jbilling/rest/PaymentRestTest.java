@@ -5,8 +5,7 @@ import com.sapienter.jbilling.server.payment.PaymentMethodTypeWS;
 import com.sapienter.jbilling.server.payment.PaymentWS;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.UserWS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.sapienter.jbilling.server.util.Constants;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
@@ -40,9 +39,6 @@ public class PaymentRestTest extends RestTestCase{
     private RestOperationsHelper userRestHelper;
     private RestOperationsHelper paymentMethodTypeRestHelper;
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentRestTest.class);
-
-
     @BeforeClass
     public void setup(){
         super.setup("payments");
@@ -61,7 +57,6 @@ public class PaymentRestTest extends RestTestCase{
         DUMMY_TEST_PAYMENT_METHOD_TYPE_ID = restTemplate.sendRequest(paymentMethodTypeRestHelper.getFullRestUrl(), HttpMethod.POST,
                 postOrPutHeaders, RestEntitiesHelper.buildPaymentMethodTypeMock(templateResponse.getBody()), PaymentMethodTypeWS.class)
         .getBody().getId();
-        logger.info("EARNBILL-55: DUMMY_TEST_PAYMENT_METHOD_TYPE_ID {}", DUMMY_TEST_PAYMENT_METHOD_TYPE_ID);
 
     }
 
@@ -83,13 +78,9 @@ public class PaymentRestTest extends RestTestCase{
         Integer customerId = restTemplate.sendRequest(userRestHelper.getFullRestUrl(), HttpMethod.POST,
                 postOrPutHeaders, RestEntitiesHelper.buildUserMock("PaymentCustomer"+RestTestUtils.getRandomString(3), DUMMY_TEST_AC_ID), UserWS.class)
                 .getBody().getId();
-        logger.info("EARNBILL-55: post payment for customer id {}", customerId);
-        logger.info("EARNBILL-55: post payment rest url {}", REST_URL);
 
         ResponseEntity<PaymentWS> postResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST, postOrPutHeaders,
                 RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID), PaymentWS.class);
-
-        logger.info("EARNBILL-55: payment response id for post {}", postResponse.getBody().getId());
 
         assertNotNull(postResponse, "Response can not be null!!");
         RestValidationHelper.validateStatusCode(postResponse, Response.Status.CREATED.getStatusCode());
@@ -99,7 +90,7 @@ public class PaymentRestTest extends RestTestCase{
         PaymentWS fetchedPayment = fetchedResponse.getBody();
 
         RestValidationHelper.validatePayments(fetchedPayment, postedPayment);
-        logger.info("EARNBILL-55: sending the post payment id for delete {}", fetchedResponse.getBody().getId());
+
         restTemplate.sendRequest(REST_URL + postedPayment.getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
         restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId, HttpMethod.DELETE, getOrDeleteHeaders, null);
     }
@@ -144,12 +135,8 @@ public class PaymentRestTest extends RestTestCase{
         Integer customerId = restTemplate.sendRequest(userRestHelper.getFullRestUrl(), HttpMethod.POST,
                 postOrPutHeaders, RestEntitiesHelper.buildUserMock("PaymentCustomer" + RestTestUtils.getRandomString(3), DUMMY_TEST_AC_ID), UserWS.class)
                 .getBody().getId();
-        logger.info("EARNBILL-55: get payment for customer id {}", customerId);
-        logger.info("EARNBILL-55: get payment rest url {}", REST_URL);
-
         ResponseEntity<PaymentWS> postResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST, postOrPutHeaders,
                 RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID), PaymentWS.class);
-        logger.info("EARNBILL-55: sending the payment response id for get {}", postResponse.getBody().getId());
 
         ResponseEntity<PaymentWS> fetchedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.GET,
                 getOrDeleteHeaders, null, PaymentWS.class);
@@ -159,7 +146,6 @@ public class PaymentRestTest extends RestTestCase{
 
         RestValidationHelper.validatePayments(fetchedResponse.getBody(), postResponse.getBody());
 
-        logger.info("EARNBILL-55: sending the payment id for delete {}", fetchedResponse.getBody().getId());
         restTemplate.sendRequest(REST_URL + fetchedResponse.getBody().getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
         restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId, HttpMethod.DELETE, getOrDeleteHeaders, null);
     }
@@ -182,33 +168,21 @@ public class PaymentRestTest extends RestTestCase{
         Integer customerId = restTemplate.sendRequest(userRestHelper.getFullRestUrl(), HttpMethod.POST,
                 postOrPutHeaders, RestEntitiesHelper.buildUserMock("PaymentCustomer" + RestTestUtils.getRandomString(3), DUMMY_TEST_AC_ID), UserWS.class)
                 .getBody().getId();
-        logger.info("EARNBILL-55: delete payment for customer id {}", customerId);
-        logger.info("EARNBILL-55: delete payment rest url {}", REST_URL);
-        try {
-            ResponseEntity<PaymentWS> postResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST, postOrPutHeaders,
-                RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID), PaymentWS.class);
 
-            logger.info("EARNBILL-55: sending the payment response id for delete {}", postResponse.getBody().getId());
+        ResponseEntity<PaymentWS> postResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST, postOrPutHeaders,
+                    RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID), PaymentWS.class);
 
-            ResponseEntity<PaymentWS> deletedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.DELETE,
-                    getOrDeleteHeaders, null);
+        ResponseEntity<PaymentWS> deletedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.DELETE,
+                getOrDeleteHeaders, null);
 
-            assertNotNull(deletedResponse, "Response can not be null!!");
-            RestValidationHelper.validateStatusCode(deletedResponse, Response.Status.NO_CONTENT.getStatusCode());
+        assertNotNull(deletedResponse, "Response can not be null!!");
+        RestValidationHelper.validateStatusCode(deletedResponse, Response.Status.NO_CONTENT.getStatusCode());
 
-            ResponseEntity<PaymentWS> fetchedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.GET,
-                    getOrDeleteHeaders, null, PaymentWS.class);
+        ResponseEntity<PaymentWS> fetchedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.GET,
+                getOrDeleteHeaders, null, PaymentWS.class);
 
-            logger.info("EARNBILL-55: checking the payment response id if deleted {}", fetchedResponse.getBody().getDeleted());
-
-            assertEquals(fetchedResponse.getBody().getDeleted(), 1, "Payment not deleted!");
-        } catch (Exception e) {
-            logger.error("Exception occurred in deletePayment {}", e.getMessage(), e);
-            e.printStackTrace();
-        } finally {
-            restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId, HttpMethod.DELETE, getOrDeleteHeaders, null);
-        }
-
+        assertEquals(fetchedResponse.getBody().getDeleted(), 1, "Payment not deleted!");
+        restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId, HttpMethod.DELETE, getOrDeleteHeaders, null);
     }
 
     @Test
@@ -229,8 +203,10 @@ public class PaymentRestTest extends RestTestCase{
                 postOrPutHeaders, RestEntitiesHelper.buildUserMock("PaymentCustomer" + RestTestUtils.getRandomString(3), DUMMY_TEST_AC_ID), UserWS.class)
                 .getBody().getId();
 
+        PaymentWS paymentWS = RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID);
+        paymentWS.setResultId(Constants.RESULT_OK);
         ResponseEntity<PaymentWS> postResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST, postOrPutHeaders,
-                RestEntitiesHelper.buildPaymentMock(customerId, new Date(), DUMMY_TEST_PAYMENT_METHOD_TYPE_ID), PaymentWS.class);
+                paymentWS, PaymentWS.class);
 
         PaymentWS updatedMock = postResponse.getBody();
         updatedMock.setPaymentNotes("Updated notes");
@@ -243,7 +219,8 @@ public class PaymentRestTest extends RestTestCase{
 
         ResponseEntity<PaymentWS> fetchedResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(), HttpMethod.GET,
                 getOrDeleteHeaders, null, PaymentWS.class);
-        RestValidationHelper.validatePayments(fetchedResponse.getBody(), updatedResponse.getBody());
+
+        RestValidationHelper.validatePayments(fetchedResponse.getBody(), updatedMock);
 
         restTemplate.sendRequest(REST_URL + fetchedResponse.getBody().getId(), HttpMethod.DELETE,
                 getOrDeleteHeaders, null);

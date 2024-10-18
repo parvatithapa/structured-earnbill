@@ -87,21 +87,7 @@ public enum InvoiceParameters {
     SUBREPORT_DIR("SUBREPORT_DIR",String.class),
     BASE_DIR("BASE_DIR",String.class),
     ACCOUNT_CHARGES_PRODUCT_CATEGORY_ID("account_charges_product_category_id", Integer.class),
-    OTHER_CHARGES_AND_CREDITS_PRODUCT_CATEGORY_ID("other_charges_and_credits_product_category_id", Integer.class),
-
-    CREATION_INVOICE_ID ("creation_invoice_id", Integer.class),
-    USER_ID("invoice_summary_user_id",Integer.class),
-    MONTHLY_CHARGES("monthly_charges", String.class),
-    USAGE_CAHRGES("usage_charges", String.class),
-    FEES("invoice_summary_fees", String.class),
-    TAXES("invoice_summary_taxes", String.class),
-    ADJUSTMENT_CHARGES("adjustment_charges", String.class),
-    AMOUNT_OF_LAST_STATEMENT("amount_of_last_statement", String.class),
-    PAYMENT_RECEIVED("payment_received", String.class),
-    NEW_CHARGES("new_charges", String.class),
-    TOTAL_DUE("total_due",  String.class),
-    INVOICE_DATE("invoice_date", String.class),
-    LAST_INVOICE_DATE("last_invoice_date", String.class);
+    OTHER_CHARGES_AND_CREDITS_PRODUCT_CATEGORY_ID("other_charges_and_credits_product_category_id", Integer.class);
 
     String name;
     Class typeClass;

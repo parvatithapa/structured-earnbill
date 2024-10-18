@@ -66,15 +66,6 @@ public interface OrderSQL {
                               "       AND bu.entity_id = ? " +
                               "       AND (o.notification_step IS NULL OR o.notification_step < ?)";
 
-    String getLatest = "SELECT MAX(id) " +
-                       "  FROM purchase_order " +
-                       " WHERE user_id = ? " +
-                       "   AND deleted = 0 " +
-                       "   AND create_datetime = (SELECT MAX(create_datetime) " +
-                       "                            FROM purchase_order " +
-                       "                           WHERE user_id = ?" +
-                       "                             AND deleted = 0)";
-
     String getLatestByItemType = "    SELECT MAX(purchase_order.id) " +
                                  "      FROM purchase_order " +
                                  "INNER JOIN order_line on order_line.order_id = purchase_order.id " +

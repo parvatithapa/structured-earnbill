@@ -39,7 +39,7 @@
 
                 <tr id="type-${type.id}" class="${selectedTypeId == type.id ? 'active' : ''}">
                     <td>
-                        <g:remoteLink class="cell double" action="reports" id="${type.id}" before="register(this);" onSuccess="render(data, next);">
+                        <g:remoteLink class="cell double" action="reports" id="${type.id}" before="register(this);" onSuccess="render(data, next);" data-cy="${StringEscapeUtils.escapeHtml(type?.getDescription(session['language_id']))}">
                             <strong>${StringEscapeUtils.escapeHtml(type?.getDescription(session['language_id']))}</strong>
                             <em></em>
                         </g:remoteLink>

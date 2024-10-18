@@ -21,10 +21,8 @@
  * @since 12/07/11
  */
 class VersionController {
-    static scope = "singleton"
+	static scope = "singleton"
 
-    def index() {
-
+    def index () {
     }
-
 }

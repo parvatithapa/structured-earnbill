@@ -1,11 +1,13 @@
 package com.sapienter.jbilling.server.mediation.sapphire.cdr.resolution.steps;
 
+import static com.sapienter.jbilling.common.CommonConstants.BIGDECIMAL_QUANTITY_SCALE;
+import static com.sapienter.jbilling.common.CommonConstants.BIGDECIMAL_ROUND;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.CONNECT_TIME;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.RELAESE_TIME;
+import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.SECONDS;
 
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -16,16 +18,11 @@ import com.sapienter.jbilling.server.mediation.MediationMRIMService;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepContext;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.AbstractMediationStep;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.MediationStepResult;
+import com.sapienter.jbilling.server.util.Context;
 
 public class QuantityResolutionStep  extends AbstractMediationStep<MediationStepResult> {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    private final MediationMRIMService mrimService;
-
-    public QuantityResolutionStep(MediationMRIMService mrimService) {
-        this.mrimService = mrimService;
-    }
 
     @Override
     public boolean executeStep(MediationStepContext context) {
@@ -37,31 +34,20 @@ public class QuantityResolutionStep  extends AbstractMediationStep<MediationStep
             long release = Long.parseLong(releaseTime.getStrValue());
             long connect = Long.parseLong(connectTime.getStrValue());
 
-            Long diffSeconds = roundAndConvertToSecond(release - connect);
+            Long diffSeconds = TimeUnit.MILLISECONDS.toSeconds(release - connect);
             logger.debug("Resolved Quantity in seconds {}", diffSeconds);
+            BigDecimal originalQuantity = new BigDecimal(diffSeconds).divide(SECONDS, BIGDECIMAL_QUANTITY_SCALE, BIGDECIMAL_ROUND);
+            logger.debug("Resolved Original quantity {}", originalQuantity);
+            MediationMRIMService mrimService = Context.getBean("mediationMRIMServiceImpl");
             BigDecimal quantity = mrimService.getQuantity(result.getMediationCfgId(), result.getjBillingCompanyId(), diffSeconds.intValue());
             result.setQuantity(quantity);
-            result.setOriginalQuantity(new BigDecimal(diffSeconds));
+            result.setOriginalQuantity(originalQuantity);
             return true;
         } catch(Exception ex) {
             result.addError("ERR-ITEM-QUANTITY-RESOLUTION");
             logger.error("Quantity resolution failed!", ex);
             return false;
         }
-    }
-
-    /**
-     * Rounds milliseconds by a second and convert it to seconds.
-     * @param timeDiff
-     * @return
-     */
-    private long roundAndConvertToSecond(long timeDiff) {
-        long unit = ChronoUnit.SECONDS.getDuration().toMillis();
-        long reminder = timeDiff % unit;
-        if(Long.compare(reminder, 0) > 0) {
-            timeDiff =  timeDiff + unit;
-        }
-        return TimeUnit.MILLISECONDS.toSeconds(timeDiff);
     }
 
 }

@@ -5,24 +5,18 @@ import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
-
 import static com.sapienter.jbilling.common.Util.getSysProp;
-
 import com.sapienter.jbilling.server.customer.CustomerBL;
-import com.sapienter.jbilling.server.integration.common.utility.DateUtility;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.invoiceSummary.db.InvoiceSummaryDAS;
 import com.sapienter.jbilling.server.invoiceSummary.db.InvoiceSummaryDTO;
@@ -36,8 +30,6 @@ import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldGroup;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValueDAS;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.order.db.OrderProcessDTO;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskParameterDAS;
 import com.sapienter.jbilling.server.process.event.CustomInvoiceFieldsEvent;
@@ -175,40 +167,6 @@ implements IInternalEventsTask {
             }
             parameters.put("BASE_DIR", BASE_DIR);
 
-            Optional<OrderProcessDTO> startDate = invoice.getOrderProcesses().stream()
-                    .filter(process -> null != process.getPeriodStart())
-                    .min(Comparator.comparing(OrderProcessDTO :: getPeriodStart));
-            Date invoicePeriodStartDate = startDate.isPresent() ? startDate.get().getPeriodStart() : null; 
-
-            Optional<OrderProcessDTO> endDate = invoice.getOrderProcesses().stream()
-                    .filter(process -> null != process.getPeriodEnd())
-                    .max(Comparator.comparing(OrderProcessDTO :: getPeriodEnd));
-            Date invoicePeriodEndDate = endDate.isPresent() ? endDate.get().getPeriodEnd() : null;
-
-            parameters.put("core.param.invoice_period.start_date", invoicePeriodStartDate);
-            parameters.put("core.param.invoice_period.end_date", DateUtility.addDaysToDate(invoicePeriodEndDate,-1));
-            boolean isPrepaid = false;
-            List<Date> activeSinceList = new ArrayList<>();
-            for (OrderProcessDTO orderProcess : invoice.getOrderProcesses()) {
-                OrderDTO orderDTO = orderProcess.getPurchaseOrder();
-                if (orderDTO.getOrderPeriod().getDescription(invoice.getBaseUser().getLanguage().getId()).equals("Monthly") && 
-                        orderDTO.getOrderBillingType().getDescription(invoice.getBaseUser().getLanguage().getId()).equals("pre paid")) {
-                    isPrepaid = true;
-                }
-                if (orderDTO.getIsMediated()) {
-                    activeSinceList.add(orderDTO.getActiveSince());
-                }
-            }
-            if (isPrepaid) {
-                if (CollectionUtils.isNotEmpty(activeSinceList)) {
-                    Collections.sort(activeSinceList);
-                    parameters.put("core.param.usage_period.start_date", activeSinceList.get(0));
-                }
-                parameters.put("core.param.usage_period.end_date", DateUtility.addDaysToDate(invoice.getCreateDatetime(), -1));
-            } else {
-                parameters.put("core.param.usage_period.start_date", invoicePeriodStartDate);
-                parameters.put("core.param.usage_period.end_date", DateUtility.addDaysToDate(invoicePeriodEndDate,-1));
-            }
 		} catch (Exception e) {
 			LOG.error("Exception while generating paper invoice in setting invoice summary details", e);
 			throw new SessionInternalError("Error getting invoice", e);
@@ -375,5 +333,4 @@ implements IInternalEventsTask {
             LOG.error("Exception while generating paper invoice in setting contanct details", e);
         }
     }
-
 }

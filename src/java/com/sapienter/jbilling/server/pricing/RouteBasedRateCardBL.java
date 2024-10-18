@@ -1,7 +1,7 @@
 package com.sapienter.jbilling.server.pricing;
 
-import au.com.bytecode.opencsv.CSVReader;
-
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.pricing.db.RatingUnitDAS;
 import com.sapienter.jbilling.server.pricing.db.RouteRateCardDAS;
@@ -130,6 +130,8 @@ public class RouteBasedRateCardBL {
                     throw new SessionInternalError("Exception saving rates to database", e, new String[] { "RouteWS,routes,cannot.save.rates.db.error" });
                 } catch (DuplicateKeyException e) {
                     throw new SessionInternalError("Duplicate key exception", new String[] {"RouteWS,routes,duplicate.key.records"});
+                } catch (CsvValidationException e) {
+                    throw new SessionInternalError("Could not load rating table", e, new String[] { "RouteWS,routes,cannot.read.file" });
                 }
 
                 registerSpringBeans();
@@ -167,13 +169,13 @@ public class RouteBasedRateCardBL {
      * @param routesFile file handle of the CSV on disk containing the route.
      * @throws IOException if file does not exist or is not readable
      */
-    public void saveRoutes(File routesFile) throws IOException, SQLException {
+    public void saveRoutes(File routesFile) throws IOException, SQLException, CsvValidationException {
 
         CSVReader reader = new CSVReader(new FileReader(routesFile));
         String[] line = reader.readNext();
         validateCsvHeader(line);
         int headersSize = line.length;
-        StringJoiner invalidBigdecimalLines = new StringJoiner(";", "[", "]");
+        StringJoiner invalidBigDecimalLines = new StringJoiner(";", "[", "]");
         StringJoiner invalidLines = new StringJoiner(";", "[", "]");
 
         // parse the header and read out the extra columns.
@@ -209,9 +211,9 @@ public class RouteBasedRateCardBL {
             if (line.length != headersSize || StringUtils.isBlank(line[0])) {
                 invalidLines.add(Integer.toString(lineNum));
             } else if (!validateBigDecimalColumns(line)) {
-                invalidBigdecimalLines.add(Integer.toString(lineNum));
+                invalidBigDecimalLines.add(Integer.toString(lineNum));
             } else {
-                // Handle free and non applicable pricing terms as extra column
+                // Handle free and non-applicable pricing terms as extra column
                 rows.add(Arrays.asList(line));
             }
 
@@ -223,7 +225,7 @@ public class RouteBasedRateCardBL {
             }
         }
 
-        if (invalidLines.length() > 2 || invalidBigdecimalLines.length() > 2) {
+        if (invalidLines.length() > 2 || invalidBigDecimalLines.length() > 2) {
 
             List<String> errors = new ArrayList();
 
@@ -231,8 +233,8 @@ public class RouteBasedRateCardBL {
                 errors.add("rate.card.line.is.blank," + invalidLines.toString());
             }
 
-            if (invalidBigdecimalLines.length() > 2) {
-                errors.add("rate.card.line.invalid.bigDecimal," + invalidBigdecimalLines.toString());
+            if (invalidBigDecimalLines.length() > 2) {
+                errors.add("rate.card.line.invalid.bigDecimal," + invalidBigDecimalLines.toString());
             }
 
             throw new SessionInternalError("The file has invalid lines",
@@ -481,7 +483,7 @@ public class RouteBasedRateCardBL {
                         throw new SessionInternalError("Route CSV has errors in columns, or is missing required columns",
                                                                 errors.toArray(new String[errors.size()]));
                     }
-                } catch (IOException e) {
+                } catch (IOException | CsvValidationException e) {
                     throw new SessionInternalError("Could not load route based rating table",
                                                         new String[] { "RouteRateCardWS,csv,cannot.read.file" });
                 }
@@ -493,7 +495,7 @@ public class RouteBasedRateCardBL {
                 dropRouteRates();
                 try {
                     saveRoutes(routeRatesFile);
-                } catch (IOException e) {
+                } catch (IOException | CsvValidationException e) {
                     dropRouteRates();
                     throw new SessionInternalError("Could not load route based rating table", e, new String[] { "RouteRateCardWS,csv,cannot.read.file" });
                 } catch (SQLException e) {

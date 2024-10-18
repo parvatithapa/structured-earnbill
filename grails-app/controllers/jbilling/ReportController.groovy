@@ -18,6 +18,7 @@ package jbilling
 
 import grails.converters.JSON
 import grails.plugin.springsecurity.annotation.Secured
+import grails.plugin.springsecurity.SpringSecurityUtils
 
 import org.apache.commons.httpclient.HttpStatus
 import org.apache.commons.lang3.time.DateUtils
@@ -44,10 +45,24 @@ import com.sapienter.jbilling.server.report.db.parameter.IntegerReportParameterD
 import com.sapienter.jbilling.server.user.db.UserDTO
 import com.sapienter.jbilling.server.util.PreferenceBL
 import com.sapienter.jbilling.server.util.SecurityValidator
-
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+
+import java.time.LocalDate
+import java.time.ZoneId
+
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_TYPE_ADENNET
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_BANK_USER
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_CRM_USER
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_FINANCE_TOTAL
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_INACTIVE_SUBSCRIBER_NUMBERS
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_BANK_USER_REPORT
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_CRM_USER_REPORT
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_FINANCE_TOTAL_REPORT
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_INACTIVE_SUBSCRIBER_NUMBERS_REPORT
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_ALL_RECHARGE_TRANSACTIONS
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.REPORT_AUDIT_LOG
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_AUDIT_LOG_REPORT
+
 /**
  * ReportController 
  *
@@ -66,13 +81,13 @@ class ReportController {
     public static final String USER_SIGNUPS = "user_signups"
     public static final String TOTAL_INVOICED_PER_CUSTOMER = "total_invoiced_per_customer"
     public static final String TOTAL_INVOICED_PER_CUSTOMER_OVER_YEARS = "total_invoiced_per_customer_over_years"
-    public static final String GSTR1_JSON = "gstr1_json"
 
     def viewUtils
     def filterService
     def recentItemService
     def breadcrumbService
     def springSecurityService
+    def adennetHelperService
     SecurityValidator securityValidator
     IWebServicesSessionBean webServicesSession
 
@@ -87,10 +102,19 @@ class ReportController {
         //If more than max appear, they will be left out.
         params.offset = params?.offset?.toInteger() ?: pagination.offset
 
+        def flagAdennetReports = false
+        def userRoleType = UserDTO.get(springSecurityService.principal.id).roles?.first()?.getRoleTypeId()
+        if (userRoleType != Constants.TYPE_SYSTEM_ADMIN && userRoleType != Constants.TYPE_ROOT) {
+            flagAdennetReports = true
+        }
+
         return ReportTypeDTO.createCriteria().list(
                 max:    params.max,
                 offset: params.offset
         ) {
+            if (flagAdennetReports) {
+                eq("name", REPORT_TYPE_ADENNET)
+            }
             resultTransformer org.hibernate.Criteria.DISTINCT_ROOT_ENTITY
             SortableCriteria.sort(params, delegate)
         }
@@ -103,15 +127,41 @@ class ReportController {
         params.order = params?.order ?: pagination.order
 		def company_id = session['company_id']
 
-        def userRoleType = UserDTO.get(springSecurityService.principal.id).roles?.first().getRoleTypeId()
+        def userRoleType = UserDTO.get(springSecurityService.principal.id).roles?.first()?.getRoleTypeId()
         if (userRoleType != Constants.TYPE_SYSTEM_ADMIN && userRoleType != Constants.TYPE_ROOT) {
             params.exclude = 'platform_net_revenue'
+            typeId = adennetHelperService.getReportTypeByName(REPORT_TYPE_ADENNET)
         }
+        def flagBankUserReport = false
+        def flagCrmUserReport = false
+        def flagFinanceTotalReport = false
+        def flagInactiveSubscriberNumbersReport = false
+        def flagAuditLogReport = false
+        if(SpringSecurityUtils.ifAllGranted(PERMISSION_VIEW_BANK_USER_REPORT)) flagBankUserReport = true
+        if(SpringSecurityUtils.ifAllGranted(PERMISSION_VIEW_CRM_USER_REPORT)) flagCrmUserReport = true
+        if(SpringSecurityUtils.ifAllGranted(PERMISSION_VIEW_FINANCE_TOTAL_REPORT)) flagFinanceTotalReport = true
+        if(SpringSecurityUtils.ifAllGranted(PERMISSION_VIEW_INACTIVE_SUBSCRIBER_NUMBERS_REPORT)) flagInactiveSubscriberNumbersReport = true
+        if(SpringSecurityUtils.ifAllGranted(PERMISSION_VIEW_AUDIT_LOG_REPORT)) flagAuditLogReport = true
 
         return ReportDTO.createCriteria().list(
                 max:    params.max,
                 offset: params.offset
         ) {
+            if(!flagBankUserReport) {
+                ne("name", REPORT_BANK_USER)
+            }
+            if(!flagCrmUserReport) {
+                ne("name", REPORT_CRM_USER)
+            }
+            if(!flagFinanceTotalReport) {
+                ne("name", REPORT_FINANCE_TOTAL)
+            }
+            if(!flagInactiveSubscriberNumbersReport) {
+                ne("name", REPORT_INACTIVE_SUBSCRIBER_NUMBERS)
+            }
+            if(!flagAuditLogReport){
+                ne("name", REPORT_AUDIT_LOG)
+            }
 
             if (typeId) {
                 eq('type.id', typeId)
@@ -123,7 +173,7 @@ class ReportController {
             if(params.name) {
                 or{
                     addToCriteria(Restrictions.ilike("fileName",  params.name, MatchMode.ANYWHERE))
-                    addToCriteria(Restrictions.ilike("name", params.name, MatchMode.ANYWHERE))
+                    addToCriteria(Restrictions.ilike("name", params.name, MatchMode.ANYWHERE));
                 }
             }
             if(params.exclude) {
@@ -259,59 +309,38 @@ class ReportController {
      */
     def run () {
         def report = ReportDTO.get(params.int('id'))
-        def writer = null
-        def map = [:]
+        def userRoleType = UserDTO.get(springSecurityService.principal.id).roles?.first()?.getRoleTypeId()
+        if (report.getType().getName() != REPORT_TYPE_ADENNET && userRoleType != Constants.TYPE_SYSTEM_ADMIN && userRoleType != Constants.TYPE_ROOT) {
+            render view: '/login/denied'
+            return
+        }
+        else if (report.getType().getName() == REPORT_TYPE_ADENNET) {
+            if ((report.getName() == REPORT_BANK_USER && SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_BANK_USER_REPORT)) ||
+                (report.getName() == REPORT_CRM_USER && SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_CRM_USER_REPORT)) ||
+                (report.getName() == REPORT_FINANCE_TOTAL && SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_FINANCE_TOTAL_REPORT)) ||
+                (report.getName() == REPORT_INACTIVE_SUBSCRIBER_NUMBERS && SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_INACTIVE_SUBSCRIBER_NUMBERS_REPORT)) ||
+                (report.getName() == REPORT_AUDIT_LOG && SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_AUDIT_LOG_REPORT))) {
+                render view: '/login/denied'
+                return
+            }
+        }
+        if(report.getName() == REPORT_CRM_USER) {
+            def loggedInUser = webServicesSession.getUserWS(session['user_id'] as Integer).userName
+            def user_name = params.user_name
+            if(SpringSecurityUtils.ifNotGranted(PERMISSION_VIEW_ALL_RECHARGE_TRANSACTIONS) && loggedInUser != user_name) {
+                render view: '/login/denied'
+                return
+            }
+        }
+
         securityValidator.validateCompanyHierarchy(report?.entities*.id);
         bindParameters(report, params)
+
         def runner = new ReportBL(report, session['locale'], session['company_id'], session['company_timezone'])
 
         if (report.name == USER_ACTIVITY) {
             runner.updateAdminRole(session['user_id'])
         }
-        try {
-            if (report.name == GSTR1_JSON) {
-                if(report.type.name == 'invoice'){
-
-                    if(report.name == GSTR1_JSON && (!params.start_date?.trim()) || !params.end_date?.trim()){
-                        map.error = message(code: 'date.field.required')
-                        render(status: HttpStatus.SC_OK, text: map as JSON)
-                        return
-                    }
-                }
-                if(params.end_date && params.start_date) {
-                    Date startDate = DateTimeFormat.forPattern(message(code: 'datepicker.format')).parseDateTime(params.start_date).toDate()
-                    Date endDate = DateTimeFormat.forPattern(message(code: 'datepicker.format')).parseDateTime(params.end_date).toDate()
-                    if (endDate.compareTo(startDate) < 0) {
-                        map.error = message(code: 'report.start.date.before.end.date.invalid')
-                        render(status: HttpStatus.SC_OK, text: map as JSON)
-                        return
-                    }
-                }
-                String jSON = webServicesSession.generateGstR1JSONFileReport(params.start_date, params.end_date)
-                response.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                writer = response.getWriter()
-                writer.write(jSON)
-                writer.flush()
-                log.debug("Gstr-1 JSON data file sent to the client(UI)")
-                return
-            }
-        }catch (SessionInternalError sessionInternalError) {
-            map.error = sessionInternalError.getErrorMessages()
-            render(status: HttpStatus.SC_OK, text: map as JSON)
-            return
-
-        }catch(Exception exception){
-            map.error = exception.getMessage()
-            render(status: HttpStatus.SC_OK, text: map as JSON)
-            return
-
-        }finally{
-            if (writer != null) {
-                writer.close()
-                log.debug("PrintWriter(writer) object destroyed.")
-            }
-        }
-
         try {
             if (params.format) {
                 // export to selected format
@@ -327,9 +356,8 @@ class ReportController {
             viewUtils.resolveException(flash, session.locale, e)
             render e.getMessage()
         }
-
     }
-	
+
     def runExports () {
         def report = ReportDTO.get(params.int('id'))
         if(!params.user_id){
@@ -406,7 +434,7 @@ class ReportController {
                 bindData(parameter, ['value': value])
             }
         }
-		
+
 		try {
 			report.childEntities = new ArrayList<Integer>()
 			// bind childs to list
@@ -414,7 +442,7 @@ class ReportController {
 				report.childEntities.add(Integer.parseInt(child))
 			}
 		} catch(Exception e) {
-			//string is null, 
+			//string is null,
 		}
     }
 
@@ -464,6 +492,7 @@ class ReportController {
         if(params.end_date && params.start_date) {
             Date startDate = DateTimeFormat.forPattern(message(code: 'datepicker.format')).parseDateTime(params.start_date).toDate()
             Date endDate = DateTimeFormat.forPattern(message(code: 'datepicker.format')).parseDateTime(params.end_date).toDate()
+            LocalDate currentDate = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
             if(endDate.compareTo(startDate)<0) {
                 map.error = message(code: 'report.start.date.before.end.date.invalid')
                 render(status: HttpStatus.SC_OK, text: map as JSON)
@@ -472,6 +501,14 @@ class ReportController {
             if(report.name == 'unearned_unbilled_detail_report' &&
                 endDate.compareTo(DateUtils.addDays(startDate, 30)) > 0){
                 map.error = message(code: 'report.start.date.end.date.period.invalid')
+                render(status: HttpStatus.SC_OK, text: map as JSON)
+                return
+            }
+
+            if(report.name == REPORT_AUDIT_LOG &&
+                    currentDate.minusMonths(3).isAfter(startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+            ){
+                map.error = message(code: 'report.start.date.period.invalid')
                 render(status: HttpStatus.SC_OK, text: map as JSON)
                 return
             }
@@ -516,5 +553,15 @@ class ReportController {
 
         render(status: HttpStatus.SC_OK, text: map as JSON)
         return
+    }
+
+    def getUsersLoginNameStatusAndGovernorate() {
+        def usersInfo = new ArrayList<String>()
+        try {
+           usersInfo = adennetHelperService.getAllUsersLoginNameStatusAndGovernorate()
+        } catch (Exception exception) {
+            log.debug("Exception occurred in ReportController while filtering the users by governorate" + exception.getMessage())
+        }
+        render usersInfo
     }
 }

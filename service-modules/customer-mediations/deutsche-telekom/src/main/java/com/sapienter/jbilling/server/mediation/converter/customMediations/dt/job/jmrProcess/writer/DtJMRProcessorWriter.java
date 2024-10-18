@@ -192,7 +192,7 @@ public class DtJMRProcessorWriter implements ItemWriter<List<JbillingMediationRe
             return false;
         } else {
             return trxnTemplate.execute(transactionStatus -> {
-                List<MediationEventResult> mediationEventResults = resultList.getResults();
+                List<MediationEventResult> mediationEventResults = resultList.results();
                 for (int i = 0; i < mediationEventResults.size(); i++) {
                     process(jmrList.get(i), mediationEventResults.get(i));
                 }

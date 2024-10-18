@@ -34,7 +34,6 @@ import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sapienter.jbilling.common.Util;
@@ -52,7 +51,6 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
  * @author Emil
  */
 @ApiModel(value = "Payment Data", description = "PaymentWS model")
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentWS implements WSSecured, Serializable, AutoCloseable, HierarchicalEntity {
 
     @NotNull(message="validation.error.notnull")
@@ -110,10 +108,6 @@ public class PaymentWS implements WSSecured, Serializable, AutoCloseable, Hierar
     @JsonIgnore
     private PaymentInvoiceMapWS[] paymentInvoiceMap;
 
-    //Changes for Stripe 
-    
-    private String externalIdOfAuthenticatedPayment;
-    
 
     @ApiModelProperty(value = "Identifier of the result of the payment attempt")
     public Integer getResultId() {
@@ -385,11 +379,13 @@ public class PaymentWS implements WSSecured, Serializable, AutoCloseable, Hierar
      * @return null
      */
     @Override
+    @JsonIgnore
     public Integer getOwningEntityId() {
         return null;
     }
 
     @Override
+    @JsonIgnore
     public Integer getOwningUserId() {
         return getUserId();
     }
@@ -512,11 +508,12 @@ public class PaymentWS implements WSSecured, Serializable, AutoCloseable, Hierar
     }
 
     @Override
+    @JsonIgnore
     public List<Integer> getAccessEntities() {
         return this.accessEntities;
     }
 
-
+    @JsonIgnore
     public void setAccessEntities(List<Integer> accessEntities) {
         this.accessEntities = accessEntities;
     }
@@ -525,13 +522,4 @@ public class PaymentWS implements WSSecured, Serializable, AutoCloseable, Hierar
     public Boolean ifGlobal() {
         return Boolean.FALSE;
     }
-
-    @ApiModelProperty(value = "External reference id to complete authenticated payment.")
-	public String getExternalIdOfAuthenticatedPayment() {
-		return externalIdOfAuthenticatedPayment;
-	}
-
-	public void setExternalIdOfAuthenticatedPayment(String stripePaymentIntentId) {
-		this.externalIdOfAuthenticatedPayment = stripePaymentIntentId;
-	}
 }

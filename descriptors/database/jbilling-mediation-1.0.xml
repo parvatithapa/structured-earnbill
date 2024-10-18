@@ -235,7 +235,7 @@
                                  referencedTableName="jbilling_mediation_error_record" />
     </changeSet>
 
-    <changeSet context = "test" author = "Gerhard Maree" id = "JB-2315 Test Data6" >
+    <changeSet context = "test" author = "Gerhard Maree" id = "JB-2315 Test Data6">
         <insert tableName="jbilling_mediation_record">
             <column name="event_date" valueDate="2010-01-01T12:01:00.0"/>
             <column name="record_key" value="AAA"/>
@@ -338,5 +338,65 @@
         <modifyDataType tableName = "jbilling_mediation_record"
                        columnName = "pricing_fields"
                       newDataType = "java.sql.Types.VARCHAR(6000)"/>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-527 - Mediation-Event Charge Precision Support - extra columns for tax" author="Ashish Srivastava">
+    <comment>Two more columns added for tax amount and total amount with tax</comment>
+      <addColumn tableName="jbilling_mediation_record">
+            <column name="tax_amount" type="java.sql.Types.NUMERIC(22,10)" defaultValue="0" ></column>
+            <column name="rated_price_with_tax" type="java.sql.Types.NUMERIC(22,10)" defaultValue="0" ></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-645 - Added Id" author = "Krunal">
+        <comment>added id primary key on jbilling_mediation_record table.</comment>
+        <sql>
+            CREATE SEQUENCE jbilling_mediation_record_seq;
+        </sql>
+        <dropPrimaryKey tableName      = "jbilling_mediation_record"
+                        constraintName = "jbilling_mediation_record_pkey" />
+        <addColumn tableName = "jbilling_mediation_record">
+            <column name = "id" type = "java.sql.Types.BIGINT" defaultValueComputed = "nextval('jbilling_mediation_record_seq')">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "jbilling_mediation_record_pkey" />
+            </column>
+        </addColumn>
+        <sql>
+            ALTER SEQUENCE jbilling_mediation_record_seq
+                  OWNED BY jbilling_mediation_record.id;
+        </sql>
+    </changeSet>
+
+    <changeSet  context = "base" id = "JB-3632 :: Added fields for file name for mediation process" author = "Swapnil Patil">
+        <addColumn tableName = "jbilling_mediation_process">
+            <column name = "file_name" type = "java.sql.Types.VARCHAR(255)" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-709: Added index on jbilling mediation records for order line id" author="Swapnil Patil">
+        <createIndex indexName = "jbilling_mediation_record_idx_order_line_id" tableName = "jbilling_mediation_record" unique = "false" >
+            <column name = "order_line_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-912:Added index on jbilling_mediation_process" author = "Krunal Bhavsar">
+        <sql>
+          CREATE INDEX jbilling_mediation_process_idx_entity_id_end_date
+                 ON jbilling_mediation_process(entity_id, end_date)
+                 WHERE end_date IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-911: added new index on jbilling_mediation_record" author = "Krunal Bhavsar">
+        <dropIndex tableName = "jbilling_mediation_record" indexName = "jbilling_mediation_record_idx_status"/>
+        <dropIndex tableName = "jbilling_mediation_record" indexName = "jbilling_mediation_record_idx_user_status"/>
+        <createIndex indexName = "jbilling_mediation_record_idx_user_status_event_date"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "user_id"/>
+            <column  name      = "status"/>
+            <column  name      = "event_date"/>
+        </createIndex>
     </changeSet>
 </databaseChangeLog>

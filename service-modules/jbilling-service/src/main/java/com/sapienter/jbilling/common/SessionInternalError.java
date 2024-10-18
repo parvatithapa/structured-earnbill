@@ -16,15 +16,12 @@
 
 package com.sapienter.jbilling.common;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
-import javax.xml.ws.WebFault;
-
 import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 
-import com.sapienter.jbilling.common.CommonConstants;
+import javax.xml.ws.WebFault;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @WebFault(name = "SessionInternalError", targetNamespace = "http://jbilling/")
 public class SessionInternalError extends RuntimeException {
@@ -42,7 +39,7 @@ public class SessionInternalError extends RuntimeException {
 
     public SessionInternalError(String s, int errorCode) {
         super(s);
-        errorDetails = ErrorDetails.newInstance(null, null, errorCode);
+        errorDetails = ErrorDetails.newInstance(null, new String[]{s}, errorCode);
     }
 
     public SessionInternalError(String s, Class className, Exception e) {
@@ -214,7 +211,7 @@ public class SessionInternalError extends RuntimeException {
         } else if(throwable instanceof SecurityException){
         	SecurityException internal = (SecurityException) throwable;
             errorDetails = ErrorDetails.newInstance(uuid, new String []{throwable.getMessage()} , CommonConstants.ERROR_CODE_UNAUTHORIZED_DATA_ACCESS);
-        }else {
+        } else {
             errorDetails = ErrorDetails.newInstance(uuid, null);
         }
     }

@@ -24,5 +24,14 @@
 <%@ page import="com.sapienter.jbilling.server.timezone.TimezoneHelper" %>
 
 <div class="form-columns">
-
+    <g:applyLayout name="form/input">
+        <content tag="label"><g:message  code="active.services.report.offset" /></content>
+        <content tag="label.for">offset</content>
+        <g:textField class="field" name="offset"/>
+    </g:applyLayout>
+    <g:applyLayout name="form/input">
+        <content tag="label"><g:message  code="active.services.report.limit" /></content>
+        <content tag="label.for">limit</content>
+        <g:textField class="field" name="limit"/>
+    </g:applyLayout>
 </div>

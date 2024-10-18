@@ -3,6 +3,7 @@ package com.sapienter.jbilling.batch.billing;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -174,4 +175,16 @@ public class BillingBatchService {
     public int assignPartitionNumber (int partitionNumber, int billingProcessId, int minId, int maxId) {
         return jdbcTemplate.update(SQL_UPDATE_PARTITION, partitionNumber, billingProcessId, minId, maxId);
     }
+    
+    //@formatter:off
+    public static final String SQL_ESTIMATED_FAILED_USERS_COUNT = String.join(NL,
+            "SELECT COUNT(c.user_id) FROM customer c, billing_batch_job_data b ",
+            "WHERE c.user_id = b.user_id AND c.invoice_delivery_method_id IN (1,3) ",
+            "AND b.billing_process_id = ? AND b.status < 0");
+
+    //@formatter:on
+    public Integer getEstimatedFailedUsersCount (int billingProcessId) {
+        return jdbcTemplate.queryForObject(SQL_ESTIMATED_FAILED_USERS_COUNT, Integer.class, billingProcessId);
+    }
+
 }

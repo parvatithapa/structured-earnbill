@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_report_v3" language="groovy" pageWidth="595" pageHeight="200" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryNewPage="true" uuid="c3e6f905-845b-429b-92f5-550767927575">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_report_v3" language="groovy" pageWidth="595" pageHeight="200" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="5" isSummaryNewPage="true" uuid="c3e6f905-845b-429b-92f5-550767927575">
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -11,6 +11,9 @@
 	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
 	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
 	<parameter name="user_id" class="java.lang.Integer"/>
+	<parameter name="credit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="debit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="exclude_from_call_itemisation_category_id" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT 1]]>
 	</queryString>
@@ -33,11 +36,17 @@
 			</subreport>
 			<subreport>
 				<reportElement x="1" y="1" width="555" height="5" isRemoveLineWhenBlank="true" uuid="4cb767d4-f3ea-4a19-aace-35657e98eba6"/>
+				<subreportParameter name="debit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{debit_products_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
 				<subreportParameter name="currency_symbol">
 					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="user_id">
 					<subreportParameterExpression><![CDATA[$P{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="credit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{credit_products_category_id}]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="invoice_id">
 					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
@@ -48,9 +57,9 @@
 		</band>
 	</title>
 	<detail>
-		<band height="21" splitType="Stretch">
+		<band height="7" splitType="Stretch">
 			<subreport>
-				<reportElement positionType="Float" x="0" y="8" width="555" height="5" isRemoveLineWhenBlank="true" uuid="29c4e3c8-59c2-41bf-b1fa-5c84de6f40ab"/>
+				<reportElement positionType="Float" x="0" y="1" width="555" height="5" isRemoveLineWhenBlank="true" uuid="29c4e3c8-59c2-41bf-b1fa-5c84de6f40ab"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -80,9 +89,12 @@
 	<summary>
 		<band height="9">
 			<subreport>
-				<reportElement positionType="Float" x="-18" y="2" width="555" height="5" isRemoveLineWhenBlank="true" uuid="154c80a3-38e1-42a0-8424-5d7b4cff713d"/>
+				<reportElement positionType="Float" x="0" y="2" width="555" height="5" isRemoveLineWhenBlank="true" uuid="154c80a3-38e1-42a0-8424-5d7b4cff713d"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="exclude_from_call_itemisation_category_id">
+					<subreportParameterExpression><![CDATA[$P{exclude_from_call_itemisation_category_id}]]></subreportParameterExpression>
 				</subreportParameter>
 				<subreportParameter name="other_charges_and_credits_product_category_id"/>
 				<subreportParameter name="account_charges_product_category_id"/>

@@ -62,7 +62,7 @@
     <div class="form-hold">
         <g:form name="metaField-edit-form" action="save" useToken="true">
             <fieldset>
-                    <g:render template="/metaFields/editMetafield" model="[metaField: metaField, entityType: params.entityType, parentId: 'metaField-edit-form', displayMetaFieldType: true]"/>
+                <g:render template="/metaFields/editMetafield" model="[metaField: metaField, entityType: params.entityType, parentId: 'metaField-edit-form', displayMetaFieldType: false]"/>
                 <!-- spacer -->
                 <div>
                     &nbsp;<br/>

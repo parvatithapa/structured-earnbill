@@ -131,7 +131,7 @@
                                       value="${ediFile.fileStatus.id}"
                             />
                         </g:applyLayout>
-                        <div class="btn-box" style="margin-left: 20%">
+                        <div class="btn-box">
                         <div class="row">
                             <g:submitButton name="${g.message(code: 'update.edi.status')}" class="submit save"/>
                         </div>

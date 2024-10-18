@@ -39,17 +39,12 @@ public class SapphireMediationConstants {
     public static final String INTERNATIONAL             = "INTERNATIONAL";
     public static final String MOBILE                    = "MOBILE";
     public static final String LANDLINE                  = "LANDLINE";
-    public static final String SATELLITE                 = "SATELLITE";
-    public static final String NGN                       = "NGN";
     public static final String ORIGINAL_QUANTITY         = "Original Quantity";
-    public static final String CDR_CALL_TYPE             = "Cdr Call Type";
     public static final BigDecimal SECONDS               = new BigDecimal("60");
 
-    public static final String CARRIER_TABLE_FIELD_NAME               = "Carrier Map";
-    public static final String ACCOUNT_TYPE_ITEM_TABLE_FIELD_NAME     = "Account Type Item Map";
-    public static final String PEAK_FIELD_NAME                        = "Peak (format [HH:mm-HH:mm])";
-    public static final String HOLIDAY_DATA_TABLE_NAME                = "Holiday Data Table Name";
-    public static final String SATELLITE_COUNTRY_CODE_DATA_TABLE_NAME = "Satellite Country Code Table Name";
+    public static final String CARRIER_TABLE_FIELD_NAME            = "Carrier Map";
+    public static final String ACCOUNT_TYPE_ITEM_TABLE_FIELD_NAME  = "Account Type Item Map";
+    public static final String PEAK_FIELD_NAME                     = "Peak (format [HH:mm-HH:mm])";
 
     public static final String PLUS_PREFIX               = "+";
     public static final String UNDERSCORE                = "_";
@@ -62,7 +57,6 @@ public class SapphireMediationConstants {
     public static final String DESCRIPTION_FORMAT   = "Call from [%s] to [%s]";
     public static final String DATE_FORMAT          = "yyyy-MM-dd HH:mm:ss";
     public static final String OFF_PEAK_DATE_FORMAT = "yyyy-MM-dd HH:mm";
-    public static final String HOLIDAY_DATE_FORMAT  = "yyyy-MM-dd";
 
     // Mediation config
     public static final String JOB_NAME                = "sapphireMediationJob";

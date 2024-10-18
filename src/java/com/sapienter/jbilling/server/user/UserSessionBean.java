@@ -616,14 +616,13 @@ public class UserSessionBean implements IUserSessionBean, PartnerSQL {
         return events;
     }
 
-    @RetryConcurrentOperation( on = { HibernateOptimisticLockingFailureException.class, StaleObjectStateException.class }, retries = 3)
+    @RetryConcurrentOperation( on = { HibernateOptimisticLockingFailureException.class, StaleObjectStateException.class, UnsupportedOperationException.class }, retries = 3)
     @Transactional( propagation = Propagation.REQUIRES_NEW)
     public void loginSuccess(String username, Integer entityId) {
         try {
             UserBL userBL = new UserBL(username, entityId);
             UserDTO user = userBL.getDto();
             if (null != user) {
-                userBL.reload();
                 userBL.successLoginAttempt();
             }
 

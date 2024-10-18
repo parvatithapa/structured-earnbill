@@ -21,13 +21,8 @@
 			<thead>
 				<tr>
 					<th class="small2 header-sortable">
-                        <g:remoteSort action="list" sort="startDate" update="column1">
-                            <g:message code="mediation.th.start.date" />
-                        </g:remoteSort>
-                    </th>
-					<th class="small2 header-sortable">
                         <g:remoteSort action="list" sort="endDate" update="column1">
-                            <g:message code="mediation.th.end.date" />
+                            <g:message code="mediation.th.file.name" />
                         </g:remoteSort>
                     </th>
 					<th class="small header-sortable">
@@ -47,14 +42,10 @@
                     <g:set var="proc" value="${entry}"/>
                     <g:set var="configurationId" value="${proc.configurationId}"/>
 					<tr id="mediation-${proc.id}" class="${proc?.id == processId ? 'active' : ''}">
-						<td>
-							<g:remoteLink breadcrumb="id" class="cell" action="show" id="${proc.id}" params="['template': 'show']" before="register(this);" onSuccess="render(data, next);">
-                                <g:formatDate date="${proc.startDate}" formatName="date.timeSecsAMPM.format" timeZone="${session['company_timezone']}"/>
-                            </g:remoteLink>
-						</td>
                         <td>
                             <g:remoteLink breadcrumb="id" class="cell" action="show" id="${proc.id}" params="['template': 'show']" before="register(this);" onSuccess="render(data, next);">
-                                <g:formatDate date="${proc.endDate}" formatName="date.timeSecsAMPM.format" timeZone="${session['company_timezone']}"/>
+                                <g:if test="${proc.fileName == null}">${proc.startDate} - ${proc.endDate}</g:if>
+                                <g:else>${proc.fileName}</g:else>
                             </g:remoteLink>
                         </td>
 						<td>
@@ -81,7 +72,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="mediation" action="index" params="${sortableParams(params: [partial: true])}" total="${size}" update="column1"/>
     </div>
 </div>

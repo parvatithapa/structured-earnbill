@@ -180,7 +180,7 @@ public class NewInvoiceContext extends InvoiceDTO {
 
         /**
          * Build new OrderLineCtx from order changes.
-         *
+         * 
          * @param orderLine
          * @param billingDate
          * @return

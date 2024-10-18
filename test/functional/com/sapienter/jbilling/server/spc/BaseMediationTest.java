@@ -1,5 +1,8 @@
 package com.sapienter.jbilling.server.spc;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertNotNull;
 
 import java.io.File;
@@ -12,19 +15,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import junit.framework.TestCase;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.sapienter.jbilling.api.automation.EnvironmentHelper;
 import com.sapienter.jbilling.common.SessionInternalError;
@@ -35,22 +52,30 @@ import com.sapienter.jbilling.server.item.PlanItemWS;
 import com.sapienter.jbilling.server.item.PlanWS;
 import com.sapienter.jbilling.server.item.RatingConfigurationWS;
 import com.sapienter.jbilling.server.mediation.MediationConfigurationWS;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.mediation.evaluation.task.SPCMediationEvaluationStrategyTask;
 import com.sapienter.jbilling.server.metafield.builder.MetaFieldBuilder;
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderWS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.RatingUnitWS;
+import com.sapienter.jbilling.server.pricing.RouteRecordWS;
 import com.sapienter.jbilling.server.pricing.cache.MatchingFieldType;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
+import com.sapienter.jbilling.server.spc.SpcJMRPostProcessorTask;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.CompanyWS;
 import com.sapienter.jbilling.server.user.MatchingFieldWS;
 import com.sapienter.jbilling.server.util.EnumerationValueWS;
 import com.sapienter.jbilling.server.util.EnumerationWS;
+import com.sapienter.jbilling.server.util.NameValueString;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.test.framework.TestBuilder;
 import com.sapienter.jbilling.test.framework.TestEntityType;
@@ -60,7 +85,8 @@ import com.sapienter.jbilling.test.framework.builders.ItemBuilder;
 import com.sapienter.jbilling.test.framework.builders.PlanBuilder;
 
 @Test(groups = { "spc" })
-public class BaseMediationTest {
+@ContextConfiguration(classes = SPCTestConfig.class)
+public class BaseMediationTest extends AbstractTestNGSpringContextTests{
 
     //@formatter:off
     protected static final Logger logger                        = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -81,9 +107,15 @@ public class BaseMediationTest {
     private static final File TEMP_DIR_PATH                     = new File(System.getProperty("java.io.tmpdir"));
     private static final String DATA_RATING_UNIT_NAME           = "SPC Data Rating Unit";
     public static final String INTERNET_ASSET_PLAN_ITEM_CODE   = "internet-user-names";
-
+    public static final String SPC_CUSTOMER_CARE_ITEM_CODE     = "Calls to Southern Phone";
+    public static final String SPC_CUSTOMER_CARE_ITEM_ID       = SPCConstants.COMPANY_LEVEL_MF_NAME_FOR_CUSTOMER_CARE_NUMBER_ITEM_ID;
+    public static final int BASIC_ITEM_MANAGER_PLUGIN_ID = 1;
     public static final String PLAN_LEVEL_MF_NAME_FOR_QUANTITY_RESOLUTION_UNIT = "Quantity Resolution Unit";
     public static final String PLAN_LEVEL_MF_NAME_FOR_INTERNET_TECHNOLOGY_TYPE = "Internet Technology";
+    private final static String PARAM_TAX_TABLE_NAME = "tax_scheme";
+    public Integer mediationEvaluationStrategyPluginId;
+    @Resource(name = "spcJdbcTemplate")
+    private JdbcTemplate jdbcTemplate;
     protected static final List<EnumerationValueWS> ENUM_INTERNET_TECHNOLOGY_VALUES = new ArrayList<EnumerationValueWS>()  {
         {
             add(new EnumerationValueWS("ADSL"));
@@ -98,6 +130,39 @@ public class BaseMediationTest {
                 add(new EnumerationValueWS("Total"));
 
             }};
+            private static final String CUSTOMER_CARE__TABLE_NAME  = "CC Table Name";
+            private static final String CUSTOMER_CARE_TABLE_VALUE  = "route_1_calltozero";
+            private static final String INSERT_QUERY_TEMPLATE;
+
+            private static final Map<String, String> COLUMN_CONSTRAINST_MAP;
+            private static final Map<String, String> COLUMN_DETAIL_MAP;
+            private static List<String[]> CUSTOMER_CARE_RECORDS;
+            static {
+                COLUMN_CONSTRAINST_MAP = new LinkedHashMap<>();
+                COLUMN_DETAIL_MAP      = new LinkedHashMap<>();
+
+                COLUMN_CONSTRAINST_MAP.put("id", "SERIAL NOT NUll");
+                COLUMN_DETAIL_MAP.put("calltozero", "VARCHAR(255)");
+                COLUMN_CONSTRAINST_MAP.putAll(COLUMN_DETAIL_MAP);
+                COLUMN_CONSTRAINST_MAP.put("PRIMARY KEY", " ( id ) ");
+
+                INSERT_QUERY_TEMPLATE = new StringBuilder().append("INSERT INTO ")
+                        .append(CUSTOMER_CARE_TABLE_VALUE)
+                        .append(" ")
+                        .append('(')
+                        .append(COLUMN_DETAIL_MAP.entrySet().stream().map(Entry::getKey).collect(Collectors.joining(",")))
+                        .append(')')
+                        .append(" VALUES (")
+                        .append(COLUMN_DETAIL_MAP.entrySet().stream().map(entry -> "?").collect(Collectors.joining(",")))
+                        .append(" )")
+                        .toString();
+
+                String[] record1 = {"02244747100"};
+                String[] record2 = {"02131464"};
+                String[] record3 = {"021300790585"};
+                String[] record4 = {"021800017461"};
+                CUSTOMER_CARE_RECORDS = Arrays.asList(record1, record2, record3, record4);
+            }
             //@formatter:on
 
             protected TestBuilder testBuilder;
@@ -117,10 +182,15 @@ public class BaseMediationTest {
             public void initializeTests() {
                 testBuilder = getTestEnvironment();
                 testBuilder.given(envBuilder -> {
+                    Hashtable<String, String> parameters = getParamsForJMRPostProcessor() ;
+                    configureJMrPostProcessor(api, parameters);
+
                     // Creating SPC rating unit
                     buildAndPersistRatingUnit();
 
-                    // Creating SPC data rating unit
+                  //creating data table with name 'route_1_taxes'
+                    createTable(CUSTOMER_CARE_TABLE_VALUE, COLUMN_CONSTRAINST_MAP);
+                    CUSTOMER_CARE_RECORDS.stream().forEach(this :: insertCustomerCareNumbers);
                     String priceUnitName = "Bytes";
                     String incrementUnitName = "GB";
                     String incrementUnitQuantity = "1073741824";
@@ -135,8 +205,18 @@ public class BaseMediationTest {
                     buildAndPersistFlatProduct(envBuilder, api, INTERNET_ASSET_PLAN_ITEM_CODE, false,
                             envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY), "0.00", true, 1, false);
 
+                    buildAndPersistFlatProduct(envBuilder, api, SPC_CUSTOMER_CARE_ITEM_CODE, false,
+                            envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY), "0.00", true, 0, false);
+
+                    if (!isMetaFieldPresent(EntityType.COMPANY, SPC_CUSTOMER_CARE_ITEM_ID)){
+                        buildAndPersistMetafield(testBuilder, SPC_CUSTOMER_CARE_ITEM_ID, DataType.STRING,
+                                EntityType.COMPANY);
+                    }
+
                     // Creating SPC Job Launcher
                     buildAndPersistMediationConfiguration(envBuilder, api, SPC_MEDIATION_CONFIG_NAME, SPC_MEDIATION_JOB_NAME);
+                    setCompanyLevelMetaField(testBuilder.getTestEnvironment(), SPC_CUSTOMER_CARE_ITEM_ID,
+                            envBuilder.idForCode(SPC_CUSTOMER_CARE_ITEM_CODE).toString());
 
                 }).test((testEnv, testEnvBuilder) -> {
                     assertNotNull("Account Creation Failed", testEnvBuilder.idForCode(ACCOUNT_NAME));
@@ -146,12 +226,27 @@ public class BaseMediationTest {
                 });
             }
 
-            @AfterClass
+    private Hashtable<String, String> getParamsForJMRPostProcessor() {
+        Hashtable<String, String> parameters = new Hashtable<>();
+        parameters.put("rounding mode", "ROUND_HALF_UP");
+        parameters.put("rounding scale", "4");
+        parameters.put("minimum charge", "0.00");
+        parameters.put("tax table name", "tax_scheme");
+        parameters.put("tax date format", "dd-MM-yyyy");
+        parameters.put("Credit pool table name", "credit_pool");
+        parameters.put("Reduce pricing_field in JMR table", Boolean.TRUE.toString());
+        return parameters;
+    }
+
+    @AfterClass
             public void tearDown() {
+                dropTable(CUSTOMER_CARE_TABLE_VALUE);
                 testBuilder.removeEntitiesCreatedOnJBillingForMultipleTests();
                 testBuilder.removeEntitiesCreatedOnJBilling();
                 testBuilder = null;
             }
+
+
 
             protected PriceModelWS buildRateCardPriceModel(Integer routeRateCardId) {
                 return buildRateCardPriceModel(routeRateCardId, "duration");
@@ -228,6 +323,16 @@ public class BaseMediationTest {
                 return testBuilder.getTestEnvironment().idForCode(code);
             }
 
+            protected Integer createOrder(String code, Date activeSince, Date activeUntil, Integer orderPeriodId, boolean prorate,
+                    Map<Integer, BigDecimal> productQuantityMap, Map<Integer, List<Integer>> productAssetMap, String userCode,
+                    Integer billingType) {
+                Integer createdOrder = createOrder(code, activeSince, activeUntil, orderPeriodId, prorate, productQuantityMap, productAssetMap, userCode);
+                OrderWS order = api.getOrder(createdOrder);
+                order.setBillingTypeId(billingType);
+                api.updateOrder(order, null);
+                return createdOrder;
+            }
+
             protected Map<Integer, BigDecimal> buildProductQuantityEntry(Integer productId, BigDecimal quantity) {
                 return Collections.singletonMap(productId, quantity);
             }
@@ -289,6 +394,18 @@ public class BaseMediationTest {
                         .global(global)
                         .allowAssetManagement(1)
                         .build();
+            }
+
+            private void insertCustomerCareNumbers(String[] record) {
+                logger.debug("inserting the tax rate details to table!");
+                try {
+                    jdbcTemplate.update(INSERT_QUERY_TEMPLATE, new Object[] {
+                            record[0]
+                    });
+                } catch(Exception ex) {
+                    logger.error("Error !", ex);
+                    fail("Failed Insertion In data table "+ CUSTOMER_CARE__TABLE_NAME, ex);
+                }
             }
 
             protected Integer buildAndPersistMetafield(TestBuilder testBuilder, String name, DataType dataType, EntityType entityType) {
@@ -355,6 +472,7 @@ public class BaseMediationTest {
             }
 
             protected void pauseUntilMediationCompletes(long seconds, JbillingAPI api) {
+                sleep(3000L); // initial wait.
                 for (int i = 0; i < seconds; i++) {
                     if (!api.isMediationProcessRunning()) {
                         return;
@@ -374,6 +492,10 @@ public class BaseMediationTest {
             }
 
             protected Integer buildAndPersistAsset(TestEnvironmentBuilder envBuilder, Integer categoryId, Integer itemId, String phoneNumber) {
+                return buildAndPersistAsset(envBuilder, categoryId, itemId, phoneNumber, phoneNumber);
+            }
+
+            protected Integer buildAndPersistAsset(TestEnvironmentBuilder envBuilder, Integer categoryId, Integer itemId, String phoneNumber, String code) {
                 ItemTypeWS itemTypeWS = api.getItemCategoryById(categoryId);
                 Integer assetStatusId = itemTypeWS.getAssetStatuses().stream().
                         filter(assetStatusDTOEx -> assetStatusDTOEx.getIsAvailable() == 1 && assetStatusDTOEx.getDescription()
@@ -383,7 +505,7 @@ public class BaseMediationTest {
                         .withAssetStatusId(assetStatusId)
                         .global(true)
                         .withIdentifier(phoneNumber)
-                        .withCode(phoneNumber)
+                        .withCode(code)
                         .build();
             }
 
@@ -469,7 +591,8 @@ public class BaseMediationTest {
                         Files.write(file.toPath(), (header + System.lineSeparator()).getBytes());
                     }
                     String lineContent = lines.stream().collect(Collectors.joining(System.lineSeparator()));
-                    Files.write(file.toPath(), lineContent.getBytes(), StandardOpenOption.APPEND);
+                    Files.write(file.toPath(), lineContent.concat(System.lineSeparator()).getBytes(), StandardOpenOption.APPEND);
+
                     return file.getAbsolutePath();
                 } catch (IOException e) {
                     throw new RuntimeException("Error in createFileWithData", e);
@@ -538,4 +661,79 @@ public class BaseMediationTest {
                 }
                 return companyLevelMFfound;
             }
+
+            protected void updateExistingPlugin(JbillingAPI api, Integer pluginId, String className, Map<String, String> params) {
+                PluggableTaskWS plugin = api.getPluginWS(pluginId);
+                if(null == plugin) {
+                    Assert.notNull(plugin, " no plugin found for id "+ pluginId + " for entity "+ api.getCallerCompanyId());
+                }
+                plugin.setTypeId(api.getPluginTypeWSByClassName(className).getId());
+                Hashtable<String, String> parameters = new Hashtable<>();
+                if(MapUtils.isNotEmpty(params)) {
+                    parameters.putAll(params);
+                }
+                plugin.setParameters(parameters);
+                api.updatePlugin(plugin);
+            }
+
+            protected void createMediationEvaluationStrategyPlugin() {
+                String className = SPCMediationEvaluationStrategyTask.class.getName();
+                if(ArrayUtils.isNotEmpty(api.getPluginsWS(api.getCallerCompanyId(), className))) {
+                    return;
+                }
+                PluggableTaskWS plugin = new PluggableTaskWS();
+                plugin.setProcessingOrder(1);
+                PluggableTaskTypeWS pluginType = api.getPluginTypeWSByClassName(className);
+                plugin.setTypeId(pluginType.getId());
+                mediationEvaluationStrategyPluginId = api.createPlugin(plugin);
+            }
+
+            private void dropTable(String tableName) {
+                logger.debug("droping the table {}", tableName);
+                jdbcTemplate.execute("DROP TABLE "+ tableName);
+            }
+            
+            private void createTable(String tableName, Map<String, String> columnDetails) {
+                logger.debug("creating the table {}", tableName);
+                try {
+                    String createTableQuery = "CREATE TABLE IF NOT  EXISTS  "+ tableName;
+                    StringBuilder columnBuilder = new StringBuilder().append(" (");
+
+                    columnBuilder.append(columnDetails.entrySet().stream()
+                            .map(entry -> entry.getKey() + " " + entry.getValue())
+                            .collect(Collectors.joining(",")));
+                    columnBuilder.append(" )");
+                    jdbcTemplate.execute(createTableQuery + columnBuilder.toString());
+                } catch(Exception ex) {
+                    logger.error("Error !", ex);
+                    fail("Failed During table creation ", ex);
+                }
+            }
+
+            private Integer configureJMrPostProcessor(JbillingAPI api, Hashtable<String, String> parameters) {
+                String taskName = SpcJMRPostProcessorTask.class.getName();
+                PluggableTaskWS[] tasks = api.getPluginsWS(api.getCallerCompanyId(), taskName);
+                if(ArrayUtils.isNotEmpty(tasks)) {
+                    for(PluggableTaskWS task : tasks) {
+                        api.deletePlugin(task.getId());
+                    }
+                }
+                // configure JMRPostProcessorTask plugin.
+                PluggableTaskWS plugin = new PluggableTaskWS();
+                plugin.setTypeId(api.getPluginTypeWSByClassName(SpcJMRPostProcessorTask.class.getName()).getId());
+                plugin.setProcessingOrder(1);
+                plugin.setParameters(parameters);
+                return api.createPlugin(plugin);
+            }
+
+    protected void validatePricingFields ( JbillingMediationRecord[] viewEvents ) {
+        for ( JbillingMediationRecord jbillingMediationRecord : viewEvents ) {
+            String pricingFields = jbillingMediationRecord.getPricingFields ( );
+            TestCase.assertFalse ( "pricing fields should not contain CDR_IDENTIFIER" , pricingFields.contains ( "CDR_IDENTIFIER" ) );
+            if (!(pricingFields.contains("data") || pricingFields.contains("aaptiu"))) {
+                 TestCase.assertTrue("pricing fields should contain Service number", pricingFields.contains("SERVICE_NUMBER"));
+             }
+
+        }
+    }
 }

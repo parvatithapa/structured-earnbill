@@ -108,7 +108,7 @@
 
             <div class="table-info">
                 <em><strong><g:message code="header.historical.version" args="[record.name]"/></strong></em>
-                <span style="float: right; margin-top: 11px;">
+                <span>
                     <g:select id="${record.name}"
                               name="timestamp"
                               class="version-selector"
@@ -118,7 +118,7 @@
                                 style="width: 250px"/>
 
                     <g:if test="${!(record.name.equals('order') || record.name.equals('invoice') || record.name.equals('payment') || record.name.equals('line'))}">
-                    	<a onclick="$('#${record.name}-form').submit()" class="submit save" style="margin-left: 7px;"><span>Restore</span></a>
+                    	<a onclick="$('#${record.name}-form').submit()" class="submit save"><span>Restore</span></a>
                     </g:if>
                 </span>
             </div>

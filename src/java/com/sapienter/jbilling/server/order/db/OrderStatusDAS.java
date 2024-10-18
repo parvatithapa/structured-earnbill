@@ -86,4 +86,13 @@ public class OrderStatusDAS extends AbstractDAS<OrderStatusDTO> {
                 .list();
     }
 
-}
+    public OrderStatusDTO findByOrderStatusFlagAndEntityId(OrderStatusFlag orderStatusFlag, Integer entityId) {
+        return (OrderStatusDTO) getSession()
+                .createCriteria(OrderStatusDTO.class)
+                .add(Restrictions.eq("orderStatusFlag", orderStatusFlag))
+                .createAlias("entity", "entity")
+                .add(Restrictions.eq("entity.id", entityId))
+                .addOrder(Order.asc("id"))
+                .uniqueResult();
+    }
+  }

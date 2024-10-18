@@ -31,9 +31,12 @@ public class CustomerBuilder extends AbstractMetaFieldBuilder<CustomerBuilder> {
     private Date nextInvoiceDate;
     private MainSubscriptionWS mainSubscription;
     private Boolean isParent = Boolean.FALSE;
+    private Integer currencyId ;
     private Boolean createCredentials = Boolean.FALSE;
     private JbillingAPI api;
     private TestEnvironment testEnvironment;
+	private String invoiceDesign;
+	private Integer invoiceDeliveryMethodId;
 
     public CustomerBuilder(JbillingAPI api, TestEnvironment testEnvironment) {
         this.api = api;
@@ -79,6 +82,18 @@ public class CustomerBuilder extends AbstractMetaFieldBuilder<CustomerBuilder> {
         values.entrySet().stream().forEach(e-> withMetaField(e.getKey(), e.getValue(), accountInformation.getId()));
         return this;
     }
+    
+    public CustomerBuilder withAITGroup(String aitGroupName , Map<String, Object> values) {
+
+        AccountInformationTypeWS[] aits = api.getInformationTypesForAccountType(accountTypeId);
+        Optional searchObject = Arrays.stream(aits).filter(ait -> ait.getName().equals(aitGroupName)).findFirst();
+        if (!searchObject.isPresent()) {
+            throw new IllegalStateException("No valid AIT found");
+        }
+        final AccountInformationTypeWS accountInformation = (AccountInformationTypeWS) searchObject.get();
+        values.entrySet().stream().forEach(e-> withMetaField(e.getKey(), e.getValue(), accountInformation.getId()));
+        return this;
+    }
 
     public CustomerBuilder withParentId(Integer parentId) {
 
@@ -102,11 +117,28 @@ public class CustomerBuilder extends AbstractMetaFieldBuilder<CustomerBuilder> {
         this.isParent = isParent;
         return this;
     }
+    
+    public CustomerBuilder withCurrency(Integer currencyId) {
+        this.currencyId = currencyId;
+        return this;
+    }
+
+    public CustomerBuilder withInvoiceDesign(String invoiceDesign) {
+        this.invoiceDesign = invoiceDesign;
+        return this;
+    }
+
+    public CustomerBuilder withInvoiceDeliveryMethod(Integer invoiceDeliveryMethodId) {
+        this.invoiceDeliveryMethodId = invoiceDeliveryMethodId;
+        return this;
+    }
 
     public UserWS build() {
         UserWS newUser = new UserWS();
         newUser.setIsParent(isParent);
+        newUser.setInvoiceDesign(invoiceDesign);
         newUser.setUserId(0);
+        newUser.setInvoiceDeliveryMethodId(invoiceDeliveryMethodId);
         if (addTimeToUsername)
             newUser.setUserName(username + System.currentTimeMillis());
         else
@@ -120,7 +152,11 @@ public class CustomerBuilder extends AbstractMetaFieldBuilder<CustomerBuilder> {
         newUser.setMainRoleId(Constants.ROLE_CUSTOMER);
         newUser.setAccountTypeId(accountTypeId);
         newUser.setStatusId(UserDTOEx.STATUS_ACTIVE);
-        newUser.setCurrencyId(api.getCallerCurrencyId());
+        if (null != currencyId) {
+            newUser.setCurrencyId(currencyId);
+        } else {
+            newUser.setCurrencyId(api.getCallerCurrencyId());
+        }
         newUser.setParentId(parentId);
 
         if (null != nextInvoiceDate) {

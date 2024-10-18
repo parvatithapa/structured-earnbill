@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_account_charges_sub_report" language="groovy" pageWidth="370" pageHeight="100" columnWidth="370" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="812a8aa5-e8f8-491f-8cf0-54aa7f98fea4">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT          (
+
+                                                CASE
+                                                                WHEN ss.start_date IS NOT NULL
+                                                                AND             ss.end_date IS NOT NULL THEN concat(To_char(ss.start_date,'dd Mon yy'), ' - ', to_char((ss.end_date),'dd Mon yy'))
+                                                                ELSE To_char(
+                                                                                                                       (
+                                                                                                                       SELECT active_since
+                                                                                                                       FROM   purchase_order
+                                                                                                                       WHERE  id = il.order_id ),'dd Mon yy')
+                END) AS invoice_date, (
+                CASE
+                                WHEN il.item_id IN
+                                                (
+                                                           SELECT     imfm.item_id
+                                                           FROM       item_meta_field_map imfm
+                                                           INNER JOIN meta_field_value mfv
+                                                           ON         mfv.id = imfm.meta_field_value_id
+                                                           INNER JOIN meta_field_name mfn
+                                                           ON         mfn.id = mfv.meta_field_name_id
+                                                           WHERE      mfn.NAME = 'Tax Scheme'
+                                                           AND        mfn.data_type = 'ENUMERATION'
+                                                           AND        mfn.entity_type = 'PRODUCT'
+                                                           AND        mfv.string_value = 'Tax Exempt' ) THEN concat((
+                                                CASE
+                                                                WHEN il.description LIKE '%Period from%' = 't' THEN trim(substring(il.description,0,position('Period from' IN il.description)))
+                                                                ELSE il.description
+                                                END), '*')
+                                ELSE (
+                                                CASE
+                                                                WHEN il.description LIKE '%Period from%' = 't' THEN trim(substring(il.description,0,position('Period from' IN il.description)))
+                                                                ELSE il.description
+                                                END)
+                END) AS service_description,
+                il.amount
+FROM            service_summary ss
+LEFT OUTER JOIN rollup_codes rc
+ON              ss.service_description = rc.item_type_description
+INNER JOIN      invoice i
+ON              i.id = ss.invoice_id
+INNER JOIN      invoice_line il
+ON              il.invoice_id = i.id
+AND             il.id = ss.invoice_line_id
+WHERE           i.id = $P{invoice_id}
+AND             ss.plan_id IS NULL
+AND             il.item_id NOT IN
+                (
+                           SELECT     i.id
+                           FROM       item i
+                           INNER JOIN item_type_map itm
+                           ON         itm.item_id = i.id
+                           INNER JOIN item_type it
+                           ON         it.id = itm.type_id
+                           INNER JOIN order_line_type olt
+                           ON         olt.id = it.order_line_type_id
+                           INNER JOIN international_description int_des
+                           ON         int_des.foreign_id = olt.id
+                           INNER JOIN jbilling_table jt
+                           ON         jt.id = int_des.table_id
+                           WHERE      int_des.content = 'Adjustment'
+                           AND        jt.NAME = 'order_line_type'
+                           AND        int_des.language_id = 1 )
+ORDER BY        rc.itemisation_order;]]>
+	</queryString>
+	<field name="invoice_date" class="java.lang.String"/>
+	<field name="service_description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="account_charges_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="18" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="130" height="15" forecolor="#000000" uuid="7ecfb9cf-6353-417d-bf24-8931f3dd211b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Account charges and credits]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="130" height="15" uuid="2926200f-765c-4947-a6ab-cec4847fbb08"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="159" y="0" width="120" height="15" uuid="d0702f70-329a-4d7c-84d0-749113624fc7"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="281" y="0" width="76" height="15" uuid="b9e0009c-b96c-4927-ad79-b88ba30ed569"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+($F{amount} < 0 ?
+new java.text.DecimalFormat("#,##0.00").format($F{amount}.negate().setScale(2, BigDecimal.ROUND_HALF_UP)) :
+new java.text.DecimalFormat("#,##0.00").format($F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP))) +
+($F{amount} < 0 ? 'cr':'')]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="16">
+			<staticText>
+				<reportElement x="0" y="0" width="183" height="15" forecolor="#000000" uuid="d27563b0-908a-4025-b73f-b3897ff89a3f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="false" isItalic="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Total account charges and credits]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="281" y="0" width="76" height="15" forecolor="#000000" uuid="0179fd3c-9c4d-4797-81e0-f72631101458"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="false" isItalic="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+($V{account_charges_total} < 0 ?
+new java.text.DecimalFormat("#,##0.00").format($V{account_charges_total}.negate().setScale(2, RoundingMode.HALF_UP)) + 'cr' :
+new java.text.DecimalFormat("#,##0.00").format($V{account_charges_total}.setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

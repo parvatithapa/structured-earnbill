@@ -19,17 +19,20 @@ package com.sapienter.jbilling.server.invoice;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import com.sapienter.jbilling.server.notification.MessageDTO;
-import com.sapienter.jbilling.server.notification.MessageSection;
-import org.apache.log4j.Logger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sql.rowset.CachedRowSet;
+
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -37,42 +40,54 @@ import com.lowagie.text.pdf.PRAcroForm;
 import com.lowagie.text.pdf.PdfCopy;
 import com.lowagie.text.pdf.PdfImportedPage;
 import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.PdfSmartCopy;
+import com.lowagie.text.pdf.PdfStream;
 import com.lowagie.text.pdf.SimpleBookmark;
-import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
-import com.sapienter.jbilling.server.process.db.PaperInvoiceBatchDTO;
+import com.sapienter.jbilling.server.billing.task.BulkIndexFile;
+import com.sapienter.jbilling.server.billing.task.IndexFileObject;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
+import com.sapienter.jbilling.server.notification.MessageDTO;
+import com.sapienter.jbilling.server.notification.MessageSection;
 import com.sapienter.jbilling.server.notification.NotificationBL;
 import com.sapienter.jbilling.server.process.BillingProcessBL;
 import com.sapienter.jbilling.server.process.db.PaperInvoiceBatchDAS;
+import com.sapienter.jbilling.server.process.db.PaperInvoiceBatchDTO;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
+import com.sapienter.jbilling.server.user.db.CustomerAccountInfoTypeMetaField;
+import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.Context;
+import com.sapienter.jbilling.server.util.Context.Name;
 import com.sapienter.jbilling.server.util.PreferenceBL;
-import com.sapienter.jbilling.server.util.audit.EventLogger;
 
 /**
  * @author Emil
  */
 public class PaperInvoiceBatchBL {
     private PaperInvoiceBatchDTO batch = null;
-    private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(PaperInvoiceBatchBL.class));
-    private EventLogger eLogger = null;
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private PaperInvoiceBatchDAS batchHome = null;
 
     public static final String MESSAGE_PARM_COMPILE_BATCH = "compileBatch";
     public static final String MESSAGE_PARM_COMPILE_BATCH_ENTITY = "entity";
     public static final String MESSAGE_PARM_COMPILE_BATCH_PROCESS = "process";
 
+    // Initially value as false
+    private AtomicBoolean usePdfCompression = new AtomicBoolean(false);
     /** The maximum safe number of invoices to be batched.  */
     public static final Integer MAX_RESULTS = 10000;
+    public static final String DOUBLE_QUOTES = "\"";
 
 
     public PaperInvoiceBatchBL(Integer batchId) {
         init();
         set(batchId);
     }
-    
+
     public PaperInvoiceBatchBL(PaperInvoiceBatchDTO batch) {
         init();
         this.batch = batch;
@@ -83,14 +98,13 @@ public class PaperInvoiceBatchBL {
     }
 
     private void init() {
-        eLogger = EventLogger.getInstance();
         batchHome = new PaperInvoiceBatchDAS();
     }
 
     public PaperInvoiceBatchDTO getEntity() {
         return batch;
     }
-    
+
     public void set(Integer id) {
         batch = batchHome.find(id);
     }
@@ -106,9 +120,9 @@ public class PaperInvoiceBatchBL {
         batch = process.getEntity().getPaperInvoiceBatch();
         if (batch == null) {
             Integer preferencePaperSelfDelivery = 
-            	PreferenceBL.getPreferenceValueAsIntegerOrZero(
-            		process.getEntity().getEntity().getId(), 
-            		Constants.PREFERENCE_PAPER_SELF_DELIVERY);
+                    PreferenceBL.getPreferenceValueAsIntegerOrZero(
+                            process.getEntity().getEntity().getId(), 
+                            Constants.PREFERENCE_PAPER_SELF_DELIVERY);
             batch = batchHome.create(new Integer(0), preferencePaperSelfDelivery);
             process.getEntity().setPaperInvoiceBatch(batch);
         }
@@ -123,7 +137,7 @@ public class PaperInvoiceBatchBL {
     public void compileInvoiceFilesForProcess(Integer entityId) 
             throws DocumentException, IOException {
         String filePrefix = Util.getSysProp("base_dir") + "invoices/" + 
-            entityId + "-";
+                entityId + "-";
         // now go through each of the invoices
         // first - sort them
         List invoices = new ArrayList(batch.getInvoices());
@@ -135,7 +149,7 @@ public class PaperInvoiceBatchBL {
             InvoiceDTO invoice = (InvoiceDTO) invoices.get(f);
             invoicesIds[f] = invoice.getId();
         }
-        
+
         compileInvoiceFiles(filePrefix, new Integer(batch.getId()).toString(), entityId,
                 invoicesIds);
     }
@@ -151,7 +165,7 @@ public class PaperInvoiceBatchBL {
      */
     public void compileInvoiceFiles(String destination, String prefix,
             Integer entityId, Integer[] invoices)
-            throws DocumentException, IOException {
+                    throws DocumentException, IOException {
 
         String filePrefix = Util.getSysProp("base_dir") + "invoices/"+ entityId + "-";
         String outFile = destination + prefix + "-batch.pdf";
@@ -162,11 +176,11 @@ public class PaperInvoiceBatchBL {
         Document document = null;
         PdfCopy  writer = null;
         for(int f = 0; f < invoices.length ; f++) {
-        	if (companyDAS.isRoot(entityId)) {
-        		filePrefix = Util.getSysProp("base_dir") + "invoices/";
-        		entityId = new InvoiceBL(invoices[f]).getDTO().getBaseUser().getCompany().getId();
-        		filePrefix =filePrefix+ entityId + "-";
-        	}
+            if (companyDAS.isRoot(entityId)) {
+                filePrefix = Util.getSysProp("base_dir") + "invoices/";
+                entityId = new InvoiceBL(invoices[f]).getDTO().getBaseUser().getCompany().getId();
+                filePrefix =filePrefix+ entityId + "-";
+            }
             // we create a reader for a certain document
             PdfReader reader = new PdfReader(filePrefix + invoices[f] + "-invoice.pdf" , "reports".getBytes());
             reader.consolidateNamedDestinations();
@@ -179,12 +193,12 @@ public class PaperInvoiceBatchBL {
                 master.addAll(bookmarks);
             }
             pageOffset += numberOfPages;
-            
+
             if (f == 0) {
                 // step 1: creation of a document-object
                 document = new Document(reader.getPageSizeWithRotation(1));
                 // step 2: we create a writer that listens to the document
-                writer = new PdfCopy(document, new FileOutputStream(outFile));
+                writer = usePdfCompression.get() ? new PdfSmartCopy(document, new FileOutputStream(outFile)) : new PdfCopy(document, new FileOutputStream(outFile));
                 // step 3: we open the document
                 document.open();
             }
@@ -198,7 +212,11 @@ public class PaperInvoiceBatchBL {
             PRAcroForm form = reader.getAcroForm();
             if (form != null)
                 writer.copyAcroForm(reader);
-            
+            if (usePdfCompression.get()) {
+                writer.setFullCompression();
+                writer.setCompressionLevel(PdfStream.BEST_COMPRESSION);
+			}
+
             //release and delete 
             writer.freeReader(reader);
             reader.close();
@@ -211,24 +229,24 @@ public class PaperInvoiceBatchBL {
         if (document != null) {
             document.close();
         } else {
-            LOG.warn("document == null");
+            logger.warn("document == null");
         }
 
-        LOG.debug("PDF batch file is ready %s", outFile);
+        logger.debug("PDF batch file is ready {}", outFile);
     }
 
-    
+
     public void sendEmail() {
         Integer entityId = batch.getProcess().getEntity().getId();
-        
+
         int preferencePaperSelfDelivery = 
-        	PreferenceBL.getPreferenceValueAsIntegerOrZero(entityId, Constants.PREFERENCE_PAPER_SELF_DELIVERY);
+                PreferenceBL.getPreferenceValueAsIntegerOrZero(entityId, Constants.PREFERENCE_PAPER_SELF_DELIVERY);
 
         String preferenceEmailRecipient =
                 PreferenceBL.getPreferenceValue(entityId, Constants.PREFERENCE_EMAIL_INVOICE_BUNDLE);
 
         if(preferenceEmailRecipient == null || preferenceEmailRecipient.trim().isEmpty()) {
-            LOG.error("No recipient is defined to receive the invoice bundle. See preference %s", Constants.PREFERENCE_EMAIL_INVOICE_BUNDLE);
+            logger.error("No recipient is defined to receive the invoice bundle. See preference {}", Constants.PREFERENCE_EMAIL_INVOICE_BUNDLE);
             return;
         }
 
@@ -246,7 +264,7 @@ public class PaperInvoiceBatchBL {
                     Util.getSysProp("base_dir") + "invoices/" + entityId + 
                     "-" + batch.getId() + "-batch.pdf", null);
         } catch (Exception e) {
-            LOG.error("Could no send the email with the paper invoices " +
+            logger.error("Could no send the email with the paper invoices " +
                     "for entity " + entityId, e);
         }
     }
@@ -265,7 +283,7 @@ public class PaperInvoiceBatchBL {
         while (iterator.hasNext()) {
             Integer invoiceId = iterator.next().getId();
             InvoiceBL invoice = new InvoiceBL(invoiceId);
-            LOG.debug("Generating paper invoice %d", invoiceId);
+            logger.debug("Generating paper invoice {}", invoiceId);
             notif.generatePaperInvoiceAsFile(invoice.getEntity());
             invoicesIdsList.add(invoiceId);
 
@@ -290,7 +308,122 @@ public class PaperInvoiceBatchBL {
             return null;
         }
     }
-    
+
+    public BulkIndexFile generateSPCBatchPdf(List<Integer> invoices, Integer entityId, boolean useCompression)
+            throws SQLException, DocumentException, IOException {
+
+        usePdfCompression.set(useCompression);
+        BulkIndexFile bulkIndexFile = new BulkIndexFile();
+        List<IndexFileObject> indexFileObjects = new ArrayList<>();
+        String realPath = Util.getSysProp("base_dir") + "invoices" + File.separator;
+
+        NotificationBL notif = new NotificationBL();
+        List<Integer> invoicesIdsList = new ArrayList<Integer>();
+        List<IndexFileObject> failedIdsList = new ArrayList<IndexFileObject>();
+        int pageOffset = 0;
+        int generated = 0;
+        for (Integer invoiceId : invoices) {
+            logger.debug("Generating paper invoice {}", invoiceId);
+            long start = System.currentTimeMillis();
+            InvoiceDTO invoiceDTO = new InvoiceBL(invoiceId).getEntity();
+            int numberOfPages;
+            try {
+                numberOfPages = new PdfReader(notif.generatePaperInvoiceAsFile(invoiceDTO)).getNumberOfPages();
+                logger.debug("Generating paper invoice {} with pageOffset {} and number of pages {}", invoiceId,
+                        pageOffset, numberOfPages);
+            } catch (Exception e) {
+            logger.debug("Exception in generating individual invoice : {} ", e.getMessage());
+                IndexFileObject indexFileObject = getIndexFileObject(invoiceDTO);
+                indexFileObject.setFileName(StringUtils.EMPTY);
+                indexFileObject.setStartImpression(Integer.valueOf(0));
+                indexFileObject.setEndImpression(Integer.valueOf(0));
+                failedIdsList.add(indexFileObject);
+                continue;
+            }
+            long end = System.currentTimeMillis();
+            logger.debug("Generating InvoiceAsFile took {} ms", (end - start));
+            invoicesIdsList.add(invoiceId);
+            IndexFileObject indexFileObject = getIndexFileObject(invoiceDTO);
+            if (pageOffset < 1) {
+                indexFileObject.setStartImpression(1);
+            } else {
+                indexFileObject.setStartImpression(pageOffset + 1);
+            }
+            indexFileObject.setEndImpression(pageOffset + numberOfPages);
+            pageOffset += numberOfPages;
+            indexFileObjects.add(indexFileObject);
+            // no more than 1000 invoices at a time, please
+            if (generated % 100 == 0) {
+                SessionFactory sf = Context.getBean(Name.HIBERNATE_SESSION);
+                sf.getCurrentSession().clear();
+            }
+            generated++;
+            if (generated >= 1000) {
+                break;
+            }
+        }
+        if (generated > 0) {
+            // merge all these files into a single one
+            String hash = String.valueOf(System.currentTimeMillis());
+            Integer[] invoicesIds = new Integer[invoicesIdsList.size()];
+            invoicesIdsList.toArray(invoicesIds);
+            compileInvoiceFiles(realPath,
+                    entityId + "-" + hash,
+                    entityId,
+                    invoicesIds);
+
+            String originalFileName = entityId + "-" + hash + "-batch.pdf";
+            System.out.println("bulkIndexFile : " + bulkIndexFile);
+            bulkIndexFile.setIndexFileObjects(indexFileObjects);
+            bulkIndexFile.setOriginalFileName(originalFileName);
+            bulkIndexFile.setFailedFileObjects(failedIdsList);
+            return bulkIndexFile;
+        } else {
+        	bulkIndexFile.setFailedFileObjects(failedIdsList);
+           return bulkIndexFile;
+        }
+    }
+
+    private IndexFileObject getIndexFileObject(InvoiceDTO invoice) {
+        String[] metaFieldArray = {SPCConstants.PO_BOX,SPCConstants.SUB_PREMISES,SPCConstants.STREET_NUMBER,
+                SPCConstants.STREET_NAME, SPCConstants.STREET_TYPE,SPCConstants.CITY,SPCConstants.STATE,SPCConstants.POST_CODE};
+        CustomerDTO customer = invoice.getBaseUser().getCustomer();
+        IndexFileObject fileObject = new IndexFileObject();
+        StringBuilder address = new StringBuilder();
+
+        CustomerAccountInfoTypeMetaField[] metaFieldArrayValue = new CustomerAccountInfoTypeMetaField[metaFieldArray.length];
+
+        for (int i =0;i < metaFieldArray.length;i++) {
+            metaFieldArrayValue[i] = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[i], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        }
+
+        for (int i =0;i < metaFieldArrayValue.length;i++) {
+            if (null != metaFieldArrayValue[i]) {
+                address.append((String)metaFieldArrayValue[i].getMetaFieldValue().getValue()).append(SPCConstants.SEPARATOR);
+            }
+        }
+
+        fileObject.setAddress(StringUtils.isNotBlank(address.toString()) ? new StringBuilder(DOUBLE_QUOTES).append(address).append(DOUBLE_QUOTES) : new StringBuilder(StringUtils.EMPTY));
+        String crmAccountNumber = null;
+
+        for (MetaFieldValue customerMetafield : customer.getMetaFields()) {
+            if(null != customerMetafield
+                    && null != customerMetafield.getValue()
+                    && null != customerMetafield.getField()
+                    && customerMetafield.getField().getName().equalsIgnoreCase("crmAccountNumber")) {
+                crmAccountNumber = customerMetafield.getValue().toString();
+                break;
+            }
+        }
+        fileObject.setCrmAccountNumber(StringUtils.isNotBlank(crmAccountNumber) ? crmAccountNumber : StringUtils.EMPTY);
+        fileObject.setUserId(invoice.getUserId());
+        fileObject.setInvoiceId(invoice.getId());
+        fileObject.setInvoiceNumber(invoice.getPublicNumber());
+
+        return fileObject;
+
+    }
+
     public String generateFile(CachedRowSet cachedRowSet, Integer entityId, 
             String realPath) throws SQLException,
             SessionInternalError, DocumentException,
@@ -302,10 +435,10 @@ public class PaperInvoiceBatchBL {
         while (cachedRowSet.next()) {
             Integer invoiceId = new Integer(cachedRowSet.getInt(1));
             InvoiceBL invoice = new InvoiceBL(invoiceId);
-            LOG.debug("Generating paper invoice %d", invoiceId);
+            logger.debug("Generating paper invoice {}", invoiceId);
             notif.generatePaperInvoiceAsFile(invoice.getEntity());
             invoices.add(invoiceId);
-            
+
             // no more than 1000 invoices at a time, please
             generated++;
             if (generated >= 1000) break;
@@ -319,7 +452,7 @@ public class PaperInvoiceBatchBL {
             compileInvoiceFiles(realPath.substring(0, 
                     realPath.indexOf("_FILE_NAME_")) + "/", 
                     entityId + "-" + hash, entityId, invoicesIds);
-    
+
             return entityId + "-" + hash + "-batch.pdf";
         } else {
             // there was no rows in that query ...

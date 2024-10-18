@@ -24,12 +24,12 @@
     <g:form name="confirm-command-form" url="[controller: 'signup', action: 'copyCompany', id: id, isCompanyChild:isCompanyChild, copyProducts:copyProducts, copyPlans:copyPlans]">
         <g:hiddenField name="id" value="${id}"/>
         <!-- confirm dialog content body -->
-        <table style="margin: 3px 0 0 10px">
+        <table>
             <tbody><tr>
                 <td valign="top">
                     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
                 </td>
-                <td class="col2" style="padding-left: 7px">
+                <td class="col2">
 
                     <p id="confirm-dialog-msg">
                         <g:if test="${message}">
@@ -40,31 +40,18 @@
                 </td>
             </tr></tbody>
         </table>
-        <table style="margin: 3px 0 0 10px">
+        <table>
             <tbody>
             <tr>
-                <td class="col1" style="padding-left: 7px">
-                  <g:if test = "${grailsApplication.config.useUniqueLoginName}">
+                <td class="col1">
                     <g:applyLayout name="form/text">
                         <content tag="label">
-                          <g:message code="copy.compnay.system.admin.login.name.label"/>
-                          <span id="mandatory-meta-field">*</span>
-                          <g:textField name="systemAdminLoginName" value=""/><br><br>
-                          <g:message code="copy.company.system.admin.email.label"/>
-                          <span id="mandatory-meta-field">*</span>
-                          <g:textField name="systemAdminEmail" value=""/>
-                        </content>
-                    </g:applyLayout>
-                  </g:if>
-                  <g:else>
-                      <g:applyLayout name="form/text">
-                          <content tag="label">
                             <g:message code="copy.company.admin.email.label"/>
                             <span id="mandatory-meta-field">*</span>
-                          </content>
-                          <g:textField name="adminEmail" value=""/>
-                      </g:applyLayout>
-                  </g:else>
+                        </content>
+                        <g:textField name="adminEmail" value=""/>
+                    </g:applyLayout>
+
                     <div class="checkbox-group">
                         <p id="confirm-dialog-checkbox-products">
                             <g:applyLayout name="form/checkbox">
@@ -136,7 +123,7 @@
                                     $('#error-messages-copy-company ul').html(jsonData.error );
                                     $('#error-messages-copy-company').height("auto").show();
                                     $('.ui-dialog-buttonpane').find(':button').button("enable");
-                                    $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany,#systemAdminLoginName,#systemAdminEmail').prop("disabled", false);
+                                    $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany').prop("disabled", false);
                                 } else {
                                     $('.msg-box.successfully p').html(jsonData.message);
                                     $('.msg-box.successfully').show();
@@ -148,7 +135,7 @@
                                 }
                             }
                         });
-                        $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany,#systemAdminLoginName,#systemAdminEmail').prop("disabled", true);
+                        $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany').prop("disabled", true);
                     },
                     '<g:message code="prompt.no"/>': function() {
                         $(this).dialog('option', "beforeClose", function () {
@@ -161,7 +148,7 @@
                     $('.ui-dialog-buttonpane').find(':button').button("enable");
                     $('#error-messages-copy-company').hide();
                     $('.ui-dialog-buttonset').css('visibility', 'visible');
-                    $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany,#systemAdminLoginName,#systemAdminEmail').prop("disabled", false);
+                    $('#adminEmail,#copyProducts,#copyPlans,#isCompanyChild,#childCompany').prop("disabled", false);
                 }
             });
         }, 100);
@@ -182,8 +169,6 @@
     function show() {
         $('#confirm-dialog').dialog('open');
         $('#adminEmail').val('');
-        $('#systemAdminLoginName').val('');
-        $('#systemAdminEmail').val('');
         $('#copyProducts').prop("checked", false);
         $('#copyPlans').prop("checked", false);
         $('#isCompanyChild').prop("checked", false);

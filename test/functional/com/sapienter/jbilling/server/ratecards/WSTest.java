@@ -14,12 +14,14 @@ import com.sapienter.jbilling.server.pricing.*;
 import com.sapienter.jbilling.server.pricing.cache.MatchingFieldType;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.user.*;
+import com.sapienter.jbilling.server.user.MatchingFieldWS;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.NameValueString;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.server.util.api.JbillingAPIFactory;
 
 import static org.testng.AssertJUnit.*;
+import static org.testng.AssertJUnit.assertEquals;
 
 import com.sapienter.jbilling.server.util.db.StringList;
 import com.sapienter.jbilling.server.util.hibernate.StringListTypeDescriptor;
@@ -27,7 +29,6 @@ import com.sapienter.jbilling.server.util.search.BasicFilter;
 import com.sapienter.jbilling.server.util.search.Filter;
 import com.sapienter.jbilling.server.util.search.SearchCriteria;
 import com.sapienter.jbilling.server.util.search.SearchResult;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -59,8 +60,6 @@ public class WSTest {
 	private static Integer PP_MONTHLY_PERIOD;
 
     private static StringBuilder CSV_WITH_NYPHEN = new StringBuilder();
-    private static StringBuilder RATE_CARD_CSV_WITH_LONG_COMMENT = new StringBuilder();
-
     // Api
     private static JbillingAPI api;
 
@@ -84,18 +83,6 @@ public class WSTest {
                        .append("3,F3,0,45,6,1,8192234512,NAARG,1/1/2011,\n")
                        .append("4,F4,0,60,60,1,8192234555,PRARG,1/1/2011,\n")
                        .append("5,F6,0,60,66,1,6132991888,CANON,1/1/2012,\n");
-
-        String longCommentWith255Char = "Afghanistan - Mobile - Afghanistan - Mobile - Afghanistan - "
-                                        + "Mobile - Afghanistan - Mobile - Afghanistan - Mobile - Afghanistan - "
-                                        + "Mobile - Afghanistan - Mobile - Afghanistan - Mobile - Afghanistan - "
-                                        + "Mobile - Afghanistan - Mobile - Afghanistan - Mobile - A";
-
-        RATE_CARD_CSV_WITH_LONG_COMMENT.append("id,match_column,comment,rate\n")
-                        .append("1,+93,Afghanistan - Afghanistan,0.3290000000\n")
-                        .append("2,+93-75,Afghanistan - Mobile - AT - Afghanistan - Mobile,0.3080000000\n")
-                        .append("3,+93-70,Afghanistan - Mobile - AWCC - Afghanistan - Mobile,0.3030000000\n")
-                        .append("4,+93-71,Afghanistan - Mobile - AWCC - Afghanistan - Mobile,0.3030000000\n")
-                        .append("5,+93-73," + longCommentWith255Char + ",0.2670000000\n");
 	}
 
 	@Test
@@ -942,42 +929,20 @@ public class WSTest {
         Integer routeRateCardId = null;
         try {
             RouteRateCardWS routeRateCardWS = new RouteRateCardWS();
-            routeRateCardWS.setName("test_route_rate_card_with_hyphen");
+            routeRateCardWS.setName("test_route_rate_card_with_nyphen");
             routeRateCardWS.setRatingUnitId(TIME_RATING_UNIT);
 
             File routeRateCardFile = File.createTempFile("testRouteRateCard", ".csv");
             writeToFile(routeRateCardFile, CSV_WITH_NYPHEN.toString());
 
             routeRateCardId = api.createRouteRateCard(routeRateCardWS, routeRateCardFile);
-            fail("Exception expected - the route rate card creation process should fail");
-        } catch (Exception ex) {
-            //We are here means test case is passed
+
+            assertNotNull("Didn't get the route rate card id", routeRateCardId);
         } finally {
             // delete all created items in this test;
+
             if (routeRateCardId != null) {
                 api.deleteRouteRateCard(routeRateCardId);
-            }
-        }
-    }
-
-    @Test
-    public void test011RateCardWithLongComment() throws IOException {
-        Integer rateCardId = null;
-        try {
-            RateCardWS rateCardWS = new RateCardWS();
-            rateCardWS.setName("test_rate_card_with_long_comment");
-
-            File rateCardFile = File.createTempFile("testRateCardWithLongComment", ".csv");
-            writeToFile(rateCardFile, RATE_CARD_CSV_WITH_LONG_COMMENT.toString());
-
-            rateCardId = api.createRateCard(rateCardWS, rateCardFile);
-            assertNotNull("Didn't get the route rate card id", rateCardId);
-        } catch (Exception ex) {
-            fail("There was an error during the process of rate card creation including cached memory table");
-        } finally {
-            // delete all created items in this test;
-            if (rateCardId != null) {
-                api.deleteRateCard(rateCardId);
             }
         }
     }

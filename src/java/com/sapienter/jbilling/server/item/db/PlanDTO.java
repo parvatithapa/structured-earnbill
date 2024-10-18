@@ -26,8 +26,6 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -72,23 +70,23 @@ import com.sapienter.jbilling.server.util.csv.Exportable;
         valueColumnName = "next_id",
         pkColumnValue = "plan",
         allocationSize = 1
-        )
+)
 @NamedQueries({
-    @NamedQuery(name  = "PlanDTO.findByPlanItem",
-            query = "SELECT plan FROM PlanDTO plan WHERE plan.item.id = :plan_item_id"),
+        @NamedQuery(name  = "PlanDTO.findByPlanItem",
+                    query = "SELECT plan FROM PlanDTO plan WHERE plan.item.id = :plan_item_id"),
 
-            @NamedQuery(name  = "CustomerDTO.findCustomersByPlan",
-            query = "SELECT user.customer"
-                    + " FROM OrderLineDTO line "
-                    + " INNER JOIN line.item.plans AS plan "
-                    + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user"
-                    + " WHERE plan.id = :plan_id"
-                    + " AND line.deleted = 0 "
-                    + " AND line.purchaseOrder.orderPeriod.id != 1 " // Constants.ORDER_PERIOD_ONCE
-                    + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 0" //OrderStatusFlag.INVOICE
-                    + " AND line.purchaseOrder.deleted = 0"),
+        @NamedQuery(name  = "CustomerDTO.findCustomersByPlan",
+                    query = "SELECT user.customer"
+                            + " FROM OrderLineDTO line "
+                            + " INNER JOIN line.item.plans AS plan "
+                            + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user"
+                            + " WHERE plan.id = :plan_id"
+                            + " AND line.deleted = 0 "
+                            + " AND line.purchaseOrder.orderPeriod.id != 1 " // Constants.ORDER_PERIOD_ONCE
+                            + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 0" //OrderStatusFlag.INVOICE
+                            + " AND line.purchaseOrder.deleted = 0"),
 
-                    @NamedQuery(name  = "PlanDTO.isSubscribed",
+        @NamedQuery(name  = "PlanDTO.isSubscribed",
                     query = "SELECT line"
                             + " FROM OrderLineDTO line "
                             + " INNER JOIN line.item.plans AS plan "
@@ -103,61 +101,61 @@ import com.sapienter.jbilling.server.util.csv.Exportable;
                             + " AND   line.purchaseOrder.activeSince  <= :pricingDate "
                             + " AND ( line.purchaseOrder.activeUntil > :pricingDate OR line.purchaseOrder.activeUntil = null)"),
 
-                            @NamedQuery(name  = "PlanDTO.findByAffectedItem",
-                            query = "SELECT plan "
-                                    + " FROM PlanDTO plan "
-                                    + " INNER JOIN plan.planItems planItems "
-                                    + " WHERE planItems.item.id = :affected_item_id"),
+        @NamedQuery(name  = "PlanDTO.findByAffectedItem",
+                    query = "SELECT plan "
+                            + " FROM PlanDTO plan "
+                            + " INNER JOIN plan.planItems planItems "
+                            + " WHERE planItems.item.id = :affected_item_id"),
 
-                                    @NamedQuery(name  = "PlanDTO.findAllByEntity",
-                                    query = "SELECT plan "
-                                            + " FROM PlanDTO plan "
-                                            + " INNER JOIN plan.item AS it"
-                                            + " INNER JOIN it.entities AS child"
-                                            + " WHERE child.id= :entity_id"),
-                                            //+ " where plan.item.entity.id = :entity_id"),
+        @NamedQuery(name  = "PlanDTO.findAllByEntity",
+                    query = "SELECT plan "
+                            + " FROM PlanDTO plan "
+                            + " INNER JOIN plan.item AS it"
+                            + " INNER JOIN it.entities AS child"
+                            + " WHERE child.id= :entity_id"),
+                            //+ " where plan.item.entity.id = :entity_id"),
 
-                                            @NamedQuery(name  = "PlanDTO.findAllActiveByEntity",
-                                            query = "SELECT distinct plan"
-                                                    + " FROM PlanDTO plan"
-                                                    + " INNER JOIN plan.item AS it"
-                                                    + " LEFT OUTER JOIN it.entities AS child"
-                                                    + " WHERE ((child.id IN (:entityIds)) OR (it.entity.id = :entityId AND it.global = true)) AND it.deleted = 0"),
+        @NamedQuery(name  = "PlanDTO.findAllActiveByEntity",
+                    query = "SELECT distinct plan"
+                            + " FROM PlanDTO plan"
+                            + " INNER JOIN plan.item AS it"
+                            + " LEFT OUTER JOIN it.entities AS child"
+                            + " WHERE ((child.id IN (:entityIds)) OR (it.entity.id = :entityId AND it.global = true)) AND it.deleted = 0"),
 
-                                                    @NamedQuery(name  = "PlanDTO.findAllActiveAvailable",
-                                                    query = "SELECT distinct plan"
-                                                            + " FROM PlanDTO plan"
-                                                            + " INNER JOIN plan.item AS it"
-                                                            + " LEFT OUTER JOIN it.entities AS child"
-                                                            + " WHERE ((child.id in (:entityIds)) OR (it.entity.id = :entityId AND it.global = true)) AND it.deleted = 0"
-                                                            + " AND (it.activeSince is null OR it.activeSince <= :date ) AND  (it.activeUntil is null OR it.activeUntil >= :date ) "),
+        @NamedQuery(name  = "PlanDTO.findAllActiveAvailable",
+                    query = "SELECT distinct plan"
+                            + " FROM PlanDTO plan"
+                            + " INNER JOIN plan.item AS it"
+                            + " LEFT OUTER JOIN it.entities AS child"
+                            + " WHERE ((child.id in (:entityIds)) OR (it.entity.id = :entityId AND it.global = true)) AND it.deleted = 0"
+                            + " AND (it.activeSince is null OR it.activeSince <= :date ) AND  (it.activeUntil is null OR it.activeUntil >= :date ) "),
 
-                                                            @NamedQuery(name  = "PlanDTO.findByItemId",
-                                                            query = "SELECT plan FROM PlanDTO plan WHERE plan.item.id = :item_id"),
+        @NamedQuery(name  = "PlanDTO.findByItemId",
+                    query = "SELECT plan FROM PlanDTO plan WHERE plan.item.id = :item_id"),
 
-                                                            @NamedQuery(name  = "PlanDTO.isSubscribedFinished",
-                                                            query = "SELECT line.id"
-                                                                    + " FROM OrderLineDTO line "
-                                                                    + " INNER JOIN line.item.plans AS plan "
-                                                                    + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user "
-                                                                    + " WHERE plan.id = :plan_id "
-                                                                    + " AND user.id = :user_id "
-                                                                    +"  AND line.deleted = 0 "
-                                                                    + " AND line.purchaseOrder.orderPeriod.id != 1 " // Constants.ORDER_PERIOD_ONCE
-                                                                    + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 1" //+OrderStatusFlag.FINISHED
-                                                                    + " AND line.purchaseOrder.deleted = 0"),
+        @NamedQuery(name  = "PlanDTO.isSubscribedFinished",
+                    query = "SELECT line.id"
+                            + " FROM OrderLineDTO line "
+                            + " INNER JOIN line.item.plans AS plan "
+                            + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user "
+                            + " WHERE plan.id = :plan_id "
+                            + " AND user.id = :user_id "
+                            +"  AND line.deleted = 0 "
+                            + " AND line.purchaseOrder.orderPeriod.id != 1 " // Constants.ORDER_PERIOD_ONCE
+                            + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 1" //+OrderStatusFlag.FINISHED
+                            + " AND line.purchaseOrder.deleted = 0"),
 
-                                                                    @NamedQuery(name  = "PlanDTO.findUserByFreeTrialPlan",
-                                                                    query = "SELECT user.id"
-                                                                            + " FROM OrderLineDTO line"
-                                                                            + " INNER JOIN line.item.plans AS plan"
-                                                                            + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user"
-                                                                            + " WHERE plan.freeTrial = true"
-                                                                            + " AND line.deleted = 0"
-                                                                            + " AND line.purchaseOrder.activeUntil < :expiry_date"
-                                                                            + " AND line.purchaseOrder.orderPeriod.id != 1" // Constants.ORDER_PERIOD_ONCE
-                                                                            + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 0" //OrderStatusFlag.INVOICE
-                                                                            + " AND line.purchaseOrder.deleted = 0")
+        @NamedQuery(name  = "PlanDTO.findUserByFreeTrialPlan",
+                    query = "SELECT user.id"
+                            + " FROM OrderLineDTO line"
+                            + " INNER JOIN line.item.plans AS plan"
+                            + " INNER JOIN line.purchaseOrder.baseUserByUserId AS user"
+                            + " WHERE plan.freeTrial = true"
+                            + " AND line.deleted = 0"
+                            + " AND line.purchaseOrder.activeUntil < :expiry_date"
+                            + " AND line.purchaseOrder.orderPeriod.id != 1" // Constants.ORDER_PERIOD_ONCE
+                            + " AND line.purchaseOrder.orderStatus.orderStatusFlag = 0" //OrderStatusFlag.INVOICE
+                            + " AND line.purchaseOrder.deleted = 0")
 })
 // todo: cache config
 public class PlanDTO extends CustomizedEntity implements Serializable, Exportable, Auditable {
@@ -170,11 +168,8 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
     private List<PlanItemDTO> planItems = new ArrayList<>();
     private List<MetaFieldValue> metaFields = new LinkedList<>();
     private Set<UsagePoolDTO> usagePools = new HashSet<>(0);
-
+    
     private boolean freeTrial;
-    private Integer numberOfFreeCalls;
-    private Integer freeTrialPeriodValue;
-    private FreeTrialPeriod freeTrialPeriodUnit;
 
     public PlanDTO() {
     }
@@ -185,11 +180,6 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         this.period = period;
         this.description = ws.getDescription();
         this.freeTrial = ws.isFreeTrial();
-        if(isFreeTrial()) {
-             this.freeTrialPeriodValue = ws.getFreeTrialPeriodValue();
-             this.freeTrialPeriodUnit = FreeTrialPeriod.valueOf(ws.getFreeTrialPeriodUnit());
-        }
-//        this.numberOfFreeCalls = ws.getNumberOfFreeCalls();
         this.editable = ws.getEditable();
         this.planItems = planItems;
         this.usagePools = usagePools;
@@ -255,7 +245,7 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         this.description = description;
     }
 
-    @Column(name = "editable", nullable = false)
+	@Column(name = "editable", nullable = false)
     public int getEditable() {
         return editable;
     }
@@ -269,34 +259,6 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         this.freeTrial = freeTrial;
     }
 
-    @Column(name = "free_calls_limit")
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
-    }
-
-    @Column(name = "free_trial_period_value")
-    public Integer getFreeTrialPeriodValue() {
-        return freeTrialPeriodValue;
-    }
-
-    public void setFreeTrialPeriodValue(Integer freeTrialPeriodValue) {
-        this.freeTrialPeriodValue = freeTrialPeriodValue;
-    }
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "free_trial_period_unit")
-    public FreeTrialPeriod getFreeTrialPeriodUnit() {
-        return freeTrialPeriodUnit;
-    }
-
-    public void setFreeTrialPeriodUnit(FreeTrialPeriod freeTrialPeriodUnit) {
-        this.freeTrialPeriodUnit = freeTrialPeriodUnit;
-    }
-
     public void setEditable(int editable) {
         this.editable = editable;
     }
@@ -308,9 +270,8 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
     }
 
     public void setPlanItems(List<PlanItemDTO> planItems) {
-        for (PlanItemDTO planItem : planItems) {
+        for (PlanItemDTO planItem : planItems)
             planItem.setPlan(this);
-        }
 
         this.planItems = planItems;
     }
@@ -320,21 +281,19 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         this.planItems.add(planItem);
     }
 
-    @Override
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
     @JoinTable(
             name = "plan_meta_field_map",
             joinColumns = @JoinColumn(name = "plan_id"),
             inverseJoinColumns = @JoinColumn(name = "meta_field_value_id")
-            )
+    )
 
     @Sort(type = SortType.COMPARATOR, comparator = MetaFieldHelper.MetaFieldValuesOrderComparator.class)
     public List<MetaFieldValue> getMetaFields() {
         return metaFields;
     }
 
-    @Override
     @Transient
     public void setMetaFields(List<MetaFieldValue> fields) {
         this.metaFields = fields;
@@ -342,9 +301,9 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "plan_usage_pool_map",
-    joinColumns = {@JoinColumn(name = "plan_id", updatable = false)},
-    inverseJoinColumns = {@JoinColumn(name = "usage_pool_id", updatable = false)}
-            )
+            joinColumns = {@JoinColumn(name = "plan_id", updatable = false)},
+            inverseJoinColumns = {@JoinColumn(name = "usage_pool_id", updatable = false)}
+    )
     public Set<UsagePoolDTO> getUsagePools() {
         return usagePools;
     }
@@ -353,7 +312,6 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         this.usagePools = usagePools;
     }
 
-    @Override
     @Transient
     public EntityType[] getCustomizedEntityType() {
         return new EntityType[]{EntityType.PLAN};
@@ -370,33 +328,16 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
         PlanDTO planDTO = (PlanDTO) o;
 
-        if (description != null ? !description.equals(planDTO.description) : planDTO.description != null) {
-            return false;
-        }
-        if (editable != planDTO.editable) {
-            return false;
-        }
-        if (freeTrial != planDTO.freeTrial) {
-            return false;
-        }
-        if (numberOfFreeCalls != planDTO.numberOfFreeCalls) {
-            return false;
-        }
-        if (id != null ? !id.equals(planDTO.id) : planDTO.id != null) {
-            return false;
-        }
-        if (item != null ? !item.equals(planDTO.item) : planDTO.item != null) {
-            return false;
-        }
+        if (description != null ? !description.equals(planDTO.description) : planDTO.description != null) return false;
+        if (editable != planDTO.editable) return false;
+        if (freeTrial != planDTO.freeTrial) return false;
+        if (id != null ? !id.equals(planDTO.id) : planDTO.id != null) return false;
+        if (item != null ? !item.equals(planDTO.item) : planDTO.item != null) return false;
 
         return true;
     }
@@ -418,24 +359,19 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
                 + ", description='" + description + '\''
                 + ", editable=" + editable
                 + ", freeTrial=" + freeTrial
-                + ", freeTrialPeriodValue=" + freeTrialPeriodValue
-                + ", freeTrialPeriodUnit=" + freeTrialPeriodUnit
-                + ", numberOfFreeCalls=" + numberOfFreeCalls
                 + ", planItems=" + planItems
                 + '}';
     }
 
-    @Override
     public String getAuditKey(Serializable id) {
         StringBuilder key = new StringBuilder();
         key.append(getItem().getEntity().getId())
-        .append("-")
-        .append(id);
+                .append("-")
+                .append(id);
 
         return key.toString();
     }
 
-    @Override
     @Transient
     public String[] getFieldNames() {
         return new String[]{
@@ -461,13 +397,12 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
         };
     }
 
-    @Override
     @Transient
     public Object[][] getFieldValues() {
 
         List<Object[]> values = new ArrayList<>();
         Integer languageId = getItem().getEntity().getLanguage().getId();
-        // Now prices for company exist for different companies,
+        // Now prices for company exist for different companies, 
         // have to tell for which company you want to get price for
         // current setting 'null', gives global price
         Integer entityId = this.period.getCompany().getId();
@@ -482,10 +417,9 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
                         (currentPrice != null ? currentPrice.getCurrency().getDescription(languageId) : null),
                         (currentPrice != null ? currentPrice.getRate() : null),
                         (item != null ? item.getId() : null),
-                        freeTrial,
-                        numberOfFreeCalls
+                        freeTrial
                 }
-                );
+        );
 
         // indented row for each invoice line  planItem.getModels().get(new Date()).getRate(),
         for (PlanItemDTO planItem : planItems) {
@@ -527,7 +461,7 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
                             (priceModel != null ? priceModel.getCurrency().getDescription(languageId) : null),
                             (priceModel != null ? priceModel.getAttributes() : null)
                     }
-                    );
+            );
         }
 
         return values.toArray(new Object[values.size()][]);
@@ -537,17 +471,5 @@ public class PlanDTO extends CustomizedEntity implements Serializable, Exportabl
     public boolean doesPlanHaveItem(Integer itemId) {
         return getPlanItems().stream().anyMatch(planItem -> planItem.getItem().getId() == itemId);
     }
-
-    @Transient
-    public boolean doesPlanHaveAssetEnabledItem() {
-        return getPlanItems().stream().anyMatch(planItem -> planItem.getItem().isAssetEnabledItem());
-    }
-
-    @Transient
-    public boolean isPlanItemAssetEnabled(Integer itemId) {
-        return getPlanItems().stream()
-                .anyMatch(planItem -> planItem.getItem().getId() == itemId && planItem.getItem().isAssetEnabledItem());
-    }
-
 }
 

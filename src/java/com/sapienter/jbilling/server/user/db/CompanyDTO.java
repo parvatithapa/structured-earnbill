@@ -31,7 +31,6 @@ import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.db.CustomizedEntity;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.report.db.ReportDTO;
-
 import org.hibernate.annotations.*;
 
 import com.sapienter.jbilling.server.invoice.db.InvoiceDeliveryMethodDTO;
@@ -45,7 +44,6 @@ import com.sapienter.jbilling.server.process.db.BillingProcessDTO;
 import com.sapienter.jbilling.server.util.audit.db.EventLogDTO;
 import com.sapienter.jbilling.server.util.db.CurrencyDTO;
 import com.sapienter.jbilling.server.util.db.LanguageDTO;
-
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.OrderBy;
 
@@ -95,8 +93,6 @@ public class CompanyDTO extends CustomizedEntity {
     private Set<CompanyInfoTypeMetaField> companyInfoTypeMetaFields = new HashSet<CompanyInfoTypeMetaField>();
     private Set<CompanyInformationTypeDTO> companyInformationTypes = new HashSet<CompanyInformationTypeDTO>();
     private Map<Integer, List<MetaFieldValue>> citMetaFieldMap= new HashMap<Integer, List<MetaFieldValue>>(0);
-    private Integer numberOfFreeCalls;
-    private String domainName;
 
 
     public CompanyDTO() {
@@ -188,15 +184,6 @@ public class CompanyDTO extends CustomizedEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    @Column(name = "free_calls_limit")
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
     }
 
     @Column(name = "create_datetime", nullable = false, length = 29)
@@ -358,7 +345,7 @@ public class CompanyDTO extends CustomizedEntity {
     public void setItemTypes(Set<ItemTypeDTO> itemTypes) {
         this.itemTypes = itemTypes;
     }
-
+    
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "entity")
     public Set<BillingProcessConfigurationDTO> getBillingProcessConfigurations() {
         return this.billingProcessConfigurations;
@@ -601,14 +588,6 @@ public class CompanyDTO extends CustomizedEntity {
             }
         }
         return null;
-    }
-    @Column(name = "domain_name")
-    public String getDomainName() {
-        return domainName;
-    }
-
-    public void setDomainName(String domainName) {
-        this.domainName = domainName;
     }
 
     @Override

@@ -54,7 +54,7 @@ public class QuantityResolutionContext {
                     .setScale(0, subsequentRoundingMode)
                     .multiply(subsequentIncrement));
         }
-        int scale = callDuration.compareTo(initialIncrement) <= 0 ? Constants.BIGDECIMAL_QUANTITY_SCALE : 1;
+        int scale = callDuration.compareTo(initialIncrement) <= 0 ? Constants.BIGDECIMAL_QUANTITY_SCALE : 2;
         quantity = quantity.divide(BigDecimal.valueOf(MINUTE_IN_SECONDS), scale, Constants.BIGDECIMAL_ROUND);
         logger.debug("Resolved quantity is {} after applying rule {}", quantity, this);
         return quantity;

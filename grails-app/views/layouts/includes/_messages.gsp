@@ -54,15 +54,15 @@
         </div>
     </g:if>
 
-    <g:if test='${flash.message || flash.twoFAMessage}'>
+    <g:if test='${flash.message}'>
         <script type="text/javascript">
             canReloadMessages = false;
         </script>
 
         <div id="flash-msg" class="msg-box successfully">
-            <strong><g:message code="${flash.message ? 'flash.success.title' : 'flash.2FA.success.title'}"/></strong>
+            <strong><g:message code="flash.success.title"/></strong>
             <a class="msg-box-close" onclick="$(this).closest('#flash-msg').hide();">&#xe020;</a>
-            <p><g:message code="${flash.message ? flash.message : flash.twoFAMessage}" args="${flash.args}"/></p>
+            <p><g:message code="${flash.message}" args="${flash.args}"/></p>
         </div>
     </g:if>
 
@@ -106,25 +106,25 @@
         </div>
     </g:if>
 
-    <g:if test='${flash.error || flash.twoFAError}'>
+    <g:if test='${flash.error}'>
         <script type="text/javascript">
             canReloadMessages = false;
         </script>
 
         <div id="flash-error" class="msg-box error">
-            <strong><g:message code="${flash.error ? 'flash.error.title' : 'flash.2FA.error.title'}"/></strong>
+            <strong><g:message code="flash.error.title"/></strong>
             <a class="msg-box-close"  onclick="$(this).closest('#flash-error').hide();">&#xe020;</a>
-            <g:if test='${flash.errorDetails || flash.twoFAErrorDetails}'>
-                <p><g:message code="${flash.error ? flash.error : flash.twoFAError}" args="${flash.args}"/></p>
+            <g:if test='${flash.errorDetails}'>
+                <p><g:message code="${flash.error}" args="${flash.args}"/></p>
                 <ul>
-                    <g:each var="message" in="${flash.error ? flash.errorDetails : flash.twoFAErrorDetails}">
+                    <g:each var="message" in="${flash.errorDetails}">
                         <li>${message}</li>
                     </g:each>
                 </ul>
             </g:if>
             <g:else>
                 <ul>
-                    <li><g:message code="${flash.error ? flash.error : flash.twoFAError}" args="${flash.args}"/></li>
+                    <li><g:message code="${flash.error}" args="${flash.args}"/></li>
                 </ul>
             </g:else>
         </div>
@@ -165,8 +165,6 @@
     <g:set var="warn" value="" scope="flash"/>
     <g:set var="error" value="" scope="flash"/>
     <g:set var="errorMessages" value="" scope="flash"/>
-    <g:set var="twoFAMessage" value="" scope="flash"/>
-    <g:set var="twoFAError" value="" scope="flash"/>
 </div>
 
 

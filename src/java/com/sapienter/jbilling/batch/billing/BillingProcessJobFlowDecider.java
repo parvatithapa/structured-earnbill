@@ -18,7 +18,7 @@ public class BillingProcessJobFlowDecider implements JobExecutionDecider {
 
     @Override
     public FlowExecutionStatus decide (JobExecution jobExecution, StepExecution stepExecution) {
-
+                
         return (jdbcService.countFailedUsers(billingProcessId) == 0) ? FlowExecutionStatus.COMPLETED
                 : FlowExecutionStatus.FAILED;
     }

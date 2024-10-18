@@ -1,5 +1,6 @@
 package com.sapienter.jbilling.server.item.batch;
 
+import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.AssetBL;
@@ -16,8 +17,10 @@ import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
 import com.sapienter.jbilling.server.user.db.CompanyDTO;
+import com.sapienter.jbilling.server.util.PreferenceBL;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.batch.core.ExitStatus;
@@ -33,6 +36,10 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Pattern;
+
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.ADENNET_PIN_PATTERN;
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.ADENNET_PUK_PATTERN;
 
 /**
  * The ItemProcessor adds all the relationships to the AssetDTO objects and does validation.
@@ -45,31 +52,64 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
 
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(AssetProcessor.class));
 
-    /** Company that will be assigned to the asset */
-    private CompanyDTO          entity;
-    /** Item that will be assigned to the asset */
-    private ItemDTO             item;
-    /** ItemType which allows asset management linked to the item */
-    private ItemTypeDTO         itemType;
-    /** Default status that will assigned to the asset */
-    private AssetStatusDTO      defaultStatus;
+    /**
+     * Company that will be assigned to the asset
+     */
+    private CompanyDTO entity;
+    /**
+     * Item that will be assigned to the asset
+     */
+    private ItemDTO item;
+    /**
+     * ItemType which allows asset management linked to the item
+     */
+    private ItemTypeDTO itemType;
+    /**
+     * Default status that will assigned to the asset
+     */
+    private AssetStatusDTO defaultStatus;
 
-    private AssetBL             assetBL;
-    /** id of Item that will be assigned to the asset */
-    private int                 itemId;
-    /**JobExecution's Execution Context */
-    private ExecutionContext    executionContext;
+    private AssetBL assetBL;
+    /**
+     * id of Item that will be assigned to the asset
+     */
+    private int itemId;
+    /**
+     * JobExecution's Execution Context
+     */
+    private ExecutionContext executionContext;
 
-    /** The column names are in the first line of the line */
+    /**
+     * The column names are in the first line of the line
+     */
     private List<String> columnNames = null;
-    /** MetaField name to MetaField map */
+    /**
+     * MetaField name to MetaField map
+     */
     private Map<String, MetaField> nameMetaFieldMap;
     private String identifierColumnName;
     private String notesColumnName;
     private String globalColumnName;
     private String entitiesColumnName;
-    /** error file writer */
+
+
+    private static final String COL_SUBSCRIBER_NUMBER = "Subscriber Number";
+    private static final String COL_IMSI = "IMSI";
+    private static final String COL_TEMP_SUSPENDED = "Temporary Suspended";
+    private static final String COL_PIN_1 = "PIN1";
+    private static final String COL_PIN_2 = "PIN2";
+    private static final String COL_PUK_1 = "PUK1";
+    private static final String COL_PUK_2 = "PUK2";
+    private static final String COL_ICCID = "ICCID";
+
+    private static final List<String> ADENNET_CUSTOM_COLUMNS = Arrays.asList(COL_SUBSCRIBER_NUMBER, COL_IMSI, COL_TEMP_SUSPENDED, COL_PIN_1, COL_PIN_2, COL_PUK_1, COL_PUK_2, COL_ICCID);
+
+
+    /**
+     * error file writer
+     */
     private ResourceAwareItemWriterItemStream errorWriter;
+
     /**
      * Clear all references to linked objects and get their IDs from the JobParameters
      *
@@ -78,18 +118,18 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
     @Override
     public void beforeStep(StepExecution stepExecution) {
         JobParameters jobParameters = stepExecution.getJobParameters();
-        executionContext    = stepExecution.getJobExecution().getExecutionContext();
-        entity              = new CompanyDTO(jobParameters.getLong(AssetImportConstants.JOB_PARM_ENTITY_ID).intValue());
-        itemId              = jobParameters.getLong(AssetImportConstants.JOB_PARM_ITEM_ID).intValue();
-        identifierColumnName= jobParameters.getString(AssetImportConstants.JOB_PARM_ID_COLUMN);
-        notesColumnName     = jobParameters.getString(AssetImportConstants.JOB_PARM_NOTES_COLUMN);
-        globalColumnName 	= jobParameters.getString(AssetImportConstants.JOB_PARM_GLOBAL);
-        entitiesColumnName	= jobParameters.getString(AssetImportConstants.JOB_PARM_ENTITIES);
-        itemType            = null;
-        defaultStatus       = null;
-        columnNames         = null;
-        nameMetaFieldMap    = new HashMap<String, MetaField>();
-        assetBL             = new AssetBL();
+        executionContext = stepExecution.getJobExecution().getExecutionContext();
+        entity = new CompanyDTO(jobParameters.getLong(AssetImportConstants.JOB_PARM_ENTITY_ID).intValue());
+        itemId = jobParameters.getLong(AssetImportConstants.JOB_PARM_ITEM_ID).intValue();
+        identifierColumnName = jobParameters.getString(AssetImportConstants.JOB_PARM_ID_COLUMN);
+        notesColumnName = jobParameters.getString(AssetImportConstants.JOB_PARM_NOTES_COLUMN);
+        globalColumnName = jobParameters.getString(AssetImportConstants.JOB_PARM_GLOBAL);
+        entitiesColumnName = jobParameters.getString(AssetImportConstants.JOB_PARM_ENTITIES);
+        itemType = null;
+        defaultStatus = null;
+        columnNames = null;
+        nameMetaFieldMap = new HashMap<String, MetaField>();
+        assetBL = new AssetBL();
         LOG.debug("beforeStep: entityId %1$d itemId %2$d identifierColumnName %3$s notesColumnName %4$s", entity.getId(), itemId, identifierColumnName, notesColumnName);
     }
 
@@ -115,39 +155,41 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
         FieldSet fieldSet = wrappedDto.getObject();
 
         //check if this is the first line, then we must reader column names
-        if(columnNames == null) {
+        if (columnNames == null) {
             StringBuilder ignoredColumns = new StringBuilder();
 
             //check that the columns names map to meta fields and create a
             //map between them
             columnNames = new ArrayList<String>(fieldSet.getFieldCount());
-            for(int i=0; i<fieldSet.getFieldCount(); i++) {
+            for (int i = 0; i < fieldSet.getFieldCount(); i++) {
                 String columnName = fieldSet.readString(i);
                 columnNames.add(columnName);
                 MetaField metaField = itemType.findMetaField(columnName);
-                if(metaField != null) {
+                if (metaField != null) {
                     nameMetaFieldMap.put(columnName, metaField);
-                } else if(!(identifierColumnName.equals(columnName) || notesColumnName.equals(columnName)
+                } else if (!(notesColumnName.equals(columnName)
                         || columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF)
-                        || columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_COL_PREF) || globalColumnName.equals(columnName) || entitiesColumnName.equals(columnName) )) {
-                    ignoredColumns.append(" '").append(columnName).append('\'');
+                        || columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_COL_PREF) || globalColumnName.equals(columnName) || entitiesColumnName.equals(columnName))) {
+                    if (!ADENNET_CUSTOM_COLUMNS.contains(columnName)) {
+                        ignoredColumns.append(" '").append(columnName).append('\'');
+                    }
                 }
             }
 
             //if we have unknown columns, write a message to the error file
-            if(ignoredColumns.length() > 0) {
-                writeLineToErrorFile(wrappedDto, "Ignored columns: "+ignoredColumns);
+            if (ignoredColumns.length() > 0) {
+                writeLineToErrorFile(wrappedDto, "Ignored columns: " + ignoredColumns);
             }
             return null;
         }
 
         //update the total line read count
         int cnt = executionContext.getInt(AssetImportConstants.JOB_PARM_TOTAL_LINE_COUNT, 0);
-        executionContext.putInt(AssetImportConstants.JOB_PARM_TOTAL_LINE_COUNT, cnt+1);
+        executionContext.putInt(AssetImportConstants.JOB_PARM_TOTAL_LINE_COUNT, cnt + 1);
 
         //check if we have the right amount of tokens
-        if(fieldSet.getFieldCount() != columnNames.size()) {
-            writeLineToErrorFile(wrappedDto, "Expected ["+columnNames.size()+"] tokens found ["+fieldSet.getFieldCount());
+        if (fieldSet.getFieldCount() != columnNames.size()) {
+            writeLineToErrorFile(wrappedDto, "Expected [" + columnNames.size() + "] tokens found [" + fieldSet.getFieldCount());
             return null;
         }
 
@@ -164,96 +206,157 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
 
         //List of contained assets to link to the Asset Group
         List<AssetDTO> containedAssetList = new ArrayList<AssetDTO>();
-
+        Boolean validationPreference = PreferenceBL.getPreferenceValueAsBoolean(dto.getEntityId(), CommonConstants.PREFERENCE_APPLY_CUSTOMER_USER_NAME_VALIDATION);
         //set the values based on the columns names in the first line
-        for(int i=0; i <columnNames.size(); i++) {
+        for (int i = 0; i < columnNames.size(); i++) {
             String columnName = columnNames.get(i);
             String columnValue = fieldSet.readString(i).trim().replaceAll("\",\"", ",");
-            
-            if(identifierColumnName.equals(columnName)) {
-                dto.setIdentifier(columnValue);
-            } else if(notesColumnName.equals(columnName)) {
+
+            if (notesColumnName.equals(columnName)) {
                 dto.setNotes(columnValue);
-            } else if(globalColumnName.equals(columnName)) {
-            	if(StringUtils.equalsIgnoreCase("TRUE", columnValue)) {
-            		dto.setGlobal(Boolean.TRUE);
-            	} else {
-            		dto.setGlobal(Boolean.FALSE);
-            	}
+            } else if (globalColumnName.equals(columnName)) {
+                if (StringUtils.equalsIgnoreCase("TRUE", columnValue)) {
+                    dto.setGlobal(Boolean.TRUE);
+                } else {
+                    dto.setGlobal(Boolean.FALSE);
+                }
             } else if (entitiesColumnName.equals(columnName) && Boolean.FALSE.equals(dto.isGlobal())) {
-            	// Entities is seprated by pipe "|" .
-            	// Ex company ids 10 and 11 can be saved as '10|11'
-            	List<Integer> entityList = new ArrayList<Integer>();
-            	CompanyDAS das = new CompanyDAS();
-            	if(StringUtils.isNotEmpty(columnValue)) {
-		            for(String s : StringUtils.trim(columnValue).split("\\|")) {
-		            	try {
-		            		if (null != das.findNow(Integer.parseInt(s))) {
-		            			entityList.add(Integer.parseInt(s));
-		            		} else {
-		            			writeLineToErrorFile(wrappedDto, "The entity with  Id " + s +" does not exist");
-		            		}
-		            	} catch (NumberFormatException e ) {
-		            		writeLineToErrorFile(wrappedDto, "The entity with  Id " + s +" does not exist");
-		            	}
-		            }
-	            	dto.setEntities(AssetBL.convertToCompanyDTO(entityList));
-            	} else {
-            		entityList.add(entity.getId());
-            		dto.setEntities(AssetBL.convertToCompanyDTO(entityList));
-            	}
-            	
-            }
-            
-            
-            else if(columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_COL_PREF) || columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF)) {
-                if(columnValue.trim().length() == 0) continue;
+                // Entities is seprated by pipe "|" .
+                // Ex company ids 10 and 11 can be saved as '10|11'
+                List<Integer> entityList = new ArrayList<Integer>();
+                CompanyDAS das = new CompanyDAS();
+                if (StringUtils.isNotEmpty(columnValue)) {
+                    for (String s : StringUtils.trim(columnValue).split("\\|")) {
+                        try {
+                            if (null != das.findNow(Integer.parseInt(s))) {
+                                entityList.add(Integer.parseInt(s));
+                            } else {
+                                writeLineToErrorFile(wrappedDto, "The entity with  Id " + s + " does not exist");
+                            }
+                        } catch (NumberFormatException e) {
+                            writeLineToErrorFile(wrappedDto, "The entity with  Id " + s + " does not exist");
+                        }
+                    }
+                    dto.setEntities(AssetBL.convertToCompanyDTO(entityList));
+                } else {
+                    entityList.add(entity.getId());
+                    dto.setEntities(AssetBL.convertToCompanyDTO(entityList));
+                }
+
+            } else if (columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_COL_PREF) || columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF)) {
+                if (columnValue.trim().length() == 0) continue;
 
                 //if this is a product group, load the contained assets
                 String idx = columnName.startsWith(AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF) ? columnName.substring(AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF.length()) :
                         columnName.substring(AssetImportConstants.CONTAINED_ASSET_COL_PREF.length());
 
-                String assetIdKey = AssetImportConstants.CONTAINED_ASSET_COL_PREF+idx;
-                String assetItemKey = AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF+idx;
+                String assetIdKey = AssetImportConstants.CONTAINED_ASSET_COL_PREF + idx;
+                String assetItemKey = AssetImportConstants.CONTAINED_ASSET_ITEM_COL_PREF + idx;
 
                 //check to see if we already processed this asset idx
-                if(containedAssets.containsKey(assetIdKey) && containedAssets.containsKey(assetItemKey)) {
-                    writeLineToErrorFile(wrappedDto, "Contained asset '"+assetIdKey+"' already processed with value '"+containedAssets.get(assetIdKey)+"'");
+                if (containedAssets.containsKey(assetIdKey) && containedAssets.containsKey(assetItemKey)) {
+                    writeLineToErrorFile(wrappedDto, "Contained asset '" + assetIdKey + "' already processed with value '" + containedAssets.get(assetIdKey) + "'");
                     return null;
                 }
 
                 //add the column name and value to the map of contained assets
                 containedAssets.put(columnName, columnValue);
 
-                if(containedAssets.containsKey(assetIdKey) && containedAssets.containsKey(assetItemKey)) {
-                    AssetDTO containedAsset = assetBL.getForItemAndIdentifier(containedAssets.get(assetIdKey), Integer.parseInt(containedAssets.get(assetItemKey)) );
+                if (containedAssets.containsKey(assetIdKey) && containedAssets.containsKey(assetItemKey)) {
+                    AssetDTO containedAsset = assetBL.getForItemAndIdentifier(containedAssets.get(assetIdKey), Integer.parseInt(containedAssets.get(assetItemKey)));
 
                     //if the asset doesn't exist
-                    if(containedAsset == null) {
-                        writeLineToErrorFile(wrappedDto, "Unable to find contained asset with id '"+containedAssets.get(assetIdKey)+"'");
+                    if (containedAsset == null) {
+                        writeLineToErrorFile(wrappedDto, "Unable to find contained asset with id '" + containedAssets.get(assetIdKey) + "'");
                         return null;
                     }
 
                     //add the asset to the list of contained assets. will be added to the group later.
                     containedAssetList.add(containedAsset);
                 }
+            } else if (ADENNET_CUSTOM_COLUMNS.contains(columnName)) {
+                if(StringUtils.isNotEmpty(columnValue)){
+                    try {
+                        switch (columnName) {
+                            case COL_SUBSCRIBER_NUMBER:
+                                if (validationPreference) {
+                                    if (Pattern.matches(com.sapienter.jbilling.common.Constants.ADENNET_SUBSCRIBER_NUMBER_PATTERN, columnValue)) {
+                                        dto.setSubscriberNumber(columnValue);
+                                    } else {
+                                        writeLineToErrorFile(wrappedDto, String.format("Validation failed for '%s' with value '%s'", columnName, columnValue));
+                                        return null;
+                                    }
+                                } else {
+                                    dto.setSubscriberNumber(columnValue);
+                                }
+                                break;
+                            case COL_IMSI:
+                                if (validationPreference) {
+                                    if (Pattern.matches(com.sapienter.jbilling.common.Constants.ADENNET_IMSI_PATTERN, columnValue)) {
+                                        dto.setImsi(columnValue);
+                                    } else {
+                                        writeLineToErrorFile(wrappedDto, String.format("Validation failed for '%s' with value '%s'", columnName, columnValue));
+                                        return null;
+                                    }
+                                } else {
+                                    dto.setImsi(columnValue);
+                                }
+                                break;
+                            case COL_TEMP_SUSPENDED:
+                                dto.setSuspended(Boolean.getBoolean(columnValue));
+                                break;
+                            case COL_PIN_1:
+                                validateNumber(COL_PIN_1, 4, columnValue, ADENNET_PIN_PATTERN);
+                                dto.setPin1(columnValue);
+                                break;
+                            case COL_PIN_2:
+                                validateNumber(COL_PIN_2, 4, columnValue, ADENNET_PIN_PATTERN);
+                                dto.setPin2(columnValue);
+                                break;
+                            case COL_PUK_1:
+                                validateNumber(COL_PUK_1, 8, columnValue, ADENNET_PUK_PATTERN);
+                                dto.setPuk1(columnValue);
+                                break;
+                            case COL_PUK_2:
+                                validateNumber(COL_PUK_2, 8, columnValue, ADENNET_PUK_PATTERN);
+                                dto.setPuk2(columnValue);
+                                break;
+                            case COL_ICCID:
+                                if (validationPreference) {
+                                    if (Pattern.matches(com.sapienter.jbilling.common.Constants.ADENNET_USERNAME_PATTERN, columnValue)) {
+                                        dto.setIdentifier(columnValue);
+                                    } else {
+                                        writeLineToErrorFile(wrappedDto, String.format("Validation failed for '%s' with value '%s'", columnName, columnValue));
+                                        return null;
+                                    }
+                                } else {
+                                    dto.setIdentifier(columnValue);
+                                }
+                                break;
+                        }
+                    } catch (NumberFormatException numberFormatException) {
+                        writeLineToErrorFile(wrappedDto, String.format("Validation failed for '%s' with value '%s, error=%s'", columnName , columnValue, numberFormatException.getMessage()));
+                        return null;
+                    }
+                }
+
             } else {
                 MetaField metaField = nameMetaFieldMap.get(columnName);
 
-                if(metaField != null) {
+                if (metaField != null) {
                     MetaFieldValue value = metaField.createValue();
 
                     //if no value was supplied get the default value
-                    if(columnValue.length() == 0) {
-                        if(metaField.getDefaultValue() != null) {
+                    if (columnValue.length() == 0) {
+                        if (metaField.getDefaultValue() != null) {
                             value.setValue(metaField.getDefaultValue().getValue());
                         }
                     } else {
                         try {
                             value.setValue(getMetaFieldValueFromString(metaField.getDataType(), columnValue));
                         } catch (Exception e) {
-                            LOG.warn("Error converting column '"+columnName+"' with value '"+columnValue+"'", e);
-                            writeLineToErrorFile(wrappedDto, "Error converting column '"+columnName+"' with value '"+columnValue+"'");
+                            LOG.warn("Error converting column '" + columnName + "' with value '" + columnValue + "'", e);
+                            writeLineToErrorFile(wrappedDto, "Error converting column '" + columnName + "' with value '" + columnValue + "'");
                             return null;
                         }
                     }
@@ -266,23 +369,23 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
 
         //VALIDATION
         //validate the meta fields
-        for(MetaField metaField: itemType.getAssetMetaFields()) {
+        for (MetaField metaField : itemType.getAssetMetaFields()) {
             try {
                 MetaFieldBL.validateMetaField(dto.getEntity().getLanguageId(), metaField, dto.getMetaField(metaField.getName()), null);
             } catch (SessionInternalError e) {
-                writeLineToErrorFile(wrappedDto, "Validation failed for meta field '"+metaField.getName()+"' with value '"+dto.getMetaField(metaField.getName())+"'");
+                writeLineToErrorFile(wrappedDto, "Validation failed for meta field '" + metaField.getName() + "' with value '" + dto.getMetaField(metaField.getName()) + "'");
                 return null;
             }
         }
 
         //check if the product allows asset management
-        if(dto.getItem().getAssetManagementEnabled() == 0) {
+        if (dto.getItem().getAssetManagementEnabled() == 0) {
             writeLineToErrorFile(wrappedDto, "The product does not allow asset management");
             return null;
         }
 
         //identifier must be between 1 and 200 characters
-        if(dto.getIdentifier() == null || dto.getIdentifier().length() < 1 || dto.getIdentifier().length() > 200) {
+        if (dto.getIdentifier() == null || dto.getIdentifier().length() < 1 || dto.getIdentifier().length() > 200) {
             writeLineToErrorFile(wrappedDto, "The identifier must be between 1 and 200 characters long");
             return null;
         }
@@ -294,6 +397,27 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
         } catch (SessionInternalError e) {
             writeLineToErrorFile(wrappedDto, "An asset with the identifier already exists");
             return null;
+        }
+
+        //imsi must be unique
+        String checkIMSINumberExists = assetBL.checkIMSINumberExists(dto.getImsi());
+        if (checkIMSINumberExists != null ) {
+            writeLineToErrorFile(wrappedDto, String.format("IMSI Number %s is associated with %s", dto.getImsi(), checkIMSINumberExists));
+            return null;
+        }
+
+        if (StringUtils.isNotEmpty(dto.getSubscriberNumber())) {
+            if (validationPreference && !Pattern.matches(com.sapienter.jbilling.common.Constants.ADENNET_SUBSCRIBER_NUMBER_PATTERN, dto.getSubscriberNumber())) {
+                writeLineToErrorFile(wrappedDto, "Subscriber number should be 9 digit and must start with 79.");
+                return null;
+            }
+            // check for subscriber number duplication
+            String subscriberNumberExists = assetBL.checkSubscriberNumberExists(dto.getSubscriberNumber());
+
+            if (subscriberNumberExists != null) {
+                writeLineToErrorFile(wrappedDto, String.format("Subscriber Number %s is associated with %s", dto.getSubscriberNumber(), subscriberNumberExists));
+                return null;
+            }
         }
 
         //validate the members of this asset group is not already linked to another group or linked to an order
@@ -315,7 +439,7 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
      */
     private void incrementErrorCount() {
         int cnt = executionContext.getInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, 0);
-        executionContext.putInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, cnt+1);
+        executionContext.putInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, cnt + 1);
 
     }
 
@@ -323,18 +447,18 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
      * Reload the referenced objects if they are not loaded
      */
     private void reloadReferencedObjects() {
-        if(itemType == null) {
-            item            = new ItemBL(itemId).getEntity();
-            itemType        = item.findItemTypeWithAssetManagement();
-            defaultStatus   = (itemType != null ? itemType.findDefaultAssetStatus() : null);
+        if (itemType == null) {
+            item = new ItemBL(itemId).getEntity();
+            itemType = item.findItemTypeWithAssetManagement();
+            defaultStatus = (itemType != null ? itemType.findDefaultAssetStatus() : null);
 
             LOG.debug("ItemType with asset management %1$s", itemType);
             LOG.debug("Default Status %1$s", defaultStatus);
             //load all objects we will need while processing
             if (null != item.getEntity())
-            	item.getEntity().getLanguageId();
+                item.getEntity().getLanguageId();
             if (CollectionUtils.isNotEmpty(item.getEntities())) {
-            	item.getEntities().iterator().next().getLanguageId();
+                item.getEntities().iterator().next().getLanguageId();
             }
             item.getMetaFields();
         }
@@ -355,16 +479,16 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
                 break;
             case DATE:
                 try {
-                    if(stringValue.length() == 10) {
+                    if (stringValue.length() == 10) {
                         value = DateTimeFormat.forPattern("yyyy-MM-dd").parseDateTime(stringValue).toDate();
-                    } else if(stringValue.length() == 16) {
+                    } else if (stringValue.length() == 16) {
                         value = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").parseDateTime(stringValue).toDate();
                     } else {
-                        throw new IllegalArgumentException("Date ["+stringValue+"] must have format 'yyyy-MM-dd HH:mm' or 'yyyy-MM-dd'");
+                        throw new IllegalArgumentException("Date [" + stringValue + "] must have format 'yyyy-MM-dd HH:mm' or 'yyyy-MM-dd'");
                     }
                     break;
                 } catch (IllegalArgumentException ex) {
-                    throw new IllegalArgumentException("Date ["+stringValue+"] must have format 'yyyy-MM-dd HH:mm' or 'yyyy-MM-dd'", ex);
+                    throw new IllegalArgumentException("Date [" + stringValue + "] must have format 'yyyy-MM-dd HH:mm' or 'yyyy-MM-dd'", ex);
                 }
             case DECIMAL:
                 value = new BigDecimal(stringValue);
@@ -388,8 +512,8 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
     /**
      * Write the original line the WrappedObjectLine and the message to the error file
      *
-     * @param item      Object containing the error
-     * @param message   Error message to append to line
+     * @param item    Object containing the error
+     * @param message Error message to append to line
      * @throws Exception Thrown when an error occurred while trying to write to the file
      */
     private void writeLineToErrorFile(WrappedObjectLine<FieldSet> item, String message) throws Exception {
@@ -401,5 +525,11 @@ public class AssetProcessor implements ItemProcessor<WrappedObjectLine<FieldSet>
     public void afterPropertiesSet() throws Exception {
         Assert.notNull(errorWriter, "ErrorWriter must be set");
     }
-    
+
+    private void validateNumber(String columnName, int digit, String value, String pattern) {
+        if (StringUtils.isNotEmpty(value) && !Pattern.matches( pattern,value)) {
+            throw new NumberFormatException(String.format("%s should be %d digit", columnName, digit));
+        }
+    }
+
 }

@@ -58,7 +58,7 @@ import com.sapienter.jbilling.server.util.api.JbillingAPIFactory;
  * @author Brian Cowdery
  * @since 31/05/11
  */
-@Test(groups = { "integration", "ageing" }, testName = "AgeingTest", priority = 4)
+@Test(groups = { "integration", "ageing" }, testName = "AgeingTest")
 public class AgeingTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AgeingTest.class);
@@ -98,7 +98,7 @@ public class AgeingTest {
 
         Integer AGEING_TEST_USER_ID = api.createUser(user);
         user.setUserId(AGEING_TEST_USER_ID);
-
+        
         updateCustomerNextInvoiceDate(user.getId(), api);
         // create a new order and a invoice to be aged
         OrderWS order = new OrderWS();
@@ -380,7 +380,7 @@ public class AgeingTest {
 
         Integer AGEING_TEST_USER_ID = api.createUser(user);
         user.setUserId(AGEING_TEST_USER_ID);
-
+        
         updateCustomerNextInvoiceDate(user.getId(), api);
         // create a new order and a invoice to be aged
         OrderWS order = new OrderWS();
@@ -548,7 +548,7 @@ public class AgeingTest {
     	// valid credit card must have a future expiry date to be valid for payment processing
         Calendar expiry = Calendar.getInstance();
         expiry.set(Calendar.YEAR, expiry.get(Calendar.YEAR) + 1);
-
+        
     	PaymentInformationWS cc = CreateObjectUtil.createCreditCard("Peter Pan",
         		"30569309025904", expiry.getTime());
 
@@ -654,7 +654,7 @@ public class AgeingTest {
         logger.debug("pausing for {} ms", t);
         Thread.sleep(t);
     }
-
+    
     private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
         UserWS user = api.getUserWS(userId);
         Calendar nextInvoiceDate = Calendar.getInstance();

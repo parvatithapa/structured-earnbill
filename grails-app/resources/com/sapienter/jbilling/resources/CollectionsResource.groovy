@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.discount.DiscountWS
 import com.sapienter.jbilling.server.process.AgeingWS
 import com.sapienter.jbilling.server.process.ProcessStatusWS
@@ -45,8 +44,8 @@ class CollectionsResource {
         try {
             webServicesSession.saveAgeingConfiguration(steps, languageId);
             return Response.status(Response.Status.CREATED).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -65,8 +64,8 @@ class CollectionsResource {
         AgeingWS[] ageingSteps;
         try {
             ageingSteps = webServicesSession.getAgeingConfiguration(Constants.LANGUAGE_ENGLISH_ID);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(ageingSteps).build();
     }
@@ -85,8 +84,8 @@ class CollectionsResource {
 
             ProcessStatusWS status = webServicesSession.getAgeingProcessStatus()
             return Response.ok().entity(status).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -103,8 +102,8 @@ class CollectionsResource {
         try {
             webServicesSession.triggerAgeing(dateFormat.parseLocalDate(date).toDate());
             return Response.status(Response.Status.OK).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,25 +27,11 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.commons.collections4.MapUtils;
-
-import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.server.item.db.ItemDAS;
-import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineUsagePoolDTO;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
-import com.sapienter.jbilling.server.pricing.PriceModelBL;
-import com.sapienter.jbilling.server.pricing.PriceModelResolutionContext;
-import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
-import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
-import com.sapienter.jbilling.server.pricing.tasks.PriceModelPricingTask;
-import com.sapienter.jbilling.server.util.Constants;
 
 /**
  * OrderHelper
@@ -599,37 +584,6 @@ public class OrderHelper {
         if (b == null) return a;
 
         return a.add(b);
-    }
-
-    public static boolean itemHasTeaserPricing(Integer userId, Integer itemId, Date pricingDate, Integer entityId) {
-        PluggableTaskManager taskManager = null;
-        PriceModelPricingTask priceModelPricingTask = null;
-        boolean hasTeaserPricing = false;
-        try {
-            taskManager = new PluggableTaskManager(entityId, Constants.PLUGGABLE_TASK_ITEM_PRICING);
-            priceModelPricingTask = (PriceModelPricingTask) taskManager.getNextClass();
-        }catch(PluggableTaskException e){
-            throw new SessionInternalError("Error Handling Price Model Pricing Task");
-        }
-        if(null != priceModelPricingTask){
-            PriceModelResolutionContext modelResolutionContext = PriceModelResolutionContext.builder(itemId)
-                    .user(userId)
-                    .pricingDate(pricingDate)
-                    .attributes(Collections.emptyMap())
-                    .build();
-
-            SortedMap<Date, PriceModelDTO> models = priceModelPricingTask.getPricesByHierarchy(modelResolutionContext);
-            if(MapUtils.isNotEmpty(models)) {
-                PriceModelDTO model = PriceModelBL.getPriceForDate(models, pricingDate);
-                hasTeaserPricing = model.getType().equals(PriceModelStrategy.TEASER_PRICING);
-            }
-        }
-        ItemDTO item = new ItemDAS().find(itemId);
-        PriceModelDTO priceModelDto =  item.getPrice(new Date());
-        if(null != priceModelDto){
-            hasTeaserPricing = priceModelDto.getType().equals(PriceModelStrategy.TEASER_PRICING);
-        }
-        return hasTeaserPricing;
     }
 
 }

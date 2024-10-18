@@ -73,8 +73,9 @@ public class MediationStepResult {
     }
 
     public String getItemId() {
-        if (this.itemId == null)
+        if (this.itemId == null) {
             return null;
+        }
         return "" + this.itemId;
     }
 
@@ -214,12 +215,12 @@ public class MediationStepResult {
     }
 
     public JbillingMediationRecord tojBillingMediationRecord() {
-        return new JbillingMediationRecord(
+        return new JbillingMediationRecord(null,
                 JbillingMediationRecord.STATUS.UNPROCESSED, JbillingMediationRecord.TYPE.MEDIATION,
                 jBillingCompanyId, mediationCfgId, cdrRecordKey, userId,
                 eventDate, quantity, description,
                 currencyId, itemId, null, null, pricingFields, null, null, null, source,
-                destination, cdrType, originalQuantity, resourceId, chargeable);
+                destination, cdrType, originalQuantity, resourceId, chargeable, null, null);
     }
 
     public JbillingMediationErrorRecord toJBillingMediationError() {
@@ -228,7 +229,7 @@ public class MediationStepResult {
                 cdrRecordKey, getErrors(), pricingFields, null, null, UUID.randomUUID());
     }
 
-    private String getErrors() {
+    public String getErrors() {
         String errorsString = "[";
         for (String error: this.errors) {
             if (!errorsString.equals("[")) {

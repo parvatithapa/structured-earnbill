@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_available_asset" language="groovy" pageWidth="660" pageHeight="810" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="594" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" uuid="cdb1bf86-3eca-4f1e-9780-cdc2e440c008">
-	<property name="ireport.zoom" value="1.5"/>
-	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="0"/>
-	<parameter name="entity_id" class="java.lang.Integer"/>
-	<parameter name="child_entities" class="java.util.List"/>
-	<parameter name="threshold_asset" class="java.lang.Integer"/>
-	<queryString>
-		<![CDATA[SELECT i.id AS product_id,
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_available_asset" language="groovy" pageWidth="660" pageHeight="810" whenNoDataType="AllSectionsNoDetail" columnWidth="594" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" orientation="Landscape">
+  <property name="ireport.zoom" value="1.5"/>
+  <property name="ireport.x" value="0"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="entity_id" class="java.lang.Integer"/>
+  <parameter name="child_entities" class="java.util.List"/>
+  <parameter name="threshold_asset" class="java.lang.Integer"/>
+
+  <queryString>
+    <![CDATA[
+            SELECT i.id AS product_id,
                    i.internal_number as product_code,
                    (SELECT id.content
                       FROM international_description id
@@ -17,143 +19,150 @@
                        AND id.language_id = 1
                        AND id.psudo_column='description'
                        AND id.foreign_id=i.id) AS product_description,
-                   count(a.*) AS no_assets
+                   count(*) AS no_assets
               FROM item i
-        LEFT JOIN asset a ON a.item_id=i.id
-                         AND a.deleted = 0
-                         AND a.status_id IN (SELECT status.id FROM asset_status status WHERE status.is_available=1)
+        INNER JOIN asset a ON a.item_id=i.id
              WHERE (i.entity_id = $P{entity_id} OR $X{IN, i.entity_id, child_entities})
                AND i.deleted=0
                AND i.asset_management_enabled=1
+               AND a.deleted = 0
+               AND a.status_id IN (SELECT status.id FROM asset_status status WHERE status.is_available=1)
           GROUP BY i.id
             HAVING CASE WHEN $P{threshold_asset} IS NOT NULL
-                   THEN count(a.id) <= $P{threshold_asset}
+                   THEN count(i.id) <= $P{threshold_asset}
                    ELSE TRUE
                    END
-          ORDER BY no_assets DESC, product_id ASC]]>
-	</queryString>
-	<field name="product_id" class="java.lang.Integer"/>
-	<field name="product_code" class="java.lang.String"/>
-	<field name="product_description" class="java.lang.String"/>
-	<field name="no_assets" class="java.lang.Long"/>
-	<title>
-		<band height="100">
-			<staticText>
-				<reportElement x="0" y="1" width="350" height="20" uuid="d98df152-a5dc-4829-baf2-54db0aa64842"/>
-				<textElement>
-					<font size="14" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Available Assets]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="400" y="1" width="120" height="20" uuid="5ac42c4c-2d94-46d5-8d4c-533a30876ccc"/>
-				<box rightPadding="5"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Report Date:]]></text>
-			</staticText>
-			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
-				<reportElement x="520" y="1" width="80" height="20" uuid="a0de218c-4aeb-400e-969d-e165a0fdc77f"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="400" y="21" width="120" height="20" uuid="ce370e0c-f3ee-43b5-8deb-90454b1de9c9"/>
-				<box rightPadding="5"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font isBold="true"/>
-				</textElement>
-				<text><![CDATA[Threshold:]]></text>
-			</staticText>
-			<textField isBlankWhenNull="true">
-				<reportElement x="520" y="21" width="80" height="20" uuid="94429ce2-b2c2-4d8f-891d-c6fc2bcfbfd7"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{threshold_asset}]]></textFieldExpression>
-			</textField>
-		</band>
-	</title>
-	<columnHeader>
-		<band height="21">
-			<staticText>
-				<reportElement x="0" y="0" width="80" height="20" uuid="2e582b45-87f3-4e9c-9136-676fc3cb79e9"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Product Id]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="80" y="0" width="220" height="20" uuid="d080161b-facf-4f87-a9bf-166545b3b85b"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Product Code]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="300" y="0" width="220" height="20" uuid="c7bb49db-6207-4267-8e45-e906e2fa763a"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Product Description]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="520" y="0" width="110" height="20" uuid="51a5ce5a-82bd-44b7-a405-8584e46ea2c8"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="10" isBold="true"/>
-				</textElement>
-				<text><![CDATA[No. of Avail. Assets]]></text>
-			</staticText>
-			<line>
-				<reportElement x="0" y="20" width="630" height="1" uuid="4ea02210-2f6f-4b53-aa6f-99531a596415"/>
-				<graphicElement>
-					<pen lineWidth="2.0"/>
-				</graphicElement>
-			</line>
-		</band>
-	</columnHeader>
-	<detail>
-		<band height="20">
-			<textField>
-				<reportElement x="0" y="0" width="80" height="20" uuid="93f42e87-e563-4cff-b4cd-dab8089666b2"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{product_id}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="80" y="0" width="220" height="20" uuid="0a5aba0c-0b0d-415a-ac75-f258746f6c13"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{product_code}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="300" y="0" width="220" height="20" uuid="017ee169-1b57-415b-a428-f61da49eb150"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{product_description}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="520" y="0" width="110" height="20" uuid="5f2447dc-1f64-408f-a169-c9011ced909a"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{no_assets}]]></textFieldExpression>
-			</textField>
-		</band>
-	</detail>
-	<pageFooter>
-		<band height="25">
-			<textField>
-				<reportElement x="150" y="0" width="80" height="20" uuid="190e62cb-4592-4c4a-b3fe-5cbfe4c08749"/>
-				<textElement textAlignment="Right"/>
-				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
-			</textField>
-			<textField evaluationTime="Report">
-				<reportElement x="230" y="0" width="40" height="20" uuid="7cbf0ffe-ad8f-4b85-9dac-d10cb48454a1"/>
-				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
-			</textField>
-		</band>
-	</pageFooter>
+          ORDER BY no_assets DESC, product_id ASC
+        ]]>
+  </queryString>
+
+  <field name="product_id" class="java.lang.Integer"/>
+  <field name="product_code" class="java.lang.String"/>
+  <field name="product_description" class="java.lang.String"/>
+  <field name="no_assets" class="java.lang.Integer"/>
+
+  <title>
+    <band height="100">
+      <staticText>
+        <reportElement x="0" y="1" width="350" height="20"/>
+        <textElement>
+          <font size="14" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Available Assets]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="400" y="1" width="120" height="20"/>
+        <box rightPadding="5"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Report Date:]]></text>
+      </staticText>
+      <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
+        <reportElement x="520" y="1" width="80" height="20"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+      </textField>
+      <staticText>
+        <reportElement x="400" y="21" width="120" height="20"/>
+        <box rightPadding="5"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Threshold:]]></text>
+      </staticText>
+      <textField isBlankWhenNull="true">
+        <reportElement x="520" y="21" width="80" height="20"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$P{threshold_asset}]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+  <columnHeader>
+    <band height="21">
+      <staticText>
+        <reportElement x="0" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Product Id]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="80" y="0" width="220" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Product Code]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="300" y="0" width="220" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Product Description]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="520" y="0" width="110" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Right">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[No. of Avail. Assets]]></text>
+      </staticText>
+      <line>
+        <reportElement x="0" y="20" width="630" height="1"/>
+        <graphicElement>
+          <pen lineWidth="2.0"/>
+        </graphicElement>
+      </line>
+    </band>
+  </columnHeader>
+  <detail>
+    <band height="20" >
+      <textField>
+        <reportElement x="0" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{product_id}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="80" y="0" width="220" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{product_code}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="300" y="0" width="220" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{product_description}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="520" y="0" width="110" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Right">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{no_assets}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+  <pageFooter>
+    <band height="25">
+      <textField>
+        <reportElement x="150" y="0" width="80" height="20"/>
+        <textElement textAlignment="Right"/>
+        <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+      </textField>
+      <textField evaluationTime="Report">
+        <reportElement x="230" y="0" width="40" height="20"/>
+        <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
 </jasperReport>

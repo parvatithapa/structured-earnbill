@@ -1,5 +1,6 @@
 package com.sapienter.jbilling.server.mediation.listener;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +27,7 @@ import com.sapienter.jbilling.server.mediation.converter.db.JbillingMediationRec
  */
 public class MediationJobListener implements JobExecutionListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(MediationJobListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MediationJobListener.class);
 
     @Autowired
     private MediationProcessService mediationProcessService;
@@ -44,61 +45,62 @@ public class MediationJobListener implements JobExecutionListener {
         if (mediationProcessId == null) {
             int entityId = Integer.parseInt(jobExecution.getJobParameters().getString("entityId"));
             int configurationId = Integer.parseInt(jobExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_CONFIG_ID_KEY));
-            mediationProcessId = mediationProcessService.saveMediationProcess(entityId, configurationId).getId();
+            mediationProcessId = mediationProcessService.saveMediationProcess(entityId, configurationId, null).getId();
         }
-        try {
-            MediationProcess mediationProcess = mediationProcessService.getMediationProcess(mediationProcessId);
-            mediationProcess.setStartDate(jobExecution.getStartTime());
-            mediationProcessService.updateMediationProcess(mediationProcess);
-        } catch(Exception ex) {
-            logger.error("error in beforeJob", ex);
+
+        MediationProcess mediationProcess = mediationProcessService.getMediationProcess(mediationProcessId);
+        mediationProcess.setStartDate(jobExecution.getStartTime());
+        String fileName  = jobExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_FILE_NAME);
+        if(StringUtils.isBlank(fileName)) {
+            String filePath  = jobExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_FILE_PATH_KEY);
+            if(StringUtils.isNotEmpty(filePath)) {
+                fileName = new File(filePath).getName(); //When mediation fun from the controller
+            }
         }
+        mediationProcess.setFileName(StringUtils.isNotBlank(fileName) ? fileName : mediationProcess.getStartDate() + " - " + mediationProcess.getEndDate());
+        mediationProcessService.updateMediationProcess(mediationProcess);
         jobExecution.getExecutionContext().put(MediationServiceImplementation.PARAMETER_MEDIATION_PROCESS_ID_KEY, mediationProcessId);
     }
 
     @Override
     public void afterJob(JobExecution jobExecution) {
-        try {
-            UUID mediationProcessId = (UUID) jobExecution.getExecutionContext().get(MediationServiceImplementation.PARAMETER_MEDIATION_PROCESS_ID_KEY);
-            MediationProcess mediationProcess = mediationProcessService.getMediationProcess(mediationProcessId);
-            mediationProcess.setStartDate(jobExecution.getStartTime());
-            mediationProcess.setEndDate(jobExecution.getEndTime());
+        UUID mediationProcessId = (UUID) jobExecution.getExecutionContext().get(MediationServiceImplementation.PARAMETER_MEDIATION_PROCESS_ID_KEY);
+        MediationProcess mediationProcess = mediationProcessService.getMediationProcess(mediationProcessId);
+        mediationProcess.setStartDate(jobExecution.getStartTime());
+        mediationProcess.setEndDate(jobExecution.getEndTime());
 
-            mediationProcess.setDoneAndBillable(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.PROCESSED.toString()));
-            mediationProcess.setDoneAndNotBillable(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.NOT_BILLABLE.toString()));
-            mediationProcess.setAggregated(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.AGGREGATED.toString()));
+        mediationProcess.setDoneAndBillable(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.PROCESSED.toString()));
+        mediationProcess.setDoneAndNotBillable(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.NOT_BILLABLE.toString()));
+        mediationProcess.setAggregated(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.AGGREGATED.toString()));
 
-            mediationProcess.setErrors(mediationService.getMediationErrorRecordCountForProcess(mediationProcessId));
-            mediationProcess.setDuplicates(mediationService.getMediationDuplicatesRecordCountForProcess(mediationProcessId));
+        mediationProcess.setErrors(mediationService.getMediationErrorRecordCountForProcess(mediationProcessId));
+        mediationProcess.setDuplicates(mediationService.getMediationDuplicatesRecordCountForProcess(mediationProcessId));
 
-            mediationProcess.setRecordsProcessed(mediationProcess.getDoneAndBillable() + mediationProcess.getErrors() +
-                    mediationProcess.getAggregated() +
-                    mediationProcess.getDuplicates() + mediationProcess.getDoneAndNotBillable());
-            mediationProcess.setOrderAffectedCount(mediationService.getOrderCountForMediationProcess(mediationProcessId));
-            mediationProcessService.updateMediationProcess(mediationProcess);
-            updateCdrCount(mediationProcess, JbillingMediationRecordDao.STATUS.PROCESSED);
-            updateCdrCount(mediationProcess, JbillingMediationRecordDao.STATUS.NOT_BILLABLE);
-            String filePath  = jobExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_FILE_PATH_KEY);
-            if(StringUtils.isNotEmpty(filePath)) {
-                logger.debug("File path for mediation ProcessId [{}] is [{}]", mediationProcessId, filePath);
-                String fileName = FilenameUtils.getName(filePath);
-                if(StringUtils.isNotEmpty(fileName)) {
-                    logger.debug("MediationProcess Id {} has processed {} file", mediationProcessId, fileName);
-                }
-            } else {
-                logger.debug("File Name not found for MediationProcess Id {}", mediationProcessId);
+        mediationProcess.setRecordsProcessed(mediationProcess.getDoneAndBillable() + mediationProcess.getErrors() +
+                mediationProcess.getAggregated() +
+                mediationProcess.getDuplicates() + mediationProcess.getDoneAndNotBillable());
+        mediationProcess.setOrderAffectedCount(mediationService.getOrderCountForMediationProcess(mediationProcessId));
+        mediationProcessService.updateMediationProcess(mediationProcess);
+        updateCdrCount(mediationProcess, JbillingMediationRecordDao.STATUS.PROCESSED);
+        updateCdrCount(mediationProcess, JbillingMediationRecordDao.STATUS.NOT_BILLABLE);
+        String filePath  = jobExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_FILE_PATH_KEY);
+        if(StringUtils.isNotEmpty(filePath)) {
+            LOG.debug("File path for mediation ProcessId is {}", filePath);
+            String fileName = FilenameUtils.getName(filePath);
+            if(StringUtils.isNotEmpty(fileName)) {
+                LOG.debug("MediationProcess Id {} has processed {} file", mediationProcessId, fileName);
             }
-            logger.debug("Mediation Process count info for Id {} is {}", mediationProcessId, mediationProcess);
-            if(mediationProcess.getErrors()!=0) {
-                logger.debug("Mediation Process has error records for mediation process id {}. Number of errors is {}", mediationProcessId, mediationProcess.getErrors());
-            }
-        } catch(Exception ex) {
-            logger.error("error in afterJob", ex);
+        } else {
+            LOG.warn("File Name not found for MediationProcess Id {}", mediationProcessId);
+        }
+        LOG.debug("Mediation Process count info for Id {} is {}", mediationProcessId, mediationProcess);
+        if(mediationProcess.getErrors()!=0) {
+            LOG.debug("Mediation Process has error records for mediation process id {}. Number of errors is {}", mediationProcessId, mediationProcess.getErrors());
         }
     }
 
     private void updateCdrCount(MediationProcess mediationProcess, JbillingMediationRecordDao.STATUS status) {
-        logger.debug("Updating CDR Count for Mediation Process Id {} for status {}", mediationProcess.getId(),status);
+        LOG.debug("Updating CDR Count for Mediation Process Id {} for status {}", mediationProcess.getId(),status);
         List<String> cdrTypes = mediationService.getCdrTypes(
                 getFilters(mediationProcess.getEntityId(), mediationProcess.getId(), status, null));
         for(String cdrType : cdrTypes) {

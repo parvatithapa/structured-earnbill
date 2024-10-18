@@ -57,14 +57,12 @@ import grails.plugin.springsecurity.SpringSecurityService;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -612,33 +610,20 @@ public class DistributelWebServicesSessionSpringBean implements JbillingDistribu
             return spaHappyFox;
         }
         try {
-            List<Integer> userIds = bl.findUser();
-            if(null == userIds || userIds.isEmpty()){
+            Integer userId = bl.findUser();
+            if(null == userId){
                 return spaHappyFox;
             }
-
-            List<UserWS> users = new ArrayList<>();
-            for (Integer userId : userIds) {
-                if(null != getNonDeletedUsers(userId)){
-                    users.add(getNonDeletedUsers(userId));
-                }
-            }
-            Optional<UserWS> latestUser = users.stream().max(Comparator.comparing(UserWS::getId));
-            if(users.isEmpty()){
+            UserWS user = webServicesSessionBean.getUserWS(userId);
+            if(1 == user.getDeleted()){
                 return spaHappyFox;
             }
-            for (UserWS user : users) {
-                bl.getCustomerFields(latestUser.get());
-                bl.getOtherFields(user);
-                bl.setAllFields();
-            }
-        } catch(Exception e) {
+            bl.getCustomerFields(user);
+            bl.getOtherFields(user);
+            bl.setAllFields();
+        } catch(NonUniqueResultException e) {
             return spaHappyFox;
         }
         return spaHappyFox;
-    }
-    private UserWS getNonDeletedUsers(Integer userId){
-        UserWS user = webServicesSessionBean.getUserWS(userId);
-        return null != user && user.getDeleted() != 1 ? user : null;
     }
 }

@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.order.OrderStatusWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -47,8 +46,8 @@ class OrderStatusResource {
         OrderStatusWS orderStatusWS;
         try {
             orderStatusWS = webServicesSession.findOrderStatusById(orderStatusId);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return orderStatusWS != null ?
                 Response.ok().entity(orderStatusWS).build():
@@ -66,8 +65,8 @@ class OrderStatusResource {
     Response findAllOrderStatusIds() {
         try {
             return Response.ok().entity(webServicesSession.findAllOrderStatusIds()).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -87,8 +86,8 @@ class OrderStatusResource {
         Integer orderStatusId;
         try {
             orderStatusId = webServicesSession.createUpdateOrderStatus(orderStatusWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(orderStatusId)).build())
                 .entity(webServicesSession.findOrderStatusById(orderStatusId)).build();
@@ -116,8 +115,8 @@ class OrderStatusResource {
             }
             orderStatusWS.setId(id);
             webServicesSession.createUpdateOrderStatus(orderStatusWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(webServicesSession.findOrderStatusById(id)).build();
     }
@@ -141,8 +140,8 @@ class OrderStatusResource {
             }
             webServicesSession.deleteOrderStatus(orderStatusWS);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

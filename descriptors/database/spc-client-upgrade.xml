@@ -1084,41 +1084,6 @@
         </sql>
     </changeSet>
 
-    <changeSet context = "base" id = "JBSPC-228: Detailed Billing Report - Development" author = "Amol Saware">
-        <comment>To monitor the revenue, cost and GST for the products billed for a given period of time</comment>
-        <insert tableName = "report">
-            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
-            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
-            <column name  = "name"      value         = "detailed_billing_report" />
-            <column name  = "file_name" value         = "detailed_billing_report.jasper" />
-            <column name  = "optlock"   valueNumeric  = "0" />
-        </insert>
-
-        <insert tableName = "report_parameter">
-            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
-            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'detailed_billing_report'),1)" />
-            <column name = "dtype"     value         = "date" />
-            <column name = "name"      value         = "start_date" />
-        </insert>
-
-        <insert tableName = "report_parameter">
-            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
-            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'detailed_billing_report'),1)" />
-            <column name = "dtype"     value         = "date" />
-            <column name = "name"      value         = "end_date" />
-        </insert>
-
-        <sql>
-            INSERT INTO entity_report_map(report_id, entity_id)
-            SELECT (SELECT r.id
-            FROM report r
-            WHERE r.name = 'detailed_billing_report'),
-            id
-            FROM entity
-            WHERE deleted = 0
-        </sql>
-    </changeSet>
-
     <changeSet context="base" id="JBSPC-304: MISC07-2J Installation Fees" author="Dipak Kardel">
         <comment>New Report to track the Installation Fees</comment>
         <insert tableName = "report">
@@ -1295,6 +1260,77 @@
             WHERE deleted = 0
         </sql>
     </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-451 - CR-010 - Direct Debits Report" author = "Satyendra Soni">
+        <comment>New Report to fetch Paymnet instruments details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "direct_debits_report" />
+            <column name  = "file_name" value         = "direct_debits_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'direct_debits_report'),1)" />
+            <column name = "dtype"     value         = "string" />
+            <column name = "name"      value         = "instrument_type" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'direct_debits_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+
+        <sql splitStatements="false">
+            <![CDATA[
+            CREATE OR REPLACE FUNCTION getNextPaymentInstrumentMetaFieldValue(piid integer, mf_name text)
+                               RETURNS text AS $$
+                               DECLARE
+               mf_value text := (SELECT mfv.string_value
+                                   FROM payment_information pin
+                             INNER JOIN payment_information_meta_fields_map pimfm ON pin.id = pimfm. payment_information_id
+                             INNER JOIN meta_field_value mfv ON mfv.id = pimfm.meta_field_value_id
+                             INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                                  WHERE mfn.name = mf_name AND mfv.string_value IS NOT NULL
+                                    AND pin.id = piid);
+                                  BEGIN
+                                 RETURN mf_value;
+                                    END;
+                                    $$ LANGUAGE plpgsql;
+            ]]>
+        </sql>
+        <sql splitStatements="false">
+            <![CDATA[
+            CREATE OR REPLACE FUNCTION getTimeLineInfo(meta_field_name text,meta_field_group_name text,meta_field_type text,u_id int)
+                               RETURNS text AS $$
+                                 BEGIN
+                                RETURN (SELECT mfv.string_value FROM customer cu
+                            INNER JOIN customer_account_info_type_timeline caitt ON caitt.customer_id = cu.id
+                            INNER JOIN meta_field_value mfv ON mfv.id = caitt.meta_field_value_id
+                            INNER JOIN meta_field_group mfg ON mfg.id = caitt.account_info_type_id AND mfg.name = meta_field_group_name
+                            INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name = meta_field_name
+                                                                                              AND (field_usage = meta_field_type OR field_usage IS NULL)
+                                 WHERE cu.user_id = u_id
+                                       AND caitt.effective_date =(SELECT MAX(effective_date)
+                                                                    FROM customer_account_info_type_timeline
+                                                                   WHERE customer_id = (SELECT id
+                                                                                          FROM customer
+                                                                                         WHERE user_id = u_id)
+                                                                                               AND account_info_type_id = mfg.id
+                                                                                               AND date(effective_date) <= date(CURRENT_DATE)));
+                                  END;
+                                  $$ LANGUAGE plpgsql;
+        ]]>
+        </sql>
+    </changeSet>
+
     <changeSet context="base" id="JBSPC-276: function to check invoice is adjustment" author="Mahesh Shivarkar">
         <sql splitStatements="false">
                 CREATE OR REPLACE FUNCTION adjustmentInvoices(userId int)
@@ -1302,7 +1338,7 @@
                 BEGIN
 
                   SELECT ARRAY(
-                SELECT CASE WHEN 
+                SELECT CASE WHEN
                 (
                 SELECT CONCAT(il_inner.invoice_id,'|', count(*))
                 FROM invoice_line il_inner
@@ -1418,5 +1454,1619 @@
             INSERT INTO rollup_codes VALUES('C}','C1','Inbound Mobile to 1800',30);
             INSERT INTO rollup_codes VALUES('VN','X1','Voip Number',100);
         </sql>
+</changeSet>
+    <changeSet context = "base" id = "JBSPC-527" author = "Krunal Bhavsar">
+        <comment>Spc JMR post processing Task Category</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.mediation.IJMRPostProcessor')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcJMRPostProcessorTask" />
+            <column name = "min_parameters" valueNumeric  = "3" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Jmr post porcessing task."/>
+        </insert>
+    </changeSet>
+
+	<changeSet context = "base" id = "JBSPC-537: Added CentrePay Payment Method" author = "Ashish K Srivastava">
+		<validCheckSum>7:6fa5f2880a64ad1746b7482fe93133df</validCheckSum>
+       <!-- CenterPay -->
+		<insert tableName = "payment_method">
+            <column name = "id" valueNumeric = "-4"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric = "35"/>
+            <column name = "foreign_id"    valueNumeric = "-4"/>
+            <column name = "psudo_column"  value        = "description"/>
+            <column name = "language_id"   valueNumeric = "1"/>
+            <column name = "content"       value        = "CentrePay"/>
+        </insert>
+
+
+        <insert tableName="payment_method_template">
+            <column name="id" valueComputed="(select max(id)+1 from payment_method_template)"/>
+            <column name="template_name" value="CentrePay"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+		<insert tableName="payment_method_type">
+            <column name="id" valueComputed="coalesce((select max(pmt.id)+1 from payment_method_type pmt),1)"/>
+            <column name="method_name" value="CentrePay"/>
+            <column name="is_recurring" valueBoolean="false"/>
+            <column name="entity_id" valueComputed="coalesce((select e.id from entity e where e.description = 'Southern Phone'),(SELECT MIN(e.id) FROM entity e))"/>
+            <column name="template_id" valueComputed="(select max(t.id) from payment_method_template t where t.template_name = 'CentrePay')"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="all_account_type" valueBoolean="true"/>
+        </insert>
+		<insert tableName="payment_method_account_type_map">
+            <column name="payment_method_id" valueComputed="(select max(pmt.id) from payment_method_type pmt)"/>
+            <column name="account_type_id" valueComputed="(select max(at.id) from account_type at)"/>
+        </insert>
+
+    </changeSet>
+
+     <changeSet context = "base" id = "JBSPC-451 Dierect debit report changes jasper name" author = "Pranay G. Raherkar">
+        <comment>Chnaged jasper file name</comment>
+        <update tableName = "report">
+            <column name  = "name"      value = "direct_debit_instruments_report" />
+            <column name  = "file_name" value = "direct_debit_instruments_report.jasper" />
+            <where> name  = 'direct_debits_report'</where>
+        </update>
+     </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-603" author = "Krunal Bhavsar">
+        <comment>Spc Specific swap plan fup transfer task.</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)" />
+            <column name = "category_id"    valueNumeric  = "17" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SPCSwapPlanFUPTransferTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc Specific swap plan fup transfer task."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id = "JBSPC-505 SpcCreditAmountUsagePoolTask" author = "Krunal Bhavsar">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"               valueComputed = "(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name = "category_id"      valueNumeric  = "17"/>
+            <column name = "class_name"       value         = "com.sapienter.jbilling.server.invoice.task.SpcCreditOrderCreationTask"/>
+            <column name = "min_parameters"   valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"         valueNumeric  = "24"/>
+            <column name = "foreign_id"       valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"     value         = "title"/>
+            <column name = "language_id"      valueNumeric  = "1"/>
+            <column name = "content"          value         = "SPC Credit Order Creation Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"         valueNumeric  = "24"/>
+            <column name = "foreign_id"       valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"     value         = "description"/>
+            <column name = "language_id"      valueNumeric  = "1"/>
+            <column name = "content"          value         = "This task will be used to to create usage credit order of the
+            given amount based on subscription plan and tariff code."/>
+        </insert>
+    </changeSet>
+
+       <changeSet context = "base" id = "JBSPC-613" author = "Ashish Srivastava">
+        <comment>Additional Company level Metafield for CustomerCare number Product id</comment>
+           <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Customer Care Number Item Id"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="coalesce((select max(p.id) from entity p),1)"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		   </insert>
+		    <sql>
+		     INSERT INTO rollup_codes VALUES('CT','A1','Calls to Southern Phone',11);
+		     INSERT INTO rollup_codes VALUES('RC','A1','Service &amp; Equipment',14);
+		     INSERT INTO rollup_codes VALUES('CU','B1','Calls to Southern Phone',20);
+		    </sql>
+      </changeSet>
+
+    <changeSet context="base" id="JBSPC-676: Delete duplicate rollup code" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes" >
+            <where> rollup_code = 'LBN-ACT' AND item_type_description = 'Activation Fee' AND itemisation_order = -79</where>
+        </delete>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-397: day billing processing period" author = "Krunal  Bhavsar">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.process.task.IBillableUserFilterTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.billing.SPCUserFilterTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24" />
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"  value         = "title" />
+            <column name = "language_id"   valueNumeric  = "1" />
+            <column name = "content"       value         = "SPC User Filter Task." />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24" />
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "This is an SPC specific plugin that introduces a delay by 3 days for picking up the user
+            for invoice generation from the next invoice date of the user." />
+        </insert>
+     </changeSet>
+
+     <changeSet context = "base" id = "JBSPC-500: Added SPC Customer UsagePool Evaluation Task" author = "Krunal  Bhavsar">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.usagePool.IUsagePoolEvaluationTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SPCCustomerUsagePoolEvaluationTask" />
+            <column name = "min_parameters" valueNumeric  = "1" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24" />
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"  value         = "title" />
+            <column name = "language_id"   valueNumeric  = "1" />
+            <column name = "content"       value         = "SPC Customer UsagePool Evaluation Task." />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24" />
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "This is a SPC specific plugin that evaluates the customer usage pool based on whether the user has a billing delay of 3 days,
+            which is identified based on SPC specific meta fields of origin and customer type."/>
+        </insert>
+     </changeSet>
+
+     <changeSet context="base" id="JBSPC-667: Updated rollup codes" author="Swapnil Patil">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            <![CDATA[
+                INSERT INTO rollup_codes VALUES('PF', 'X1', 'Plan Fee', '-100');
+                INSERT INTO rollup_codes VALUES('DI', 'X1', 'Discount', '-99');
+                INSERT INTO rollup_codes VALUES('DB', 'X1', 'Data Boost Charges', '-98');
+                INSERT INTO rollup_codes VALUES('MGTF-01', 'X1', 'Coles Management Fee', '-97');
+                INSERT INTO rollup_codes VALUES('ATA-01', 'X1', 'Coles ATA', '-96');
+                INSERT INTO rollup_codes VALUES('LPF', 'X1', 'Late Payment Fee', '-95');
+                INSERT INTO rollup_codes VALUES('CR-LPF', 'X1', 'Late Payment Fee Credit', '-94');
+                INSERT INTO rollup_codes VALUES('PBF', 'X1', 'Paper Bill Fee', '-93');
+                INSERT INTO rollup_codes VALUES('CR-PBF', 'X1', 'Paper Bill Fee Credit', '-92');
+                INSERT INTO rollup_codes VALUES('FIN-PBF', 'X1', 'PostBill Pay Fee', '-91');
+                INSERT INTO rollup_codes VALUES('FIN-CCS', 'X1', 'Credit Card Surcharge', '-90');
+                INSERT INTO rollup_codes VALUES('FIN-BDF', 'X1', 'Bank Dishonour Fee', '-89');
+                INSERT INTO rollup_codes VALUES('FIRST_50%', 'X1', 'Subscription discount for 1st month(50%)', '-88');
+                INSERT INTO rollup_codes VALUES('FOURTH_50%', 'X1', 'Subscription discount for 4th month(50%)', '-87');
+                INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE100', 'X1', 'First Month Free - 100 Mbps', '-86');
+                INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE25', 'X1', 'First Month Free - 25 Mbps', '-85');
+                INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE12', 'X1', 'First Month Free - 12 Mbps', '-84');
+                INSERT INTO rollup_codes VALUES('PRM-10OFF3MONTHS', 'X1', 'PROMO CREDIT: $10 off for first 3 months', '-83');
+                INSERT INTO rollup_codes VALUES('20Credit', 'X1', '20 Dollars Off', '-82');
+                INSERT INTO rollup_codes VALUES('SI', 'X1', 'Static IP', '-81');
+                INSERT INTO rollup_codes VALUES('RTR-NF18ACV', 'X1', 'NetComm NF18ACV modem', '-80');
+                INSERT INTO rollup_codes VALUES('RTR-DS224WTV', 'X1', 'COMNECT DS224WTV Modem Purchase', '-79');
+                INSERT INTO rollup_codes VALUES('RTR-DS244WTV', 'X1', 'COMNECT DS244WTV Modem Purchase', '-78');
+                INSERT INTO rollup_codes VALUES('RTR', 'X1', 'NETCOMM NF18ACV Modem Purchase', '-77');
+                INSERT INTO rollup_codes VALUES('RTR-GS4', 'X1', 'Grandstream 4 Port ATA', '-76');
+                INSERT INTO rollup_codes VALUES('RTR-GS8', 'X1', 'Grandstream 8 Port ATA', '-75');
+                INSERT INTO rollup_codes VALUES('RTR-Gaoke', 'X1', 'Gaoke LG6001N Modem Purchase', '-74');
+                INSERT INTO rollup_codes VALUES('Fee-100', 'X1', 'Modem Delivery Fee', '-73');
+                INSERT INTO rollup_codes VALUES('SHP', 'X1', 'nbn™ Modem Delivery Fee', '-72');
+                INSERT INTO rollup_codes VALUES('MNF-Fee-1', 'X1', 'MNF Portability Fee', '-71');
+                INSERT INTO rollup_codes VALUES('Fee-01', 'X1', 'Activation Fee', '-70');
+                INSERT INTO rollup_codes VALUES('Fee-02', 'X1', 'New Development Fee', '-69');
+                INSERT INTO rollup_codes VALUES('LBN-NDC', 'X1', 'LBNCo New Development Charge', '-68');
+                INSERT INTO rollup_codes VALUES('NBN-DVP', 'X1', 'nbn™ New Development Fee', '-67');
+                INSERT INTO rollup_codes VALUES('LBN-TECH', 'X1', 'Technician Callout Fee', '-66');
+                INSERT INTO rollup_codes VALUES('INC-FEE', 'X1', 'nbn™ Incorrect Callout Fee', '-65');
+                INSERT INTO rollup_codes VALUES('DGF', 'X1', 'nbn™ Plan Change Fee', '-64');
+                INSERT INTO rollup_codes VALUES('Fee-55', 'X1', 'Relocation Fee', '-63');
+                INSERT INTO rollup_codes VALUES('Fee-99', 'X1', 'Relocation Fee 99', '-62');
+                INSERT INTO rollup_codes VALUES('Fee-03', 'X1', 'No Contract Fee', '-61');
+                INSERT INTO rollup_codes VALUES('WDF', 'X1', 'nbn™ Early Cancellation Fee', '-60');
+                INSERT INTO rollup_codes VALUES('CR-NBN', 'X1', 'Credit Adjustment', '-59');
+                INSERT INTO rollup_codes VALUES('DR-FLT', 'X1', 'Debit Adjustment', '-58');
+                INSERT INTO rollup_codes VALUES('FIN-WU', 'X1', 'Write Up', '-57');
+                INSERT INTO rollup_codes VALUES('FIN-BD', 'X1', 'Bad Debt', '-56');
+                INSERT INTO rollup_codes VALUES('A1', 'super', 'Voice Services', '1');
+                INSERT INTO rollup_codes VALUES('B1', 'super', 'Mobile Services', '2');
+                INSERT INTO rollup_codes VALUES('C1', 'super', 'Inbound Services', '3');
+                INSERT INTO rollup_codes VALUES('D1', 'super', 'Internet Services', '4');
+                INSERT INTO rollup_codes VALUES('E1', 'super', 'Other Charges and Credits', '5');
+                INSERT INTO rollup_codes VALUES('S1', 'super_super', 'Bundle', '1');
+                INSERT INTO rollup_codes VALUES('S2', 'super_super', 'Standalone', '2');
+                INSERT INTO rollup_codes VALUES('CL', 'A1', 'Local Calls', '1');
+                INSERT INTO rollup_codes VALUES('CS', 'A1', 'National Calls', '2');
+                INSERT INTO rollup_codes VALUES('CN', 'A1', 'Long Distance Calls', '3');
+                INSERT INTO rollup_codes VALUES('CQ', 'A1', 'Calls to 13 Numbers', '4');
+                INSERT INTO rollup_codes VALUES('CJ', 'A1', 'Calls to 0198 Numbers', '5');
+                INSERT INTO rollup_codes VALUES('CA', 'A1', 'Directory and Assisted Calls', '6');
+                INSERT INTO rollup_codes VALUES('CM', 'A1', 'Calls to Mobiles', '7');
+                INSERT INTO rollup_codes VALUES('CI', 'A1', 'International Calls', '8');
+                INSERT INTO rollup_codes VALUES('CI', 'A1', 'International Calls Global 30', '9');
+                INSERT INTO rollup_codes VALUES('CI', 'A1', 'International Calls Global 70', '10');
+                INSERT INTO rollup_codes VALUES('CT', 'A1', 'Calls to Southern Phone', '11');
+                INSERT INTO rollup_codes VALUES('CP', 'A1', 'Faxstream Calls', '12');
+                INSERT INTO rollup_codes VALUES('CZ', 'A1', 'Other Calls', '13');
+                INSERT INTO rollup_codes VALUES('VC', 'A1', 'Voice Call Credit', '14');
+                INSERT INTO rollup_codes VALUES('RC', 'A1', 'Service & Equipment', '15');
+                INSERT INTO rollup_codes VALUES('CC', 'B1', 'Voicemail', '16');
+                INSERT INTO rollup_codes VALUES('CE', 'B1', 'Mobile to Fixed Calls', '17');
+                INSERT INTO rollup_codes VALUES('CF', 'B1', 'Mobile to Mobile Calls', '18');
+                INSERT INTO rollup_codes VALUES('CR', 'B1', 'Mobile Special Calls', '19');
+                INSERT INTO rollup_codes VALUES('CG', 'B1', 'Mobile to International', '20');
+                INSERT INTO rollup_codes VALUES('CU', 'B1', 'Calls to Southern Phone', '21');
+                INSERT INTO rollup_codes VALUES('CH', 'B1', 'SMS', '22');
+                INSERT INTO rollup_codes VALUES('MX', 'B1', 'MMS', '23');
+                INSERT INTO rollup_codes VALUES('CK', 'B1', 'Mobile Data', '24');
+                INSERT INTO rollup_codes VALUES('MR', 'B1', 'Mobile Roaming Charges (No GST)', '25');
+                INSERT INTO rollup_codes VALUES('CB', 'B1', 'Roaming', '26');
+                INSERT INTO rollup_codes VALUES('MC', 'B1', 'Mobile Call Credit', '27');
+                INSERT INTO rollup_codes VALUES('C^', 'C1', 'Inbound International', '28');
+                INSERT INTO rollup_codes VALUES('C*', 'C1', 'Inbound Community Calls', '29');
+                INSERT INTO rollup_codes VALUES('C!', 'C1', 'Inbound Local to 1300', '30');
+                INSERT INTO rollup_codes VALUES('C#', 'C1', 'Inbound National to 130', '31');
+                INSERT INTO rollup_codes VALUES('C(', 'C1', 'Inbound Mobile to 1300', '32');
+                INSERT INTO rollup_codes VALUES('C)', 'C1', 'Inbound Local to 1800', '33');
+                INSERT INTO rollup_codes VALUES('C{', 'C1', 'Inbound National to 1800', '34');
+                INSERT INTO rollup_codes VALUES('C}', 'C1', 'Inbound Mobile to 1800', '35');
+                INSERT INTO rollup_codes VALUES('VN', 'X1', 'Voip Number', '36');
+            ]]>
+        </sql>
+</changeSet>
+
+     <changeSet context = "base" id = "JBSPC-623: Credit pool consumption notifications" author="Amol Saware">
+        <comment>Spc Event based custom notification task</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.system.event.task.IInternalEventsTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcNotificationTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Event based custom notification task."/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is a SPC specific plugin which sends notification to customer."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-738: Credit Pool Issues" author="Abhijeet Kore">
+        <sql splitStatements="false">
+            <![CDATA[
+                   CREATE OR REPLACE FUNCTION extractTariffCodeFromPricingField(pricingField VARCHAR) RETURNS VARCHAR AS $$
+                   BEGIN
+                   RETURN REPLACE(REPLACE(Trim(REPLACE(Split_part(Substring(pricingField FROM '%TARIFF_CODE:1:string:#"%#"%' FOR  '#'),   ',', 1), '%3A', ':')), '%26', '&' ), '%23', '#');
+                   END;
+                   $$ LANGUAGE plpgsql;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-667" author="Swapnil Patil">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed   = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed   = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.system.event.task.IInternalEventsTask')" />
+            <column name = "class_name"     value           = "com.sapienter.jbilling.server.usagePool.task.SPCUsagePoolFeeChargingTask" />
+            <column name = "min_parameters" valueNumeric    = "0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name = "table_id"        valueNumeric    = "24" />
+            <column name = "foreign_id"      valueComputed   = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"    value           = "title" />
+            <column name = "language_id"     valueNumeric    = "1" />
+            <column name = "content"         value           = "SPC Usage Pool Fee Charging Task." />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"       valueNumeric    = "24"/>
+            <column name = "foreign_id"     valueComputed   = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column"   value           = "description"/>
+            <column name = "language_id"    valueNumeric    = "1"/>
+            <column name = "content"        value           = "When this plugin is set the service id will be added to the order line and the data boost charges will be included into the service summary section on the invoice"/>
+        </insert>
+    </changeSet>
+
+     <changeSet context  = "base" id = "JBSPC-700 : Added-SPCInvoiceMigrationTask-Plugin" author = "Harshad Pathan">
+     <insert tableName  = "pluggable_task_type">
+          <column name  = "id"              valueComputed  = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+          <column name  = "category_id"     valueNumeric   = "22" />
+          <column name  = "class_name"      value          = "com.sapienter.jbilling.server.billing.task.spc.SPCHistoricalDataMigrationTask" />
+          <column name  = "min_parameters"  valueNumeric   = "2" />
+     </insert>
+
+     <insert tableName  = "international_description">
+          <column name  = "table_id"    valueNumeric = "24" />
+          <column name  = "foreign_id" valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+          <column name  = "psudo_column"       value = "title" />
+          <column name  = "language_id" valueNumeric = "1" />
+          <column name  = "content"            value = "Task for creating legacy invoices, payments and credit or debit adjustments." />
+     </insert>
+
+     <insert tableName = "international_description">
+         <column name  = "table_id"       valueNumeric = "24" />
+         <column name  = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+         <column name  = "psudo_column"          value = "description" />
+         <column name  = "language_id"    valueNumeric = "1" />
+         <column name  = "content"               value = "This is an SPC specific job which is to be used for one time migration of legacy invoices, payments, credit notes and debit adjustments." />
+     </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-743 : Active services report" author = "Swapnil Patil">
+        <comment>Added offset and limit to the report</comment>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'active_services_report')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="offset" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'active_services_report')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="limit" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBFC-533-Cancellation credits to charge to different products for different services" author = "Nandkumar Gogate">
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "17"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SPCProrateRefundOnCancelTask"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Cancellation Credits To Charge To Different Products For Different Services"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin is specific to SPC. It is used for creating a credit Order when a Order is Cancelled.SPC needs to have different credit product for each type of service such as Voice service, Internet Service, Mobile service."/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-766: SPCReportCSVExporterTask" author = "Swapnil Patil">
+        <comment>SPC report exporter task</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SPCReportCSVExporterTask"/>
+                <column name = "min_parameters" valueNumeric  = "3"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Report Export Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This task used to export reports in CSV format for provided report names and store it under the given directory path."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-765: Delete the detailed billing report from UI" author="Swapnil Patil">
+        <delete tableName="report_parameter" >
+            <where>report_id = (SELECT id FROM report where name = 'detailed_billing_report')</where>
+        </delete>
+        <delete tableName="entity_report_map" >
+            <where>report_id = (SELECT id FROM report where name = 'detailed_billing_report')</where>
+        </delete>
+        <delete tableName="report" >
+            <where> name = 'detailed_billing_report'</where>
+        </delete>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-767: Revamped query in function to check invoice is adjustment" author="Mahesh Shivarkar">
+        <sql splitStatements="false">
+                CREATE OR REPLACE FUNCTION adjustmentInvoices(userId int)
+                RETURNS integer[] AS $$ declare adjustmentInvoices integer[];
+                BEGIN
+
+                  SELECT ARRAY(
+                  SELECT CASE WHEN
+                  (
+                  SELECT CONCAT(il_inner.invoice_id,'|', count(*))
+                  FROM invoice_line il_inner
+                  WHERE il_inner.item_id IS NOT NULL
+                  AND il_inner.invoice_id = i_adjustment.id
+                  AND il_inner.item_id IN (
+		                  SELECT     i.id
+		                  FROM       item i
+		                  INNER JOIN item_type_map itm
+		                  ON         itm.item_id = i.id
+		                  INNER JOIN item_type it
+		                  ON         it.id = itm.type_id
+		                  INNER JOIN order_line_type olt
+		                  ON         olt.id = it.order_line_type_id
+		                  INNER JOIN international_description int_des
+		                  ON         int_des.foreign_id = olt.id
+		                  INNER JOIN jbilling_table jt
+		                  ON         jt.id = int_des.table_id
+		                  WHERE      int_des.content = 'Adjustment'
+		                  AND        jt.name = 'order_line_type'
+		                  AND i.deleted = 0 )
+                  GROUP BY il_inner.invoice_id
+                  )
+                  =
+                  (
+                  SELECT CONCAT(il_inner.invoice_id,'|', count(*))
+                  FROM invoice_line il_inner
+                  INNER JOIN invoice i_inner ON i_inner.id = il_inner.invoice_id
+                  WHERE i_inner.id = i_adjustment.id
+                  GROUP BY il_inner.invoice_id
+                  )
+                  THEN
+                  i_adjustment.id
+                  ELSE
+                  NULL
+                  END INTO adjustmentInvoices
+                  FROM invoice i_adjustment
+                  WHERE i_adjustment.user_id = userId
+                  );
+                   RETURN adjustmentInvoices;
+                END; $$ LANGUAGE plpgsql;
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id = "JBSPC-808 SPCRemoveAssetFromActiveOrderTask" author = "Swapnil Patil">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"               valueComputed = "(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name = "category_id"      valueNumeric  = "17"/>
+            <column name = "class_name"       value         = "com.sapienter.jbilling.server.item.tasks.SPCRemoveAssetFromActiveOrderTask"/>
+            <column name = "min_parameters"   valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"         valueNumeric  = "24"/>
+            <column name = "foreign_id"       valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"     value         = "title"/>
+            <column name = "language_id"      valueNumeric  = "1"/>
+            <column name = "content"          value         = "SPC Remove Asset From Active Order Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"         valueNumeric  = "24"/>
+            <column name = "foreign_id"       valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"     value         = "description"/>
+            <column name = "language_id"      valueNumeric  = "1"/>
+            <column name = "content"          value         = "When this plugin is set the api removeAssetFromActiveOrder
+                will release the given asset from the active non finished order."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-784:Company level Meta field Exclude from Call Itemisation Category Id added" author="Mahesh Shivarkar">
+        <sql>
+            <![CDATA[
+            INSERT INTO meta_field_name (id, entity_id, name, optlock, entity_type, data_type, is_disabled, is_mandatory, display_order, is_primary)
+            SELECT coalesce( (select max(id)+1 from meta_field_name),1)+e.id, e.id, 'Exclude from Call Itemisation Category Id', 1, 'COMPANY', 'INTEGER', false, false, 5, true FROM entity e;
+            ]]>
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id)+1, 1) FROM meta_field_name)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+        <sql>
+            <![CDATA[
+            INSERT INTO item_type (id, entity_id, description, order_line_type_id, optlock, internal, allow_asset_management, asset_identifier_label, parent_id, global)
+            SELECT coalesce( (select max(id)+1 from item_type),1)+e.id, e.id, 'Exclude from Call Itemisation Category', 1, 0, false, 0, null, null, false FROM entity e;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-785" author="Nandkumar Gogate">
+        <sql>
+            INSERT INTO rollup_codes VALUES ('CCC','X1','Customer Care Calls',999);
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-777: Updated Rollup codes" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            ALTER TABLE rollup_codes ALTER COLUMN rollup_code_type TYPE varchar(50);
+            ALTER TABLE rollup_codes ALTER COLUMN rollup_code TYPE varchar(50);
+            INSERT INTO rollup_codes VALUES('PF','X1','Plan Fee',-188);
+            INSERT INTO rollup_codes VALUES('LPF','X1','Late Payment Fee',-187);
+            INSERT INTO rollup_codes VALUES('PBF','X1','Paper Bill Fee',-186);
+            INSERT INTO rollup_codes VALUES('FIN-WU','X1','Write Up',-185);
+            INSERT INTO rollup_codes VALUES('FIN-PBF','X1','PostBill Pay Fee',-184);
+            INSERT INTO rollup_codes VALUES('FIN-CCS','X1','Credit Card Surcharge',-183);
+            INSERT INTO rollup_codes VALUES('FIN-BDF','X1','Bank Dishonour Fee',-182);
+            INSERT INTO rollup_codes VALUES('CR-APBF','X1','Aust Post Surcharge Credit',-181);
+            INSERT INTO rollup_codes VALUES('Fee-100','X1','Modem Delivery Fee',-180);
+            INSERT INTO rollup_codes VALUES('SHP','X1','nbn™ Modem Delivery Fee',-179);
+            INSERT INTO rollup_codes VALUES('FIX-ORP','X1','Landline Outright Purchase',-178);
+            INSERT INTO rollup_codes VALUES('FIX-HSF','X1','Landline Handset Fee',-177);
+            INSERT INTO rollup_codes VALUES('MOB-ORP','X1','Mobile Outright Purchase',-176);
+            INSERT INTO rollup_codes VALUES('MOB-HSF','X1','Mobile Handset Fee',-175);
+            INSERT INTO rollup_codes VALUES('MOB-SIM','X1','Mobile Replacement SIM Card',-174);
+            INSERT INTO rollup_codes VALUES('RTR-DS244WTV','X1','COMNECT DS244WTV Modem Purchase',-173);
+            INSERT INTO rollup_codes VALUES('RTR-DS224WTV','X1','COMNECT DS224WTV Modem Purchase',-172);
+            INSERT INTO rollup_codes VALUES('RTR-NF18ACV','X1','NETCOMM NF18ACV Modem Purchase',-171);
+            INSERT INTO rollup_codes VALUES('RTR-Gaoke','X1','Gaoke LG6001N Modem Purchase',-170);
+            INSERT INTO rollup_codes VALUES('HUAWEI-4G','X1','Huawei 4G Router',-169);
+            INSERT INTO rollup_codes VALUES('RTR-NF10WV','X1','NETCOMM NF10WV Modem Purchase',-168);
+            INSERT INTO rollup_codes VALUES('Modem-NRF','X1','Modem Non Return Fee',-167);
+            INSERT INTO rollup_codes VALUES('RTR','X1','NetComm NF18ACV modem',-166);
+            INSERT INTO rollup_codes VALUES('RTR-GS4','X1','Grandstream 4 Port ATA',-165);
+            INSERT INTO rollup_codes VALUES('RTR-GS8','X1','Grandstream 8 Port ATA',-164);
+            INSERT INTO rollup_codes VALUES('SSKB-HW','X1','Hardware',-163);
+            INSERT INTO rollup_codes VALUES('SPARK-AWS','X1','AWS Route',-162);
+            INSERT INTO rollup_codes VALUES('SPARK-AZURE','X1','Azure Route',-161);
+            INSERT INTO rollup_codes VALUES('SPARK-SDWAN','X1','Jana SDWAN',-160);
+            INSERT INTO rollup_codes VALUES('SPARK-SOC','X1','Jana SOC',-159);
+            INSERT INTO rollup_codes VALUES('SPARK-MAN','X1','Managed Router',-158);
+            INSERT INTO rollup_codes VALUES('SPARK-RACK','X1','Rack Space',-157);
+            INSERT INTO rollup_codes VALUES('Fee-01','X1','Activation Fee',-156);
+            INSERT INTO rollup_codes VALUES('Fee-03','X1','No Contract Fee',-155);
+            INSERT INTO rollup_codes VALUES('IPF-VOIP','X1','Voice Inactive Plan Fee',-154);
+            INSERT INTO rollup_codes VALUES('OP-CPRBL','X1','CPR Global Call Blocker ',-153);
+            INSERT INTO rollup_codes VALUES('BOC-V','X1','Voice Cancellation fee',-152);
+            INSERT INTO rollup_codes VALUES('MNF-Fee-1','X1','MNF Portability Fee',-151);
+            INSERT INTO rollup_codes VALUES('IPF-MO','X1','Mobile Inactive Plan Fee Optus',-150);
+            INSERT INTO rollup_codes VALUES('IPF-MT','X1','Mobile Inactive Plan Fee Telstra',-149);
+            INSERT INTO rollup_codes VALUES('BOC-MECR','X1','Mobile Early Contract Renewal',-148);
+            INSERT INTO rollup_codes VALUES('BOC-MDPP','X1','Device Repayment Fee BOC',-147);
+            INSERT INTO rollup_codes VALUES('BOC-MRBOC','X1','Mobile Reduced Break of Contract',-146);
+            INSERT INTO rollup_codes VALUES('BOC-MPF','X1','Mobile Plan Fee Break of Contract',-145);
+            INSERT INTO rollup_codes VALUES('BOC-POF','X1','Mobile Port Out Fee',-144);
+            INSERT INTO rollup_codes VALUES('SSKB-INS','X1','Service Installation',-143);
+            INSERT INTO rollup_codes VALUES('SSKB-MON','X1','Monthly Service Fee',-142);
+            INSERT INTO rollup_codes VALUES('NEW-CONN','X1','New Connection Fee',-141);
+            INSERT INTO rollup_codes VALUES('Fee-02','X1','New Developments Charge',-140);
+            INSERT INTO rollup_codes VALUES('LBN-NDC','X1','LBNCo New Development Charge',-139);
+            INSERT INTO rollup_codes VALUES('NBN-DVP','X1','nbn™ New Development Fee',-138);
+            INSERT INTO rollup_codes VALUES('LBN-TECH','X1','Technician Callout Fee',-137);
+            INSERT INTO rollup_codes VALUES('INC-FEE','X1','nbn™ Incorrect Callout Fee',-136);
+            INSERT INTO rollup_codes VALUES('ICFLF','X1','Incorrect Fault Lodgement Fee',-135);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP3','X1','Missed Appointment in Isolated Area',-134);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP4','X1','Missed Appointment in Limited Access area',-133);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP2','X1','Missed Appointment in Minor Rural Area or Remote',-132);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP1','X1','Missed Appointment in Urban or Major Rural Area',-131);
+            INSERT INTO rollup_codes VALUES('EMAIL','X1','Email',-130);
+            INSERT INTO rollup_codes VALUES('Fee-99','X1','Relocation Fee 99',-129);
+            INSERT INTO rollup_codes VALUES('Fee-55','X1','Relocation Fee',-128);
+            INSERT INTO rollup_codes VALUES('DGF','X1','Internet Plan Change Fee',-127);
+            INSERT INTO rollup_codes VALUES('BOC-INTW','X1','Internet Withdrawal Fee',-126);
+            INSERT INTO rollup_codes VALUES('WDF','X1','nbn™ Early Cancellation Fee',-125);
+            INSERT INTO rollup_codes VALUES('BOC-I','X1','Internet Cancellation Fee',-124);
+            INSERT INTO rollup_codes VALUES('LCAN-SV3','X1','Late Cancellation (with site visit) in Isolated Area',-123);
+            INSERT INTO rollup_codes VALUES('LCAN-SV2','X1','Late Cancellation (with site visit) in Minor Rural Area or Remote',-122);
+            INSERT INTO rollup_codes VALUES('LCAN-SV1','X1','Late Cancellation (with site visit) in Urban or Major Rural Area',-121);
+            INSERT INTO rollup_codes VALUES('CR-LPF','X1','Late Payment Fee Credit',-120);
+            INSERT INTO rollup_codes VALUES('CR-PBF','X1','Paper Bill Fee Credit',-119);
+            INSERT INTO rollup_codes VALUES('FIN-BD','X1','Bad Debt Recovered Credit',-118);
+            INSERT INTO rollup_codes VALUES('CR-AWB','X1','Aprroved Write Backs Credit',-117);
+            INSERT INTO rollup_codes VALUES('CR-BAWO','X1','Board Approved Write Offs Credit',-116);
+            INSERT INTO rollup_codes VALUES('CR-SW','X1','Small Write Offs/Write Backs Credit',-115);
+            INSERT INTO rollup_codes VALUES('CR-BDF','X1','Dishonour Fees Credit',-114);
+            INSERT INTO rollup_codes VALUES('CR-TIO','X1','TIO Complaint Credits',-113);
+            INSERT INTO rollup_codes VALUES('CR-DIS','X1','Disaster Relief Credit',-112);
+            INSERT INTO rollup_codes VALUES('CR-V','X1','Fixed line Credit',-111);
+            INSERT INTO rollup_codes VALUES('TEL-CSGC','X1','Customer Service Guarantee Credit',-110);
+            INSERT INTO rollup_codes VALUES('CR-MORP','X1','Handset Outright Purchase Credit',-109);
+            INSERT INTO rollup_codes VALUES('CR-M','X1','Mobile Credit',-108);
+            INSERT INTO rollup_codes VALUES('CR-MDATA','X1','Mobile Data credit',-107);
+            INSERT INTO rollup_codes VALUES('CR-RTR','X1','Modem Outright Purchase Credit',-106);
+            INSERT INTO rollup_codes VALUES('CR-NBN-Modem','X1','Credit Adjustment',-105);
+            INSERT INTO rollup_codes VALUES('CR-I','X1','Internet Credit',-104);
+            INSERT INTO rollup_codes VALUES('CAN-PSTN','X1','PSTN - Plan Fee Cancellation Credit',-103);
+            INSERT INTO rollup_codes VALUES('CAN-VOIP','X1','Voip - Plan Fee Cancellation Credit',-102);
+            INSERT INTO rollup_codes VALUES('CR-BOCV','X1','Break of Contract - Fixed Line Credit',-101);
+            INSERT INTO rollup_codes VALUES('CAN-OM','X1','Optus Mobile 4G Cancellation Credit',-100);
+            INSERT INTO rollup_codes VALUES('CAN-TM','X1','Telstra Mobile 4G Cancellation Credit',-99);
+            INSERT INTO rollup_codes VALUES('CR-BOCM','X1','Break of Contract - Mobile Credit',-98);
+            INSERT INTO rollup_codes VALUES('CR-CONN','X1','Connection Fee Credit',-97);
+            INSERT INTO rollup_codes VALUES('CAN-DSL','X1','DSL Plan Fee Cancellation Credit',-96);
+            INSERT INTO rollup_codes VALUES('CAN-N100','X1','NBN - 100/40 - Plan Fee Cancellation Credit',-95);
+            INSERT INTO rollup_codes VALUES('CAN-N12','X1','NBN - 12/1 - Plan Fee Cancellation Credit',-94);
+            INSERT INTO rollup_codes VALUES('CAN-N25','X1','NBN - 25/5 - Plan Fee Cancellation Credit',-93);
+            INSERT INTO rollup_codes VALUES('CAN-N50','X1','NBN - 50/20 - Plan Fee Cancellation Credit',-92);
+            INSERT INTO rollup_codes VALUES('CAN-NB','X1','NBN - Small Business - Plan Fee Cancellaton Credit',-91);
+            INSERT INTO rollup_codes VALUES('CAN-CB','X1','Corporate Business - Internet Cancellation Credit',-90);
+            INSERT INTO rollup_codes VALUES('CAN-SAT','X1','Satellite Plan Fee Cancellation Credit',-89);
+            INSERT INTO rollup_codes VALUES('CR-BOCI','X1','Break of Contract - Internet Credit',-88);
+            INSERT INTO rollup_codes VALUES('DR-PCT','X1','Debit Adjustment',-87);
+            INSERT INTO rollup_codes VALUES('FIRST_50%','X1','Subscription discount for 1st month(50%)',-86);
+            INSERT INTO rollup_codes VALUES('FOURTH_50%','X1','Subscription discount for 4th month(50%)',-85);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE100','X1','First Month Free - 100 Mbps',-84);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE25','X1','First Month Free - 25 Mbps',-83);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE12','X1','First Month Free - 12 Mbps',-82);
+            INSERT INTO rollup_codes VALUES('PRM-10OFF3MONTHS','X1','PROMO CREDIT: $10 off for first 3 months',-81);
+            INSERT INTO rollup_codes VALUES('20Credit','X1','20 Dollars Off',-80);
+            INSERT INTO rollup_codes VALUES('DISC-STAFF','X1','Staff Discount',-79);
+            INSERT INTO rollup_codes VALUES('DISC-SV','X1','Senior Discount',-78);
+            INSERT INTO rollup_codes VALUES('DD-Discount','X1','Direct Debit Discount',-77);
+            INSERT INTO rollup_codes VALUES('FZ-Discount','X1','Family Zone Discount',-76);
+            INSERT INTO rollup_codes VALUES('DISC-B','X1','Bundle Discount',-75);
+            INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+            INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+            INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+            INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+            INSERT INTO rollup_codes VALUES('E1','super','Other Charges and Credits',5);
+            INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',6);
+            INSERT INTO rollup_codes VALUES('S2','super_super','Standalone',7);
+            INSERT INTO rollup_codes VALUES('AAPT_VOIP_Asset_Product','A1','AAPT VOIP Asset Product',8);
+            INSERT INTO rollup_codes VALUES('Engin_and_Sconnect_Asset_Product','A1','Engin and Sconnect Asset Product',9);
+            INSERT INTO rollup_codes VALUES('Optus_Fixed_Line_Asset_Product','A1','Optus Fixed Line Asset Product',10);
+            INSERT INTO rollup_codes VALUES('Telstra_Fixed_Line_Asset_Product','A1','Telstra Fixed Line Asset Product',11);
+            INSERT INTO rollup_codes VALUES('voice_numbers','A1','Voice Numbers',12);
+            INSERT INTO rollup_codes VALUES('voip_number','A1','Voip Number',13);
+            INSERT INTO rollup_codes VALUES('PF-V','A1','Plan Fee Voice',14);
+            INSERT INTO rollup_codes VALUES('DISC-VOIP','A1','Discount (Voice)',15);
+            INSERT INTO rollup_codes VALUES('DISC-PV','A1','Promo Discount',16);
+            INSERT INTO rollup_codes VALUES('aa_local_calls','A1','Local Calls',17);
+            INSERT INTO rollup_codes VALUES('aa_national_calls','A1','National Calls',18);
+            INSERT INTO rollup_codes VALUES('aa_long_distance_calls','A1','Long Distance Calls',19);
+            INSERT INTO rollup_codes VALUES('aa_calls_to_13_numbers','A1','Calls to 13 Numbers',20);
+            INSERT INTO rollup_codes VALUES('aa_directory_&amp;_assisted_calls','A1','Directory &amp; Assisted Calls',21);
+            INSERT INTO rollup_codes VALUES('aa_calls_to_mobiles','A1','Calls to Mobiles',22);
+            INSERT INTO rollup_codes VALUES('aa_international_calls','A1','International Calls',23);
+            INSERT INTO rollup_codes VALUES('op_fixed_to_mobile_calls','A1','Fixed to Mobile Calls',24);
+            INSERT INTO rollup_codes VALUES('sc_other_calls','A1','Other Calls',25);
+            INSERT INTO rollup_codes VALUES('sc_international_calls_sp_dest_30','A1','International Calls Global 30',26);
+            INSERT INTO rollup_codes VALUES('sc_international_calls_sp_dest','A1','International Calls Global 70',27);
+            INSERT INTO rollup_codes VALUES('MNFSCI-10','A1','MNF SC International',28);
+            INSERT INTO rollup_codes VALUES('sv_local_to_1800','A1','Local to 1800',29);
+            INSERT INTO rollup_codes VALUES('sv_ipdata_streaming_charges','A1','IPData Streaming Charges',30);
+            INSERT INTO rollup_codes VALUES('tf_calls_to_0198_numbers','A1','Calls to 0198 Numbers',31);
+            INSERT INTO rollup_codes VALUES('tf_faxstream_calls','A1','Faxstream Calls',32);
+            INSERT INTO rollup_codes VALUES('tf_service_&amp;_equipment','A1','Service &amp; Equipment',33);
+            INSERT INTO rollup_codes VALUES('SMS','A1','My Text SMS',34);
+            INSERT INTO rollup_codes VALUES('Telstra_Optus_FL_Call_Credit','A1','Fixed Line Call Credit',35);
+            INSERT INTO rollup_codes VALUES('VC','A1','Voice Call Credit',36);
+            INSERT INTO rollup_codes VALUES('Voip_Call_Credit','A1','Voip Call Credit',37);
+            INSERT INTO rollup_codes VALUES('op_inbound_community_calls','C1','Inbound Community Calls',38);
+            INSERT INTO rollup_codes VALUES('op_inbound_local_to_1300','C1','Inbound Local to 1300',39);
+            INSERT INTO rollup_codes VALUES('op_inbound_national_to_1300','C1','Inbound National to 1300',40);
+            INSERT INTO rollup_codes VALUES('op_inbound_mobile_to_1300','C1','Inbound Mobile to 1300',41);
+            INSERT INTO rollup_codes VALUES('op_inbound_local_to_1800','C1','Inbound Local to 1800',42);
+            INSERT INTO rollup_codes VALUES('op_inbound_national_to_1800','C1','Inbound National to 1800',43);
+            INSERT INTO rollup_codes VALUES('op_inbound_mobile_to_1800','C1','Inbound Mobile to 1800',44);
+            INSERT INTO rollup_codes VALUES('Optus_Mobile_Asset_Product','B1','Optus Mobile Asset Product',45);
+            INSERT INTO rollup_codes VALUES('Telstra_4G_Asset_Product','B1','Telstra 4G Asset Product',46);
+            INSERT INTO rollup_codes VALUES('mobile_numbers','B1','mobile numbers',47);
+            INSERT INTO rollup_codes VALUES('PF-M','B1','Plan Fee Mobile',48);
+            INSERT INTO rollup_codes VALUES('PF-MO','B1','Plan Fee Mobile - Optus 4G',49);
+            INSERT INTO rollup_codes VALUES('PF-MT','B1','Plan Fee Mobile - Telstra 4G',50);
+            INSERT INTO rollup_codes VALUES('DISC-MOBILE','B1','Discount (Mobile)',51);
+            INSERT INTO rollup_codes VALUES('RC-PREMP-O','B1','Seniors Premium Portal - Optus 4G',52);
+            INSERT INTO rollup_codes VALUES('RC-PREMP-T','B1','Seniors Premium Portal - Telstra 4G',53);
+            INSERT INTO rollup_codes VALUES('om_voicemail','B1','Voicemail',54);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_fixed_calls','B1','Mobile to Fixed Calls',55);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_mobile_calls','B1','Mobile to Mobile Calls',56);
+            INSERT INTO rollup_codes VALUES('om_sms','B1','SMS',57);
+            INSERT INTO rollup_codes VALUES('om_mms','B1','MMS',58);
+            INSERT INTO rollup_codes VALUES('om_mobile_special_calls','B1','Mobile Special Calls',59);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_international','B1','Mobile to International',60);
+            INSERT INTO rollup_codes VALUES('om_roaming','B1','Roaming',61);
+            INSERT INTO rollup_codes VALUES('OM_Call_Credit','B1','Mobile Call Credit',62);
+            INSERT INTO rollup_codes VALUES('om_mobile_data','B1','Mobile Data',63);
+            INSERT INTO rollup_codes VALUES('om_mobile_data_debit','B1','Mobile Data Debit',64);
+            INSERT INTO rollup_codes VALUES('DBC-10 (Optus)','B1','Data boost charges optus',65);
+            INSERT INTO rollup_codes VALUES('tm_mobile_roaming_charges_(no_gst)','B1','Mobile Roaming Charges (No GST)',66);
+            INSERT INTO rollup_codes VALUES('DBC-10 (Telstra)','B1','Data boost charges Telstra',67);
+            INSERT INTO rollup_codes VALUES('MOB-DB','B1','Mobile Data Boost',68);
+            INSERT INTO rollup_codes VALUES('internet_user_names','D1','Internet User Names',69);
+            INSERT INTO rollup_codes VALUES('MGTF-01','D1','Coles Management Fee',70);
+            INSERT INTO rollup_codes VALUES('ATA-01','D1','Coles ATA',71);
+            INSERT INTO rollup_codes VALUES('PF-I','D1','Plan Fee Internet',72);
+            INSERT INTO rollup_codes VALUES('DISC-01','D1','Discount (Internet)',73);
+            INSERT INTO rollup_codes VALUES('STATIC-IP','D1','Static IP',74);
+            INSERT INTO rollup_codes VALUES('Item_Download','D1','Download',75);
+            INSERT INTO rollup_codes VALUES('AAPT-INT-TOTAL','D1','Internet',76);
+            INSERT INTO rollup_codes VALUES('Satellite-INT-TOTAL','D1','Internet For Satellite',77);
+            INSERT INTO rollup_codes VALUES('Boost20','D1','MNF Boost 20',78);
+            INSERT INTO rollup_codes VALUES('Boost100','D1','MNF Boost 100',79);
+            INSERT INTO rollup_codes VALUES('CCC','D1','Customer Care Calls',80);
+            INSERT INTO rollup_codes VALUES('GST','D1','GST',81);
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-848:Company level Meta field BPay Biller Code added" author="Mahesh Shivarkar">
+        <sql>
+            <![CDATA[
+            INSERT INTO meta_field_name (id, entity_id, name, optlock, entity_type, data_type, is_disabled, is_mandatory, display_order, is_primary)
+            SELECT coalesce( (select max(id)+1 from meta_field_name),1)+e.id, e.id, 'BPay Biller Code', 1, 'COMPANY', 'STRING', false, false, 5, true FROM entity e;
+            ]]>
+        </sql>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id)+1, 1) FROM meta_field_name)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-848:Deleted Company level Meta field BPay Biller Code" author="Mahesh Shivarkar">
+        <sql>
+            <![CDATA[
+            DELETE FROM entity_meta_field_map WHERE meta_field_value_id IN (SELECT id FROM meta_field_value WHERE meta_field_name_id IN (SELECT id FROM meta_field_name WHERE name = 'BPay Biller Code'));
+            DELETE FROM meta_field_value WHERE meta_field_name_id IN (SELECT id FROM meta_field_name WHERE name = 'BPay Biller Code');
+            DELETE FROM meta_field_name WHERE name = 'BPay Biller Code';
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-51: removing mediation meta data from spring batch tables." author = "Krunal Bhavsar">
+        <comment>removing mediation meta data from spring batch tables and delete mur notification jmrs.</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcMediationMetaDataCleaningTask"/>
+                <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "spc mediation meta data cleaning task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is task deletes mur records and mediation job meta data from spring batch tables."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-865 Improvement in database function to get Tariff code" author="Abhijeet Kore">
+        <sql splitStatements="false">
+            <![CDATA[
+            CREATE OR REPLACE FUNCTION decodeTariffCode(p varchar) RETURNS varchar AS $$
+            SELECT convert_from(CAST(E'\\x' || string_agg(CASE WHEN length(r.m[1]) = 1 THEN encode(convert_to(r.m[1], 'SQL_ASCII'), 'hex') ELSE substring(r.m[1] from 2 for 2) END, '') AS bytea), 'UTF8')
+            FROM regexp_matches(Split_part(Substring($1 FROM '%TARIFF_CODE:1:string:#"%#"%' FOR  '#'),   ',', 1), '%[0-9a-f][0-9a-f]|.', 'gi') AS r(m);
+            $$ LANGUAGE SQL IMMUTABLE STRICT;
+            DROP FUNCTION IF EXISTS extractTariffCodeFromPricingField(VARCHAR);
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id="JBSPC-876: Added spc detailed billing report table" author="Neelabh Dubey">
+        <createTable tableName = "detailed_billing_log">
+              <column name = "billing_process_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "invoice_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "invoice_date" type = "java.sql.Types.DATE">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "revenue_gl_code" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "user_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "user_name" type = "java.sql.Types.VARCHAR(512)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "product_code" type = "java.sql.Types.VARCHAR(50)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "call_identifier" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "plan_or_product_name" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "product_end_date" type = "java.sql.Types.DATE">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "service_email" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "service_number" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "service_type" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "service_description" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "costs_gl_code" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "plan_type" type = "java.sql.Types.VARCHAR(2000)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "tax_code" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "sales_ex_gst" type = "java.sql.Types.NUMERIC(22,10)" defaultValue="0">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "gst" type = "java.sql.Types.NUMERIC(22,10)" defaultValue="0">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "rollup_code" type = "java.sql.Types.VARCHAR(50)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "super_rollup_code" type = "java.sql.Types.VARCHAR(50)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "super_super_rollup_code" type = "java.sql.Types.VARCHAR(50)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "tariff_code" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "cost_of_service" type = "java.sql.Types.NUMERIC(22,10)" defaultValue="0">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "origin" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "tariff_description" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "rollup_description" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "super_rollup_description" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "super_super_rollup_description" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "from_date" type = "java.sql.Types.DATE">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "to_date" type = "java.sql.Types.DATE">
+                  <constraints nullable = "true"/>
+              </column>
+         </createTable>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-912 Implementation of Mediation for Sapphire" author = "Krunal Bhavsar">
+        <comment>Spc Directory based mediation  Scheduled task</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name = "category_id"    valueNumeric  = "22"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcMediationDirectoryBasedProcessTask"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.spc.SpcMediationDirectoryBasedProcessTask')"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Specific Directory Based Mediation Scheduled Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24"/>
+            <column name = "foreign_id"    valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.spc.SpcMediationDirectoryBasedProcessTask')"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Task will take a file from a given dir path from mediation configuration and trigger 2 different mediation jobs at the same time.
+                                                            SPC case Optus MUR and SPC mediation Jobs will run in parallel. But the same job will not run in parallel, It will trigger one job at a time."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-917: Added optus mur asset usage map" author = "Krunal Bhavsar">
+        <createTable tableName = "optus_mur_usage_map">
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "asset_number" type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "quantity" type = "java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "item_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "from_date" type = "TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "to_date" type = "TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable = "false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames    = "user_id,item_id,asset_number,from_date"
+                       constraintName = "optus_mur_usage_map_pkey"
+                       tableName      = "optus_mur_usage_map"/>
+
+        <addForeignKeyConstraint constraintName         = "optus_mur_usage_map_fk_base_user"
+                                 baseTableName          = "optus_mur_usage_map"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+
+        <addForeignKeyConstraint constraintName         = "optus_mur_usage_map_fk_item"
+                                 baseTableName          = "optus_mur_usage_map"
+                                 referencedTableName    = "item"
+                                 baseColumnNames        = "item_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-920: Added create_date column" author = "Krunal Bhavsar">
+        <addColumn tableName = "optus_mur_usage_map">
+            <column name                 = "create_date"
+                    type                 = "TIMESTAMP WITHOUT TIME ZONE"
+                    defaultValueComputed = "TO_DATE(TO_CHAR(NOW() :: TIMESTAMP WITHOUT TIME ZONE, 'yyyy-MM-dd'), 'yyyy-MM-dd')">
+                <constraints nullable = "false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Abhijeet Kore" context="base" id="JBSPC-736 - Invoice Email Template AGL">
+       <insert tableName="notification_message_type">
+            <column name="id" valueComputed="1020"/>
+            <column name="category_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52"/>
+            <column name="foreign_id" valueComputed="(select max(nmt.id) from notification_message_type nmt)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="AGL Invoice (Email)"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(mt.id)+1 from notification_message_type mt)"/>
+            <where>name='notification_message_type'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-736 - Invoice Email Template AGL-Addition of new pluggable task" author="Abhijeet Kore">
+        <comment>This plugin will use to notifies a user by sending an email on the basis of customer level configured
+        invoice template. If the customer level invoice template is AGL then the system will use AGL related from address</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="7"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.SpcEmailNotificationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.SpcEmailNotificationTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="SPC Specific Email Notification Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.SpcEmailNotificationTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin used to configure parameters specific to SPC."/>
+        </insert>
+     </changeSet>
+
+    <changeSet id = "JBAGL-07 - Update SPCPaymentReconciliationScheduledTask to PaymentReconciliationScheduledTask" author = "Amol Saware" context = "base">
+         <update tableName = "pluggable_task_type">
+             <column name = "class_name" value = "com.sapienter.jbilling.server.spc.payment.reconciliation.PaymentReconciliationScheduledTask"/>
+             <where>class_name = 'com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationScheduledTask'</where>
+         </update>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBAGL-110 - BPAY files : Duplicate payment tx created when same file is placed in both SPC and AGL folders" author = "Amol Saware">
+        <update tableName = "pluggable_task_parameter">
+            <column name = "name" value = "SPC Reconciliation directory path"/>
+            <where>name = 'Reconciliation directory path'</where>
+        </update>
+        <update tableName = "pluggable_task_parameter">
+            <column name = "name" value = "SPC Unallocated Payment Account"/>
+            <where>name = 'Unallocated Payment Account'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JBAGL-160: Removing plural of mobile numbers" author="Mahesh Shivarkar">
+		<sql>
+            UPDATE rollup_codes SET rollup_code = 'mobile_number', item_type_description = 'mobile number' WHERE rollup_code = 'mobile_numbers' AND item_type_description = 'mobile numbers';
+
+            UPDATE international_description SET content = 'mobile number' WHERE table_id IN (SELECT id FROM jbilling_table WHERE name = 'item') AND language_id = 1 AND foreign_id IN (SELECT id FROM item WHERE internal_number = 'mobile_numbers');
+		</sql>
+	</changeSet>
+
+	<changeSet context="base" id="JBAGL-167: Updated Rollup codes" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            INSERT INTO rollup_codes VALUES('CAN-PSTN','X1','PSTN - Plan Fee Cancellation Credit',-103);
+            INSERT INTO rollup_codes VALUES('CAN-VOIP','X1','Voip - Plan Fee Cancellation Credit',-102);
+            INSERT INTO rollup_codes VALUES('CR-BOCV','X1','Break of Contract - Fixed Line Credit',-101);
+            INSERT INTO rollup_codes VALUES('CAN-OM','X1','Optus Mobile 4G Cancellation Credit',-100);
+            INSERT INTO rollup_codes VALUES('CAN-TM','X1','Telstra Mobile 4G Cancellation Credit',-99);
+            INSERT INTO rollup_codes VALUES('CR-BOCM','X1','Break of Contract - Mobile Credit',-98);
+            INSERT INTO rollup_codes VALUES('CR-CONN','X1','Connection Fee Credit',-97);
+            INSERT INTO rollup_codes VALUES('CAN-DSL','X1','DSL Plan Fee Cancellation Credit',-96);
+            INSERT INTO rollup_codes VALUES('CAN-N100','X1','NBN - 100/40 - Plan Fee Cancellation Credit',-95);
+            INSERT INTO rollup_codes VALUES('CAN-N12','X1','NBN - 12/1 - Plan Fee Cancellation Credit',-94);
+            INSERT INTO rollup_codes VALUES('CAN-N25','X1','NBN - 25/5 - Plan Fee Cancellation Credit',-93);
+            INSERT INTO rollup_codes VALUES('CAN-N50','X1','NBN - 50/20 - Plan Fee Cancellation Credit',-92);
+            INSERT INTO rollup_codes VALUES('CAN-NB','X1','NBN - Small Business - Plan Fee Cancellaton Credit',-91);
+            INSERT INTO rollup_codes VALUES('CAN-CB','X1','Corporate Business - Internet Cancellation Credit',-90);
+            INSERT INTO rollup_codes VALUES('CAN-SAT','X1','Satellite Plan Fee Cancellation Credit',-89);
+            INSERT INTO rollup_codes VALUES('CR-BOCI','X1','Break of Contract - Internet Credit',-88);
+            INSERT INTO rollup_codes VALUES('DR-PCT','X1','Debit Adjustment',-87);
+            INSERT INTO rollup_codes VALUES('FIRST_50%','X1','Subscription discount for 1st month(50%)',-86);
+            INSERT INTO rollup_codes VALUES('FOURTH_50%','X1','Subscription discount for 4th month(50%)',-85);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE100','X1','First Month Free - 100 Mbps',-84);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE25','X1','First Month Free - 25 Mbps',-83);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE12','X1','First Month Free - 12 Mbps',-82);
+            INSERT INTO rollup_codes VALUES('PRM-10OFF3MONTHS','X1','PROMO CREDIT: $10 off for first 3 months',-81);
+            INSERT INTO rollup_codes VALUES('20Credit','X1','20 Dollars Off',-80);
+            INSERT INTO rollup_codes VALUES('DISC-STAFF','X1','Staff Discount',-79);
+            INSERT INTO rollup_codes VALUES('DISC-SV','X1','Senior Discount',-78);
+            INSERT INTO rollup_codes VALUES('DD-Discount','X1','Direct Debit Discount',-77);
+            INSERT INTO rollup_codes VALUES('FZ-Discount','X1','Family Zone Discount',-76);
+            INSERT INTO rollup_codes VALUES('DISC-B','X1','Bundle Discount',-75);
+            INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+            INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+            INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+            INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+            INSERT INTO rollup_codes VALUES('E1','super','Other Charges and Credits',5);
+            INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',6);
+            INSERT INTO rollup_codes VALUES('S2','super_super','Standalone',7);
+            INSERT INTO rollup_codes VALUES('AAPT_VOIP_Asset_Product','A1','AAPT VOIP Asset Product',8);
+            INSERT INTO rollup_codes VALUES('Engin_and_Sconnect_Asset_Product','A1','Engin and Sconnect Asset Product',9);
+            INSERT INTO rollup_codes VALUES('Optus_Fixed_Line_Asset_Product','A1','Optus Fixed Line Asset Product',10);
+            INSERT INTO rollup_codes VALUES('Telstra_Fixed_Line_Asset_Product','A1','Telstra Fixed Line Asset Product',11);
+            INSERT INTO rollup_codes VALUES('voice_numbers','A1','Voice Numbers',12);
+            INSERT INTO rollup_codes VALUES('voip_number','A1','Voip Number',13);
+            INSERT INTO rollup_codes VALUES('PF-V','A1','Plan Fee Voice',14);
+            INSERT INTO rollup_codes VALUES('DISC-VOIP','A1','Discount (Voice)',15);
+            INSERT INTO rollup_codes VALUES('DISC-PV','A1','Promo Discount',16);
+            INSERT INTO rollup_codes VALUES('aa_local_calls','A1','Local Calls',17);
+            INSERT INTO rollup_codes VALUES('aa_national_calls','A1','National Calls',18);
+            INSERT INTO rollup_codes VALUES('aa_long_distance_calls','A1','Long Distance Calls',19);
+            INSERT INTO rollup_codes VALUES('aa_calls_to_13_numbers','A1','Calls to 13 Numbers',20);
+            INSERT INTO rollup_codes VALUES('aa_directory_&amp;_assisted_calls','A1','Directory &amp; Assisted Calls',21);
+            INSERT INTO rollup_codes VALUES('aa_calls_to_mobiles','A1','Calls to Mobiles',22);
+            INSERT INTO rollup_codes VALUES('aa_international_calls','A1','International Calls',23);
+            INSERT INTO rollup_codes VALUES('op_fixed_to_mobile_calls','A1','Fixed to Mobile Calls',24);
+            INSERT INTO rollup_codes VALUES('sc_other_calls','A1','Other Calls',25);
+            INSERT INTO rollup_codes VALUES('sc_international_calls_sp_dest_30','A1','International Calls Global 30',26);
+            INSERT INTO rollup_codes VALUES('PF','X1','Plan Fee',-188);
+            INSERT INTO rollup_codes VALUES('LPF','X1','Late Payment Fee',-187);
+            INSERT INTO rollup_codes VALUES('PBF','X1','Paper Bill Fee',-186);
+            INSERT INTO rollup_codes VALUES('FIN-WU','X1','Write Up',-185);
+            INSERT INTO rollup_codes VALUES('FIN-PBF','X1','PostBill Pay Fee',-184);
+            INSERT INTO rollup_codes VALUES('FIN-CCS','X1','Credit Card Surcharge',-183);
+            INSERT INTO rollup_codes VALUES('FIN-BDF','X1','Bank Dishonour Fee',-182);
+            INSERT INTO rollup_codes VALUES('CR-APBF','X1','Aust Post Surcharge Credit',-181);
+            INSERT INTO rollup_codes VALUES('Fee-100','X1','Modem Delivery Fee',-180);
+            INSERT INTO rollup_codes VALUES('SHP','X1','nbn™ Modem Delivery Fee',-179);
+            INSERT INTO rollup_codes VALUES('FIX-ORP','X1','Landline Outright Purchase',-178);
+            INSERT INTO rollup_codes VALUES('FIX-HSF','X1','Landline Handset Fee',-177);
+            INSERT INTO rollup_codes VALUES('MOB-ORP','X1','Mobile Outright Purchase',-176);
+            INSERT INTO rollup_codes VALUES('MOB-HSF','X1','Mobile Handset Fee',-175);
+            INSERT INTO rollup_codes VALUES('MOB-SIM','X1','Mobile Replacement SIM Card',-174);
+            INSERT INTO rollup_codes VALUES('RTR-DS244WTV','X1','COMNECT DS244WTV Modem Purchase',-173);
+            INSERT INTO rollup_codes VALUES('RTR-DS224WTV','X1','COMNECT DS224WTV Modem Purchase',-172);
+            INSERT INTO rollup_codes VALUES('RTR-NF18ACV','X1','NETCOMM NF18ACV Modem Purchase',-171);
+            INSERT INTO rollup_codes VALUES('RTR-Gaoke','X1','Gaoke LG6001N Modem Purchase',-170);
+            INSERT INTO rollup_codes VALUES('HUAWEI-4G','X1','Huawei 4G Router',-169);
+            INSERT INTO rollup_codes VALUES('RTR-NF10WV','X1','NETCOMM NF10WV Modem Purchase',-168);
+            INSERT INTO rollup_codes VALUES('Modem-NRF','X1','Modem Non Return Fee',-167);
+            INSERT INTO rollup_codes VALUES('RTR','X1','NetComm NF18ACV modem',-166);
+            INSERT INTO rollup_codes VALUES('RTR-GS4','X1','Grandstream 4 Port ATA',-165);
+            INSERT INTO rollup_codes VALUES('RTR-GS8','X1','Grandstream 8 Port ATA',-164);
+            INSERT INTO rollup_codes VALUES('SSKB-HW','X1','Hardware',-163);
+            INSERT INTO rollup_codes VALUES('SPARK-AWS','X1','AWS Route',-162);
+            INSERT INTO rollup_codes VALUES('SPARK-AZURE','X1','Azure Route',-161);
+            INSERT INTO rollup_codes VALUES('SPARK-SDWAN','X1','Jana SDWAN',-160);
+            INSERT INTO rollup_codes VALUES('SPARK-SOC','X1','Jana SOC',-159);
+            INSERT INTO rollup_codes VALUES('SPARK-MAN','X1','Managed Router',-158);
+            INSERT INTO rollup_codes VALUES('SPARK-RACK','X1','Rack Space',-157);
+            INSERT INTO rollup_codes VALUES('Fee-01','X1','Activation Fee',-156);
+            INSERT INTO rollup_codes VALUES('Fee-03','X1','No Contract Fee',-155);
+            INSERT INTO rollup_codes VALUES('IPF-VOIP','X1','Voice Inactive Plan Fee',-154);
+            INSERT INTO rollup_codes VALUES('OP-CPRBL','X1','CPR Global Call Blocker ',-153);
+            INSERT INTO rollup_codes VALUES('BOC-V','X1','Voice Cancellation fee',-152);
+            INSERT INTO rollup_codes VALUES('MNF-Fee-1','X1','MNF Portability Fee',-151);
+            INSERT INTO rollup_codes VALUES('IPF-MO','X1','Mobile Inactive Plan Fee Optus',-150);
+            INSERT INTO rollup_codes VALUES('IPF-MT','X1','Mobile Inactive Plan Fee Telstra',-149);
+            INSERT INTO rollup_codes VALUES('BOC-MECR','X1','Mobile Early Contract Renewal',-148);
+            INSERT INTO rollup_codes VALUES('BOC-MDPP','X1','Device Repayment Fee BOC',-147);
+            INSERT INTO rollup_codes VALUES('BOC-MRBOC','X1','Mobile Reduced Break of Contract',-146);
+            INSERT INTO rollup_codes VALUES('BOC-MPF','X1','Mobile Plan Fee Break of Contract',-145);
+            INSERT INTO rollup_codes VALUES('BOC-POF','X1','Mobile Port Out Fee',-144);
+            INSERT INTO rollup_codes VALUES('SSKB-INS','X1','Service Installation',-143);
+            INSERT INTO rollup_codes VALUES('SSKB-MON','X1','Monthly Service Fee',-142);
+            INSERT INTO rollup_codes VALUES('NEW-CONN','X1','New Connection Fee',-141);
+            INSERT INTO rollup_codes VALUES('Fee-02','X1','New Developments Charge',-140);
+            INSERT INTO rollup_codes VALUES('LBN-NDC','X1','LBNCo New Development Charge',-139);
+            INSERT INTO rollup_codes VALUES('NBN-DVP','X1','nbn™ New Development Fee',-138);
+            INSERT INTO rollup_codes VALUES('LBN-TECH','X1','Technician Callout Fee',-137);
+            INSERT INTO rollup_codes VALUES('INC-FEE','X1','nbn™ Incorrect Callout Fee',-136);
+            INSERT INTO rollup_codes VALUES('ICFLF','X1','Incorrect Fault Lodgement Fee',-135);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP3','X1','Missed Appointment in Isolated Area',-134);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP4','X1','Missed Appointment in Limited Access area',-133);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP2','X1','Missed Appointment in Minor Rural Area or Remote',-132);
+            INSERT INTO rollup_codes VALUES('LCAN-MAPP1','X1','Missed Appointment in Urban or Major Rural Area',-131);
+            INSERT INTO rollup_codes VALUES('EMAIL','X1','Email',-130);
+            INSERT INTO rollup_codes VALUES('Fee-99','X1','Relocation Fee 99',-129);
+            INSERT INTO rollup_codes VALUES('Fee-55','X1','Relocation Fee',-128);
+            INSERT INTO rollup_codes VALUES('DGF','X1','Internet Plan Change Fee',-127);
+            INSERT INTO rollup_codes VALUES('BOC-INTW','X1','Internet Withdrawal Fee',-126);
+            INSERT INTO rollup_codes VALUES('WDF','X1','nbn™ Early Cancellation Fee',-125);
+            INSERT INTO rollup_codes VALUES('BOC-I','X1','Internet Cancellation Fee',-124);
+            INSERT INTO rollup_codes VALUES('LCAN-SV3','X1','Late Cancellation (with site visit) in Isolated Area',-123);
+            INSERT INTO rollup_codes VALUES('LCAN-SV2','X1','Late Cancellation (with site visit) in Minor Rural Area or Remote',-122);
+            INSERT INTO rollup_codes VALUES('LCAN-SV1','X1','Late Cancellation (with site visit) in Urban or Major Rural Area',-121);
+            INSERT INTO rollup_codes VALUES('CR-LPF','X1','Late Payment Fee Credit',-120);
+            INSERT INTO rollup_codes VALUES('CR-PBF','X1','Paper Bill Fee Credit',-119);
+            INSERT INTO rollup_codes VALUES('FIN-BD','X1','Bad Debt Recovered Credit',-118);
+            INSERT INTO rollup_codes VALUES('CR-AWB','X1','Aprroved Write Backs Credit',-117);
+            INSERT INTO rollup_codes VALUES('CR-BAWO','X1','Board Approved Write Offs Credit',-116);
+            INSERT INTO rollup_codes VALUES('CR-SW','X1','Small Write Offs/Write Backs Credit',-115);
+            INSERT INTO rollup_codes VALUES('CR-BDF','X1','Dishonour Fees Credit',-114);
+            INSERT INTO rollup_codes VALUES('CR-TIO','X1','TIO Complaint Credits',-113);
+            INSERT INTO rollup_codes VALUES('CR-DIS','X1','Disaster Relief Credit',-112);
+            INSERT INTO rollup_codes VALUES('CR-V','X1','Fixed line Credit',-111);
+            INSERT INTO rollup_codes VALUES('TEL-CSGC','X1','Customer Service Guarantee Credit',-110);
+            INSERT INTO rollup_codes VALUES('CR-MORP','X1','Handset Outright Purchase Credit',-109);
+            INSERT INTO rollup_codes VALUES('CR-M','X1','Mobile Credit',-108);
+            INSERT INTO rollup_codes VALUES('CR-MDATA','X1','Mobile Data credit',-107);
+            INSERT INTO rollup_codes VALUES('CR-RTR','X1','Modem Outright Purchase Credit',-106);
+            INSERT INTO rollup_codes VALUES('CR-NBN-Modem','X1','Credit Adjustment',-105);
+            INSERT INTO rollup_codes VALUES('CR-I','X1','Internet Credit',-104);
+            INSERT INTO rollup_codes VALUES('sc_international_calls_sp_dest','A1','International Calls Global 70',27);
+            INSERT INTO rollup_codes VALUES('MNFSCI-10','A1','MNF SC International',28);
+            INSERT INTO rollup_codes VALUES('sv_local_to_1800','A1','Local to 1800',29);
+            INSERT INTO rollup_codes VALUES('sv_ipdata_streaming_charges','A1','IPData Streaming Charges',30);
+            INSERT INTO rollup_codes VALUES('tf_calls_to_0198_numbers','A1','Calls to 0198 Numbers',31);
+            INSERT INTO rollup_codes VALUES('tf_faxstream_calls','A1','Faxstream Calls',32);
+            INSERT INTO rollup_codes VALUES('tf_service_&amp;_equipment','A1','Service &amp; Equipment',33);
+            INSERT INTO rollup_codes VALUES('SMS','A1','My Text SMS',34);
+            INSERT INTO rollup_codes VALUES('Telstra_Optus_FL_Call_Credit','A1','Fixed Line Call Credit',35);
+            INSERT INTO rollup_codes VALUES('VC','A1','Voice Call Credit',36);
+            INSERT INTO rollup_codes VALUES('Voip_Call_Credit','A1','Voip Call Credit',37);
+            INSERT INTO rollup_codes VALUES('op_inbound_community_calls','C1','Inbound Community Calls',38);
+            INSERT INTO rollup_codes VALUES('op_inbound_local_to_1300','C1','Inbound Local to 1300',39);
+            INSERT INTO rollup_codes VALUES('op_inbound_national_to_1300','C1','Inbound National to 1300',40);
+            INSERT INTO rollup_codes VALUES('op_inbound_mobile_to_1300','C1','Inbound Mobile to 1300',41);
+            INSERT INTO rollup_codes VALUES('op_inbound_local_to_1800','C1','Inbound Local to 1800',42);
+            INSERT INTO rollup_codes VALUES('op_inbound_national_to_1800','C1','Inbound National to 1800',43);
+            INSERT INTO rollup_codes VALUES('op_inbound_mobile_to_1800','C1','Inbound Mobile to 1800',44);
+            INSERT INTO rollup_codes VALUES('Optus_Mobile_Asset_Product','B1','Optus Mobile Asset Product',45);
+            INSERT INTO rollup_codes VALUES('Telstra_4G_Asset_Product','B1','Telstra 4G Asset Product',46);
+            INSERT INTO rollup_codes VALUES('mobile_numbers','B1','mobile numbers',47);
+            INSERT INTO rollup_codes VALUES('PF-M','B1','Plan Fee Mobile',48);
+            INSERT INTO rollup_codes VALUES('PF-MO','B1','Plan Fee Mobile - Optus 4G',49);
+            INSERT INTO rollup_codes VALUES('PF-MT','B1','Plan Fee Mobile - Telstra 4G',50);
+            INSERT INTO rollup_codes VALUES('DISC-MOBILE','B1','Discount (Mobile)',51);
+            INSERT INTO rollup_codes VALUES('RC-PREMP-O','B1','Seniors Premium Portal - Optus 4G',52);
+            INSERT INTO rollup_codes VALUES('RC-PREMP-T','B1','Seniors Premium Portal - Telstra 4G',53);
+            INSERT INTO rollup_codes VALUES('om_voicemail','B1','Voicemail',54);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_fixed_calls','B1','Mobile to Fixed Calls',55);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_mobile_calls','B1','Mobile to Mobile Calls',56);
+            INSERT INTO rollup_codes VALUES('om_sms','B1','SMS',57);
+            INSERT INTO rollup_codes VALUES('om_mms','B1','MMS',58);
+            INSERT INTO rollup_codes VALUES('om_international_sms','B1','International SMS',59);
+            INSERT INTO rollup_codes VALUES('om_international_mms','B1','International MMS',60);
+            INSERT INTO rollup_codes VALUES('om_mobile_special_calls','B1','Mobile Special Calls',61);
+            INSERT INTO rollup_codes VALUES('om_mobile_to_international','B1','Mobile to International',62);
+            INSERT INTO rollup_codes VALUES('om_roaming','B1','Roaming',63);
+            INSERT INTO rollup_codes VALUES('OM_Call_Credit','B1','Mobile Call Credit',64);
+            INSERT INTO rollup_codes VALUES('om_mobile_data','B1','Mobile Data',65);
+            INSERT INTO rollup_codes VALUES('om_mobile_data_debit','B1','Mobile Data Debit',66);
+            INSERT INTO rollup_codes VALUES('DBC-10 (Optus)','B1','Data boost charges optus',67);
+            INSERT INTO rollup_codes VALUES('tm_mobile_roaming_charges_(no_gst)','B1','Mobile Roaming Charges (No GST)',68);
+            INSERT INTO rollup_codes VALUES('DBC-10 (Telstra)','B1','Data boost charges Telstra',69);
+            INSERT INTO rollup_codes VALUES('MOB-DB','B1','Mobile Data Boost',70);
+            INSERT INTO rollup_codes VALUES('internet_user_names','D1','Internet User Names',71);
+            INSERT INTO rollup_codes VALUES('MGTF-01','D1','Coles Management Fee',72);
+            INSERT INTO rollup_codes VALUES('ATA-01','D1','Coles ATA',73);
+            INSERT INTO rollup_codes VALUES('PF-I','D1','Plan Fee Internet',74);
+            INSERT INTO rollup_codes VALUES('DISC-01','D1','Discount (Internet)',75);
+            INSERT INTO rollup_codes VALUES('STATIC-IP','D1','Static IP',76);
+            INSERT INTO rollup_codes VALUES('Item_Download','D1','Download',77);
+            INSERT INTO rollup_codes VALUES('AAPT-INT-TOTAL','D1','Internet',78);
+            INSERT INTO rollup_codes VALUES('Satellite-INT-TOTAL','D1','Internet For Satellite',79);
+            INSERT INTO rollup_codes VALUES('Boost20','D1','MNF Boost 20',80);
+            INSERT INTO rollup_codes VALUES('Boost100','D1','MNF Boost 100',81);
+            INSERT INTO rollup_codes VALUES('CCC','D1','Customer Care Calls',82);
+            INSERT INTO rollup_codes VALUES('GST','D1','GST',83);
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBAGL-173: Add Mobile Premium SMS" author="Mahesh Shivarkar">
+        <sql>
+            UPDATE rollup_codes SET itemisation_order = itemisation_order + 1 WHERE itemisation_order >= 61;
+            INSERT INTO rollup_codes VALUES('om_mobile_premium_sms','B1','Mobile Premium SMS',61);
+        </sql>
+	</changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1020" author = "Supriya Jagtap">
+        <comment>Spc Specific Customer Usage Pool task.</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)" />
+            <column name = "category_id"    valueNumeric  = "17" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.usagePool.task.SPCCustomerUsagePoolTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc Specific Customer Usage Pool task."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1014 Set subscription order id to the one time credit or discount orders" author = "Swapnil Patil">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "17"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.PopulateOrderLevelMetaFieldsTask"/>
+            <column name = "min_parameters" valueNumeric  = "2"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Populate order-level meta-fields task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin will populate order-level meta-fields. Currently, this plugin will populate the subscription order Id meta-field if the value is not populated at the time of order creation."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1021: Delete the existing PLAN_ITEM_ID meta-field." author="Swapnil Patil">
+        <delete tableName="order_line_meta_field_map" >
+            <where>
+                meta_field_value_id IN (
+                    SELECT mfv.id
+                    FROM order_line ol
+                    INNER JOIN order_line_meta_field_map olmfm ON olmfm.order_line_id = ol.id
+                    INNER JOIN meta_field_value mfv ON mfv.id = olmfm.meta_field_value_id
+                    INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                    WHERE mfn.name = 'PLAN_ITEM_ID'
+                )
+            </where>
+        </delete>
+        <delete tableName="order_change_plan_item_meta_field_map" >
+            <where>
+                meta_field_value_id IN (
+                    SELECT mfv.id
+                    FROM order_change oc
+                    INNER JOIN order_change_plan_item ocpi ON ocpi.order_change_id = oc.id
+                    INNER JOIN order_change_plan_item_meta_field_map ocpimfm ON ocpimfm.order_change_plan_item_id = ocpi.id
+                    INNER JOIN meta_field_value mfv ON mfv.id = ocpimfm.meta_field_value_id
+                    INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                    WHERE mfn.name = 'PLAN_ITEM_ID'
+                )
+            </where>
+        </delete>
+        <delete tableName="meta_field_value">
+            <where>
+                id IN (
+                    SELECT mfv.id
+                    FROM meta_field_value mfv
+                    INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                    WHERE mfn.name = 'PLAN_ITEM_ID'
+                )
+            </where>
+        </delete>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1044: Adding a new SPC Mediation current period evaluation Strategy task." author = "Supriya Jagtap">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.evaluation.task.SPCMediationCurrentPeriodEvaluationStrategyTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Mediation Current Period Evaluation Strategy"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Mediation current period evaluation strategy task"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1030: Updating the asset assignment end date and start date when order is created or active since date or active until date is updated." author = "Ashwinkumar Patra">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name = "category_id"    valueNumeric  = "17"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.order.task.AssetAssignmentEvaluationStrategy"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Asset Assignment Start Date and End Date evaluation strategy"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This task updates asset assignment end date and start dates when order with asset is created or active since date or active until date is updated for the order."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="test" id="test-credit-pool-and-tax-scheme-data-table" author="Mahesh Shivarkar">
+        <sql>
+            <![CDATA[
+                CREATE TABLE credit_pool (
+                id integer NOT NULL,
+                plan_id character varying(255) NOT NULL,
+                tariff_codes_note character varying(255) NOT NULL,
+                consumption_percentages character varying(255) NOT NULL,
+                credit_item_id character varying(255) NOT NULL,
+                free_amount character varying(255) NOT NULL,
+                credit_pool_name character varying(255) NOT NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (3,'test_credit_pool','credit_pool',1,0);
+
+                CREATE TABLE tax_scheme (
+                id integer NOT NULL,
+                description character varying(255) NOT NULL,
+                tax_code character varying(255) NOT NULL,
+                start_date character varying(255) NOT NULL,
+                end_date character varying(255) NOT NULL,
+                tax_rate character varying(255) NOT NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (4,'test_tax_scheme','tax_scheme',1,0);
+
+                CREATE TABLE plan_based_free_call_info (
+                id integer NOT NULL,
+                plan_code character varying(255) NOT NULL,
+                free_call_count character varying(255) NOT NULL,
+                item_codes character varying(255) NOT NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (5,'test_plan_based_free_call_info','plan_based_free_call_info',1,0);
+
+                CREATE TABLE route_70_wookie_optus_mur_alert (
+                id integer NOT NULL,
+                jb_planno character varying(255) NOT NULL,
+                jb_plan_description character varying(255) NULL,
+                trigger1 character varying(255) NULL,
+                sms_message1 character varying(500) NULL,
+                trigger2 character varying(255) NULL,
+                sms_message2 character varying(500) NULL,
+                trigger3 character varying(255) NULL,
+                sms_message3 character varying(500) NULL,
+                trigger4 character varying(255) NULL,
+                sms_message4 character varying(500) NULL,
+                trigger5 character varying(255) NULL,
+                sms_message5 character varying(500) NULL,
+                trigger6 character varying(255) NULL,
+                sms_message6 character varying(500) NULL,
+                autobar_option6 character varying(255) NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (6,'test_optus_mur_alert','route_70_wookie_optus_mur_alert',1,0);
+
+                CREATE TABLE route_70_wookie_usage_pool_alert (
+                id integer NOT NULL,
+                jb_planno character varying(255) NOT NULL,
+                jb_plan_description character varying(255) NULL,
+                trigger1 character varying(255) NULL,
+                sms_message1 character varying(500) NULL,
+                trigger2 character varying(255) NULL,
+                sms_message2 character varying(500) NULL,
+                trigger3 character varying(255) NULL,
+                sms_message3 character varying(500) NULL,
+                trigger4 character varying(255) NULL,
+                sms_message4 character varying(500) NULL,
+                trigger5 character varying(255) NULL,
+                sms_message5 character varying(500) NULL,
+                trigger6 character varying(255) NULL,
+                sms_message6 character varying(500) NULL,
+                autobar_option6 character varying(255) NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (7,'test_usage_pool_alert','route_70_wookie_usage_pool_alert',1,0);
+
+                CREATE TABLE calltozero (
+                id integer NOT NULL,
+                calltozero character varying(255) NOT NULL
+                );
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (8,'test_calltozero','calltozero',1,0);
+
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet  context="test"  id="JBSPC-1072 : Test cases" author="Harshad Pathan">
+
+        <insert tableName = "payment_method_template" >
+            <column name = "id"            valueComputed ="(SELECT MAX(efs.id)+1 FROM payment_method_template efs)" />
+            <column name = "template_name" value         = "Bank Debit" />
+            <column name = "optlock"       valueNumeric  = "0" />
+        </insert>
+
+    </changeSet>
+
+    <changeSet context="test" id="updated sequence id in route" author="Mahesh Shivarkar">
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id)+1, 1) FROM route)"/>
+            <where>name='route'</where>
+        </update>
+   </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1091: SPCMediationReconciliationTask" author = "Dipak Kardel">
+        <comment>SPC mediation reconciliation task</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SPCMediationReconciliationTask"/>
+                <column name = "min_parameters" valueNumeric  = "3"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Mediation Reconciliation Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin is used to reconcile mediation files with processed records count and if any differences are found it will notify to billing administrator."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1091: Creating Mediation Reconciliation History Table" author="Dipak Kardel">
+        <createTable tableName="mediation_reconciliation_history">
+            <column name="processed_dir" type="character varying(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="processed_archive" type="character varying(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="processed_file" type="character varying(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_verified" type="boolean" valueBoolean="false">
+            </column>
+             <column name="retry_count" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1070: Added SPC specific order filter task" author="Ashok Kale">
+        <comment>This is SPC specific order filter task plugin </comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id"            valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id"    valueNumeric = "2"/>
+            <column name="class_name"            value = "com.sapienter.jbilling.server.pluggableTask.SPCOrderFilterTask"/>
+            <column name="min_parameters" valueNumeric = "0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id"       valueNumeric = "24" />
+            <column name="foreign_id"    valueComputed = "(select max(p.id) from pluggable_task_type p)" />
+            <column name="psudo_column"          value = "title" />
+            <column name="language_id"    valueNumeric = "1" />
+            <column name="content"               value = "SPC Specific Order Filter Task" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id"      valueNumeric = "24" />
+            <column name="foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)" />
+            <column name="psudo_column"         value = "description" />
+            <column name="language_id"   valueNumeric = "1" />
+            <column name="content"              value = "This plugin is used to filter out the recurring prorated post-paid orders by considering SPC specific billing delay days" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1383 - Added index on payment_id column for payment_invoice table." author = "Ashok Kale">
+        <preConditions onFail="MARK_RAN">
+            <indexExists indexName="payment_invoice_fk_payment"/>
+        </preConditions>
+
+        <createIndex tableName = "payment_invoice"
+                     indexName = "payment_invoice_fk_payment">
+            <column name = "payment_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1391 - Update customer Next Invoice Date by considering days to delay and last bill run date." author="Supriya Jagtap">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.spc.SPCUpdateCustomerNextInvoiceDateTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.spc.SPCUpdateCustomerNextInvoiceDateTask')"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Update the customer's next invoice date by considering billing delay days and customer type parameters of the SPCUserFilterTask plugin."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="SPC Update Customer Next Invoice Date Task"/>
+        </insert>
     </changeSet>
 </databaseChangeLog>

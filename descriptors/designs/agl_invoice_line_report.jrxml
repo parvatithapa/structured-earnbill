@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_line_report" language="groovy" pageWidth="650" pageHeight="500" columnWidth="650" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isSummaryWithPageHeaderAndFooter="true" uuid="c3e6f905-845b-429b-92f5-550767927575">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="user_id" class="java.lang.Integer"/>
+	<parameter name="credit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="debit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="exclude_from_call_itemisation_category_id" class="java.lang.Integer"/>
+	<parameter name="total_new_charge" class="java.math.BigDecimal"/>
+	<parameter name="gst_in_charges" class="java.math.BigDecimal"/>
+	<parameter name="core.param.total_due" class="java.math.BigDecimal"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="amount_of_last_statement" class="java.math.BigDecimal"/>
+	<parameter name="payment_received" class="java.math.BigDecimal"/>
+	<parameter name="tax_exempt_item_present" class="java.lang.Boolean"/>
+	<parameter name="credit" class="java.math.BigDecimal"/>
+	<parameter name="debit" class="java.math.BigDecimal"/>
+	<parameter name="account_charges_and_credits" class="java.math.BigDecimal"/>
+	<parameter name="use_payment_create_date" class="java.lang.Boolean"/>
+	<parameter name="adhoc_credit_note_amount" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[SELECT 1]]>
+	</queryString>
+	<field name="?column?" class="java.lang.Integer"/>
+	<title>
+		<band height="142" splitType="Stretch">
+			<subreport>
+				<reportElement positionType="Float" x="178" y="115" width="363" height="5" isRemoveLineWhenBlank="true" uuid="d7b1b093-14f8-429d-9e86-d6816aa15aee"/>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_account_charges_sub_report.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="178" y="122" width="363" height="5" isRemoveLineWhenBlank="true" uuid="4cb767d4-f3ea-4a19-aace-35657e98eba6"/>
+				<subreportParameter name="debit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{debit_products_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$P{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="credit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{credit_products_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_adjustments_sub_report.jasper"]]></subreportExpression>
+			</subreport>
+			<rectangle radius="0">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="173" height="142" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="0d1adfc1-4628-4060-970a-48e8d3b81321"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="102" y="65" width="14" height="13" forecolor="#000000" uuid="78ead3f6-9239-4191-9933-dd5d73049cd5"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Call]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="35" width="84" height="13" forecolor="#000000" uuid="49cbf18c-4058-42ce-a54c-2ee85a0a9aac"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[your bill? Please call]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="97" width="150" height="13" forecolor="#000000" uuid="aaacfe23-aafc-4206-a9ca-b251a85dc515"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[If you are looking to access your]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="49" width="30" height="13" forecolor="#000000" uuid="ead49bc6-2342-4466-93d9-0e027f870cd4"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[or visit]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="80" width="150" height="13" forecolor="#000000" uuid="dbb5614e-1d52-4097-aa9d-604174021938"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[and quote 1300 664 358.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="117" y="65" width="34" height="13" forecolor="#000000" uuid="47740331-dea0-4ae3-ba54-fdf61f5d744c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="10" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[133 677]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="126" width="70" height="13" forecolor="#000000" uuid="3fab79ce-43ca-48e7-be38-a6a8f6a87d11"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="10" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[1300 307 731.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1" y="8" width="90" height="13" forecolor="#000000" uuid="675bfbf6-2617-4614-8591-aebe6b135e8f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="10" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Payment assistance:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="21" width="168" height="13" forecolor="#000000" uuid="7e6bc298-cacb-4e94-adba-cf981617896f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[financial hardship and need help paying]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="7" y="111" width="150" height="13" forecolor="#000000" uuid="48953e9d-e012-4f8d-b223-3a19cc8cad66"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[data usage and call details please call]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="88" y="8" width="60" height="13" forecolor="#000000" uuid="36e35f61-a5d2-4484-81c8-191fd419f723"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Experiencing]]></text>
+			</staticText>
+			<textField hyperlinkType="Reference">
+				<reportElement x="37" y="49" width="100" height="13" uuid="3d652fcc-050b-4c20-809f-ac9d7a223f32"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA['agl.com.au/billinghelp']]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA["agl.com.au/billinghelp"]]></hyperlinkReferenceExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="65" width="105" height="13" forecolor="#000000" uuid="6247d61d-6670-4775-a84c-980b7801beca"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="10" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Hearing impaired (TTY).]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="85" y="35" width="70" height="13" forecolor="#000000" uuid="0f567ff6-fa75-4095-b8bf-ee752b083ed3"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="10" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[1300 307 731]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="437" y="26" width="100" height="15" uuid="639f5568-ca58-48da-a077-f99e7aed34e7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+''+
+($P{amount_of_last_statement} < 0 ?
+new java.text.DecimalFormat("#,##0.00").format(
+$P{amount_of_last_statement}.negate().setScale(2, BigDecimal.ROUND_HALF_UP)).toString()+'cr':
+new java.text.DecimalFormat("#,##0.00").format(
+$P{amount_of_last_statement}.setScale(2, BigDecimal.ROUND_HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="178" y="45" width="363" height="10" isRemoveLineWhenBlank="true" uuid="66eee726-e1e3-4881-bcc8-b05e18239f57"/>
+				<subreportParameter name="use_payment_create_date">
+					<subreportParameterExpression><![CDATA[$P{use_payment_create_date}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="core.param.currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_payments_received_subreport.jasper"]]></subreportExpression>
+			</subreport>
+			<line>
+				<reportElement positionType="Float" x="178" y="97" width="363" height="1" forecolor="#C5B9AC" uuid="d806d082-422b-4bad-856f-d12a01280739"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="178" y="8" width="172" height="15" forecolor="#000000" uuid="646b1abc-b58f-4c50-a3b6-9f54ef72b65b"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Previous balance and payments]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="178" y="99" width="138" height="15" forecolor="#000000" uuid="386dd3f8-b052-4a4e-9958-379fe715dafe"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[New charges and credits]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="Float" x="437" y="58" width="100" height="15" isRemoveLineWhenBlank="true" uuid="7208db80-6270-45a2-aabe-e75ced15d037"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+''+
+($P{amount_of_last_statement}.add($P{payment_received}) == 0 ? '0.00' :
+($P{amount_of_last_statement}.add($P{payment_received}) < 0 ?
+new java.text.DecimalFormat("#,##0.00").format(
+$P{amount_of_last_statement}.add($P{payment_received}).negate().setScale(2, BigDecimal.ROUND_HALF_UP)) :
+new java.text.DecimalFormat("#,##0.00").format(
+$P{amount_of_last_statement}.add($P{payment_received}).setScale(2, BigDecimal.ROUND_HALF_UP)))) +''+
+($P{amount_of_last_statement}.add($P{payment_received}) < 0 ? 'cr':'')]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="178" y="26" width="72" height="15" forecolor="#000000" uuid="403260f8-e44f-432a-8321-03a1102ed0a4"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Previous balance]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="178" y="58" width="200" height="15" forecolor="#000000" uuid="e4b4ef94-d75e-41b1-89d7-9d3667bf178f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA['Balance brought forward']]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement stretchType="RelativeToBandHeight" x="546" y="0" width="1" height="142" isPrintWhenDetailOverflows="true" forecolor="#C5B9AC" uuid="f9dd4352-c748-4b89-bc7f-a23900b55581"/>
+			</line>
+			<staticText>
+				<reportElement x="437" y="8" width="100" height="15" forecolor="#000000" uuid="9b190e9c-6494-46cd-bbd8-9a15f98c2edc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="10" splitType="Stretch">
+			<subreport>
+				<reportElement positionType="Float" x="178" y="0" width="363" height="10" isRemoveLineWhenBlank="true" uuid="29c4e3c8-59c2-41bf-b1fa-5c84de6f40ab"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="total_new_charge">
+					<subreportParameterExpression><![CDATA[$P{total_new_charge}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="adhoc_credit_note_amount">
+					<subreportParameterExpression><![CDATA[$P{adhoc_credit_note_amount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="tax_exempt_item_present">
+					<subreportParameterExpression><![CDATA[$P{tax_exempt_item_present}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="core.param.total_due">
+					<subreportParameterExpression><![CDATA[$P{core.param.total_due}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="gst_in_charges">
+					<subreportParameterExpression><![CDATA[$P{gst_in_charges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_plan_group.jasper"]]></subreportExpression>
+			</subreport>
+			<rectangle radius="0">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="173" height="10" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="e49bfd11-c041-4eb0-a6d5-aea9863f3d9c"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</rectangle>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="546" y="0" width="1" height="10" isPrintWhenDetailOverflows="true" forecolor="#C5B9AC" uuid="c240af92-f2ad-4025-ad2e-0a7cabe0096c"/>
+			</line>
+		</band>
+	</detail>
+	<summary>
+		<band height="10">
+			<subreport>
+				<reportElement positionType="Float" x="178" y="0" width="363" height="7" isRemoveLineWhenBlank="true" uuid="154c80a3-38e1-42a0-8424-5d7b4cff713d"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id"/>
+				<subreportParameter name="exclude_from_call_itemisation_category_id">
+					<subreportParameterExpression><![CDATA[$P{exclude_from_call_itemisation_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id"/>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_line_asset_summary.jasper"]]></subreportExpression>
+			</subreport>
+			<rectangle radius="2">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="173" height="10" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="811e27d9-acd3-4629-8a4e-ecfeeb4c5766"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</rectangle>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="546" y="0" width="1" height="10" isPrintWhenDetailOverflows="true" forecolor="#C5B9AC" uuid="27da9b5f-8b65-4e19-829c-4c67032d8cfe"/>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="172" y="9" width="375" height="1" forecolor="#C5B9AC" uuid="3a38bf88-4683-4dda-bdb8-095d46ff25cf"/>
+			</line>
+			<rectangle radius="0">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="173" height="2" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="d2365195-e643-48d0-ac24-c364b467d12f"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+		</band>
+	</summary>
+</jasperReport>

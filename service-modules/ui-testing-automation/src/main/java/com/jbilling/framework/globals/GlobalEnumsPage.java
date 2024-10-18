@@ -122,8 +122,7 @@ public class GlobalEnumsPage {
 
 		Tools("Tools"),
 
-        Users("Users"),
-        CustomInvoice("Ad-hoc Invoice");
+		Users("Users");
 
 		public static PageConfigurationItems GetKey(final String Value) {
 			for (PageConfigurationItems tc : PageConfigurationItems.values()) {

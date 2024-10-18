@@ -8,8 +8,10 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.IdClass;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 
@@ -38,9 +40,9 @@ import javax.persistence.Table;
  * jBilling can update the current order without any processing.
  *
  */
+@SuppressWarnings("serial")
 @Entity
 @Table(name="jbilling_mediation_record")
-@IdClass(JbillingMediationRecordId.class)
 public class JbillingMediationRecordDao implements Serializable {
 
     public enum STATUS {
@@ -52,6 +54,10 @@ public class JbillingMediationRecordDao implements Serializable {
     }
 
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "jbilling_mediation_record_generator")
+    @SequenceGenerator(name ="jbilling_mediation_record_generator", sequenceName = "jbilling_mediation_record_seq", allocationSize = 1)
+    private Long id;
     @Enumerated(value = EnumType.STRING)
     @Column(name="status", nullable=false)
     private STATUS status = STATUS.UNPROCESSED;
@@ -62,12 +68,10 @@ public class JbillingMediationRecordDao implements Serializable {
     private Integer jBillingCompanyId = null;
     @Column(name="mediation_cfg_id")
     private Integer mediationCfgId = null;
-    @Id
     @Column(name="record_key")
     private String recordKey = null;
     @Column(name="user_id")
     private Integer userId = null;
-    @Id
     @Column(name="event_date")
     private Date eventDate = null;
     @Column(name="processing_date")
@@ -110,16 +114,21 @@ public class JbillingMediationRecordDao implements Serializable {
     private String pricingFields = null;
     @Column(name = "chargeable", nullable = false)
     private Boolean chargeable = Boolean.TRUE;
+    @Column(name="tax_amount")
+    private BigDecimal taxAmount;
+    @Column(name="rated_price_with_tax")
+    private BigDecimal ratedPriceWithTax;
 
     public JbillingMediationRecordDao() {}
 
-    public JbillingMediationRecordDao(STATUS status, TYPE type, Integer jBillingCompanyId, Integer mediationCfgId,
+    public JbillingMediationRecordDao(Long id, STATUS status, TYPE type, Integer jBillingCompanyId, Integer mediationCfgId,
             String recordKey, Integer userId, Date eventDate, BigDecimal quantity,
             String description, Integer currencyId, Integer itemId, Integer orderId,
             Integer orderLineId, String pricingFields, BigDecimal ratedPrice,
             BigDecimal ratedCostPrice, UUID processId, String source, String destination,
-            String cdrType, BigDecimal originalQuantity, String resourceId, Boolean chargeable) {
-
+            String cdrType, BigDecimal originalQuantity, String resourceId, Boolean chargeable,
+            BigDecimal taxAmount, BigDecimal ratedPriceWithTax) {
+        this.id = id;
         this.status = status;
         this.type = type;
         this.jBillingCompanyId = jBillingCompanyId;
@@ -144,20 +153,22 @@ public class JbillingMediationRecordDao implements Serializable {
         this.originalQuantity = originalQuantity;
         this.resourceId = resourceId;
         this.chargeable = chargeable;
+        this.taxAmount = taxAmount;
+        this.ratedPriceWithTax =  ratedPriceWithTax;
     }
 
-    public JbillingMediationRecordDao(STATUS status, TYPE type, Integer jBillingCompanyId,
+    public JbillingMediationRecordDao(Long id, STATUS status, TYPE type, Integer jBillingCompanyId,
             Integer mediationCfgId, String recordKey, Integer userId,
             Date eventDate, BigDecimal quantity, String description,
             Integer currencyId, Integer itemId, Integer orderId, Integer orderLineId,
             String pricingFields, BigDecimal ratedPrice, BigDecimal ratedCostPrice,
             UUID processId, String source, String destination, String cdrType,
-            BigDecimal originalQuantity) {
+            BigDecimal originalQuantity,BigDecimal taxAmount, BigDecimal ratedPriceWithTax) {
 
-        this(status, type, jBillingCompanyId, mediationCfgId, recordKey, userId, eventDate,
+        this(id, status, type, jBillingCompanyId, mediationCfgId, recordKey, userId, eventDate,
                 quantity, description, currencyId, itemId, orderId, orderLineId, pricingFields,
                 ratedPrice, ratedCostPrice, processId, source, destination, cdrType,
-                originalQuantity, null, Boolean.TRUE);
+                originalQuantity, null, Boolean.TRUE,taxAmount,ratedPriceWithTax);
     }
 
     @Override
@@ -359,6 +370,31 @@ public class JbillingMediationRecordDao implements Serializable {
 
     public void setChargeable(Boolean chargeable) {
         this.chargeable = chargeable;
+    }
+
+    public BigDecimal getRatedPriceWithTax() {
+        return ratedPriceWithTax;
+    }
+
+    public void setRatedPriceWithTax(BigDecimal ratedPriceWithTax) {
+
+        this.ratedPriceWithTax = ratedPriceWithTax;
+    }
+
+    public BigDecimal getTaxAmount() {
+        return taxAmount;
+    }
+
+    public void setTaxAmount(BigDecimal taxAmount) {
+        this.taxAmount = taxAmount;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
 }

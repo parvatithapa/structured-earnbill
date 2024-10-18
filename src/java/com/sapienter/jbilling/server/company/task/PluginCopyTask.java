@@ -1,12 +1,17 @@
 package com.sapienter.jbilling.server.company.task;
 
-import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.server.pluggableTask.admin.*;
-import com.sapienter.jbilling.server.util.Context;
-import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
-import java.util.List;
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.server.notification.IPluginsSessionBean;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskBL;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskDAS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskDTO;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
+import com.sapienter.jbilling.server.util.Context;
+import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
 
 /**
  * Created by vivek on 31/10/14.
@@ -15,6 +20,7 @@ public class PluginCopyTask extends AbstractCopyTask {
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(PluginCopyTask.class));
 
     private IWebServicesSessionBean webServicesSessionSpringBean = Context.getBean(Context.Name.WEB_SERVICES_SESSION);
+    private IPluginsSessionBean pluginsSessionBean = Context.getBean(Context.Name.PLUGINS_SESSION);
     private static final Class dependencies[] = new Class[]{};
 
     public Class[] getDependencies() {
@@ -52,7 +58,8 @@ public class PluginCopyTask extends AbstractCopyTask {
                 PluggableTaskWS pluggableTaskWS = PluggableTaskBL.getWS(pluggableTaskDTO);
                 pluggableTaskWS.setId(0);
                 int taskId = pluggableTaskDAS.save(new PluggableTaskDTO(targetEntityId, pluggableTaskWS)).getId();
-                //webServicesSessionSpringBean.rescheduleScheduledPlugin(taskId);
+                
+                pluginsSessionBean.rescheduleScheduledPlugin(webServicesSessionSpringBean.getCallerId(), webServicesSessionSpringBean.getCallerCompanyId(), taskId);
             }
         }
         LOG.debug("PluginCopyTask has been completed");

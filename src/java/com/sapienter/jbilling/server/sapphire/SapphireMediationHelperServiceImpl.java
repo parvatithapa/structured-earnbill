@@ -7,11 +7,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TimeZone;
 
 import javax.annotation.Resource;
 
-import org.apache.commons.lang.StringUtils;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,18 +237,5 @@ public class SapphireMediationHelperServiceImpl implements SapphireMediationHelp
         }
         logger.debug("No rate card found for given itemId : {}", itemId);
         return Optional.empty();
-    }
-
-    @Override
-    public String getCompanyTimeZone(Integer entityId) {
-        Assert.notNull(entityId, "Please Provide entity id!");
-        CompanyDTO entity = new CompanyDAS().find(entityId);
-        String timeZone = entity.getTimezone();
-        if(StringUtils.isEmpty(timeZone)) {
-            timeZone = TimeZone.getDefault().getID();
-            logger.debug("using default time zone {}", timeZone);
-        }
-        logger.debug("Reterived timeZone {} for entity {}", timeZone, entityId);
-        return timeZone;
     }
 }

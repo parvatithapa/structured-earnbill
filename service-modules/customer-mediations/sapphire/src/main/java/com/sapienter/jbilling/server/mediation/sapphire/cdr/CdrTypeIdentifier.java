@@ -12,15 +12,9 @@ import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediation
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.OUT_GOING_CALL_CDR_TYPE;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.TRUNK_GROUP_ID;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.UNKNOWN_CALL_CDR_TYPE;
-import static com.sapienter.jbilling.server.mediation.sapphire.SapphireUtil.validateAndCheckAssetNumberInSystem;
+import static com.sapienter.jbilling.server.mediation.sapphire.SapphireUtil.getNationalNumber;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Optional;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.ICallDataRecord;
@@ -49,32 +43,35 @@ public enum CdrTypeIdentifier {
         @Override
         public String identifyCdrType(ICallDataRecord cdr) {
             String cdrType = UNKNOWN_CALL_CDR_TYPE;
-            List<PricingField> pricingFields = cdr.getFields();
-            PricingField callingPartyAddrField = PricingField.find(pricingFields, CALLING_PARTY_ADDR);
-            PricingField chargeAddrField = PricingField.find(pricingFields, CHARGE_ADDR);
-            if(null!= callingPartyAddrField && null!= chargeAddrField) {
-                Optional<Integer> orgProductId = Optional.empty();
-                String assetNumber = validateAndCheckAssetNumberInSystem(callingPartyAddrField.getStrValue());
-                if(StringUtils.isEmpty(assetNumber)) {
-                    assetNumber = validateAndCheckAssetNumberInSystem(chargeAddrField.getStrValue());
-                    logger.debug("asset number {} found by chargeAddrFieldValue", assetNumber);
-                } else {
-                    logger.debug("asset number {} found by callingPartyAddrField", assetNumber);
-                }
-
+            PricingField callingPartyAddrField = PricingField.find(cdr.getFields(), CALLING_PARTY_ADDR);
+            PricingField chargeAddrField = PricingField.find(cdr.getFields(), CHARGE_ADDR);
+            if(null!= callingPartyAddrField &&
+                    null!= chargeAddrField) {
                 SapphireMediationHelperService service = Context.getBean(SapphireMediationHelperService.class);
-                if(StringUtils.isNotEmpty(assetNumber)) {
-                    orgProductId = service.getProductIdByIdentifier(assetNumber);
-                    cdrType = OUT_GOING_CALL_CDR_TYPE;
-                    logger.debug("org product {} resolved for asset number {}", orgProductId, assetNumber);
-                    logger.debug("cdr type {} resolved for asset number {}", cdrType, assetNumber);
+                String callingpartyAddr = getNationalNumber(callingPartyAddrField.getStrValue());
+                String chargeAddr = getNationalNumber(chargeAddrField.getStrValue());
+
+                boolean isCallingpartyAddrFound = service.isIdentifierPresent(callingpartyAddr);
+                boolean isChargeAddrFound = service.isIdentifierPresent(chargeAddr);
+
+                Optional<Integer> orgProductId = Optional.empty();
+                if(isCallingpartyAddrFound) {
+                    orgProductId = service.getProductIdByIdentifier(callingpartyAddr);
+                } else if(isChargeAddrFound) {
+                    orgProductId = service.getProductIdByIdentifier(chargeAddr);
                 }
 
-                String desitnationAddrFieldValue = PricingField.find(pricingFields, DEST_ADDR).getStrValue();
-                assetNumber = validateAndCheckAssetNumberInSystem(desitnationAddrFieldValue);
+                PricingField destinationAddr = PricingField.find(cdr.getFields(), DEST_ADDR);
+                String destAddr = getNationalNumber(destinationAddr.getStrValue());
+                boolean isDestAddrFound = service.isIdentifierPresent(destAddr);
                 Optional<Integer> destProductId = Optional.empty();
-                if(StringUtils.isNotEmpty(assetNumber)) {
-                    destProductId = service.getProductIdByIdentifier(assetNumber);
+
+                if(isDestAddrFound) {
+                    destProductId = service.getProductIdByIdentifier(destAddr);
+                }
+
+                if(isCallingpartyAddrFound || isChargeAddrFound) {
+                    cdrType = OUT_GOING_CALL_CDR_TYPE;
                 }
 
                 if(orgProductId.isPresent() && destProductId.isPresent()
@@ -82,7 +79,7 @@ public enum CdrTypeIdentifier {
                     cdrType = ON_NET_CALL_CDR_TYPE;
                 }
 
-                PricingField forwardedTag = PricingField.find(pricingFields, HAS_FORWARDED_TAG);
+                PricingField forwardedTag = PricingField.find(cdr.getFields(), HAS_FORWARDED_TAG);
                 if(null!= forwardedTag) {
                     cdrType = FORWARDED_CALL_CDR_TYPE;
                 }
@@ -97,5 +94,4 @@ public enum CdrTypeIdentifier {
     };
 
     public abstract String identifyCdrType(ICallDataRecord cdr);
-    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 }

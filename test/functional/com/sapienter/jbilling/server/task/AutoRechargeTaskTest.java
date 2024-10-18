@@ -29,9 +29,9 @@ import static org.testng.AssertJUnit.assertEquals;
 
 import com.sapienter.jbilling.server.util.CreateObjectUtil;
 
-@Test(groups = { "integration", "task", "auto-recharge" }, testName = "AutoRechargeTaskTest", priority = 11)
+@Test(groups = { "integration", "task", "auto-recharge" }, testName = "AutoRechargeTaskTest")
 public class AutoRechargeTaskTest {
-
+	
 	private final static int ORDER_CHANGE_STATUS_APPLY_ID = 3;
     private JbillingAPI api;
     private static Integer DYNAMIC_BALANCE_MANAGER_PLUGIN_ID;
@@ -53,7 +53,7 @@ public class AutoRechargeTaskTest {
     @Test
     public void testCustomerSpecificThresholdLimit() throws Exception{
         //create a new user with pre-paid balance type
-
+    	
         UserWS user = CreateObjectUtil.createUser(true, null, null);
         user.setMonthlyLimit("100");
 	    user.setCreditLimit("1");
@@ -63,7 +63,7 @@ public class AutoRechargeTaskTest {
         user.setAutoRecharge("10.00");
         user.setPassword(null);
         api.updateUser(user);
-
+        
         updateCustomerNextInvoiceDate(user.getId());
         //Charge the account with an amount higher than the threshold
         chargeUser(user.getUserId(), new BigDecimal("2.00"));
@@ -89,7 +89,7 @@ public class AutoRechargeTaskTest {
         user.setPassword(null);
 
         api.updateUser(user);
-
+        
         updateCustomerNextInvoiceDate(user.getId());
 
         //charge the user 3$
@@ -144,7 +144,7 @@ public class AutoRechargeTaskTest {
         assertTrue("expected: <" + expected.toPlainString() + "> but was: <" + actual.toPlainString() + ">",
         expected.compareTo(actual) == 0);
     }
-
+    
     private UserWS updateCustomerNextInvoiceDate(Integer userId) {
         UserWS user = api.getUserWS(userId);
         Calendar nextInvoiceDate = Calendar.getInstance();

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_bar_graph_sub_report" language="groovy" pageWidth="310" pageHeight="260" columnWidth="310" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="815c334c-2816-4b5b-ba35-efd7026a099a">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="month" class="java.lang.String"/>
+	<parameter name="int_month" class="java.lang.Integer"/>
+	<parameter name="int_year" class="java.lang.Integer"/>
+	<parameter name="total" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[(SELECT s.month, s.int_month, s.int_year, sum(s.total) AS total FROM
+(
+SELECT CONCAT(SUBSTRING(TO_CHAR(i_outer.create_datetime::date, 'Month'),1,3),'-',TO_CHAR(i_outer.create_datetime::date,'YY')) AS month,
+EXTRACT(MONTH FROM i_outer.create_datetime) AS int_month,
+EXTRACT(YEAR FROM i_outer.create_datetime) AS int_year,
+CASE WHEN
+(
+	SELECT mfv.decimal_value
+	FROM invoice_meta_field_map im
+	INNER JOIN meta_field_value mfv ON mfv.id = im.meta_field_value_id
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+	WHERE mfv.id = im.meta_field_value_id
+	AND mfn.name = 'New Charges'
+	AND im.invoice_id = i_outer.id
+) IS NOT NULL
+THEN
+(
+	SELECT mfv.decimal_value
+	FROM invoice_meta_field_map im
+	INNER JOIN meta_field_value mfv ON mfv.id = im.meta_field_value_id
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+	WHERE mfv.id = im.meta_field_value_id
+	AND mfn.name = 'New Charges'
+	AND im.invoice_id = i_outer.id
+)
+ELSE
+(
+	SUM(il_outer.amount)+
+	(
+		SELECT COALESCE(SUM(il.amount),0)
+		FROM invoice_line il
+		INNER JOIN invoice i ON i.id = il.invoice_id
+		AND i.create_datetime BETWEEN
+		(
+		    SELECT create_datetime - INTERVAL '1 months'
+		    FROM invoice
+		    WHERE id = i_outer.id
+		)
+		AND
+		(
+		    SELECT create_datetime
+		    FROM invoice
+		    WHERE id = i_outer.id
+		)
+		AND i.id IN
+		(
+			SELECT id
+			FROM   invoice
+			WHERE  user_id = $P{invoice_user_id}
+			AND    id IN ( SELECT unnest(adjustmentInvoices($P{invoice_user_id})))
+		)
+	)
+)
+END AS total
+FROM invoice_line il_outer
+INNER JOIN invoice i_outer ON i_outer.id = il_outer.invoice_id
+WHERE i_outer.create_datetime BETWEEN
+(
+	SELECT DATE_TRUNC('MONTH',create_datetime - INTERVAL '2 months')::DATE
+	FROM invoice
+	WHERE id = $P{invoice_id}
+) AND
+(
+	SELECT create_datetime
+	FROM invoice
+	WHERE id = $P{invoice_id}
+)
+AND i_outer.user_id = $P{invoice_user_id}
+AND il_outer.type_id != 3
+-- Exclude Adjustment invoices
+AND i_outer.id NOT IN
+(
+	SELECT id
+	FROM   invoice
+	WHERE  user_id = $P{invoice_user_id}
+	AND    id IN ( SELECT unnest(adjustmentInvoices($P{invoice_user_id})))
+)
+GROUP BY 1,2,3, i_outer.id
+ORDER BY int_year DESC, int_month DESC
+) s
+GROUP BY 1,2,3
+ORDER BY int_year DESC, int_month DESC)
+LIMIT 3;]]>
+	</queryString>
+	<field name="month" class="java.lang.String"/>
+	<field name="int_month" class="java.lang.Integer"/>
+	<field name="int_year" class="java.lang.Integer"/>
+	<field name="total" class="java.math.BigDecimal"/>
+	<variable name="all_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{total}]]></variableExpression>
+	</variable>
+	<variable name="max_total" class="java.math.BigDecimal" calculation="Highest">
+		<variableExpression><![CDATA[$F{total}]]></variableExpression>
+	</variable>
+	<title>
+		<band height="25" splitType="Immediate">
+			<barChart>
+				<chart isShowLegend="false" evaluationTime="Report" customizerClass="customizers.AglBarChartCustomizationBar1">
+					<reportElement x="0" y="0" width="310" height="25" uuid="1a62b963-4fe4-49a3-9375-baff8da7571c">
+						<printWhenExpression><![CDATA[$P{int_month} == $F{int_month}]]></printWhenExpression>
+					</reportElement>
+					<chartTitle/>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[""]]></seriesExpression>
+						<categoryExpression><![CDATA[$P{month}]]></categoryExpression>
+						<valueExpression><![CDATA[$P{total}]]></valueExpression>
+					</categorySeries>
+				</categoryDataset>
+				<barPlot isShowLabels="false" isShowTickLabels="false" isShowTickMarks="false">
+					<plot orientation="Horizontal">
+						<seriesColor seriesOrder="0" color="#D1C1E0"/>
+						<seriesColor seriesOrder="1" color="#73A5C6"/>
+						<seriesColor seriesOrder="2" color="#BCD2E8"/>
+					</plot>
+					<itemLabel/>
+					<categoryAxisFormat>
+						<axisFormat verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular" isBold="true"/>
+							</labelFont>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat tickLabelColor="#F5F4F2" verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular"/>
+							</labelFont>
+						</axisFormat>
+					</valueAxisFormat>
+					<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					<rangeAxisMaxValueExpression><![CDATA[$V{all_total} == 0 ? 43 : $V{max_total}.add($V{max_total}.multiply(new BigDecimal(30).divide(new BigDecimal(100))))]]></rangeAxisMaxValueExpression>
+				</barPlot>
+			</barChart>
+			<barChart>
+				<chart isShowLegend="false" evaluationTime="Report" customizerClass="customizers.AglBarChartCustomizationBar2">
+					<reportElement x="0" y="0" width="310" height="25" uuid="9b0b2561-0c5f-4d64-b720-fbe1c94714c1">
+						<printWhenExpression><![CDATA[$P{int_month} ==12 ? $P{int_month} == ($F{int_month}+11) : $P{int_month} == ($F{int_month}-1)]]></printWhenExpression>
+					</reportElement>
+					<chartTitle/>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[""]]></seriesExpression>
+						<categoryExpression><![CDATA[$P{month}]]></categoryExpression>
+						<valueExpression><![CDATA[$P{total}]]></valueExpression>
+					</categorySeries>
+				</categoryDataset>
+				<barPlot isShowLabels="false" isShowTickLabels="false" isShowTickMarks="false">
+					<plot orientation="Horizontal">
+						<seriesColor seriesOrder="0" color="#D1C1E0"/>
+						<seriesColor seriesOrder="1" color="#73A5C6"/>
+						<seriesColor seriesOrder="2" color="#BCD2E8"/>
+					</plot>
+					<itemLabel/>
+					<categoryAxisFormat>
+						<axisFormat verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular" isBold="true"/>
+							</labelFont>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat tickLabelColor="#F5F4F2" verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular"/>
+							</labelFont>
+						</axisFormat>
+					</valueAxisFormat>
+					<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					<rangeAxisMaxValueExpression><![CDATA[$V{all_total} == 0 ? 43 : $V{max_total}.add($V{max_total}.multiply(new BigDecimal(30).divide(new BigDecimal(100))))]]></rangeAxisMaxValueExpression>
+				</barPlot>
+			</barChart>
+			<barChart>
+				<chart isShowLegend="false" evaluationTime="Report" customizerClass="customizers.AglBarChartCustomizationBar3">
+					<reportElement x="0" y="0" width="310" height="25" uuid="7d8f2bb9-f044-4bbf-905e-e7c8a6fe48fc">
+						<printWhenExpression><![CDATA[$P{int_month} == 11 ? $P{int_month} == ($F{int_month}+10) : ($P{int_month} == 12 ? $P{int_month} == ($F{int_month}+10) : $P{int_month} == ($F{int_month}-2))]]></printWhenExpression>
+					</reportElement>
+					<chartTitle/>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[""]]></seriesExpression>
+						<categoryExpression><![CDATA[$P{month}]]></categoryExpression>
+						<valueExpression><![CDATA[$P{total}]]></valueExpression>
+					</categorySeries>
+				</categoryDataset>
+				<barPlot isShowLabels="false" isShowTickLabels="false" isShowTickMarks="false">
+					<plot orientation="Horizontal">
+						<seriesColor seriesOrder="0" color="#D1C1E0"/>
+						<seriesColor seriesOrder="1" color="#73A5C6"/>
+						<seriesColor seriesOrder="2" color="#BCD2E8"/>
+					</plot>
+					<itemLabel/>
+					<categoryAxisFormat>
+						<axisFormat verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular" isBold="true"/>
+							</labelFont>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat tickLabelColor="#F5F4F2" verticalTickLabels="false" axisLineColor="#F5F4F2">
+							<labelFont>
+								<font fontName="BrauerNeue-Regular"/>
+							</labelFont>
+						</axisFormat>
+					</valueAxisFormat>
+					<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					<rangeAxisMaxValueExpression><![CDATA[$V{all_total} == 0 ? 43 : $V{max_total}.add($V{max_total}.multiply(new BigDecimal(30).divide(new BigDecimal(100))))]]></rangeAxisMaxValueExpression>
+				</barPlot>
+			</barChart>
+		</band>
+	</title>
+</jasperReport>

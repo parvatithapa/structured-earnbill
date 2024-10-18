@@ -157,12 +157,7 @@ public class JMRRepositoryDASImpl implements JMRRepositoryDAS{
     }
 
     private Path getPathConsideringIdClassAttributes(String path, Root<Object> root, List<String> idClassAttributesNames) {
-        if (idClassAttributesNames.stream().anyMatch(s -> s.equals(path))) {
-            return root.get(root.getModel().getIdClassAttributes().stream()
-                    .filter(singularAttribute -> singularAttribute.getName().equals(path)).findFirst().get());
-        } else{
-            return root.get(path);
-        }
+        return root.get(path);
     }
 
 }

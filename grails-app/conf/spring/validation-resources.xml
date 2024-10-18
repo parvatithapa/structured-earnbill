@@ -33,8 +33,8 @@
                 <value>com.sapienter.jbilling.server.item.AssetResourceHelperService.*</value>
                 <value>com.sapienter.jbilling.server.user.UserResourceHelperService.*</value>
                 <value>com.sapienter.jbilling.server.order.OrderResourceHelperService.*</value>
+				<value>com.sapienter.jbilling.server.item.PriceService.*</value>
                 <value>com.sapienter.jbilling.auth.JwtAuthenticationService.*</value>
-                <value>com.sapienter.jbilling.twofactorauth.TwoFactorAuthenticationHelperService.*</value>
             </list>
         </property>
         <property name = "order" value = "5" />

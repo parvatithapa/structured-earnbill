@@ -17,13 +17,13 @@
 package com.sapienter.jbilling.server.payment;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.List;
-
-import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.server.metafields.MetaFieldBL;
 
 import org.apache.log4j.Logger;
 
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.server.metafields.MetaFieldBL;
 import com.sapienter.jbilling.server.payment.db.PaymentAuthorizationDAS;
 import com.sapienter.jbilling.server.payment.db.PaymentAuthorizationDTO;
 import com.sapienter.jbilling.server.payment.db.PaymentDTO;
@@ -32,8 +32,6 @@ import com.sapienter.jbilling.server.payment.db.PaymentMethodDTO;
 import com.sapienter.jbilling.server.payment.db.PaymentResultDAS;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.util.db.CurrencyDTO;
-
-import java.util.ArrayList;
 
 public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
 
@@ -45,24 +43,30 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
     private String resultStr = null;
     private Integer payoutId = null;
     
-    //Changes for Strong Customer Authentication (SCA), 3DS auth
+    /*
+     * BillingHub - Stripe payment gateway integration
+     * Changes for Strong Customer Authentication (SCA), 3DS auth
+     * 
+     * */
     private boolean authenticationRequired;
+
     // now we only support one of these
     private PaymentAuthorizationDTO authorization = null; // useful in refuds
     // instruments using which user specifc, not linked to payments
     private List<PaymentInformationDTO> paymentInstruments = new ArrayList<PaymentInformationDTO>(0);
-    
+
     // current instrument with which this payment will be process
     private PaymentInformationDTO instrument = null;
-    
+
     private Integer autoPayment;
 
     private boolean isBankPaymentApproved = false;
     private boolean sendNotification = true;
 
     public PaymentDTOEx(PaymentDTO dto) {
-        if (dto.getBaseUser() != null)
+        if (dto.getBaseUser() != null) {
             userId = dto.getBaseUser().getId();
+        }
 
         setId(dto.getId());
         setCurrency(dto.getCurrency());
@@ -71,7 +75,7 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         setAttempt(dto.getAttempt());
         setCreditCard(dto.getCreditCard());
         setInstrument(dto.getCreditCard());
-        
+
         setDeleted(dto.getDeleted());
         setIsPreauth(dto.getIsPreauth());
         setIsRefund(dto.getIsRefund());
@@ -90,15 +94,15 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         setPaymentPeriod(dto.getPaymentPeriod());
         setPaymentNotes(dto.getPaymentNotes());
         setMetaFields(dto.getMetaFields());
-        
+
         //for refunds
         setPayment(dto.getPayment());
-        
+
         // payment instruments
         if(dto.getPaymentInstrumentsInfo() != null) {
-        	setPaymentInstrumentsInfo(dto.getPaymentInstrumentsInfo());
+            setPaymentInstrumentsInfo(dto.getPaymentInstrumentsInfo());
         }
-        
+
         invoiceIds = new ArrayList<Integer>();
         paymentMaps = new ArrayList();
     }
@@ -120,11 +124,13 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         setPaymentNotes(dto.getPaymentNotes());
         setSendNotification(dto.isSendNotification());
 
-        if (dto.getMethodId() != null)
+        if (dto.getMethodId() != null) {
             setPaymentMethod(new PaymentMethodDTO(dto.getMethodId()));
+        }
 
-        if (dto.getResultId() != null)
+        if (dto.getResultId() != null) {
             setPaymentResult(new PaymentResultDAS().find(dto.getResultId()));
+        }
 
         userId = dto.getUserId();
 
@@ -134,14 +140,14 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         // set payment instruments
         try {
             if(null!=dto.getPaymentInstruments() && !dto.getPaymentInstruments().isEmpty()) {
-            	for(PaymentInformationWS paymentInstrument : dto.getPaymentInstruments()) {
-            		this.getPaymentInstruments().add(new PaymentInformationDTO(paymentInstrument, entityId));
-            	}
+                for(PaymentInformationWS paymentInstrument : dto.getPaymentInstruments()) {
+                    this.getPaymentInstruments().add(new PaymentInformationDTO(paymentInstrument, entityId));
+                }
             }
         }catch (Exception exception){
             new FormatLogger(Logger.getLogger(PaymentDTOEx.class)).debug("Exception: "+exception);
         }
-        
+
         invoiceIds = new ArrayList<Integer>();
         paymentMaps = new ArrayList();
 
@@ -160,9 +166,9 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         autoPayment = dto.getAutoPayment();
         authorization = new PaymentAuthorizationDAS().find(dto.getAuthorizationId());
         MetaFieldBL.fillMetaFieldsFromWS(entityId,
-        		this, dto.getMetaFields());
+                this, dto.getMetaFields());
     }
-    
+
     /**
      *
      */
@@ -172,34 +178,34 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         paymentMaps = new ArrayList();
     }
 
-//    /**
-//     * @param id
-//     * @param amount
-//     * @param createDateTime
-//     * @param attempt
-//     * @param deleted
-//     * @param methodId
-//     */
-//    public PaymentDTOEx(Integer id, BigDecimal amount, Date createDateTime,
-//            Date updateDateTime,
-//            Date paymentDate, Integer attempt, Integer deleted,
-//            Integer methodId, Integer resultId, Integer isRefund,
-//            Integer isPreauth, Integer currencyId, BigDecimal balance) {
-//        super(id, amount, balance, createDateTime, updateDateTime,
-//                paymentDate, attempt, deleted, methodId, resultId, isRefund,
-//                isPreauth, currencyId, null, null);
-//        invoiceIds = new ArrayList<Integer>();
-//        paymentMaps = new ArrayList();
-//    }
+    //    /**
+    //     * @param id
+    //     * @param amount
+    //     * @param createDateTime
+    //     * @param attempt
+    //     * @param deleted
+    //     * @param methodId
+    //     */
+    //    public PaymentDTOEx(Integer id, BigDecimal amount, Date createDateTime,
+    //            Date updateDateTime,
+    //            Date paymentDate, Integer attempt, Integer deleted,
+    //            Integer methodId, Integer resultId, Integer isRefund,
+    //            Integer isPreauth, Integer currencyId, BigDecimal balance) {
+    //        super(id, amount, balance, createDateTime, updateDateTime,
+    //                paymentDate, attempt, deleted, methodId, resultId, isRefund,
+    //                isPreauth, currencyId, null, null);
+    //        invoiceIds = new ArrayList<Integer>();
+    //        paymentMaps = new ArrayList();
+    //    }
 
-//    /**
-//     * @param otherValue
-//     */
-//    public PaymentDTOEx(PaymentDTO otherValue) {
-//        super(otherValue);
-//        invoiceIds = new ArrayList<Integer>();
-//        paymentMaps = new ArrayList();
-//    }
+    //    /**
+    //     * @param otherValue
+    //     */
+    //    public PaymentDTOEx(PaymentDTO otherValue) {
+    //        super(otherValue);
+    //        invoiceIds = new ArrayList<Integer>();
+    //        paymentMaps = new ArrayList();
+    //    }
 
     public boolean validate() {
         boolean retValue = true;
@@ -211,7 +217,8 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
 
         return retValue;
     }
-    
+
+    @Override
     public String toString() {
 
         StringBuffer maps = new StringBuffer();
@@ -270,6 +277,7 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
     /**
      * @return
      */
+    @Override
     public PaymentDTOEx getPayment() {
         return payment;
     }
@@ -336,31 +344,31 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
         paymentMaps.add(map);
     }
 
-	public List<PaymentInformationDTO> getPaymentInstruments() {
-		return paymentInstruments;
-	}
+    public List<PaymentInformationDTO> getPaymentInstruments() {
+        return paymentInstruments;
+    }
 
-	public void setPaymentInstruments(List<PaymentInformationDTO> paymentInstruments) {
-		this.paymentInstruments = paymentInstruments;
-	}
+    public void setPaymentInstruments(List<PaymentInformationDTO> paymentInstruments) {
+        this.paymentInstruments = paymentInstruments;
+    }
 
-	public PaymentInformationDTO getInstrument() {
-		return instrument;
-	}
+    public PaymentInformationDTO getInstrument() {
+        return instrument;
+    }
 
-	public void setInstrument(PaymentInformationDTO instrument) {
-		this.instrument = instrument;
-	}
+    public void setInstrument(PaymentInformationDTO instrument) {
+        this.instrument = instrument;
+    }
 
-	public Integer getAutoPayment() {
-		return autoPayment;
-	}
+    public Integer getAutoPayment() {
+        return autoPayment;
+    }
 
-	public void setAutoPayment(Integer autoPayment) {
-		this.autoPayment = autoPayment;
-	}
+    public void setAutoPayment(Integer autoPayment) {
+        this.autoPayment = autoPayment;
+    }
 
-	public boolean getIsBankPaymentApproved() {
+    public boolean getIsBankPaymentApproved() {
         return isBankPaymentApproved;
     }
 
@@ -375,7 +383,10 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
     public void setSendNotification(boolean sendNotification) {
         this.sendNotification = sendNotification;
     }
-	
+    
+    /*
+     * BillingHub - Stripe payment gateway integration 
+     */
 	public boolean isAuthenticationRequired() {
 		return authenticationRequired;
 	}
@@ -383,8 +394,11 @@ public class PaymentDTOEx extends PaymentDTO implements AutoCloseable {
 	public void setAuthenticationRequired(boolean authenticationRequired) {
 		this.authenticationRequired = authenticationRequired;
 	}
+	/*
+     * End BillingHub - Stripe payment gateway integration
+     */
 
-	/**
+    /**
      * Closes this resource, relinquishing any underlying resources.
      * This method is invoked automatically on objects managed by the
      * {@code try}-with-resources statement.

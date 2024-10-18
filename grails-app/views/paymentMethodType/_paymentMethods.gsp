@@ -52,7 +52,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="paymentMethodType" action="${action ?: 'list'}"
                              params="${sortableParams(params: [partial: true])}"
                              total="${paymentMethods?.totalCount ?: 0}" update="column1"/>

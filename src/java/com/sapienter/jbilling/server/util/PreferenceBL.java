@@ -16,57 +16,20 @@
 
 package com.sapienter.jbilling.server.util;
 
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ACCOUNT_LOCKOUT_TIME;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ADJUSTMENT_ORDER_CREATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ALLOW_DUPLICATE_META_FIELDS_IN_COPY_COMPANY;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ALLOW_INVOICES_WITHOUT_ORDERS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ALLOW_NEGATIVE_PAYMENTS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ASSET_RESERVATION_DURATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ATTACH_INVOICE_TO_NOTIFICATIONS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_AUTO_RECHARGE_THRESHOLD;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_BACKGROUND_CSV_EXPORT;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_CREATE_CREDENTIALS_BY_DEFAULT;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_CUSTOMER_CONTACT_EDIT;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DAYS_ORDER_NOTIFICATION_S1;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DAYS_ORDER_NOTIFICATION_S2;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DAYS_ORDER_NOTIFICATION_S3;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DELAY_NEGATIVE_PAYMENTS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DIAMETER_QUOTA_THRESHOLD;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DIAMETER_SESSION_GRACE_PERIOD_SECONDS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_EXPIRE_INACTIVE_AFTER_DAYS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_FAILED_LOGINS_LOCKOUT;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_FIRST_REMINDER;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_FORCE_UNIQUE_EMAILS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_FORGOT_PASSWORD_EXPIRATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_GRACE_PERIOD;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_INVOICE_DECIMALS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_INVOICE_DELETE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_INVOICE_NUMBER;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ITG_INVOICE_NOTIFICATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_LINK_AGEING_TO_SUBSCRIPTION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_MEDIATION_JDBC_READER_LAST_ID;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_MINIMUM_BALANCE_TO_IGNORE_AGEING;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_NEXT_REMINDER;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ORDER_IN_INVOICE_LINE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ORDER_LINE_TIER;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_ORDER_OWN_INVOICE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_PAPER_SELF_DELIVERY;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_PARENT_CHILD_CUSTOMER_HIERARCHY;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_PASSWORD_EXPIRATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_PDF_ATTACHMENT;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_SHOW_NOTE_IN_INVOICE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_SUBMIT_TO_PAYMENT_GATEWAY;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_UNIQUE_PRODUCT_CODE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_BLACKLIST;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_DF_FM;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_INVOICE_ID_AS_INVOICE_NUMBER_IN_INVOICE_LINE_DESCRIPTIONS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_INVOICE_REMINDERS;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_JQGRID;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_ORDER_ANTICIPATION;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_OVERDUE_PENALTY;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_USE_PROVISIONING;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_REMOVE_USER_FROM_AGEING_ON_PAYING_OVERDUE_INVOICE;
-import static com.sapienter.jbilling.common.CommonConstants.PREFERENCE_DISPLAY_PAYMENT_URL_LINK_NOTIFICATION;
+import com.sapienter.jbilling.common.SessionInternalError;
+import com.sapienter.jbilling.server.metafields.MetaFieldBL;
+import com.sapienter.jbilling.server.metafields.validation.ValidationReport;
+import com.sapienter.jbilling.server.util.db.JbillingTableDAS;
+import com.sapienter.jbilling.server.util.db.PreferenceDAS;
+import com.sapienter.jbilling.server.util.db.PreferenceDTO;
+import com.sapienter.jbilling.server.util.db.PreferenceTypeDAS;
+import com.sapienter.jbilling.server.util.db.PreferenceTypeDTO;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.hibernate.ObjectNotFoundException;
 
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
@@ -75,25 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
-import org.hibernate.ObjectNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springmodules.cache.CachingModel;
 import org.springmodules.cache.FlushingModel;
 import org.springmodules.cache.provider.CacheProviderFacade;
 
-import com.sapienter.jbilling.common.IMethodTransactionalWrapper;
-import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.server.metafields.MetaFieldBL;
-import com.sapienter.jbilling.server.metafields.validation.ValidationReport;
-import com.sapienter.jbilling.server.user.db.CompanyDAS;
-import com.sapienter.jbilling.server.util.db.JbillingTableDAS;
-import com.sapienter.jbilling.server.util.db.PreferenceDAS;
-import com.sapienter.jbilling.server.util.db.PreferenceDTO;
-import com.sapienter.jbilling.server.util.db.PreferenceTypeDAS;
-import com.sapienter.jbilling.server.util.db.PreferenceTypeDTO;
+import static com.sapienter.jbilling.common.CommonConstants.*;
 
 public class PreferenceBL {
 
@@ -114,7 +63,7 @@ public class PreferenceBL {
     private static final List<Integer> positiveIntegerPreferences = Arrays.asList(
             PREFERENCE_FAILED_LOGINS_LOCKOUT,
             PREFERENCE_ACCOUNT_LOCKOUT_TIME
-            );
+    );
 
     // All Preferences which values have to be a positive integer number or zero
     private static final List<Integer> positiveIntegerOrZeroPreferences = Arrays.asList(
@@ -127,7 +76,7 @@ public class PreferenceBL {
             PREFERENCE_DIAMETER_SESSION_GRACE_PERIOD_SECONDS,
             PREFERENCE_EXPIRE_INACTIVE_AFTER_DAYS,
             PREFERENCE_FORGOT_PASSWORD_EXPIRATION
-            );
+    );
 
     // All Preferences which values have to be blank or a positive integer number
     private static final List<Integer> integerOrBlankPreferences = Arrays.asList(
@@ -141,7 +90,7 @@ public class PreferenceBL {
             PREFERENCE_NEXT_REMINDER,
             PREFERENCE_AUTO_RECHARGE_THRESHOLD,
             PREFERENCE_INVOICE_DECIMALS
-            );
+    );
 
     // All Preferences which values have to be 1 or 0
     private static final List<Integer> ZeroOrOnePreferences = Arrays.asList(
@@ -173,9 +122,8 @@ public class PreferenceBL {
             PREFERENCE_ALLOW_DUPLICATE_META_FIELDS_IN_COPY_COMPANY,
             PREFERENCE_SUBMIT_TO_PAYMENT_GATEWAY,
             PREFERENCE_ORDER_LINE_TIER,
-            PREFERENCE_USE_INVOICE_ID_AS_INVOICE_NUMBER_IN_INVOICE_LINE_DESCRIPTIONS,
-            PREFERENCE_REMOVE_USER_FROM_AGEING_ON_PAYING_OVERDUE_INVOICE,
-            PREFERENCE_DISPLAY_PAYMENT_URL_LINK_NOTIFICATION );
+            PREFERENCE_USE_INVOICE_ID_AS_INVOICE_NUMBER_IN_INVOICE_LINE_DESCRIPTIONS
+    );
 
     static {
         cache = Context.getBean(Context.Name.CACHE);
@@ -285,7 +233,7 @@ public class PreferenceBL {
             Integer value = getPreferenceValueAsInteger(entityId, preferenceTypeId);
             return value != null ? value : 0;
         } catch(EmptyResultDataAccessException ex) {
-            logger.warn("Swallowing Exception !", ex);
+        	logger.warn("Swallowing Exception !", ex);
             return 0;
         }
     }
@@ -583,37 +531,6 @@ public class PreferenceBL {
             throw new SessionInternalError("Preference value has to be greater than zero, other values are not allowed",
                     new String[]{"bean.PreferenceWS.preference.value.error.positive.number," + value});
         }
-    }
-
-    /**
-     * Creates {@link PreferenceDTO} for all entities with given value,
-     * if preference not present for entity.
-     * @param preferenceTypeId
-     * @param value
-     */
-    public static void createIfNotPresentForAllEntities(Integer preferenceTypeId, String value) {
-        IMethodTransactionalWrapper txAction = Context.getBean("methodTransactionalWrapper");
-        txAction.execute(()-> {
-            PreferenceDAS preferenceDAS = new PreferenceDAS();
-            for(Integer entityId : new CompanyDAS().getEntitiyIds()) {
-                PreferenceDTO preferenceDTO = preferenceDAS.findByType_Row(preferenceTypeId, entityId, Constants.TABLE_ENTITY);
-                if(null!= preferenceDTO) {
-                    if(StringUtils.isEmpty(preferenceDTO.getValue())) {
-                        preferenceDTO.setValue(value);
-                    }
-                    continue;
-                }
-                // create a new preference
-                preferenceDTO = new PreferenceDTO();
-                preferenceDTO.setValue(value);
-                preferenceDTO.setForeignId(entityId);
-                JbillingTableDAS jbillingTableDAS = Context.getBean(Context.Name.JBILLING_TABLE_DAS);
-                preferenceDTO.setJbillingTable(jbillingTableDAS.findByName(Constants.TABLE_ENTITY));
-                preferenceDTO.setPreferenceType(new PreferenceTypeDAS().find(preferenceTypeId));
-                preferenceDTO = preferenceDAS.save(preferenceDTO);
-                logger.debug("preference {} created with value {}", preferenceTypeId, value);
-            }
-        });
     }
 
 }

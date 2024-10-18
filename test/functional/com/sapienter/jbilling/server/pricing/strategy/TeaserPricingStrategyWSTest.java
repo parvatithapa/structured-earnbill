@@ -3,9 +3,6 @@ package com.sapienter.jbilling.server.pricing.strategy;
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.server.invoice.InvoiceWS;
 import com.sapienter.jbilling.server.item.ItemDTOEx;
-import com.sapienter.jbilling.server.item.PlanItemBundleWS;
-import com.sapienter.jbilling.server.item.PlanItemWS;
-import com.sapienter.jbilling.server.item.PlanWS;
 import com.sapienter.jbilling.server.order.OrderChangeBL;
 import com.sapienter.jbilling.server.order.OrderChangeWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
@@ -18,7 +15,6 @@ import com.sapienter.jbilling.server.process.BillingProcessConfigurationWS;
 import com.sapienter.jbilling.server.process.BillingProcessTestCase;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
 import com.sapienter.jbilling.server.process.db.ProratingType;
-import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.UserWS;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
@@ -33,9 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +40,6 @@ import org.testng.annotations.Test;
 import static com.sapienter.jbilling.test.Asserts.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -75,8 +67,7 @@ public class TeaserPricingStrategyWSTest {
     private Integer PP_SEMI_MONTHLY_PERIOD;
     private Integer PP_WEEKLY_PERIOD;
     private Integer PP_YEARLY_PERIOD;
-    private static final String ORDER_CHANGE_STATUS_PENDING_ID = "PENDING";
-
+    
     @BeforeClass
     public void getAPI() throws Exception {
         api = JbillingAPIFactory.getAPI();
@@ -94,7 +85,7 @@ public class TeaserPricingStrategyWSTest {
         api.createUpdateBillingProcessConfiguration(process);
     }
 
-    @Test(priority = 1)
+    @Test
     public void testCreateItemWithTeaserPricing() throws Exception {
         // new item with teaser pricing
         PriceModelWS priceModel = new PriceModelWS(PriceModelStrategy.TEASER_PRICING.name(), new BigDecimal("1.00"), US_DOLLAR);
@@ -107,7 +98,7 @@ public class TeaserPricingStrategyWSTest {
         assertNotNull("item created", item.getId());
     }
 
-    @Test(priority = 2)
+    @Test
     public void testOneTimeForCurrentDate() throws Exception {
         OrderWS order = getOrderWS(new Date(), true, item.getId());
 
@@ -125,7 +116,7 @@ public class TeaserPricingStrategyWSTest {
         assertEquals(new BigDecimal("10.00"), invoice.getInvoiceLines()[0].getAmountAsDecimal());
     }
 
-    @Test(priority = 3)
+    @Test
     public void testOneTimeForPastDate() throws Exception {
         LocalDate startLocalDate = LocalDate.now().minusMonths(6);
         Date startDate = Date.from(startLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -140,7 +131,7 @@ public class TeaserPricingStrategyWSTest {
     }
 
 
-    @Test(priority = 4)
+    @Test
     public void testOneTimeForFutureDate() throws Exception {
         OrderWS order = getOrderWS(new Date(), true, item.getId());
         LocalDate startLocalDate = LocalDate.now().plusMonths(1);
@@ -152,7 +143,7 @@ public class TeaserPricingStrategyWSTest {
         assertThat(order.getOrderLines().length, is(0));
     }
 
-    @Test(priority = 5)
+    @Test
     public void testMonthlyForCurrentDate() throws Exception {
         OrderWS order = getOrderWS(new Date(), false, item.getId());
         order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);
@@ -165,7 +156,7 @@ public class TeaserPricingStrategyWSTest {
     }
 
 
-    @Test(priority = 6)
+    @Test
     public void testMonthlyForPastDate() throws Exception {
         LocalDate startLocalDate = LocalDate.now().minusMonths(4);
         Date startDate = Date.from(startLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -185,7 +176,7 @@ public class TeaserPricingStrategyWSTest {
         assertThat(invoice.getInvoiceLines().length, is(5));
     }
 
-    @Test(priority = 7)
+    @Test
     public void testMonthlyForPastDateUsingManualPeriod() throws Exception {
         OrderPeriodWS orderPeriod = new OrderPeriodWS();
         orderPeriod.setEntityId(user.getEntityId());
@@ -227,7 +218,7 @@ public class TeaserPricingStrategyWSTest {
         api.deleteOrderPeriod(orderPeriodId);
     }
 
-    @Test(priority = 8)
+    @Test
     public void testMonthlyOrderWithProRate() throws Exception {
         Date startDate = Date.from(LocalDate.of(2007, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(LocalDate.of(2007, 8, 31).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -277,7 +268,7 @@ public class TeaserPricingStrategyWSTest {
         api.deleteUser(userWS.getUserId());
     }
 
-    @Test(priority = 9)
+    @Test
     public void testSemiMonthlyOrderWithProRate() throws Exception {
         Date startDate1 = Date.from(LocalDate.of(2007, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date startDate2 = Date.from(LocalDate.of(2007, 1, 3).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -416,7 +407,7 @@ public class TeaserPricingStrategyWSTest {
         api.deleteUser(user3.getUserId());
     }
 
-    @Test(priority = 10)
+    @Test
     public void testWeeklyOrderWithProRate() throws Exception {
         Date startDate = Date.from(LocalDate.of(2007, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(LocalDate.of(2007, 2, 25).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -467,7 +458,7 @@ public class TeaserPricingStrategyWSTest {
         api.deleteUser(userWS.getUserId());
     }
 
-    @Test(priority = 11)
+    @Test
     public void testYearlyOrderWithProRate() throws Exception {
         boolean isLeap = Year.now().isLeap();
         Date startDate1 = Date.from(LocalDate.of(2007, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -578,205 +569,10 @@ public class TeaserPricingStrategyWSTest {
         api.deleteUser(user2.getUserId());
     }
 
-    @Test(priority = 12)
-    public void testProdcutLevelTeaserPricing(){
-        Date startDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date effectiveDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        UserWS teaserProductUserWS = PricingTestHelper.buildUser("teaser", PP_MONTHLY_PERIOD, PP_ACCOUNT_TYPE, new ArrayList<>());
-        teaserProductUserWS.setUserId(api.createUser(teaserProductUserWS));
-        teaserProductUserWS.getMainSubscription().setNextInvoiceDayOfPeriod(1);
-        teaserProductUserWS.setNextInvoiceDate(startDate);
-        api.updateUser(teaserProductUserWS);
-        teaserProductUserWS = api.getUserWS(teaserProductUserWS.getId());
-        assertNotNull("User created ", teaserProductUserWS);
-
-        OrderWS order = getOrderWS(startDate, false, item.getId());
-        order.setUserId(teaserProductUserWS.getUserId());
-        order.setPeriod(PP_MONTHLY_PERIOD);
-        order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);
-        order.setProrateFlag(false);
-        order = api.getOrder(api.createOrder(order, getOrderChanges(order, effectiveDate)));
-        assertNotNull("Order created ",order);
-
-        int count = 0;
-        for (OrderChangeWS changes : api.getOrderChanges(order.getId())) {
-            if(changes.getStatus().equals(ORDER_CHANGE_STATUS_PENDING_ID)){
-                ++count;
-            }
-        }
-        assertEquals("one pending lines will be created",1, count);
-        api.deleteOrder(order.getId());
-        api.deleteUser(teaserProductUserWS.getId());
-    }
-
-    @Test(priority = 13)
-    public void testPlanLevelTeaserPricing(){
-        PriceModelWS flatPriceModel = new PriceModelWS(PriceModelStrategy.FLAT.name(), BigDecimal.ONE, US_DOLLAR);
-        ItemDTOEx testPlanItem = createItemDTOEx(flatPriceModel);
-
-        PriceModelWS priceModel = new PriceModelWS(PriceModelStrategy.TEASER_PRICING.name(), new BigDecimal("1.00"), US_DOLLAR);
-        priceModel.addAttribute(TeaserPricingStrategy.USE_ORDER_PERIOD, TeaserPricingStrategy.UseOrderPeriod.YES.name());
-        priceModel.addAttribute(TeaserPricingStrategy.PERIOD, null);
-        priceModel.addAttribute(TeaserPricingStrategy.FIRST_PERIOD, "10");
-        priceModel.addAttribute("3", "30");
-        priceModel.addAttribute("5", "40");
-        priceModel.addAttribute("7", "60");
-        SortedMap<Date, PriceModelWS> models = new TreeMap<Date, PriceModelWS>();
-        models.put(Constants.EPOCH_DATE, priceModel);
-
-        PlanItemBundleWS bundle1 = new PlanItemBundleWS();
-        bundle1.setPeriodId(PP_MONTHLY_PERIOD);
-        bundle1.setQuantity(BigDecimal.ONE);
-
-        List<PlanItemWS> planItems = new ArrayList<>();
-        PlanItemWS pi1 = new PlanItemWS();
-        pi1.setPrecedence(-1);
-        pi1.setItemId(item.getId());
-        pi1.setModels(models);
-        pi1.setBundle(bundle1);
-        planItems.add(pi1);
-        PlanWS plan = createPlan(testPlanItem.getId(), PP_MONTHLY_PERIOD, planItems);
-        Date startDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date effectiveDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        UserWS teaserPlanUserWS = PricingTestHelper.buildUser("NewUser", PP_MONTHLY_PERIOD, PP_ACCOUNT_TYPE, new ArrayList<>());
-        teaserPlanUserWS.setUserId(api.createUser(teaserPlanUserWS));
-        teaserPlanUserWS.getMainSubscription().setNextInvoiceDayOfPeriod(1);
-        teaserPlanUserWS.setNextInvoiceDate(startDate);
-        api.updateUser(teaserPlanUserWS);
-        teaserPlanUserWS = api.getUserWS(teaserPlanUserWS.getId());
-        assertNotNull("User created ", teaserPlanUserWS);
-
-        OrderWS order = getOrderWS(startDate, false, plan.getItemId());
-        order.setUserId(teaserPlanUserWS.getUserId());
-        order.setPeriod(PP_MONTHLY_PERIOD);
-        order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);
-        order.setProrateFlag(false);
-        order = api.getOrder(api.createOrder(order, getOrderChanges(order, effectiveDate)));
-        assertNotNull("Order created ",order);
-
-        int count = 0;
-        for (OrderChangeWS changes : api.getOrderChanges(order.getId())) {
-            if(changes.getStatus().equals(ORDER_CHANGE_STATUS_PENDING_ID)){
-                ++count;
-            }
-        }
-        assertEquals("Thee pending lines will be created",3, count);
-        api.deleteOrder(order.getId());
-        api.deleteUser(teaserPlanUserWS.getId());
-    }
-
-    @Test(priority = 14)
-    public void testAccountTypeLevelTeaserPricing(){
-        PriceModelWS priceModel = new PriceModelWS(PriceModelStrategy.TEASER_PRICING.name(), new BigDecimal("1.00"), US_DOLLAR);
-        priceModel.addAttribute(TeaserPricingStrategy.USE_ORDER_PERIOD, TeaserPricingStrategy.UseOrderPeriod.YES.name());
-        priceModel.addAttribute(TeaserPricingStrategy.PERIOD, null);
-        priceModel.addAttribute(TeaserPricingStrategy.FIRST_PERIOD, "10");
-        priceModel.addAttribute("3", "30");
-        priceModel.addAttribute("5", "40");
-        priceModel.addAttribute("7", "60");
-        priceModel.addAttribute("10", "0");
-
-        PlanItemWS price = new PlanItemWS();
-        price.setItemId(item.getId());
-        price.setPrecedence(1);
-        price.getModels().put(new Date(), priceModel);
-        price = api.createAccountTypePrice(PP_ACCOUNT_TYPE, price, null);
-
-        Date startDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date effectiveDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        UserWS teaserPlanUserWS = PricingTestHelper.buildUser("NewUser", PP_MONTHLY_PERIOD, PP_ACCOUNT_TYPE, new ArrayList<>());
-        teaserPlanUserWS.setUserId(api.createUser(teaserPlanUserWS));
-        teaserPlanUserWS.getMainSubscription().setNextInvoiceDayOfPeriod(1);
-        teaserPlanUserWS.setNextInvoiceDate(startDate);
-        api.updateUser(teaserPlanUserWS);
-        teaserPlanUserWS = api.getUserWS(teaserPlanUserWS.getId());
-        assertNotNull("User created ", teaserPlanUserWS);
-
-        OrderWS order = getOrderWS(startDate, false, item.getId());
-        order.setUserId(teaserPlanUserWS.getUserId());
-        order.setPeriod(PP_MONTHLY_PERIOD);
-        order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);
-        order.setProrateFlag(false);
-        order = api.getOrder(api.createOrder(order, getOrderChanges(order, effectiveDate)));
-        assertNotNull("Order created ",order);
-
-        int count = 0;
-        for (OrderChangeWS changes : api.getOrderChanges(order.getId())) {
-            if(changes.getStatus().equals(ORDER_CHANGE_STATUS_PENDING_ID)){
-                ++count;
-            }
-        }
-        assertEquals("Thee pending lines will be created",4, count);
-        api.deleteAccountTypePrice(PP_ACCOUNT_TYPE, price.getId());
-        api.deleteOrder(order.getId());
-        api.deleteUser(teaserPlanUserWS.getId());
-    }
-
-    @Test(priority = 15)
-    public void testCustomerLevelTeaserPricing(){
-        PriceModelWS priceModel = new PriceModelWS(PriceModelStrategy.TEASER_PRICING.name(), new BigDecimal("1.00"), US_DOLLAR);
-        priceModel.addAttribute(TeaserPricingStrategy.USE_ORDER_PERIOD, TeaserPricingStrategy.UseOrderPeriod.YES.name());
-        priceModel.addAttribute(TeaserPricingStrategy.PERIOD, null);
-        priceModel.addAttribute(TeaserPricingStrategy.FIRST_PERIOD, "10");
-        priceModel.addAttribute("3", "30");
-        priceModel.addAttribute("5", "40");
-        priceModel.addAttribute("7", "60");
-        priceModel.addAttribute("10", "20");
-        priceModel.addAttribute("15", "0");
-
-        PlanItemWS price = new PlanItemWS();
-        price.setItemId(item.getId());
-        price.setPrecedence(1);
-        price.getModels().put(new Date(), priceModel);
-
-        Date startDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date effectiveDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        UserWS teaserPlanUserWS = PricingTestHelper.buildUser("NewUser", PP_MONTHLY_PERIOD, PP_ACCOUNT_TYPE, new ArrayList<>());
-        teaserPlanUserWS.setUserId(api.createUser(teaserPlanUserWS));
-        teaserPlanUserWS.getMainSubscription().setNextInvoiceDayOfPeriod(1);
-        teaserPlanUserWS.setNextInvoiceDate(startDate);
-        api.updateUser(teaserPlanUserWS);
-        price = api.createCustomerPrice(teaserPlanUserWS.getId(), price, null);
-        teaserPlanUserWS = api.getUserWS(teaserPlanUserWS.getId());
-        assertNotNull("User created ", teaserPlanUserWS);
-
-        OrderWS order = getOrderWS(startDate, false, item.getId());
-        order.setUserId(teaserPlanUserWS.getUserId());
-        order.setPeriod(PP_MONTHLY_PERIOD);
-        order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);
-        order.setProrateFlag(false);
-        order = api.getOrder(api.createOrder(order, getOrderChanges(order, effectiveDate)));
-        assertNotNull("Order created ",order);
-
-        int count = 0;
-        for (OrderChangeWS changes : api.getOrderChanges(order.getId())) {
-            if(changes.getStatus().equals(ORDER_CHANGE_STATUS_PENDING_ID)){
-                ++count;
-            }
-        }
-        assertEquals("Thee pending lines will be created",5, count);
-        api.deleteCustomerPrice(teaserPlanUserWS.getId(), price.getId());
-        api.deleteOrder(order.getId());
-        api.deleteUser(teaserPlanUserWS.getId());
-    }
-    private PlanWS createPlan(Integer itemId,Integer periodId , List<PlanItemWS> planItems){
-        PlanWS plan = new PlanWS();
-        plan.setItemId(itemId);
-        plan.setPeriodId(periodId);
-        plan.setDescription("TestPlan"+System.currentTimeMillis());
-        plan.setPlanItems(planItems);
-        plan.setUsagePoolIds(new Integer[]{});
-        Integer planId = api.createPlan(plan);
-        return api.getPlanWS(planId);
-    }
-
     private OrderWS getOrderWS(Date activeDate, boolean oneTime, Integer itemId) {
         OrderWS order = (oneTime) ? PricingTestHelper.buildOneTimeOrder(user.getUserId()) : PricingTestHelper.buildMonthlyOrder(user.getUserId(), PP_MONTHLY_PERIOD);
         order.setActiveSince(activeDate);
         OrderLineWS line = PricingTestHelper.buildOrderLine(itemId, 1);
-        String itemPrice = item.getDefaultPrices().get(CommonConstants.EPOCH_DATE).getAttributes().get("1");
-        line.setPrice(itemPrice);
-        line.setAmount(itemPrice);
         order.setOrderLines(new OrderLineWS[] { line });
         return order;
     }

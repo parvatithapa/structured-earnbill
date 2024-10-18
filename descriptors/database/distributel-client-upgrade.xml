@@ -1641,29 +1641,5 @@
             <column name = "content"      value         = "Task will append order level invoice note meta field on invoice and compose invoice."/>
         </insert>
     </changeSet>
-    
-    <changeSet context = "base" id = "JBDIST-1617 Implementation of DistributelPriceIncreaseAndReversalTask" author = "Deepti">
-        <comment>DistributelPriceIncreaseAndReversalTask for updating customer subscription order price.</comment>
-        <insert tableName = "pluggable_task_type">
-                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
-                <column name = "category_id"    valueNumeric  = "22"/>
-                <column name = "class_name"     value         = "com.sapienter.jbilling.server.distributel.DistributelPriceIncreaseAndReversalTask"/>
-                <column name = "min_parameters" valueNumeric  = "1"/>
-        </insert>
-        <insert tableName = "international_description">
-            <column name = "table_id"     valueNumeric  = "24"/>
-            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
-            <column name = "psudo_column" value         = "title"/>
-            <column name = "language_id"  valueNumeric  = "1"/>
-            <column name = "content"      value         = "Distributel Price Increase And Reversal Task"/>
-        </insert>
-        <insert tableName = "international_description">
-            <column name = "table_id"     valueNumeric  = "24"/>
-            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
-            <column name = "psudo_column" value         = "description"/>
-            <column name = "language_id"  valueNumeric  = "1"/>
-            <column name = "content"      value         = "This plugin is used for price increase/reversal on the customer subscription order on the basis data table. During the price increase use-case system will add new order with increase price and for price reversal case system will delete the price increase line from the order."/>
-        </insert>
-    </changeSet>  
 
 </databaseChangeLog>

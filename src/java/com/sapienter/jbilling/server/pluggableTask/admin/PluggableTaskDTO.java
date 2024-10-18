@@ -32,10 +32,9 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
-import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import org.apache.commons.collections.CollectionUtils;
+
 import org.apache.log4j.Logger;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -60,32 +59,32 @@ public class PluggableTaskDTO implements java.io.Serializable {
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(PluggableTaskDTO.class));
     //  this is in synch with the DB (pluggable task type)
     public static final Integer TYPE_EMAIL = new Integer(9);
-
+   
     @Id @GeneratedValue(strategy=GenerationType.TABLE, generator="pluggable_task_GEN")
     private Integer id;
-
+   
     @Column(name = "entity_id")
     private Integer entityId;
-
+    
     @Column(name = "processing_order")
     private Integer processingOrder;
-
+    
     @Column(name = "notes")
     private String notes;
-
+    
     @ManyToOne
     @JoinColumn(name="type_id")
     private PluggableTaskTypeDTO type;
-
+    
     @OneToMany(mappedBy="task", fetch=FetchType.EAGER, cascade=CascadeType.ALL)
     @Fetch( FetchMode.JOIN)
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     private Collection<PluggableTaskParameterDTO> parameters;
-
+    
     @Version
     @Column(name="OPTLOCK")
     private Integer versionNum;
-
+    
     public PluggableTaskDTO() {
         type = new PluggableTaskTypeDTO();
     }
@@ -119,7 +118,7 @@ public class PluggableTaskDTO implements java.io.Serializable {
             }
         }
     }
-
+ 
     public Integer getEntityId() {
         return entityId;
     }
@@ -144,7 +143,7 @@ public class PluggableTaskDTO implements java.io.Serializable {
         this.processingOrder = processingOrder;
     }
 
-    public Collection<PluggableTaskParameterDTO> getParameters() {
+   public Collection<PluggableTaskParameterDTO> getParameters() {
         return parameters;
     }
 
@@ -176,30 +175,15 @@ public class PluggableTaskDTO implements java.io.Serializable {
         }
     }
 
-    @Transient
-    public void removeParamByName(String name) {
-        if(CollectionUtils.isNotEmpty(parameters)) {
-            PluggableTaskParameterDTO param = null;
-            for (PluggableTaskParameterDTO parameter : parameters) {
-                if(parameter.getName().equals(name)) {
-                    param = parameter;
-                    break;
-                }
-            }
-            if(null!= param) {
-                parameters.remove(param);
-            }
-        }
-    }
 
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
+	public void setNotes(String notes) {
+		this.notes = notes;
+	}
 
 
-    public String getNotes() {
-        return notes;
-    }
+	public String getNotes() {
+		return notes;
+	}
 
     @Override
     public String toString() {
@@ -224,8 +208,8 @@ public class PluggableTaskDTO implements java.io.Serializable {
     public String getAuditKey(Serializable id) {
         StringBuilder key = new StringBuilder();
         key.append(getEntityId())
-        .append("-")
-        .append(id);
+                .append("-")
+                .append(id);
 
         return key.toString();
     }

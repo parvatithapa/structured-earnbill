@@ -3,7 +3,6 @@ package com.sapienter.jbilling.server.mediation.sapphire.cdr;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -39,7 +38,7 @@ public class SapphireCdrCreator {
             cdr.setMediationCfgId(mediationConfigId);
             for(CdrSkipPolicy skipPolicy : CdrSkipPolicy.values()) {
                 if(skipPolicy.shouldSkip(sapphireCdr)) {
-                    cdr.setKey(StringUtils.EMPTY);
+                    cdr.setKey(null);
                     return cdr;
                 }
             }

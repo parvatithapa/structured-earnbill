@@ -1,11 +1,20 @@
 package com.sapienter.jbilling.server.order.mocks;
 
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
-import com.sapienter.jbilling.server.order.*;
+import com.sapienter.jbilling.server.order.ApplyToOrder;
+import com.sapienter.jbilling.server.order.MediationEventResult;
+import com.sapienter.jbilling.server.order.MediationEventResultList;
+import com.sapienter.jbilling.server.order.OrderChangeStatusWS;
+import com.sapienter.jbilling.server.order.OrderChangeTypeWS;
+import com.sapienter.jbilling.server.order.OrderService;
+import com.sapienter.jbilling.server.order.OrderStatusFlag;
+import com.sapienter.jbilling.server.order.OrderWS;
 
 /**
  * Created by andres on 16/10/15.
@@ -48,10 +57,10 @@ public class OrderMockService implements OrderService {
 
     @Override
     public MediationEventResultList addMediationEventList(List<JbillingMediationRecord> jmrList) {
-        MediationEventResultList resultList = new MediationEventResultList(jmrList.size());
+        MediationEventResultList resultList = new MediationEventResultList();
         for(JbillingMediationRecord jmr : jmrList) {
             MediationEventResult result = addMediationEvent(jmr);
-            resultList.addResult(result);
+            resultList.addResult(jmr, result);
         }
         return resultList;
     }
@@ -88,9 +97,10 @@ public class OrderMockService implements OrderService {
     @Override
     public void updateOrderMetafield(Integer entity,  Integer orderId, String metafieldName, Object value){
     }
-    public Map<Integer, List<OrderWS>> getOrderForCustomInvoice(File csvFile)
-    {
-        return null;
+
+    @Override
+    public boolean isJMRProcessed(JbillingMediationRecord jmr) {
+        return true;
     }
 
 }

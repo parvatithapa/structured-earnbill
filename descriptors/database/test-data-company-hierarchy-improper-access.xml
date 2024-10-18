@@ -39,14 +39,14 @@
 		</sql>
 		<!-- Inserting Payment for user id 13 		 -->
 		<insert tableName="payment">
-            <column name="id" valueNumeric="1801"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment p)"/>
             <column name="user_id" valueNumeric="13"/>
             <column name="attempt" valueNumeric="1"/>
             <column name="result_id" valueNumeric="4"/>
             <column name="amount" valueNumeric="20.0000000000"/>
-            <column name="create_datetime" valueDate="2021-06-26T09:44:49.443"/>
-            <column name="update_datetime" valueDate="2021-06-26T09:44:49.443"/>
-            <column name="payment_date" valueDate="2021-06-26"/>
+            <column name="create_datetime" valueComputed = "(SELECT NOW() create_datetime)"/>
+            <column name="update_datetime" valueComputed = "(SELECT NOW() update_datetime)"/>
+            <column name="payment_date" valueComputed = "(SELECT CURRENT_DATE payment_date)"/>
             <column name="method_id" valueNumeric="2"/>
             <column name="credit_card_id"/>
             <column name="deleted" valueNumeric="0"/>
@@ -63,7 +63,7 @@
         </insert>
         
         <insert tableName="payment_information">
-            <column name="id" valueNumeric="1017"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment_information p)"/>
             <column name="user_id" valueNumeric="13"/>
 			<column name="payment_method_id" valueNumeric="6" ></column>
 			<column name="processing_order" valueNumeric="1" ></column>
@@ -74,25 +74,25 @@
         </insert>
         
         <insert tableName="payment_instrument_info">
-            <column name="id" valueNumeric="11"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment_instrument_info p)"/>
             <column name="result_id" valueNumeric="4" ></column>
 			<column name="method_id" valueNumeric="2" ></column>
-			<column name="instrument_id" valueNumeric="1017" ></column>
-			<column name="payment_id" valueNumeric="1801" ></column>
+			<column name="instrument_id" valueComputed="COALESCE((SELECT MAX(id) FROM payment_information),1)"></column>
+			<column name="payment_id" valueComputed = "COALESCE((SELECT MAX(id) FROM payment),1)" ></column>
         </insert>
         
         
         <!-- Inserting Payment for user id 10750 -->
         
 		<insert tableName="payment">
-            <column name="id" valueNumeric="1802"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment p)"/>
             <column name="user_id" valueNumeric="10750"/>
             <column name="attempt" valueNumeric="1"/>
             <column name="result_id" valueNumeric="4"/>
             <column name="amount" valueNumeric="20.0000000000"/>
-            <column name="create_datetime" valueDate="2021-06-26T09:44:49.443"/>
-            <column name="update_datetime" valueDate="2021-06-26T09:44:49.443"/>
-            <column name="payment_date" valueDate="2021-06-26"/>
+            <column name="create_datetime" valueComputed = "(SELECT NOW() create_datetime)"/>
+            <column name="update_datetime" valueComputed = "(SELECT NOW() update_datetime)"/>
+            <column name="payment_date" valueComputed = "(SELECT CURRENT_DATE payment_date)"/>
             <column name="method_id" valueNumeric="2"/>
             <column name="credit_card_id"/>
             <column name="deleted" valueNumeric="0"/>
@@ -109,7 +109,7 @@
         </insert>
         
         <insert tableName="payment_information">
-            <column name="id" valueNumeric="1018"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment_information p)"/>
             <column name="user_id" valueNumeric="10750"/>
 			<column name="payment_method_id" valueNumeric="5" ></column>
 			<column name="processing_order" valueNumeric="1" ></column>
@@ -120,11 +120,11 @@
         </insert>
         
         <insert tableName="payment_instrument_info">
-            <column name="id" valueNumeric="12"/>
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM payment_instrument_info p)"/>
             <column name="result_id" valueNumeric="4" ></column>
 			<column name="method_id" valueNumeric="2" ></column>
-			<column name="instrument_id" valueNumeric="1018" ></column>
-			<column name="payment_id" valueNumeric="1802" ></column>
+			<column name="instrument_id" valueComputed="COALESCE((SELECT MAX(id) FROM payment_information),1)"></column>
+			<column name="payment_id" valueComputed = "COALESCE((SELECT MAX(id) FROM payment),1)" ></column>
         </insert>
         
         <sql>

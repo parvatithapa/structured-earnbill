@@ -16,12 +16,15 @@
 
 package jbilling
 
+import com.sapienter.jbilling.server.adennet.AdennetHelperService
+import com.sapienter.jbilling.server.util.Constants
+
 import java.beans.Transient;
 
 import org.hibernate.criterion.Restrictions
 import org.hibernate.criterion.Criterion
 import org.hibernate.criterion.MatchMode
-
+import java.time.LocalDateTime;
 /**
  * Filter
 
@@ -199,8 +202,9 @@ class Filter implements Serializable {
                 break
 
             case FilterConstraint.DATE_BETWEEN:
+
                 if (startDateValue != null && endDateValue != null) {
-                    return Restrictions.between(field, startDateValue, endDateValue);
+                    return Restrictions.between(field, new AdennetHelperService().convertToAdenTimezone(startDateValue, Constants.DEFAULT_TIMEZONE), new AdennetHelperService().convertToAdenTimezone(endDateValue, Constants.DEFAULT_TIMEZONE));
 
                 } else if (startDateValue != null) {
                     return Restrictions.ge(field, startDateValue);

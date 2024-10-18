@@ -5,7 +5,7 @@ package com.sapienter.jbilling.server.mediation.converter.customMediations.fullC
  */
 public class FullCreativeConstants {
 
-    // Mediation jobs configuration
+	// Mediation jobs configuration
     public static final String INBOUND_CALL_MEDIATION_CONFIGURATION = "inboundCallsMediationJobLauncher";
     public static final String ACTIVE_RESPONSE_MEDIATION_CONFIGURATION = "activeResponseMediationJobLauncher";
     public static final String CHAT_MEDIATION_CONFIGURATION = "chatMediationJobLauncher";
@@ -61,45 +61,43 @@ public class FullCreativeConstants {
     public static final String CALL_RELAY_FOLDER_NAME = "callrelay/";
     public static final String IVR_FOLDER_NAME = "ivr/";
 
-    public static final String UNDER_INITIAL_INCREMENT_THRESHOLD_QUANTITY_FIELD_NAME = "underInitialIncrementThreshold";
-
     //These are FC specific MetaFieldsName
     public enum MetaFieldName {
 
         LIVE_ANSWER_ITEM("Set ItemId For Live Answer"),
-        INBOUND_CALL_ITEM("Set ItemId For InBound Calls") ,
-        ACTIVE_RESPONSE_ITEM("Set ItemId For Active Response") ,
-        CHAT_ITEM("Set ItemId For Chat") ,
-        PAYPAL_BILLING_GROUP_NAME("Billing Contact Info Group Name"),
-        IVR_ITEM("Set ItemId For IVR"),
-        INBOUND_CALL_TYPE("Inbound Call Type"),
-        CHAT_CALL_TYPE("Chat Call Type"),
-        ACTIVE_RESPONSE_CALL_TYPE("Active Response Call Type"),
-        SPANISH_CALL_TYPE("Spanish (Inbound) Call Type"),
-        SUPERVISOR_CALL_TYPE("Supervisor (Inbound) Call Type"),
-        CALL_RELAY_CALL_TYPE("Call Relay (Inbound) Call Type"),
-        LIVE_RECEPTION_CALL_TYPE("Live Reception Call Type"),
-        IVR_CALL_TYPE("IVR (Incoming) Call Type"),
-        MOBILE_APP_CALL_TYPE("Mobile App (Outbound) Call Type"),
-        VOICE_MAIL_CALL_TYPE("Voicemail Call Type"),
-        WEB_FORM_CALL_TYPE("Webform to Call (IVR) Call Type"),
-        NOTIFICATION_MAILING_ADDRESS("Mailing Contact Info Group Name"),
-        NPA_NXX_TABEL_NAME("NPA NXX Table Name"),
-        DORMANCY_PLAN_ID("Dormancy plan Id");
+		INBOUND_CALL_ITEM("Set ItemId For InBound Calls") ,
+		ACTIVE_RESPONSE_ITEM("Set ItemId For Active Response") ,
+		CHAT_ITEM("Set ItemId For Chat") ,
+		PAYPAL_BILLING_GROUP_NAME("Billing Contact Info Group Name"),
+		IVR_ITEM("Set ItemId For IVR"),
+		INBOUND_CALL_TYPE("Inbound Call Type"),
+		CHAT_CALL_TYPE("Chat Call Type"),
+		ACTIVE_RESPONSE_CALL_TYPE("Active Response Call Type"),
+		SPANISH_CALL_TYPE("Spanish (Inbound) Call Type"),
+		SUPERVISOR_CALL_TYPE("Supervisor (Inbound) Call Type"),
+		CALL_RELAY_CALL_TYPE("Call Relay (Inbound) Call Type"),
+		LIVE_RECEPTION_CALL_TYPE("Live Reception Call Type"),
+		IVR_CALL_TYPE("IVR (Incoming) Call Type"),
+		MOBILE_APP_CALL_TYPE("Mobile App (Outbound) Call Type"),
+		VOICE_MAIL_CALL_TYPE("Voicemail Call Type"),
+		WEB_FORM_CALL_TYPE("Webform to Call (IVR) Call Type"),
+		NOTIFICATION_MAILING_ADDRESS("Mailing Contact Info Group Name"),
+		NPA_NXX_TABEL_NAME("NPA NXX Table Name"),
+		DORMANCY_PLAN_ID("Dormancy plan Id");
 
         public static final String TAX_SCHEME = "Tax Scheme";
         public static final String TAX_TABLE_NAME = "Tax_Table_Name";
 
-        private String metaFieldName;
+		private String metaFieldName;
 
-        private MetaFieldName(String metaFieldName) {
-            this.metaFieldName = metaFieldName;
-        }
+		private MetaFieldName(String metaFieldName) {
+			this.metaFieldName = metaFieldName;
+		}
 
-        public String getMetaFieldName() {
-            return metaFieldName;
-        }
+		public String getMetaFieldName() {
+			return metaFieldName;
+		}
 
-    }
+	}
 
 }

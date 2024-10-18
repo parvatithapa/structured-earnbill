@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.server.mediation.sapphire;
 
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.CALLING_PARTY_ADDR;
-import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.CDR_CALL_TYPE;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.CHARGE_ADDR;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.CONNECT_TIME;
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireMediationConstants.DEST_ADDR;
@@ -57,23 +56,6 @@ public abstract class SapphireUtil {
         }
     }
 
-    private static boolean isValidNumber(String number) {
-        try {
-            if(!number.startsWith(PLUS_PREFIX)) {
-                number = PLUS_PREFIX + number;
-            }
-            PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
-            PhoneNumber phoneNumber = phoneUtil.parse(number, StringUtils.EMPTY);
-            boolean isValid = phoneUtil.isValidNumber(phoneNumber);
-            if(!isValid) {
-                logger.debug("number {} is not valid", number);
-            }
-            return isValid;
-        } catch (NumberParseException ex) {
-            throw new IllegalArgumentException("Number parsing failed! ", ex);
-        }
-    }
-
     public static List<PricingField> collectPricingFieldsFromCdr(CallType sapphireCdr) {
         List<PricingField> fields = new ArrayList<>();
         PartyType origPartyType = sapphireCdr.getOrigParty();
@@ -86,7 +68,6 @@ public abstract class SapphireUtil {
         fields.add(new PricingField(REQUESTED_ADDR, sapphireCdr.getRoutingInfo().getRequestedAddr().getValue()));
         fields.add(new PricingField(DEST_ADDR, sapphireCdr.getRoutingInfo().getDestAddr().getValue()));
         fields.add(new PricingField(SEQUENCE_NUM, sapphireCdr.getSeqnum()));
-        fields.add(new PricingField(CDR_CALL_TYPE, sapphireCdr.getCallType().name()));
 
         AddressType callingPartyAddr = origPartyType.getCallingPartyAddr();
         if(null!= callingPartyAddr) {
@@ -125,28 +106,6 @@ public abstract class SapphireUtil {
             result.setCurrencyId(userCurrencyMap.get(MediationStepResult.CURRENCY_ID));
             logger.debug("Resolved user {} and currency {} for number{}", result.getUserId(), result.getCurrencyId(), assetIdentifier);
         }
-    }
-
-    public static String validateAndCheckAssetNumberInSystem(String number) {
-        String assetNumber = StringUtils.EMPTY;
-        if(isValidNumber(number)) {
-            String nationalNumber = getNationalNumber(number);
-            SapphireMediationHelperService service = Context.getBean(SapphireMediationHelperService.class);
-            if(service.isIdentifierPresent(nationalNumber)) {
-                assetNumber = nationalNumber;
-            } else {
-                logger.debug("asset number {} not found in system", nationalNumber);
-            }
-        }
-        return assetNumber;
-    }
-
-    public static String validateAndGetAssetNumber(String number) {
-        String assetNumber = StringUtils.EMPTY;
-        if(isValidNumber(number)) {
-            assetNumber = getNationalNumber(number);
-        }
-        return assetNumber;
     }
 
 

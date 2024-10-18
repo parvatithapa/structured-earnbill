@@ -18,7 +18,11 @@ package com.sapienter.jbilling.server.usagePool.task;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Date;
 
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
@@ -51,6 +55,8 @@ public class CustomerUsagePoolConsumptionActionTask extends PluggableTask
 implements IInternalEventsTask {
 
 	private static final Logger LOG = Logger.getLogger(CustomerUsagePoolConsumptionActionTask.class);
+	private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+	private static final String USAGE_POOL_NAME_LABLE = "name";
 	
 	@SuppressWarnings("unchecked")
     private static final Class<Event> events[] = new Class[] { 
@@ -102,37 +108,35 @@ implements IInternalEventsTask {
 	                        EventManager.process(new FreeTrialConsumptionEvent(entityId, userId));
                         }
 
-	                    if (percentage.compareTo(oldConsumptionPercentage) > 0 && percentage.compareTo(consumptionPercentage) <= 0) {
-	                        fireUsagePoolConsumptionActionEvent(consumptionActionDTO, entityId, userId, customerUsagePool.getId());
-	                        saveUsagePoolConsumptionLog(oldQuantity, newQuantity,
-	                                customerUsagePool, "" + consumptionActionDTO.getId(), consumptionPercentage,
-	                                consumptionActionDTO.getId());
-	                    }
-	                }
-                }
+						if (percentage.compareTo(oldConsumptionPercentage) > 0 && percentage.compareTo(consumptionPercentage) <= 0) {
+							String currentDataBoost = null;
+							String currentUsagePoolName = customerUsagePool.getUsagePool()
+									.getDescription(customerUsagePool.getCustomer().getBaseUser().getLanguage().getId(), USAGE_POOL_NAME_LABLE);
+							if (percentage.compareTo(ONE_HUNDRED) == 0) {
+								if (currentUsagePoolName.contains(SPCConstants.DATA_BOOST_NAME)) {
+									currentDataBoost = SPCConstants.DATA_BOOST_TOKEN +
+											StringUtils.substringAfter(currentUsagePoolName, SPCConstants.DATA_BOOST_NAME);
+								}
+							}
+							fireUsagePoolConsumptionActionEvent(consumptionActionDTO, entityId, userId, customerUsagePool.getId(),
+							        currentDataBoost, consumptionEvent.getActiveSince());
+							saveUsagePoolConsumptionLog(oldQuantity, newQuantity,
+									customerUsagePool, "" + consumptionActionDTO.getId(), consumptionPercentage,
+									consumptionActionDTO.getId());
+						}
+					}
+				}
 			}
 		}
-		
 		LOG.debug("Customer Usage Pool Consumption task completed");
 	}
 
-    private boolean needToBeLaunched(BigDecimal consumptionPercentage, Integer customerUsagePoolId,
-                                     UsagePoolConsumptionActionDTO consumptionActionDTO) {
-        BigDecimal percentage = new BigDecimal(consumptionActionDTO.getPercentage());
-        UsagePoolConsumptionLogDAS consumptionLogDas = new UsagePoolConsumptionLogDAS();
-        BigDecimal percentageConsumptionLog = consumptionLogDas.findPercentageConsumptionBycustomerUsagePoolId(customerUsagePoolId, consumptionActionDTO.getId());
-        LOG.debug("percentageConsumptionLog ::::::::: "+percentageConsumptionLog);
-        return  null != percentageConsumptionLog &&
-                percentage.compareTo(percentageConsumptionLog) > 0 &&
-                percentage.compareTo(consumptionPercentage) <= 0;
-    }
-
     private void fireUsagePoolConsumptionActionEvent(UsagePoolConsumptionActionDTO action, Integer entityId,
-										Integer userId, Integer customerUsagePoolId) {
+										Integer userId, Integer customerUsagePoolId,String currentDataBoost, Date activeSince) {
 		if (action.getNotificationId() != null) {
-			EventManager.process(new UsagePoolConsumptionNotificationEvent(entityId, customerUsagePoolId, action));
+			EventManager.process(new UsagePoolConsumptionNotificationEvent(entityId, customerUsagePoolId, action,currentDataBoost));
 		} else if (action.getNotificationId() == null) {
-			EventManager.process(new UsagePoolConsumptionFeeChargingEvent(entityId, userId, action));
+			EventManager.process(new UsagePoolConsumptionFeeChargingEvent(entityId, customerUsagePoolId, action, activeSince));
 		} else {
             LOG.error("The action with id: " + action.getId() + " don't have any product Id or notification Id setted");
         }
@@ -154,7 +158,7 @@ implements IInternalEventsTask {
 		try {
 			new UsagePoolConsumptionLogDAS().save(consumptionLog);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("Error while saving the consumption log {}", e);
 		}
 	}
 }

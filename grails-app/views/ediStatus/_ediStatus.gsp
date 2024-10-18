@@ -67,7 +67,7 @@
 
         </div>
 
-        <div class="row">
+        <div class="row-center">
             <jB:remotePaginate  action="list" total="${ediStatusList?.totalCount ?: 0}" update="ediStatuses" params="[partial:true,  action:'list', typeId:params.typeId]"/>
         </div>
     </div>

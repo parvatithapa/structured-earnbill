@@ -101,16 +101,4 @@ public class PaymentMethodDTO extends AbstractDescription implements Serializabl
     public String getAuditKey(Serializable id) {
         return id.toString();
     }
-
-    public String getDescription(PaymentDTO payment, Integer languageId) {
-        if (payment == null) {
-            throw new NullPointerException("payment details not found");
-        }
-        String methodName = super.getDescription(languageId);
-        if( !methodName.equals(com.sapienter.jbilling.common.CommonConstants.CUSTOM) ) {
-            return methodName;
-        }
-        Integer informationId = payment.getPaymentInstrumentsInfo().get(0).getId();
-        return new PaymentInformationDAS().findCustomPaymentMethodType(informationId);
-    }
 }

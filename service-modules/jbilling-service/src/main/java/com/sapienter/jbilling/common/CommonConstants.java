@@ -17,10 +17,10 @@
 
 package com.sapienter.jbilling.common;
 
+import org.joda.time.DateTime;
+
 import java.math.BigDecimal;
 import java.util.Date;
-
-import org.joda.time.DateTime;
 
 /**
  * @author Emil
@@ -57,6 +57,8 @@ public interface CommonConstants {
     public static final String LIST_TYPE_PARTNER = "partner";
     public static final String LIST_TYPE_PAYOUT = "payout";
     public static final String LIST_TYPE_INVOICE_ORDER = "invoicesOrder";
+    public static final String CENTRE_PAY = "CentrePay";
+
 
     // results from payments
     // this has to by in synch with how the database is initialized
@@ -100,6 +102,8 @@ public interface CommonConstants {
     public static final Integer PAYMENT_EDI = new Integer(16);
     public static final Integer PAYMENT_METHOD_BANK_WIRE = new Integer(17);
     public static final Integer PAYMENT_METHOD_BPAY = -2;
+    public static final Integer PAYMENT_METHOD_CENTREPAY = -4;
+
 
     //payment result
     public static final Integer PAYMENT_RESULT_SUCCESSFUL = new Integer(1);
@@ -194,7 +198,16 @@ public interface CommonConstants {
     public static Integer REQUIRE_PAYMENT_AUTHORIZATION_FOR_COLLECTION_PROCESS = 98;
     public static Integer PREFERENCE_REQUIRE_CVV_FOR_ONE_TIME_PAYMENTS = 99;
     public static Integer PREFERENCE_USE_ASSET_LINKED_FREE_USAGE_POOLS_ONLY = 100;
-    public static Integer PREFERENCE_REMOVE_USER_FROM_AGEING_ON_PAYING_OVERDUE_INVOICE = 101;
+    public static Integer PREFERENCE_MEDIATED_ORDER_LINE_AMOUNT_PRECISION = 101;
+    public static Integer PREFERENCE_SWITCH_BETWEEN_PAYMENT_OR_CR_NOTE_DATE_AND_CREATION_DATE_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY = 102;
+    public static Integer PREFERENCE_USE_ANNIVERSARY_INVOICE_FOR_OPENING_BALANCE_IN_INVOICE_SUMMARY = 103;
+    public static Integer PREFERENCE_SWITCH_BETWEEN_PAYMENT_DATE_OR_CR_NOTE_DATE_AND_CREATE_TIMESTAMP_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY = 104;
+    public static Integer PREFERENCE_SET_INVOICE_DELIVERY_METHOD_TO_EMAIL_AND_PAPER_IF_EMAIL_ID_IS_NOT_PROVIDED = 105;
+    public static Integer PREFERENCE_CAPTURE_IDENTIFICATION_DOC_FOR_CUSTOMER = 106;
+    Integer PREFERENCE_APPLY_CUSTOMER_USER_NAME_VALIDATION = 107;
+    Integer PREFERENCE_CALL_UMS_ON_CREATE_ORDER = 108;
+    public static Integer PREFERENCE_DOWNGRADE_FEES_APPLICABLE = 109;
+    public static Integer PREFERENCE_SUPPORT_ALTERNATE_RECHARGES = 110;
 
     // IDs of default set of order statuses pre created.
     public static final Integer DEFAULT_ORDER_INVOICE_STATUS_ID = new Integer(1);
@@ -271,6 +284,7 @@ public interface CommonConstants {
     public static final int BIGDECIMAL_SCALE_STR = 2;
     public static final int BIGDECIMAL_QUANTITY_SCALE = 4;
     public static final int BIGDECIMAL_ROUND = BigDecimal.ROUND_HALF_UP;
+    public static final int BIGDECIMAL_PRECISION_DECIMAL128 = 34;
 
     public static final BigDecimal BIGDECIMAL_ONE = new BigDecimal("1");
     public static final BigDecimal BIGDECIMAL_ONE_CENT = new BigDecimal("0.01");
@@ -278,6 +292,9 @@ public interface CommonConstants {
     public static final String PASSWORD_PATTERN_4_UNIQUE_CLASSES = "^.*(?=.{8,40})(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*+=]).*$";
     public static final String PASSWORD_PATTERN = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789(?=.*[!@#$%^&*+=])/";
     public static final String USERNAME_PATTERN = "^[. A-Za-z0-9_@-]*$";
+    public static final String ADENNET_USERNAME_PATTERN = "^89967055\\d{12}$";
+    public static final String ADENNET_SUBSCRIBER_NUMBER_PATTERN = "^79\\d{7}$";
+    public static final String ADENNET_IMSI_PATTERN = "^42105\\d{10}$";
 
     // codes for login resuls
     public final static Integer AUTH_OK = new Integer(0);
@@ -441,13 +458,18 @@ public interface CommonConstants {
     public static final String TAX_SCHEME = "Tax Scheme";
     public static final String TAX_TABLE_NAME = "Tax Table Name";
     public static final String TAX_DATE_FORMAT = "Tax Date Format";
+    public static final String CALL_CHARGE = "CALL_CHARGE";
+    public static final String INVOICE_DATE = "Invoice_Date";
+    public static final String INVOICE_TIMESTAMP = "Invoice_TimeStamp";
+    public static final String PAYMENT_DATE = "Payment_Date";
+    public static final String CREDIT_NOTE_DATE = "Credit_Note_Date";
+    public static final String SERVICE_ID = "ServiceId";
+    public static final String VALIDATION_FAILED = "Validation Failed.";
 
-    public static final String PRICE_NOT_FOUND_IN_RATE_CARD = "PRICE_NOT_FOUND_IN_RATE_CARD";
-    
-    /*
-     * Response code 
-    */
-    
+    //Company level meta-fields
+    public static final String CUSTOMER_CONTACT_DETAILS_AIT_GROUP_NAME = "Customer Contact Details AIT Group Name";
+
+    //Response code
     public static final Integer ERROR_CODE_UNAUTHORIZED_DATA_ACCESS = Integer.valueOf(403);
-    public static Integer PREFERENCE_DISPLAY_PAYMENT_URL_LINK_NOTIFICATION = new Integer(102);
+
 }

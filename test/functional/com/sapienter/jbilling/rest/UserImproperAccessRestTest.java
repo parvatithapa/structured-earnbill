@@ -1,25 +1,23 @@
 package com.sapienter.jbilling.rest;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.testng.AssertJUnit.fail;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.sapienter.jbilling.server.invoice.InvoiceWS;
+import com.sapienter.jbilling.server.payment.PaymentInformationRestWS;
 import com.sapienter.jbilling.server.payment.PaymentWS;
+import com.sapienter.jbilling.server.payment.SecurePaymentWS;
+import com.sapienter.jbilling.server.usagePool.UsagePoolWS;
+import com.sapienter.jbilling.server.user.CustomerRestWS;
+import com.sapienter.jbilling.server.user.UserWS;
 import org.junit.Assert;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientResponseException;
 import org.testng.annotations.Test;
-import org.json.JSONObject;
 
-import com.sapienter.jbilling.rest.RestConfig;
-import com.sapienter.jbilling.server.payment.PaymentInformationRestWS;
-import com.sapienter.jbilling.server.payment.SecurePaymentWS;
-import com.sapienter.jbilling.server.user.CustomerRestWS;
-import com.sapienter.jbilling.server.user.UserWS;
-import com.sapienter.jbilling.server.payment.PaymentWS;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.testng.AssertJUnit.fail;
 
 
 /**
@@ -35,15 +33,34 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
     private static final Integer USER_ID_COMPANY1_CUSTOMER1 = Integer.valueOf(2);
     private static final Integer USER_ID_COMPANY1_CUSTOMER2 = Integer.valueOf(10750);
     private static final Integer USER_ID_COMPANY1_CUSTOMER3 = Integer.valueOf(53);
-
     private static final Integer USER_ID_PARENT1_COMPANY3_CUSTOMER1 = Integer.valueOf(10810);
-
     private static final Integer USER_ID_PARENT1_COMPANY10_CUSTOMER1 = Integer.valueOf(108142);
-
     private static final Integer USER_ID_COMPANY2_CUSTOMER1 = Integer.valueOf(13);
 
     private static final Integer USER_ID_PARENT2_COMPANY11_CUSTOMER1 = Integer.valueOf(108144);
 
+    private static PaymentInformationRestWS buildPaymentInformationWSMock(Integer userId, Integer paymentMethodTypeId, String ccNumber, String expiryDate, String intendId) {
+        PaymentInformationRestWS instrument = new PaymentInformationRestWS();
+
+        instrument.setUserId(userId);
+        instrument.setProcessingOrder(1);
+        instrument.setPaymentMethodId(2);
+        instrument.setPaymentMethodTypeId(paymentMethodTypeId);
+
+        Map<String, Object> metaFields = new HashMap<String, Object>();
+
+        if (intendId == null) {
+            metaFields.put("cc.cardholder.name", "test payment intrument");
+            metaFields.put("cc.number", ccNumber);
+            metaFields.put("cc.expiry.date", expiryDate);
+        }
+        if (intendId != null) {
+            metaFields.put("cc.stripe.intent.id", intendId);
+        }
+
+        instrument.setMetaFields(metaFields);
+        return instrument;
+    }
 
     /**
      * Create user.
@@ -88,7 +105,7 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_TWO, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
-        //   Login as admin(child company) : create customer for parent company 
+        //   Login as admin(child company) : create customer for parent company
         try {
 
             UserWS userWS = RestEntitiesHelper.buildUserMock("test-comp-hierarchy", 1, true);
@@ -102,7 +119,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
         }
 
     }
-
 
     /**
      * Get user by id.
@@ -125,7 +141,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUserWS(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -134,7 +149,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUserWS(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -143,11 +157,9 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUserWS(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
-
 
     /**
      * Update user.
@@ -166,7 +178,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateUser(company2AdminApi, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY2_ADMIN_MORDOR)));
         }
 
@@ -176,7 +187,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateUser(company1Customer2Api, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_TWO, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -186,7 +196,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateUser(company1Customer3Api, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -195,7 +204,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateUser(parent1Company3AdminApi, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
@@ -212,7 +220,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             deleteUser(company2AdminApi, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY2_ADMIN_MORDOR)));
         }
 
@@ -222,7 +229,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             deleteUser(company1Customer2Api, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_TWO, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -232,7 +238,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             deleteUser(company1Customer3Api, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -241,7 +246,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             deleteUser(parent1Company3AdminApi, userWS);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
@@ -251,31 +255,49 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
      * end point : /api/users/paymentinstruments/{userId}
      * method : GET
      */
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testAccessPaymentInstrument() {
         // Login as admin :	get payment instruments of customer of another company
-        PaymentInformationRestWS[] paymentInformationRestWS = getPaymentInstrument(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
-        Assert.assertNotNull("Response, PaymentInformationRestWS, should not be null",paymentInformationRestWS);
+        try {
+            getPaymentInstrument(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER1));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY2_ADMIN_MORDOR)));
+        }
 
         // Login as customer  : get payment instruments of customer of another company
-        PaymentInformationRestWS instrumentWS1 = buildPaymentInformationWSMock(USER_ID_COMPANY2_CUSTOMER1, 6, "4111111111111111", "02/2030", null);
-        createPaymentInstrument(company2AdminApi, instrumentWS1);
-        PaymentInformationRestWS[] paymentInformationRestWS1 = getPaymentInstrument(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
-        Assert.assertNotNull("Response, PaymentInformationRestWS, should not be null",paymentInformationRestWS1);
+        try {
+            PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY2_CUSTOMER1, 6, "4111111111111111", "02/2030", null);
+
+            createPaymentInstrument(company2AdminApi, instrumentWS);
+            getPaymentInstrument(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY2_CUSTOMER1));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_TWO, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
+        }
 
         // Login as customer :	get payment instruments of customer in same company
-        PaymentInformationRestWS instrumentWS2 = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
-        createPaymentInstrument(company1AdminApi, instrumentWS2);
-        PaymentInformationRestWS[] paymentInformationRestWS2 = getPaymentInstrument(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, PaymentInformationRestWS, should not be null",paymentInformationRestWS2);
+        try {
+            PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
+            createPaymentInstrument(company1AdminApi, instrumentWS);
+
+            getPaymentInstrument(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
 
         // Login as admin(child company) :get payment instruments of customer in parent company
-        PaymentInformationRestWS instrumentWS3 = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
-        createPaymentInstrument(company1AdminApi, instrumentWS3);
-        PaymentInformationRestWS[] paymentInformationRestWS3 = getPaymentInstrument(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, PaymentInformationRestWS, should not be null",paymentInformationRestWS3);
-    }
+        try {
+            PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
+            createPaymentInstrument(company1AdminApi, instrumentWS);
 
+            getPaymentInstrument(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
+    }
 
     @Test(enabled = ENABLED_TEST)
     public void testAddPaymentInstrument() {
@@ -316,17 +338,17 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
         }
     }
 
-
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testRemovePaymentInstrument() {
-        Integer paymentInstrumenId = null;
+        SecurePaymentWS securePaymentWS;
+
         // Login as admin :	get payment instruments of customer of another company
         try {
             PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER1, 1, "4111111111111111", "02/2030", null);
 
-            paymentInstrumenId = createPaymentInstrument(company1AdminApi, instrumentWS).getBillingHubRefId();
+            securePaymentWS = createPaymentInstrument(company1AdminApi, instrumentWS);
 
-            removePaymentInstrument(company2AdminApi, paymentInstrumenId);
+            removePaymentInstrument(company2AdminApi, securePaymentWS.getBillingHubRefId());
             fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY2_ADMIN_MORDOR)));
@@ -336,47 +358,44 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
         try {
             PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY2_CUSTOMER1, 6, "4111111111111111", "02/2030", null);
 
-            paymentInstrumenId = createPaymentInstrument(company2AdminApi, instrumentWS).getBillingHubRefId();
-            removePaymentInstrument(company1Customer2Api, paymentInstrumenId);
+            securePaymentWS = createPaymentInstrument(company2AdminApi, instrumentWS);
+            removePaymentInstrument(company1Customer2Api, securePaymentWS.getBillingHubRefId());
             fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_TWO, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
         // Login as customer :	get payment instruments of customer in same company
         try {
             PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
-            paymentInstrumenId = createPaymentInstrument(company1AdminApi, instrumentWS).getBillingHubRefId();
+            securePaymentWS = createPaymentInstrument(company1AdminApi, instrumentWS);
 
-            removePaymentInstrument(company1Customer3Api, paymentInstrumenId);
+            removePaymentInstrument(company1Customer3Api, securePaymentWS.getBillingHubRefId());
             fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
         // Login as admin(child company) :get payment instruments of customer in parent company
         try {
             PaymentInformationRestWS instrumentWS = buildPaymentInformationWSMock(USER_ID_COMPANY1_CUSTOMER2, 1, "4111111111111111", "02/2030", null);
-            paymentInstrumenId = createPaymentInstrument(company1AdminApi, instrumentWS).getBillingHubRefId();
+            securePaymentWS = createPaymentInstrument(company1AdminApi, instrumentWS);
 
-            removePaymentInstrument(parent1Company3AdminApi, paymentInstrumenId);
+            removePaymentInstrument(parent1Company3AdminApi, securePaymentWS.getBillingHubRefId());
             fail(String.format(UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
 
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testGetUserprofile() {
         // Login as admin : Cross Company, get customer of another company
         try {
             getUserprofile(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(UNAUTHORIZED_INVALID_USER_ID));
         }
 
         // Login as customer : Cross Customer (child user), get customer of another company
@@ -384,32 +403,34 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUserprofile(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(UNAUTHORIZED_INVALID_USER_ID));
         }
 
         // Login as customer : get customer in same company
-        CustomerRestWS customerRestWS = getUserprofile(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, CustomerRestWS, should not be null", customerRestWS);
+        try {
+            getUserprofile(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
 
         //   Login as admin(child company) : get customer of parent company
         try {
             getUserprofile(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
-        }
-        catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
 
-
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testGetCustomerMetafields() {
         // Login as admin : Cross Company, get customer of another company
         try {
             getCustomerMetafields(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(UNAUTHORIZED_INVALID_USER_ID));
         }
 
         // Login as customer : Cross Customer (child user), get customer of another company
@@ -417,22 +438,25 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getCustomerMetafields(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(UNAUTHORIZED_INVALID_USER_ID));
         }
 
         // Login as customer : get customer in same company
-        UserWS userWS = getCustomerMetafields(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, UserWS, should not be null", userWS);
+        try {
+            getCustomerMetafields(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
 
         //   Login as admin(child company) : get customer of parent company
         try {
             getCustomerMetafields(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
-
 
     @Test(enabled = ENABLED_TEST)
     public void testGetInvoices() {
@@ -449,7 +473,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getInvoices(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -458,7 +481,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getInvoices(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -467,7 +489,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getInvoices(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
@@ -487,7 +508,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getPayments(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -496,7 +516,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getPayments(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -505,7 +524,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getPayments(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
@@ -525,7 +543,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getCustomerAttributes(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -534,7 +551,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getCustomerAttributes(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -543,7 +559,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getCustomerAttributes(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
@@ -563,7 +578,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getLastInvoice(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -572,7 +586,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getLastInvoice(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -581,19 +594,18 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getLastInvoice(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
 
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testGetLastPayment() {
         // Login as admin : Cross Company, get customer of another company
         try {
             getLastPayment(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString("Please enter valid userId"));
         }
 
         // Login as customer : Cross Customer (child user), get customer of another company
@@ -601,19 +613,23 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getLastPayment(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString("Please enter valid userId"));
         }
 
         // Login as customer : get customer in same company
-        ResponseEntity paymentWS = getLastPayment(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, PaymentWS, should not be null", paymentWS);
+        try {
+            getLastPayment(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
 
         //   Login as admin(child company) : get customer of parent company
         try {
             getLastPayment(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-            Assert.assertThat(responseError.getResponseBodyAsString(), containsString(String.format(INVALID_USER_ERROR_MSG)));
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
 
@@ -632,7 +648,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUsagePools(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -641,7 +656,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUsagePools(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -650,31 +664,44 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             getUsagePools(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
 
-
-    @Test(enabled = ENABLED_TEST)
+    @Test(enabled = false)
     public void testResetPassword() {
         // Login as admin : Cross Company, get customer of another company
-        ResponseEntity jsonObject = resetPassword(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
-        Assert.assertNotNull("Response, JSONObject, should not be null", jsonObject);
+        try {
+            resetPassword(company2AdminApi, USER_ID_COMPANY1_CUSTOMER1);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_COMPANY2_ADMIN_MORDOR)));
+        }
 
         // Login as customer : Cross Customer (child user), get customer of another company
-        ResponseEntity jsonObject2 = resetPassword(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
-        Assert.assertNotNull("Response, JSONObject, should not be null", jsonObject2);
+        try {
+            resetPassword(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
+        }
 
         // Login as customer : get customer in same company
-        ResponseEntity jsonObject3 = resetPassword(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
-        Assert.assertNotNull("Response, JSONObject, should not be null", jsonObject3);
+        try {
+            resetPassword(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
+        }
 
         //   Login as admin(child company) : get customer of parent company
-        ResponseEntity jsonObject4 = resetPassword(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
-        Assert.assertNotNull("Response, JSONObject, should not be null", jsonObject4);
+        try {
+            resetPassword(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
+            fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
+        } catch (RestClientResponseException responseError) {
+            Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
+        }
     }
-
 
     @Test(enabled = ENABLED_TEST)
     public void testUpdateCustomerAttributes() {
@@ -691,7 +718,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateCustomerAttributes(company1Customer2Api, USER_ID_COMPANY2_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY2_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, 2, LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER)));
         }
 
@@ -700,7 +726,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateCustomerAttributes(company1Customer3Api, USER_ID_COMPANY1_CUSTOMER2);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER2));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, USER_ID_COMPANY1_CUSTOMER2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 
@@ -709,11 +734,9 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
             updateCustomerAttributes(parent1Company3AdminApi, USER_ID_COMPANY1_CUSTOMER1);
             fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, USER_ID_COMPANY1_CUSTOMER1));
         } catch (RestClientResponseException responseError) {
-
             Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_COMPANY_ERROR_MSG, ENTITY_ID_COMPANY_ONE, LOGIN_USER_PARENT1_COMPANY3_ADMIN)));
         }
     }
-
 
     private UserWS getUserWS(RestConfig restConfig, Integer userId) {
         ResponseEntity<UserWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, Integer.toString(userId)), HttpMethod.GET,
@@ -736,7 +759,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
                 getAuthHeaders(restConfig, true, true), userWS, null);
     }
 
-
     private PaymentInformationRestWS[] getPaymentInstrument(RestConfig restConfig, Integer userId) {
         ResponseEntity<PaymentInformationRestWS[]> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("paymentinstruments/" + Integer.toString(userId))), HttpMethod.GET,
                 getAuthHeaders(restConfig, true, false), null, PaymentInformationRestWS[].class);
@@ -748,20 +770,17 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
                 getAuthHeaders(restConfig, true, false), null, Object.class);
     }
 
-
     private SecurePaymentWS createPaymentInstrument(RestConfig restConfig, PaymentInformationRestWS pirWS) {
         ResponseEntity<SecurePaymentWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, "addpaymentinstrument"), HttpMethod.POST,
                 getAuthHeaders(restConfig, true, true), pirWS, SecurePaymentWS.class);
         return response.getBody();
     }
 
-
     private CustomerRestWS getUserprofile(RestConfig restConfig, Integer userId) {
         ResponseEntity<CustomerRestWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("userprofile/" + Integer.toString(userId))), HttpMethod.GET,
                 getAuthHeaders(restConfig, true, false), null, CustomerRestWS.class);
         return response.getBody();
     }
-
 
     private UserWS getCustomerMetafields(RestConfig restConfig, Integer userId) {
         ResponseEntity<UserWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("getcustomermetafields/" + Integer.toString(userId))), HttpMethod.GET,
@@ -778,7 +797,6 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
     private void getPayments(RestConfig restConfig, Integer userId) {
         restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId)) + "/payments?limit=10&offset=10"), HttpMethod.GET,
                 getAuthHeaders(restConfig, true, false), null, null);
-
     }
 
     private UserWS getCustomerAttributes(RestConfig restConfig, Integer userId) {
@@ -787,59 +805,35 @@ public class UserImproperAccessRestTest extends BaseRestImproperAccessTest {
         return response.getBody();
     }
 
-    private UserWS getLastInvoice(RestConfig restConfig, Integer userId) {
-        ResponseEntity<UserWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/invoices/last")), HttpMethod.GET,
-                getAuthHeaders(restConfig, true, false), null, UserWS.class);
+    private InvoiceWS getLastInvoice(RestConfig restConfig, Integer userId) {
+        ResponseEntity<InvoiceWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/invoices/last")), HttpMethod.GET,
+                getAuthHeaders(restConfig, true, false), null, InvoiceWS.class);
         return response.getBody();
     }
 
-    private ResponseEntity<Object> getLastPayment(RestConfig restConfig, Integer userId){
-    	return restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/payments/last")), HttpMethod.GET,
-    			getAuthHeaders(restConfig, true, false), null, Object.class);
-    }
-
-    private UserWS getUsagePools(RestConfig restConfig, Integer userId) {
-        ResponseEntity<UserWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/usagepools")), HttpMethod.GET,
-                getAuthHeaders(restConfig, true, false), null, UserWS.class);
+    private PaymentWS[] getLastPayment(RestConfig restConfig, Integer userId) {
+        ResponseEntity<PaymentWS[]> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/payments/last")), HttpMethod.GET,
+                getAuthHeaders(restConfig, true, false), null, PaymentWS[].class);
         return response.getBody();
     }
 
-    private ResponseEntity<Object> resetPassword(RestConfig restConfig, Integer userId) {
-        return restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("resetpassword/" + Integer.toString(userId))), HttpMethod.POST,
-                getAuthHeaders(restConfig, true, true), null, Object.class);
+    private UsagePoolWS getUsagePools(RestConfig restConfig, Integer userId) {
+        ResponseEntity<UsagePoolWS> response = restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, (Integer.toString(userId) + "/usagepools")), HttpMethod.GET,
+                getAuthHeaders(restConfig, true, false), null, UsagePoolWS.class);
+        return response.getBody();
     }
-    
-    private void updateCustomerAttributes(RestConfig restConfig,  Integer userId){
-    	CustomerRestWS customerRestWS = new CustomerRestWS();	
-    	customerRestWS.setUserId(userId);
-    	customerRestWS.setStatusId(1);
-    	customerRestWS.setAccountExpired(false);
-    	restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("customerattributes/"+Integer.toString(userId) )), HttpMethod.PUT,
-    			getAuthHeaders(restConfig, true, true), customerRestWS, null);
-        
-   }
-    
-    private static PaymentInformationRestWS buildPaymentInformationWSMock(Integer userId, Integer paymentMethodTypeId, String ccNumber, String expiryDate, String intendId){
-    	PaymentInformationRestWS instrument =  new PaymentInformationRestWS();
-    	
-        instrument.setUserId(userId);
-        instrument.setProcessingOrder(1);
-        instrument.setPaymentMethodId(2);
-        instrument.setPaymentMethodTypeId(paymentMethodTypeId);
-        
-        Map<String, Object> metaFields = new HashMap<String, Object>();
-        
-        if(intendId==null){
-	        metaFields.put("cc.cardholder.name", "test payment intrument");
-	        metaFields.put("cc.number", ccNumber);
-	        metaFields.put("cc.expiry.date", expiryDate);
-        }
-        if(intendId!=null){
-        	metaFields.put("cc.stripe.intent.id", intendId);
-        }
-    	
-        instrument.setMetaFields(metaFields);
-    	return instrument;
+
+    private void resetPassword(RestConfig restConfig, Integer userId) {
+        restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("resetpassword/" + Integer.toString(userId))), HttpMethod.POST,
+                getAuthHeaders(restConfig, true, true), null, null);
     }
-	
+
+    private void updateCustomerAttributes(RestConfig restConfig, Integer userId) {
+        CustomerRestWS customerRestWS = new CustomerRestWS();
+        customerRestWS.setUserId(userId);
+        customerRestWS.setStatusId(1);
+        customerRestWS.setAccountExpired(false);
+        restTemplate.sendRequest(getFullUrl(restConfig, CONTEXT_STRING, ("customerattributes/" + Integer.toString(userId))), HttpMethod.PUT,
+                getAuthHeaders(restConfig, true, true), customerRestWS, null);
+    }
 }

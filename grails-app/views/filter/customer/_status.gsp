@@ -36,7 +36,7 @@
                     <g:set var="filter_from" value="${new UserStatusDAS().findByEntityId(session['company_id'])}"/>
                     <g:set var="filter_optionKey" value="id"/>
                     <g:set var="filter_optionValue" value="description"/>
-                    <g:set var="filter_noSelection" value="['': message(code: 'filters.status.empty')]"/>
+                    <g:set var="filter_noSelection" value="['0': message(code: 'filters.status.empty')]"/>
                     <g:applyLayout name="select_small" template="/layouts/includes/select_small" model="[
                             select_name: filter_name,
                             select_value: filter_value,

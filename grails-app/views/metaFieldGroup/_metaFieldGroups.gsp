@@ -54,7 +54,7 @@
         </div>
      </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="metaFieldGroup" id="${entityType }" params="[template:'list', listColumn:listColumn]" action="list" total="${groups?.totalCount ?: 0}" update="${updateColumn}"/>
     </div>
 </div>

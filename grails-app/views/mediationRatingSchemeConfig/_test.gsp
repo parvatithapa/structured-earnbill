@@ -13,7 +13,7 @@
                     <td style="width: 10px">=</td>
                     <td style="width: 15%">${resultQuantity}</td>
                     <td style="width: 35%">
-                        <a class="submit" href="#" onclick="callTestRatingScheme(); return false;" style="float: right;">
+                        <a id="column-550-a" class="submit" href="#" onclick="callTestRatingScheme(); return false;">
                             <g:message code="ratingScheme.test.btn"/>
                         </a>
                     </td>

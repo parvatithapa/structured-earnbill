@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.sapienter.jbilling.server.timezone.TimezoneHelper;
-
 /**
  * ReportBuilderActivity class.
  * 
@@ -46,8 +44,7 @@ public class ReportBuilderActivity extends AbstractReportBuilderActivity {
     protected Map<String, Object> getRow(String staffName, Date createDate, Integer itemId, String itemName, String productGroup, int term, BigDecimal totalPrice) {        
         Map<String, Object> row = new HashMap<>();
         row.put(STAFF_NAME_COLUMN, staffName);
-        row.put(CREATE_DATE_COLUMN, dateFormatter.format(TimezoneHelper.convertToTimezone(LocalDateTime.ofInstant(createDate.toInstant(), ZoneId.systemDefault()),
-                TimezoneHelper.getCompanyLevelTimeZone(entityId))));
+        row.put(CREATE_DATE_COLUMN, dateFormatter.format(LocalDateTime.ofInstant(createDate.toInstant(), ZoneId.systemDefault())));
         row.put(PRODUCT_ID_COLUMN, itemId);
         row.put(PRODUCT_NAME_COLUMN, itemName);
         row.put(PRODUCT_GROUP_COLUMN, productGroup);

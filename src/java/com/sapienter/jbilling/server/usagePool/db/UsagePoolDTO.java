@@ -25,6 +25,7 @@ import com.sapienter.jbilling.server.util.db.AbstractDescription;
 import com.sapienter.jbilling.server.util.db.InternationalDescriptionDAS;
 import com.sapienter.jbilling.server.util.db.JbillingTable;
 import com.sapienter.jbilling.server.util.db.JbillingTableDAS;
+
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.*;
 
@@ -32,6 +33,7 @@ import javax.persistence.*;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -249,5 +251,27 @@ public class UsagePoolDTO extends AbstractDescription {
 	                .getBean(Context.Name.DESCRIPTION_DAS);
 	        
 	        descriptionDas.delete(table.getId(), getId(), "name", languageId);
-	   }
+	}
+	
+	/**
+     * A comparator that is used to sort usage pools based on precedence.
+     * If precedence at usage pool level is same, then created date is considered.
+     */
+    @Transient
+    public static final Comparator<UsagePoolDTO> UsagePoolsByPrecedenceOrCreatedDateComparator = new Comparator<UsagePoolDTO> () {
+        @Override
+        public int compare(UsagePoolDTO usagePool1, UsagePoolDTO usagePool2) {
+
+            Integer precedence1 = usagePool1.getPrecedence();
+            Integer precedence2 =  usagePool2.getPrecedence();
+            if(precedence1.intValue() == precedence2.intValue()) {
+
+                Date createDate1 = usagePool1.getCreatedDate();
+                Date createDate2 =  usagePool2.getCreatedDate();
+
+                return createDate1.compareTo(createDate2);
+            }
+            return precedence1.compareTo(precedence2);
+        }
+    };
 }

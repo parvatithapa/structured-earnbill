@@ -103,15 +103,7 @@
                                 <content tag="label.for">postalCode</content>
                                 <g:textField class="field" name="postalCode" value="${contact?.postalCode}" />
                             </g:applyLayout>
-
-                        <g:applyLayout name="form/input">
-                            <content tag="label">
-                                <g:message code="config.company.free.call.limit"/>
-                            </content>
-                            <content tag="label.for">numberOfFreeCalls</content>
-                                <g:textField class="field" name="numberOfFreeCalls" value="${company?.numberOfFreeCalls}"/>
-                        </g:applyLayout>
-
+                        
                             <g:applyLayout name="form/select">
                                 <content tag="label">
                                     <g:message code="prompt.country"/><span id="mandatory-meta-field">*</span>

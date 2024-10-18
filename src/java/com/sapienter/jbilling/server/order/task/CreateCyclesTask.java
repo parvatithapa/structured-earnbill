@@ -153,7 +153,7 @@ public class CreateCyclesTask extends PluggableTask implements IInternalEventsTa
         }
 
         // 3. Plan Pricing resolution - consider only the plan prices from the customer pricing
-        PlanItemDTO item = new CustomerPriceBL(userId).getPriceForDate(itemId, true, pricingDate,planId);
+        PlanItemDTO item = new CustomerPriceBL().getPriceForDate(itemId, true, pricingDate, planId);
         if (item != null && PriceModelBL.containsEffectiveModel(item.getModels(), pricingDate)) {
             return PriceModelBL.getPriceForDate(item.getModels(), pricingDate);
         }

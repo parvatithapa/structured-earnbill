@@ -22,11 +22,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.common.Util;
+import com.sapienter.jbilling.server.item.db.PlanItemDTO;
+import com.sapienter.jbilling.server.util.db.AbstractDAS;
+
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.log4j.Logger;
 import org.hibernate.Query;
 import org.hibernate.type.StandardBasicTypes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.sapienter.jbilling.common.Util;
@@ -41,7 +46,7 @@ import com.sapienter.jbilling.server.util.db.AbstractDAS;
  */
 public class CustomerPriceDAS extends AbstractDAS<CustomerPriceDTO> {
 
-    private Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final FormatLogger logger = new FormatLogger(Logger.getLogger(CustomerPriceDAS.class));
 
     private static final String PLAN_ITEM_FIND_HQL =
             "select price "

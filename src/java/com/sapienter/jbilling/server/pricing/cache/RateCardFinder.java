@@ -16,12 +16,9 @@
 
 package com.sapienter.jbilling.server.pricing.cache;
 
-import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.common.PriceNotFoundException;
 import com.sapienter.jbilling.server.mediation.cache.AbstractFinder;
 import com.sapienter.jbilling.server.mediation.cache.ILoader;
-
 import org.apache.log4j.Logger;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -57,9 +54,6 @@ public class RateCardFinder extends AbstractFinder {
         }
 
         LOG.debug(searchValue + " rated to $" + price + "/unit");
-        if (price == null) {
-            throw new PriceNotFoundException(CommonConstants.PRICE_NOT_FOUND_IN_RATE_CARD);
-        }
 
         return price;
     }

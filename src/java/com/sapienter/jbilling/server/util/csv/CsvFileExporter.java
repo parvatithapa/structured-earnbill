@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.server.util.csv;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
@@ -13,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.opencsv.CSVWriter;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.collections.CollectionUtils;
@@ -21,9 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import au.com.bytecode.opencsv.CSVReader;
-import au.com.bytecode.opencsv.CSVWriter;
 
 import com.sapienter.jbilling.common.IMethodTransactionalWrapper;
 import com.sapienter.jbilling.common.Util;
@@ -47,7 +44,6 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final int THREAD_POOL_SIZE = 4;
-    private static final String TEMPORARY_FILE_NAME = "export-data-part";
 
     private Class<T> type;
     private Integer entityId;
@@ -85,30 +81,16 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
             int size = (list.size()-1) - 1;
             int targetSize = size / THREAD_POOL_SIZE + 1;
             List<List<T>> subLists = partition(list, targetSize);
-            List<Future<ThreadResult>> futures = new ArrayList<>();
-            int counter = 1;
+            List<Future<Integer>> futures = new ArrayList<>();
             for(final List<T> subList: subLists) {
-                Future<ThreadResult> future = executeCsvExportInNewThread(subList, counter++);
+                Future<Integer> future = executeCsvExportInNewThread(subList, writer);
                 futures.add(future);
             }
 
-            // Waiting to execute all thread
+            // waiting to execute all thread
             int totalRecordSkipped = 0;
-            for(Future<ThreadResult> future: futures) {
-                //Retrieve temporary file name and skipped records from ThreadResult
-                ThreadResult tr = future.get();
-                totalRecordSkipped = totalRecordSkipped + tr.getNoOfRowsSkipped();
-
-                //Read & append temporary files data into main csv file
-                CSVReader csvReader = new CSVReader(new FileReader(tr.getTmpCsvFileName()));
-                writer.writeAll(csvReader.readAll());
-                csvReader.close();
-
-                //Removing temporary files
-                boolean isTempFileDeleted = new File(tr.getTmpCsvFileName()).delete();
-                if (!isTempFileDeleted) {
-                    logger.debug("Temporary CSV file [{}] deletion is failed.", tr.getTmpCsvFileName());
-                }
+            for(Future<Integer> future: futures) {
+                totalRecordSkipped = totalRecordSkipped + future.get();
             }
 
             if(totalRecordSkipped > 0) {
@@ -119,12 +101,12 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
 
             new Thread(()-> txAction.execute(()-> {
                 try {
-                    if(PreferenceBL.getPreferenceValueAsIntegerOrZero(entityId, Constants.PREFERENCE_BACKGROUND_CSV_EXPORT) != Integer.valueOf(0)) {
+                    if(!PreferenceBL.getPreferenceValueAsIntegerOrZero(entityId, Constants.PREFERENCE_BACKGROUND_CSV_EXPORT).equals(0)) {
                         EventManager.process(new ReportExportNotificationEvent(this.entityId , this.exporterUserId,
                                 file.getName(), ReportExportNotificationEvent.NotificationStatus.PASSED));
                     }
                 } catch(Exception ex) {
-                    logger.error("Notifcation failed!", ex);
+                    logger.error("Notification failed!", ex);
                 }
             })).start();
 
@@ -142,7 +124,7 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
     public String export(List<T> list) {
         if(CollectionUtils.isNotEmpty(list)) {
             String fileName = createFile(csvType, entityId, true);
-            try (FileWriter out = new FileWriter(fileName, true)) {
+            try (FileWriter out = new FileWriter(fileName)) {
                 return doWriteDataInFile(fileName, list, out);
             } catch (Exception e) {
                 logger.error("CSV File Export Failed!", e);
@@ -189,18 +171,6 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
                 return fileName;
     }
 
-    private String getTemporaryFileName(String type, Integer entityId, int counter) {
-        return new StringBuilder().append(Util.getSysProp(Constants.PROPERTY_GENERATE_CSV_FILE_PATH))
-                .append(entityId)
-                .append("-")
-                .append(type)
-                .append("-")
-                .append(TEMPORARY_FILE_NAME)
-                .append("-")
-                .append(counter)
-                .append(".tmp").toString();
-    }
-
     /**
      * returns count of records got skipped during csv generation process.
      * and performs csv export in separate thread
@@ -208,31 +178,28 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
      * @param writer
      * @return
      */
-    private Future<ThreadResult> executeCsvExportInNewThread(final List<T> list, final int counter) {
+    private Future<Integer> executeCsvExportInNewThread(final List<T> list, final CSVWriter writer) {
         IMethodTransactionalWrapper txAction = Context.getBean(IMethodTransactionalWrapper.class);
          return service.submit(() -> txAction.executeInReadOnlyTx(() -> {
-             String tmpCsvFileName = getTemporaryFileName(csvType, entityId, counter);
-             try (CSVWriter tmpCsvWriter = new CSVWriter(new FileWriter(tmpCsvFileName))) {
-                 int noOfRowsSkipped =0;
-                 int count = 0;
-                 for(Exportable exportable: list) {
-                     try {
-                         Object[][] row = exportable.getFieldValues();
-                      for (Object[] values : row) {
-                             tmpCsvWriter.writeNext(convertToString(values));
-                      }
-                     } catch(Exception ex) {
-                          noOfRowsSkipped ++;
-                         logger.error("Record got Skipped: ", ex);
-                      }
+             int noOfRowsSkipped =0;
+             int count = 0;
+             for(Exportable exportable: list) {
+                 try {
+                     Object[][] row = exportable.getFieldValues();
+                  for (Object[] values : row) {
+                         writer.writeNext(convertToString(values));
+                  }
+                 } catch(Exception ex) {
+                      noOfRowsSkipped ++;
+                     logger.error("Record got Skipped: ", ex);
+                  }
 
-                     if(++count % 100 == 0) {
-                         SessionFactory sf = Context.getBean(Name.HIBERNATE_SESSION);
-                         sf.getCurrentSession().clear();
-                     }
+                 if(++count % 100 == 0) {
+                     SessionFactory sf = Context.getBean(Name.HIBERNATE_SESSION);
+                     sf.getCurrentSession().clear();
                  }
-                 return new ThreadResult(tmpCsvFileName, noOfRowsSkipped);
              }
+             return noOfRowsSkipped;
          }));
     }
 
@@ -251,24 +218,6 @@ public class CsvFileExporter<T extends Exportable> implements Exporter<T> {
                    );
        }
        return parts;
-   }
-
-   private class ThreadResult {
-       private String tmpCsvFileName;
-       private Integer noOfRowsSkipped;
-
-       public ThreadResult(String fileName, Integer skippedRows) {
-           this.tmpCsvFileName = fileName;
-           this.noOfRowsSkipped = skippedRows;
-       }
-
-       public String getTmpCsvFileName() {
-           return tmpCsvFileName;
-       }
-
-       public Integer getNoOfRowsSkipped() {
-           return noOfRowsSkipped;
-       }
    }
 
 }

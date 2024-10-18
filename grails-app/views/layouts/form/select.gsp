@@ -39,8 +39,8 @@
 --%>
 
 <div class="row<%=pageProperty(name: 'page.label.row.class') ? ' '+pageProperty(name: 'page.label.row.class') : ''%>">
-    <label class="<g:pageProperty name="page.label.class"/>" title="<g:pageProperty name="page.label.title"/>" for="<g:pageProperty name="page.label.for"/>"><g:pageProperty name="page.label"/></label>
-    <div class="select-holder <g:pageProperty name="page.holder.class"/>"><span class="select-value"></span>
+    <label class="<g:pageProperty name="page.label.class"/>" title="<g:pageProperty name="page.label.title"/>" for="<g:pageProperty name="page.label.for"/>" data-cy="<g:pageProperty name="page.label.for"/>"><g:pageProperty name="page.label"/></label>
+    <div class="select-holder <g:pageProperty name="page.holder.class"/>"><span class="select-value" data-cy="currentOption"></span>
     <g:layoutBody/>
     </div>
     <g:pageProperty name="page.icon"/>

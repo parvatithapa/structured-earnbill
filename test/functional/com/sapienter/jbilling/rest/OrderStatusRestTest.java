@@ -47,7 +47,7 @@ public class OrderStatusRestTest extends RestTestCase {
                     HttpMethod.GET, getOrDeleteHeaders, null, OrderStatusWS.class);
             assertNotNull(getResponse, "GET response should not be null.");
             RestValidationHelper.validateStatusCode(getResponse, Response.Status.OK.getStatusCode());
-            assertEquals(getResponse.getBody().getOrderStatusFlag(), postResponse.getBody().getOrderStatusFlag(), "Order statuses do not match.");
+            assertEquals(getResponse.getBody(), postResponse.getBody(), "Order statuses do not match.");
         } finally {
             // Delete the order status
             if (null != postResponse) {
@@ -146,7 +146,7 @@ public class OrderStatusRestTest extends RestTestCase {
             ResponseEntity<OrderStatusWS> putResponse = restTemplate.sendRequest(REST_URL + postResponse.getBody().getId(),
                     HttpMethod.PUT, postOrPutHeaders, orderStatus, OrderStatusWS.class);
             RestValidationHelper.validateStatusCode(putResponse, Response.Status.OK.getStatusCode());
-            assertEquals(orderStatus.getOrderStatusFlag(), putResponse.getBody().getOrderStatusFlag(), "Order statuses do not match.");
+            assertEquals(orderStatus, putResponse.getBody(), "Order statuses do not match.");
         } finally {
             // Delete the order status
             if (null != postResponse) {

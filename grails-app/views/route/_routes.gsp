@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="route"
                              action="list"
                              params="${sortableParams(params: [partial: true, max: params.max])}"

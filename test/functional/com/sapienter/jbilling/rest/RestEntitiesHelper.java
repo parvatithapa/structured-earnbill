@@ -50,8 +50,8 @@ import com.sapienter.jbilling.server.util.PreferenceTypeWS;
 import com.sapienter.jbilling.server.util.PreferenceWS;
 
 import org.joda.time.format.DateTimeFormat;
-import org.springframework.web.util.UriComponentsBuilder;
 
+import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -457,7 +457,7 @@ final class RestEntitiesHelper {
                         Constants.CC_DATE_FORMAT).print(date.getTime()));
         // have to pass meta field card type for it to be set
         addMetaField(metaFields, CC_MF_TYPE, true, false,
-                DataType.STRING, 4, String.valueOf("Visa") );
+                DataType.STRING, 4, "Visa");
         cc.setMetaFields(metaFields.toArray(new MetaFieldValueWS[metaFields.size()]));
 
         return cc;
@@ -707,7 +707,7 @@ final class RestEntitiesHelper {
 			, "Stripe last" 
     	});
     }
-    
+
     private static void setAITMetaFields(Integer aitId, UserWS user, Date date, String metaFieldName[], String metaFieldValue[]){
         Map<Integer, HashMap<Date, ArrayList<MetaFieldValueWS>>> aitMetaFields = new HashMap<>();
 
@@ -735,14 +735,14 @@ final class RestEntitiesHelper {
     
     public static PaymentInformationRestWS buildPaymentInformationWSMock(Integer userId, Integer paymentMethodTypeId, String ccNumber, String expiryDate, String intendId){
     	PaymentInformationRestWS instrument =  new PaymentInformationRestWS();
-    	
+
         instrument.setUserId(userId);
         instrument.setProcessingOrder(1);
         instrument.setPaymentMethodId(2);
         instrument.setPaymentMethodTypeId(paymentMethodTypeId);
-        
+
         Map<String, Object> metaFields = new HashMap<String, Object>();
-        
+
         if(intendId==null){
 	        metaFields.put("cc.cardholder.name", "test payment intrument");
 	        metaFields.put("cc.number", ccNumber);
@@ -751,7 +751,7 @@ final class RestEntitiesHelper {
         if(intendId!=null){
         	metaFields.put("cc.stripe.intent.id", intendId);
         }
-    	
+
         instrument.setMetaFields(metaFields);
     	return instrument;
     }

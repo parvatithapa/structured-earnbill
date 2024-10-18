@@ -77,7 +77,7 @@ import com.sapienter.jbilling.server.util.api.JbillingAPI;
  *
  * @author Emil
  */
-@Test(groups = { "integration", "process" }, testName = "process.BillingProcessTest", priority = 2)
+@Test(groups = { "integration", "process" }, testName = "process.BillingProcessTest")
 public class BillingProcessTest extends BillingProcessTestCase {
 
     Date                         processDate                          = null;
@@ -416,8 +416,8 @@ public class BillingProcessTest extends BillingProcessTestCase {
 
         // This assert should be done in a new test in a more efficient way
         // Test code assumes that job is slow to check if it is running, which is bad idea and now is
-        // failing as the test BP is executed in less than a second for this test
-
+        // failing as the test BP is executed in less than a second for this test  
+        
         // trying immediately after, should not run
         // Thread.sleep(1000); // take it easy
         // assertFalse("It should not run, a review is running already", api.triggerBilling(runDate));
@@ -1329,7 +1329,7 @@ public class BillingProcessTest extends BillingProcessTestCase {
 
         api.updatePlugin(plugin);
     }
-
+    
     private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
         UserWS user = api.getUserWS(userId);
         Calendar nextInvoiceDate = Calendar.getInstance();

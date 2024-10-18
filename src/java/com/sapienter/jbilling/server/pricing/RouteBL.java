@@ -15,8 +15,8 @@
  */
 package com.sapienter.jbilling.server.pricing;
 
-import au.com.bytecode.opencsv.CSVReader;
-
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.pricing.db.RouteDAS;
 import com.sapienter.jbilling.server.pricing.db.RouteDTO;
@@ -69,7 +69,7 @@ public class RouteBL {
 
     public static final int BATCH_SIZE = 1000;
     public static final String DEFAULT_DATA_TYPE = "varchar(255)";
-    public static final String NOTE_COLUMN_DATA_TYPE = "varchar(1000)";
+    public static final String NOTE_COLUMN_DATA_TYPE = "varchar(4000)";
     public static final String NOTE_COLUMN_HEADER = "note";
 
     private RouteDAS routeDAS;
@@ -179,7 +179,7 @@ public class RouteBL {
      * @param routesFile file handle of the CSV on disk containing the route.
      * @throws IOException if file does not exist or is not readable
      */
-    public void saveRoutes(File routesFile) throws IOException, SQLException {
+    public void saveRoutes(File routesFile) throws IOException, SQLException, CsvValidationException {
 
         CSVReader reader = new CSVReader(new FileReader(routesFile));
         String[] line = reader.readNext();
@@ -216,9 +216,13 @@ public class RouteBL {
         String insertSql = tableGenerator.buildInsertPreparedStatementSQL();
         List<List<String>> rows = new ArrayList<List<String>>();
         int i = 1;
+        //check file is empty or not
+        line = reader.readNext();
+        if(line == null){
+            throw new SessionInternalError("To generate a DataTable, file must be in CSV format, and it must contains some data.");
+        }
+
         while (true) {
-            // add row to insert batch
-            line = reader.readNext();
             if (line != null) {
                 List<String> currentLine = new ArrayList<String>(line.length+1);
                 //generate a primary key if it is no a route table
@@ -241,6 +245,8 @@ public class RouteBL {
                 executeBatchInsert(insertSql, rows);
                 rows.clear(); // next batch
             }
+            // add row to insert batch
+            line = reader.readNext();
         }
     }
 

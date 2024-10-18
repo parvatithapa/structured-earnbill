@@ -25,11 +25,22 @@
 <%@ page import="com.sapienter.jbilling.server.util.db.LanguageDTO;" %>
 <%@ page import="com.sapienter.jbilling.server.util.db.EnumerationDTO;" %>
 <%@ page import="com.sapienter.jbilling.server.timezone.TimezoneHelper;" %>
-<%@ page import="com.sapienter.jbilling.server.util.EnumerationBL;" %>
-
+<%@ page import="com.sapienter.jbilling.server.util.PreferenceBL;" %>
+<%@ page import="com.sapienter.jbilling.server.user.db.AccountTypeDAS;" %>
+<%@ page import="grails.plugin.springsecurity.SpringSecurityUtils;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.IDENTIFICATION_TYPE_NATIONAL_ID;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.IDENTIFICATION_TYPE_PASSPORT;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.IDENTIFICATION_TYPE_COMPANY_LETTER;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.IDENTIFICATION_TYPE_OFFICIAL_LETTER;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.CUSTOMER_TYPE_VIP;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.CUSTOMER_TYPE_GOVERNMENT;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_CHANGE_CUSTOMER_TYPE;" %>
 <html>
+
+
 <head>
     <meta name="layout" content="main" />
+
     <style>
 		.ui-widget-content .ui-state-error{
 			background-color:white;
@@ -41,21 +52,24 @@
 
 	</style>
     <r:script>
+        var customerTypeElement;
+        var governorateElement;
+        var flag = true;
         function replacePhoneCountryCodePlusSign(phoneCountryCodeFields) {
-        
+
         	for (var i=0; i < phoneCountryCodeFields.length; i++) {
         		phoneCountryCodeField = phoneCountryCodeFields[i];
 	        	var phoneCountryCode = phoneCountryCodeField.value;
-	        	
+
 				if (phoneCountryCode != null && $.trim(phoneCountryCode) != '') {
 					if (phoneCountryCode.indexOf('+') == 0) {
 						phoneCountryCode = phoneCountryCode.replace('+', '');
 					}
-					phoneCountryCodeField.value = phoneCountryCode; 
+					phoneCountryCodeField.value = phoneCountryCode;
 				}
 			}
 		}
-		
+
 		function validateDate(element) {
             var dateFormat= "<g:message code="date.format"/>";
             if(!isValidDate(element, dateFormat)) {
@@ -68,13 +82,123 @@
                 return true;
             }
         }
-     
+        function checkIdentificationType() {
+            if ($('#identificationType').val()==="${IDENTIFICATION_TYPE_NATIONAL_ID}") {
+                $('#national_id').show();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+            else if ($('#identificationType').val()==="${IDENTIFICATION_TYPE_PASSPORT}") {
+                $('#national_id').hide();
+                $('#passport_id').show();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+            else if ($('#identificationType').val()==="${IDENTIFICATION_TYPE_COMPANY_LETTER}") {
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').show();
+                $('#official_letter').hide();
+            }
+            else if ($('#identificationType').val()==="${IDENTIFICATION_TYPE_OFFICIAL_LETTER}") {
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').show();
+            }
+            else {
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+        }
+
+        function checkCustomerType() {
+            if(flag && ${user && user?.userId && user?.userId != 0} && ${SpringSecurityUtils.ifNotGranted("${PERMISSION_CHANGE_CUSTOMER_TYPE}")}) {
+                var customerType = $("[name='" + customerTypeElement + "']").val();
+                $("[name='" + customerTypeElement + "'] option").not("option[value='" + customerType +"']").attr("disabled",true);
+            }
+            if(!flag) {
+                $('#identificationType').val("").change();
+            }
+            flag = false;
+
+            if ($("[name='" + customerTypeElement + "']").val()==="") {
+                $('#upload_documents').hide();
+            }
+            else if ($("[name='" + customerTypeElement + "']").val()==="${CUSTOMER_TYPE_VIP}") {
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_NATIONAL_ID}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_PASSPORT}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_COMPANY_LETTER}']").removeAttr('disabled');
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_OFFICIAL_LETTER}']").attr('disabled', true);
+                $('#upload_documents').show();
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+            else if ($("[name='" + customerTypeElement + "']").val()==="${CUSTOMER_TYPE_GOVERNMENT}") {
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_NATIONAL_ID}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_PASSPORT}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_COMPANY_LETTER}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_OFFICIAL_LETTER}']").removeAttr('disabled');
+                $('#upload_documents').show();
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+            else {
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_NATIONAL_ID}']").removeAttr('disabled');
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_PASSPORT}']").removeAttr('disabled');
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_COMPANY_LETTER}']").attr('disabled', true);
+                $("#identificationType option[value='${IDENTIFICATION_TYPE_OFFICIAL_LETTER}']").attr('disabled', true);
+                $('#upload_documents').show();
+                $('#national_id').hide();
+                $('#passport_id').hide();
+                $('#company_letter').hide();
+                $('#official_letter').hide();
+            }
+        }
+
+        function fetchUserGovernorate() {
+            $.ajax({
+                type: 'GET',
+                url: '${createLink(action: 'fetchUserGovernorate')}',
+                success: function(data) {
+                    if(data != "") {
+                        $("[name='" + governorateElement + "']").val(data).change();
+                        $("[name='" + governorateElement + "'] option").not("option[value='" + data +"']").attr("disabled",true);
+                    }
+                }
+            });
+        }
+
+        function fetchMetaFieldId(metaFieldName) {
+            $.ajax({
+                type: 'GET',
+                url: '${createLink(action: 'fetchMetaFieldId')}',
+                async: false,
+                data: {metaFieldName: metaFieldName},
+                success: function(data) {
+                    if(metaFieldName == "Customer Type") {
+                        customerTypeElement = "metaField_" + data + ".value";
+                    }
+                    else if(metaFieldName == "Governorate") {
+                        governorateElement = "metaField_" + data + ".value";
+                    }
+                }
+            });
+        }
+
 		$(function() {
 	        $('#mainSubscription_periodId').change(function() {
 	        	updateSubscription();
 	        });
 	    });
-	
+
 	    function updateSubscription() {
 	        $.ajax({
 	            type: 'POST',
@@ -83,8 +207,8 @@
 	            success: function(data) { $('#subscriptionTemplate').replaceWith(data);}
 	        });
 	    }
-	    
-	    
+
+
 	    $(function() {
 	        $('#companyBillingCycle').click(function() {
 	            if ($('#orderPeriodSubscriptionUnit').val()) {
@@ -97,7 +221,7 @@
 	            }
 	        });
 	    });
-	
+
 	    function updateSubscriptionOnBillingCycle() {
 	        $.ajax({
 	            type: 'POST',
@@ -106,15 +230,21 @@
 	            success: function(data) { $('#subscriptionTemplate').replaceWith(data);}
 	        });
 	    }
-   		
+
    		var hasChild = ${user?.childIds?.toList()?.size() > 0}
 
     	$(document).ready(function() {
+    	    fetchMetaFieldId("Customer Type");
+    	    fetchMetaFieldId("Governorate");
+    	    checkCustomerType();
+    	    checkIdentificationType();
+    	    fetchUserGovernorate();
+
     	    //apply date picker to each startDate-*
     		$.each( $("input[name^='startDate']"), function () {
   				$(this).datepicker({dateFormat: "${message(code: 'datepicker.jquery.ui.format')}", showOn: "both", buttonImage: "${resource(dir:'images', file:'icon04.gif')}", buttonImageOnly: true});
 			});
-		
+
 			$('#user\\.isParent').change(function() {
 	       		if ( ! this.checked && hasChild) {
 	       		    $("#background").height($(document).height());
@@ -134,6 +264,10 @@
 					});
 				}
 	        });
+
+            $("[name='" + customerTypeElement + "']").change(function() {
+                checkCustomerType();
+            });
 	   	});
 
         var noteTitle = $( "#noteTitle" ),
@@ -143,7 +277,7 @@
                 tips = $( ".validateTips" );
                 date = "${Util.formatDate(TimezoneHelper.currentDateForTimezone(session['company_timezone']), "MMM d, YYY")}"
                 i=0;
-        $( "#customer-add-note-dialog" ).dialog({ 
+        $( "#customer-add-note-dialog" ).dialog({
                 autoOpen: false,
                 height: 350,
                 width: 530,
@@ -182,8 +316,8 @@
                 	allFields.val( "" ).removeClass( "ui-state-error" );
                 }
         });
-        
-        
+
+
         function checkLength( o, n, min, max, parent) {
 	        if ( o.val().length > max || o.val().length < min ) {
 	            if (parent) {
@@ -202,7 +336,7 @@
 	    function updateTips( t ) {
 	        tips.text( t ).addClass( "ui-state-error" );
 	    }
-            
+
         $('#contactType').change(function() {
             var selected = $('#contact-' + $(this).val());
             $(selected).show();
@@ -216,10 +350,60 @@
 		    $( "#customer-add-note-dialog" ).dialog( "open" );
 		}
 
+		function checkIdentificationNumber(identificationType) {
+		    var identificationNumber = (identificationType === "National ID") ? $('#txtNationalId').val() : $('#txtPassportId').val();
+		    $.ajax({
+                url: '${createLink(action: 'getSubscriberNumbers')}',
+                data: {userId : ${user?.userId}, identificationNumber : identificationNumber, identificationType: identificationType},
+                success: function(data) {
+                    if(data.length != 2) {
+                        data = data.replace("[", "");
+                        data = data.replace("]", "");
+                        data = data.replace(/'/g, "");
+                        var para_message = (identificationType === "National ID") ? '<g:message code="subscriber.message.already.present.national.id"/>' : '<g:message code="subscriber.message.already.present.passport.number"/>';
+                        para_message+= '(' + identificationNumber + '): ' + data;
+                        $('#dialog-confirm').html('<div><span class="ui-icon ui-icon-alert" id="customer-dialog-icon" style="margin:12px 12px 20px 12px;"></span></div><div>' + para_message + '</div>');
+                        $("#dialog-confirm").dialog({
+                            autoOpen: true,
+                            height: "auto",
+                            width: 375,
+                            modal: true,
+                            buttons: {
+                                '<g:message code="prompt.yes"/>': function() {
+                                    $(this).dialog("close");
+                                },
+                                '<g:message code="prompt.no"/>': function() {
+                                    document.querySelector("#user-edit-form > fieldset > div.buttons > ul > li:nth-child(2) > a").click();
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        function checkSubscriberNumber(){
+
+            var subscriberNumber =  $('#subNumber').val() ;
+                $.ajax({
+                     url: '${createLink(action: 'checkSubscriberNumberIsValid')}',
+                     data: { userName : subscriberNumber },
+                         success: function(data) {
+                         if(data != 'true'){
+                            $("html, body").animate({ scrollTop: 0 }, "slow");
+                         }
+                     }
+                });
+        }
+
     </r:script>
-    
+
 </head>
 <body>
+
+<div id="dialog-confirm" class="bg-lightbox" style="display: flex;" title="<g:message code="popup.continue.title"/>">
+</div>
+
 <div id="customer-add-note-dialog" title="${g.message(code:'button.add.note')}" class="jb-dialog">
     <div class="row"><p id="validateTips" class="validateTips" style=" border: 1px solid transparent;"></p></div>
     <g:form id="notes-form" name="notes-form" url="[action: 'saveCustomerNotes']" useToken="true">
@@ -234,7 +418,7 @@
     <g:set var="isNew" value="${!user || !user?.userId || user?.userId == 0}"/>
     <g:set var="accountTypeId" value="${accountType?.id}"/>
     <g:set var="templateName" value="${null != templateName? templateName : "monthly"}"/>
-	
+
     <div class="heading">
         <strong>
             <g:if test="${isNew}">
@@ -245,16 +429,16 @@
             </g:else>
         </strong>
     </div>
-	
+
     <div class="form-hold">
-        <g:form name="user-edit-form" action="save" useToken="true">
+        <g:form name="user-edit-form" action="save" useToken="true" enctype="multipart/form-data">
             <fieldset>
                 <div class="form-columns">
                     <!-- user details column -->
                     <div class="column customer-column">
                         <g:applyLayout name="form/text">
                             <content tag="label"><g:message code="prompt.customer.number"/></content>
-                            <g:set var="existingId" value="${user.userId}"/>
+
                             <g:if test="${!isNew}">
                                 <span>
                                     <g:link controller="customerInspector" action="inspect"
@@ -266,7 +450,7 @@
                             <g:else>
                                 <em><g:message code="prompt.id.new"/></em>
                             </g:else>
-                            <g:hiddenField name="existingId" value="${existingId}"/>
+
                             <g:hiddenField name="user.userId" value="${user?.userId}"/>
                         </g:applyLayout>
 
@@ -280,21 +464,23 @@
 
                             <g:hiddenField name="user.accountTypeId" value="${accountType?.id}"/>
                             <g:hiddenField name="user.entityId" value="${company?.id}"/>
+                             <g:hiddenField name="user.reissueCount" value="${user.reissueCount}"/>
+                             <g:hiddenField name="user.reissueDate" value="${user.reissueDate}"/>
                         </g:applyLayout>
 
                         <g:if test="${isNew}">
                             <g:applyLayout name="form/input">
                                 <content tag="label">
-                                    <g:message code="prompt.login.name"/>
+                                    <g:message code="label.adennet.iccid"/>
                                     <span id="mandatory-meta-field">*</span>
                                 </content>
                                 <content tag="label.for">user.userName</content>
-                                <g:textField class="field toolTipElement" name="user.userName" value="${user?.userName}" title="${message(code: 'input.user.name')}"/>
+                                <g:textField class="field" id="subNumber"  name="user.userName" value="${user?.userName}"  onfocusout="checkSubscriberNumber()"/>
                             </g:applyLayout>
                         </g:if>
                         <g:else>
                             <g:applyLayout name="form/text">
-                                <content tag="label"><g:message code="prompt.login.name"/></content>
+                                <content tag="label"><g:message code="label.adennet.iccid"/></content>
 
                                 ${displayer?.getDisplayName(user)}
                                 <g:hiddenField name="user.userName" value="${user?.userName}"/>
@@ -340,16 +526,17 @@
                         </g:if>
 
                         <!-- CUSTOMER CREDENTIALS -->
-                        <g:if test="${isNew}">
-                            <g:preferenceEquals preferenceId="${Constants.PREFERENCE_CREATE_CREDENTIALS_BY_DEFAULT}" value="0">
-                                <g:applyLayout name="form/checkbox">
-                                    <content tag="label"><g:message code="prompt.create.credentials"/></content>
-                                    <content tag="label.for">user.createCredentials</content>
-                                    <g:checkBox class="cb checkbox" name="user.createCredentials" checked="${user?.createCredentials}"/>
-                                </g:applyLayout>
-                            </g:preferenceEquals>
-                        </g:if>
-
+                        <!--
+                            <g:if test="${isNew}">
+                                <g:preferenceEquals preferenceId="${Constants.PREFERENCE_CREATE_CREDENTIALS_BY_DEFAULT}" value="0">
+                                    <g:applyLayout name="form/checkbox">
+                                        <content tag="label"><g:message code="prompt.create.credentials"/></content>
+                                        <content tag="label.for">user.createCredentials</content>
+                                        <g:checkBox class="cb checkbox" name="user.createCredentials" checked="${user?.createCredentials}"/>
+                                    </g:applyLayout>
+                                </g:preferenceEquals>
+                            </g:if>
+                        -->
                         <g:applyLayout name="form/select">
                             <content tag="label"><g:message code="prompt.user.status"/></content>
                             <content tag="label.for">user.statusId</content>
@@ -386,7 +573,6 @@
                                       optionValue = "description"
                                             value = "${user?.languageId}"  />
                         </g:applyLayout>
-
                         <g:applyLayout name="form/select">
                             <content tag="label"><g:message code="prompt.user.currency"/></content>
                             <content tag="label.for">user.currencyId</content>
@@ -443,14 +629,6 @@
                             </sec:ifAllGranted>
                         </g:else>
 
-                        <g:applyLayout name="form/input">
-                            <content tag="label">
-                                <g:message code="free.call.limit"/>
-                            </content>
-                            <content tag="label.for">user.</content>
-                            <g:textField class="field" type="number"  name="user.numberOfFreeCalls" value="${user?.numberOfFreeCalls}"/>
-                    </g:applyLayout>
-
                         <g:applyLayout name="form/checkbox">
                             <content tag="label"><g:message code="prompt.allow.sub.accounts"/></content>
                             <content tag="label.for">user.isParent</content>
@@ -503,6 +681,8 @@
                                          checked = "${user?.accountExpired}"
                                         disabled = "${isReadOnly}"/>
                         </g:applyLayout>
+
+
                     </div>
 
                     <div class="column customer-column">
@@ -628,6 +808,9 @@
                             <g:hiddenField  name = "mainSubscription.nextInvoiceDayOfPeriodOfYear"
                                            value = "${mainSubscription?.nextInvoiceDayOfPeriodOfYear}"/>
                         </sec:ifNotGranted>
+
+
+
 						<g:if test="${!isNew}">
                             <sec:ifAllGranted roles="CUSTOMER_19">
                                 <g:applyLayout name="form/date">
@@ -655,25 +838,24 @@
                             </g:applyLayout>
                         </g:preferenceEquals>
 
-                         <g:preferenceIsNullOrEquals preferenceId="${Constants.PREFERENCE_ITG_INVOICE_NOTIFICATION}" value="0">
-                           <g:if test = "${new EnumerationBL().getEnumerationByName('Invoice Design', session['company_id'])?.values}">
-                                <g:applyLayout name="form/select">
-                                    <content tag="label"><g:message code="prompt.invoice.design"/></content>
-                                    <content tag="label.for">user.invoiceDesign</content>
-                                        <g:select class="field" name="user.invoiceDesign" optionKey="value" optionValue="value"
-                                                  from="${[''] + (new EnumerationBL().getEnumerationByName('Invoice Design', session['company_id'])?.values ?: [])}"
-                                                  value="${user?.invoiceDesign}" style="height:30px; width:230px;"/>
-                                </g:applyLayout>
-                           </g:if>
-                           <g:else>
-                                <g:applyLayout name="form/input">
-                                    <content tag="label"><g:message code="prompt.invoice.design"/></content>
-                                    <content tag="label.for">user.invoiceDesign</content>
-                                        <g:textField class="field" name="user.invoiceDesign" value="${user?.invoiceDesign}"/>
-                                </g:applyLayout>
-                           </g:else>
-                          </g:preferenceIsNullOrEquals>
 
+
+                        <g:preferenceIsNullOrEquals preferenceId="${Constants.PREFERENCE_ITG_INVOICE_NOTIFICATION}" value="0">
+                        <g:if test="${isNew}">
+                            <g:applyLayout name="form/input">
+                                <content tag="label"><g:message code="prompt.invoice.design"/></content>
+                                <content tag="label.for">user.invoiceDesign</content>
+                                <g:textField class="field" name="user.invoiceDesign" value="${user?.invoiceDesign}"/>
+                            </g:applyLayout>
+                        </g:if>
+                        <g:else>
+                            <g:applyLayout name="form/text">
+                                <content tag="label"><g:message code="prompt.invoice.design"/></content>
+                                ${user?.invoiceDesign}
+                                <g:hiddenField name="user.invoiceDesign" value="${user?.invoiceDesign}"/>
+                            </g:applyLayout>
+                        </g:else>
+                        </g:preferenceIsNullOrEquals>
 
                         <g:if test="${ssoActive}">
                             <sec:ifAllGranted roles="USER_158">
@@ -692,8 +874,10 @@
                                 </g:if>
                             </sec:ifAllGranted>
                         </g:if>
+
                         <!-- customer meta fields -->
                         <g:render template="/metaFields/editMetaFields" model="[ availableFields: availableFields, fieldValues: user?.metaFields ]"/>
+
                     </div>
                 </div>
 
@@ -715,7 +899,133 @@
                 <div>
                     <br/>&nbsp;
                 </div>
-                
+                <g:if test="${PreferenceBL.getPreferenceValueAsBoolean(session['company_id'], CommonConstants.PREFERENCE_CAPTURE_IDENTIFICATION_DOC_FOR_CUSTOMER)}">
+                    <div id="upload_documents" class="box-cards box-cards-open" >
+                        <div class="box-cards-title">
+                            <a class="btn-open">
+                                <span>
+                                    <label><g:message code="prompt.upload.document"/></label>
+                                </span>
+                            </a>
+                        </div>
+                        <div class="box-card-hold">
+                            <g:set var="systemAccountType" value="${new AccountTypeDAS().findAccountTypeByName(session['company_id'],"Default")?.getId()}"/>
+                            <g:if test="${accountType?.id == systemAccountType}">
+                                <g:if test="${isNew}">
+                                    <div class="row">
+                                        <g:message code="flash.label.document.mandatory"/>
+                                    </div>
+                                </g:if>
+                            </g:if>
+                            <div class="form-columns">
+                                <div class="column">
+
+                                        <div class="row">
+                                            <g:applyLayout name="form/select">
+                                                <content tag="label">
+                                                    <g:message code="customer.identification.type"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">identificationType</content>
+                                                <content tag="include.script">true</content>
+                                                <g:select
+                                                        id="identificationType"
+                                                        name="user.identificationType"
+                                                        from="${identificationTypeValues}"
+                                                        optionKey=""
+                                                        noSelection="['':message(code: 'select.option.default.value.name')]"
+                                                        value = "${user?.identificationType}"
+                                                        onchange="checkIdentificationType()"/>
+                                            </g:applyLayout>
+                                        </div>
+
+                                        <div id="national_id" class="row">
+                                            <g:applyLayout name="form/input">
+                                                <content tag="label">
+                                                    <g:message code="label.customer.national.id"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">txtNationalId</content>
+                                                <g:if test="${user?.identificationType == 'National ID'}">
+                                                    <g:textField class="field" id="txtNationalId" name="txtNationalId" value="${user?.identificationText}" onfocusout="checkIdentificationNumber('National ID')"/>
+                                                </g:if>
+                                                <g:else>
+                                                    <g:textField class="field" id="txtNationalId" name="txtNationalId" onfocusout="checkIdentificationNumber('National ID')"/>
+                                                </g:else>
+                                            </g:applyLayout>
+
+                                            <g:applyLayout name="form/text">
+                                                <content tag="label">
+                                                    <g:message code="label.customer.national.id.document"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">imgNationalId</content>
+                                                <input type="file" id="imgNationalId" name="imgNationalId" value="${imgNationalId}" class="submit delete" style="width: 44.15%;" onchange="validateFile('imgNationalId');"/>
+                                            </g:applyLayout>
+
+                                        </div>
+
+                                        <div id="passport_id" class="row">
+                                            <g:applyLayout name="form/input">
+                                                <content tag="label">
+                                                    <g:message code="label.customer.passport"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">txtPassportId</content>
+                                                <g:if test="${user?.identificationType == 'Passport'}">
+                                                    <g:textField class="field" id="txtPassportId" name="txtPassportId" value="${user?.identificationText}" onfocusout="checkIdentificationNumber('Passport')"/>
+                                                </g:if>
+                                                <g:else>
+                                                    <g:textField class="field" id="txtPassportId" name="txtPassportId" onfocusout="checkIdentificationNumber('Passport')"/>
+                                                </g:else>
+                                            </g:applyLayout>
+
+                                            <g:applyLayout name="form/text">
+                                                <content tag="label">
+                                                    <g:message code="label.customer.passport.document"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">imgPassport</content>
+                                                <input type="file" id="imgPassport" name="imgPassport" value="${imgPassport}" class="submit delete" style="width: 44.15%;" onchange="validateFile('imgPassport');"/>
+                                            </g:applyLayout>
+                                        </div>
+
+                                        <div id="company_letter" class="row" style="display:none;">
+                                            <g:applyLayout name="form/text">
+                                                <content tag="label">
+                                                    <g:message code="label.company.letter"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <input type="file"user id="imgCompanyLetter" name="imgCompanyLetter" value="${imgCompanyLetter}" class="submit delete" style="width: 44.15%;" onchange="validateFile('imgCompanyLetter');"/>
+                                            </g:applyLayout>
+                                        </div>
+
+                                        <div id="official_letter" class="row">
+                                            <g:applyLayout name="form/text">
+                                                <content tag="label">
+                                                    <g:message code="label.customer.official.letter.document"/>
+                                                    <span id="mandatory-meta-field">*</span>
+                                                </content>
+                                                <content tag="label.for">imgOfficialLetter</content>
+                                                <input type="file" id="imgOfficialLetter" name="imgOfficialLetter" value="${imgOfficialLetter}" class="submit delete" style="width: 44.15%;" onchange="validateFile('imgOfficialLetter');"/>
+                                            </g:applyLayout>
+                                        </div>
+
+                                </div>
+                                <g:if test="${!isNew}">
+                                    <div class="column">
+                                        <table class="dataTable table-layout-fixed" cellspacing="0" cellpadding="0">
+                                            <tbody>
+                                                <g:render template="showCustomerImage" model="[userId:user?.userId, identificationType:oldIdentificationType, caller:'showOnEdit']"/>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </g:if>
+                            </div>
+                        </div>
+                    </div>
+                </g:if>
+
                 <g:hiddenField name="datesXml" value="${datesXml}"/>
                 <g:hiddenField name="effectiveDatesXml" value="${effectiveDatesXml}"/>
                 <g:hiddenField name="infoFieldsMapXml" value="${infoFieldsMapXml}"/>
@@ -867,12 +1177,12 @@
                         <ul>
                             <li>
                                 <a onclick = "replacePhoneCountryCodePlusSign($('input[name*=phoneCountryCode]')); $('#user-edit-form').submit()"
-                                     class = "submit save button-primary">
+                                     class = "submit save button-primary" data-cy="saveChanges">
                                     <span><g:message code="button.save"/></span>
                                 </a>
                             </li>
                             <li>
-                                <g:link action="list" class="submit cancel"><span><g:message code="button.cancel"/></span></g:link>
+                                <g:link action="list" class="submit cancel" data-cy="cancelButton"><span><g:message code="button.cancel"/></span></g:link>
                             </li>
                         </ul>
                     </div>
@@ -880,7 +1190,7 @@
             </fieldset>
         </g:form>
         <div id="dialog" style="display: none;" title="Alert!"><g:message code="allow.subAccounts.not.removed"/></div>
-        <div id="background" style="position: absolute;width: 100%;height: 100%;background-color: grey;top: 0px;left: 0px;opacity: 0.5;display: none;"></div>
+        <div id="background"></div>
     </div>
 </div>
 
@@ -951,6 +1261,35 @@
         $('html, body').animate({scrollTop: ''}, 'fast');
     }
 
+    function showErrorMessage(errorField) {
+        $("#error-messages").css("display","block");
+        $("#error-messages ul").css("display","block");
+        $("#error-messages ul").html(errorField);
+        $("html, body").animate({ scrollTop: 0 }, "slow");
+    }
+
+    function validateFile(elementId) {
+        var fileInput = document.getElementById(elementId);
+
+        var fileName = fileInput.value;
+
+        // Allowing file type
+        var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.pdf)$/i;
+
+        var size = parseFloat(fileInput.files[0].size / 1024).toFixed(2);
+
+        if (!allowedExtensions.exec(fileName)) {
+            showErrorMessage("<li><g:message code="error.file.type"/></li>");
+            fileInput.value = '';
+            return false;
+        }
+        else if(size>10000000){
+            showErrorMessage("<li><g:message code="error.image.size"/></li>");
+            fileInput.value = '';
+            return false;
+        }
+    }
+
     function removeCommission(obj) {
         $(obj).closest("tr").remove();
     }
@@ -975,5 +1314,4 @@
         }
     });
 </r:script>
-
 </html>

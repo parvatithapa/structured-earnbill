@@ -6,7 +6,7 @@ import com.sapienter.jbilling.server.invoiceTemplate.domain.TableLines;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.design.*;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
 
@@ -24,7 +24,7 @@ public class ColumnSettings {
     public FieldSetup field;
     public int width;
     public String formatter;
-    public HorizontalAlignEnum alignment;
+    public HorizontalTextAlignEnum alignment;
 
     public static void setupLines(TableLines invoiceLines, JRDesignBand columnHeader, JRDesignBand details, int availableTableWidth, String locale) {
         int baseX = 0;
@@ -83,7 +83,7 @@ public class ColumnSettings {
                 separator.setHeight(cellHeight - invoiceLines.getRecordSeparationThickness());
                 linePen = box.getPen();
                 linePen.setLineColor(ConvertUtils.convertColor(invoiceLines.getRecordSeparationColor()));
-                linePen.setLineWidth(invoiceLines.getRecordSeparationThickness());
+                linePen.setLineWidth((float)invoiceLines.getRecordSeparationThickness());
                 break;
             case Line:
                 separator.setX(0);
@@ -92,10 +92,10 @@ public class ColumnSettings {
                 separator.setHeight(cellHeight);
                 linePen = box.getBottomPen();
                 linePen.setLineColor(ConvertUtils.convertColor(invoiceLines.getRecordSeparationColor()));
-                linePen.setLineWidth(invoiceLines.getRecordSeparationThickness());
-                box.getTopPen().setLineWidth(0);
-                box.getLeftPen().setLineWidth(0);
-                box.getRightPen().setLineWidth(0);
+                linePen.setLineWidth((float)invoiceLines.getRecordSeparationThickness());
+                box.getTopPen().setLineWidth(0f);
+                box.getLeftPen().setLineWidth(0f);
+                box.getRightPen().setLineWidth(0f);
                 break;
             default:
                 return;
@@ -121,7 +121,7 @@ public class ColumnSettings {
         textField.setPrintRepeatedValues(true);
         textField.setPrintWhenDetailOverflows(true);
         textField.setStretchWithOverflow(true);
-        textField.setHorizontalAlignment(alignment == null ? HorizontalAlignEnum.LEFT : alignment);
+        textField.setHorizontalTextAlign(alignment == null ? HorizontalTextAlignEnum.LEFT : alignment);
         return textField;
     }
 
@@ -148,11 +148,11 @@ public class ColumnSettings {
         int horizontalThickness = cellStyle.getHorizontalBorderThickness();
         if(horizontalThickness > 0) {
             if(header) {
-                lineBox.getBottomPen().setLineWidth(horizontalThickness + 1);
+                lineBox.getBottomPen().setLineWidth(horizontalThickness + 1f);
             } else {
-                lineBox.getBottomPen().setLineWidth(horizontalThickness);
+                lineBox.getBottomPen().setLineWidth((float)horizontalThickness);
             }
-            lineBox.getTopPen().setLineWidth(horizontalThickness);
+            lineBox.getTopPen().setLineWidth((float)horizontalThickness);
             Color xColor = convertColor(cellStyle.getHorizontalBorderColor(), Color.WHITE);
             lineBox.getBottomPen().setLineColor(xColor);
             lineBox.getTopPen().setLineColor(xColor);
@@ -160,8 +160,8 @@ public class ColumnSettings {
 
         int verticalThickness = cellStyle.getVerticalBorderThickness();
         if(verticalThickness > 0){
-            lineBox.getLeftPen().setLineWidth(verticalThickness);
-            lineBox.getRightPen().setLineWidth(verticalThickness);
+            lineBox.getLeftPen().setLineWidth((float)verticalThickness);
+            lineBox.getRightPen().setLineWidth((float)verticalThickness);
             Color yColor = convertColor(cellStyle.getVerticalBorderColor(), Color.WHITE);
             lineBox.getLeftPen().setLineColor(yColor);
             lineBox.getRightPen().setLineColor(yColor);

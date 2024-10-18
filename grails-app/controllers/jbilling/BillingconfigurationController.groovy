@@ -81,7 +81,13 @@ class BillingconfigurationController {
 		}
 		//configuration.setNextRunDate (new SimpleDateFormat("dd-MMM-yyyy").parse(params.nextRunDate) )
 		configuration.setEntityId webServicesSession.getCallerCompanyId()
-		
+        configuration.setSkipEmails params.skipEmails ? 1 : 0
+        
+        if(0 == configuration.skipEmails) {
+            configuration.setSkipEmailsDays ''
+        } else {
+            configuration.setSkipEmailsDays params.skipEmailsDays
+        } 
 		log.info "Generate Report ${params.generateReport}"
 		
 		try {

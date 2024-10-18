@@ -48,11 +48,12 @@ public class MediationProcessServiceImpl implements MediationProcessService {
     }
 
     @Override
-    public MediationProcess saveMediationProcess(Integer entityId, Integer configurationId) {
+    public MediationProcess saveMediationProcess(Integer entityId, Integer configurationId, String fileName) {
         MediationProcess mediationProcess = new MediationProcess();
         mediationProcess.setId(UUID.randomUUID());
         mediationProcess.setEntityId(entityId);
         mediationProcess.setConfigurationId(configurationId);
+        mediationProcess.setFileName(fileName);
         return DaoConverter.getMediationProcess(mediationProcessRepository.save(DaoConverter.getMediationProcessDAO(mediationProcess)));
     }
 
@@ -70,6 +71,7 @@ public class MediationProcessServiceImpl implements MediationProcessService {
         mediationProcess.setDuplicates(mediationService.getMediationDuplicatesRecordsForProcess(mediationProcessId).size());
         mediationProcess.setAggregated(mediationService.getMediationRecordCountByProcessIdAndStatus(mediationProcessId, JbillingMediationRecord.STATUS.AGGREGATED.toString()));
         mediationProcess.setRecordsProcessed(mediationProcess.getDoneAndBillable() + mediationProcess.getErrors() + mediationProcess.getDoneAndNotBillable() + mediationProcess.getDuplicates());
+        mediationProcess.setFileName(mediationProcess.getFileName());
         return updateMediationProcess(mediationProcess);
     }
 

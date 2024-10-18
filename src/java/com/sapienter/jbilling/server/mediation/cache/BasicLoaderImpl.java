@@ -17,7 +17,6 @@
 package com.sapienter.jbilling.server.mediation.cache;
 
 import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.mediation.CallDataRecord;
 import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.task.IMediationReader;
@@ -144,8 +143,8 @@ public class BasicLoaderImpl implements ILoader {
                     });
                 }
             } catch (Throwable t) {
-                LOG.error("Unhandled exception occurred during data loading into cached memory table.", t);
-                throw new SessionInternalError("Unhandled exception occurred during data loading into cached memory table.", t);
+                  System.out.println("*******************************************"+t);
+                LOG.error("Unhandled exception occurred during loading.", t);
             }
         }
 
@@ -284,7 +283,7 @@ public class BasicLoaderImpl implements ILoader {
         String retVal = null;
         switch (field.getType()) {
         case STRING:
-            retVal = " VARCHAR(255) ";
+            retVal = " VARCHAR(100) ";
             break;
         case INTEGER:
             retVal = " INTEGER ";

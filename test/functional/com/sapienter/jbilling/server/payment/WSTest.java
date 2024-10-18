@@ -1478,6 +1478,7 @@ public class WSTest {
 		invoiceLineDTO.setPrice("15");
 		invoiceLineDTO.setQuantity("1");
 		invoiceLineDTO.setSourceUserId(userId);
+		invoiceLineDTO.setTypeId(3);
 
 		invoice.setInvoiceLines(new InvoiceLineDTO[]{invoiceLineDTO});
 		return invoice;

@@ -1202,7 +1202,6 @@ public class PaymentInformationBackwardCompatibilityTestCase {
         UserWS user = api.getUserWS(customerId);
         user.setStatusId(Integer.valueOf(1));
         user.setStatus("Active");
-        user.setPassword(null);
         api.updateUser(user);
     }
 

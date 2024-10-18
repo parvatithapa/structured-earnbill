@@ -16,3 +16,4 @@
 
 export GRAILS_OPTS="-server -Xmx1536M -Xms256M -XX:MaxPermSize=384m"
 grails -noreloading -Ddisable.auto.recompile=true -Dspring.profiles.active="billing.master,billing.slave,mediation.slave" run-app
+

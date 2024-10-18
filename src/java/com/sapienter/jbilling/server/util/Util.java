@@ -172,7 +172,7 @@ public class Util {
                 symbol = symbol == null ? currency.getEntity().getCode() : symbol;
             }
             
-            return symbol + (symbol.isEmpty() ? " " : "") + format.format(number.doubleValue());
+            return symbol + (!symbol.isEmpty() ? " " : "") + format.format(number.doubleValue());
         } catch (Exception e) {
             throw new SessionInternalError(e);
         }
@@ -697,7 +697,7 @@ public class Util {
 
     /**
      * Get Month name from due date.
-     * @param dueDate
+     * @param date
      * @return monthName
      */
     public static String getMonthName(Date date) {
@@ -707,7 +707,7 @@ public class Util {
 
     /**
      * Get Day of Month from due date.
-     * @param dueDate
+     * @param date
      * @return DayOfMonth
      */
     public static Integer getDayOfMonth(Date date) {
@@ -819,5 +819,45 @@ public class Util {
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
+    }
+
+    public static String formatAGLInvoiceDate(Date date, Integer userId) {
+        if (null == date) {
+            return "";
+        }
+        UserBL user = new UserBL(userId);
+        ResourceBundle bundle = ResourceBundle.getBundle("entityNotifications", user.getLocale());
+        DateTimeFormatter df = DateTimeFormat.forPattern(bundle.getString("AGL.invoice.format.date"));
+        return df.print(date.getTime()).replace("-", " ");
+    }
+
+    /**
+     * Returns end of day for the provided Date
+     * @param date
+     * @return end of day
+     */
+    public static Date getEndOfDay(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.MILLISECOND, 999);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.HOUR_OF_DAY,23);
+        return cal.getTime();
+    }
+
+    /**
+     * Returns start of day for the provided Date
+     * @param date
+     * @return start of day
+     */
+    public static Date getStartOfDay(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.MILLISECOND, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.HOUR_OF_DAY,0);
+        return cal.getTime();
     }
 }

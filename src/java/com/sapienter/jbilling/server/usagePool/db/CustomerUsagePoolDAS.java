@@ -93,21 +93,35 @@ public class CustomerUsagePoolDAS extends AbstractDAS<CustomerUsagePoolDTO>{
      * @return List<Integer> customer usage pool ids
      */
     @SuppressWarnings("unchecked")
-    public List<Integer> findCustomerUsagePoolsForEvaluation(Integer entityId, Date runDate) {
+    public List<Integer> findCustomerUsagePoolsForEvaluation(Integer entityId, Date runDate, Integer maxResults, Integer offset) {
         Criteria criteria = getSession().createCriteria(getPersistentClass(), "customerUsagePool")
                 .createAlias("customer", "customer", JoinType.INNER_JOIN)
+                .createAlias("order", "order", JoinType.INNER_JOIN)
                 .createAlias("customer.baseUser", "user", JoinType.INNER_JOIN)
                 .createAlias("user.company", "entity", JoinType.INNER_JOIN)
                 .createAlias("user.userStatus", "us", JoinType.INNER_JOIN)
                 .createAlias("us.ageingEntityStep", "agStep", JoinType.LEFT_OUTER_JOIN)
                 .add(Restrictions.eq("entity.id", entityId))
+                .add(Restrictions.eq("user.deleted", 0))
                 .add(Restrictions.le("customerUsagePool.cycleEndDate", runDate))
                 .add(Restrictions.gt("customerUsagePool.cycleEndDate", Util.getEpochDate()))
+                .add(Restrictions.or(
+                		Restrictions.isNull("order.activeUntil"), 
+                		Restrictions.gt("order.activeUntil", runDate)
+                		))
                 .add(Restrictions.or(
                         Restrictions.eq("us.id", UserDTOEx.STATUS_ACTIVE),
                         Restrictions.eq("agStep.suspend", 0)
                         ))
                         .setProjection(Projections.id());
+        if (null != maxResults) {
+            criteria.setMaxResults(maxResults);
+            criteria.setFetchSize(maxResults);
+        }
+        if (null != offset) {
+            criteria.setFirstResult(offset);
+        }
+        criteria.addOrder(Order.asc("id"));
         return criteria.list();
     }
 
@@ -136,6 +150,22 @@ public class CustomerUsagePoolDAS extends AbstractDAS<CustomerUsagePoolDTO>{
         criteria.add(Restrictions.gt("cycleEndDate", Util.getEpochDate()));
         criteria.addOrder(Order.asc("createDate"));
         return criteria.list();
+    }
+
+    /**
+     * Finds customer usage pool for given customerId and orderId.
+     * @param customerId
+     * @param orderId
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerIdAndOrderId(Integer customerId, Integer orderId) {
+        return getSession().createCriteria(getPersistentClass())
+                .add(Restrictions.eq("customer.id", customerId))
+                .add(Restrictions.eq("order.id", orderId))
+                .add(Restrictions.gt("cycleEndDate", Util.getEpochDate()))
+                .addOrder(Order.asc("createDate"))
+                .list();
     }
 
     /**
@@ -180,7 +210,7 @@ public class CustomerUsagePoolDAS extends AbstractDAS<CustomerUsagePoolDTO>{
     }
 
     @SuppressWarnings("unchecked")
-    public Long countCustomerUsagePoolsByUsagePoolId(Integer usagePoolId){
+    public Long countCustomerUsagePoolsByUsagePoolId(Integer usagePoolId) {
         Criteria criteria = getSession().createCriteria(getPersistentClass())
                 .createAlias("usagePool", "usagePool")
                 .add(Restrictions.eq("usagePool.id", usagePoolId))
@@ -198,10 +228,13 @@ public class CustomerUsagePoolDAS extends AbstractDAS<CustomerUsagePoolDTO>{
      * @return
      */
     @SuppressWarnings("unchecked")
-    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerIdAndDateRange(Integer customerId, Date startDate, Date endDate) {
+    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerSubscriptionAndDateRange(Integer customerId,
+            Integer subscriptionOrderId, Date startDate, Date endDate) {
         Criteria criteria = getSession().createCriteria(getPersistentClass());
         criteria.add(Restrictions.eq("customer.id", customerId));
+        criteria.add(Restrictions.eq("order.id", subscriptionOrderId));
         criteria.add(Restrictions.between("cycleEndDate", startDate, endDate));
+        criteria.add(Restrictions.gt("cycleEndDate", Util.getEpochDate()));
         criteria.addOrder(Order.asc("createDate"));
         return criteria.list();
     }
@@ -222,6 +255,30 @@ public class CustomerUsagePoolDAS extends AbstractDAS<CustomerUsagePoolDTO>{
                 .add(Restrictions.eq("line.deleted", 0))
                 .createAlias("line.assets", "asset")
                 .add(Restrictions.eq("asset.identifier", assetIdentifier));
-        return (List<CustomerUsagePoolDTO>) criteria.list();
+        return criteria.list();
     }
+
+    @SuppressWarnings("unchecked")
+    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByOrderAndPlanId(Integer orderId, Integer planId) {
+        return getSession().createCriteria(getPersistentClass())
+                .add(Restrictions.eq("plan.id", planId))
+                .add(Restrictions.eq("order.id", orderId))
+                .add(Restrictions.gt("cycleEndDate", Util.getEpochDate()))
+                .list();
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean exist(CustomerUsagePoolDTO customerUsagePool) {
+        Criteria criteria = getSession().createCriteria(getPersistentClass());
+        criteria.add(Restrictions.ne("id", customerUsagePool.getId()));
+        criteria.add(Restrictions.eq("customer.id", customerUsagePool.getCustomer().getId()));
+        criteria.add(Restrictions.eq("usagePool.id", customerUsagePool.getUsagePool().getId()));
+        criteria.add(Restrictions.eq("plan.id", customerUsagePool.getPlan().getId()));
+        criteria.add(Restrictions.eq("order.id", customerUsagePool.getOrder().getId()));
+        criteria.add(Restrictions.eq("cycleStartDate", customerUsagePool.getCycleStartDate()));
+        criteria.add(Restrictions.eq("cycleEndDate", customerUsagePool.getCycleEndDate()));
+        criteria.add(Restrictions.gt("cycleEndDate", Util.getEpochDate()));
+        return criteria.uniqueResult() != null;
+    }
+
 }

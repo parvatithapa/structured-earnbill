@@ -4,11 +4,11 @@ import com.sapienter.jbilling.appdirect.subscription.companydetails.AppdirectCom
 import com.sapienter.jbilling.appdirect.subscription.http.exception.AppdirectCompanyClientException;
 import com.sapienter.jbilling.appdirect.subscription.http.exception.UnauthorizedException;
 import com.sapienter.jbilling.appdirect.subscription.oauth.OAuthRestTemplateService;
-import com.sapienter.jbilling.common.FormatLogger;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.vavr.CheckedFunction1;
 import io.vavr.control.Try;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -25,9 +25,12 @@ import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
 
-import static io.vavr.API.*;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
 import static io.vavr.Predicates.instanceOf;
 
+@Setter
 @Service
 public class AppdirectCompanyAPIClient {
 
@@ -129,7 +132,4 @@ public class AppdirectCompanyAPIClient {
         }
     }
 
-    public void setoAuthRestTemplateServiceService(OAuthRestTemplateService oAuthRestTemplateServiceService) {
-        this.oAuthRestTemplateServiceService = oAuthRestTemplateServiceService;
-    }
 }

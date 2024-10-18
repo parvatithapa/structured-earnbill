@@ -132,13 +132,13 @@
 
 </script>
 <div id="infoTypeName-change-dialog" title="${message(code: 'popup.confirm.title')}">
-        <table style="margin: 3px 0 0 10px">
+        <table>
             <tbody>
             <tr>
                 <td valign="top">
                     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
                 </td>
-                <td class="col2" style="padding-left: 7px">
+                <td class="col2">
                     <g:message code="ait.prompt.checked.notification" />
                 </td>
             </tr>

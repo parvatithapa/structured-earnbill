@@ -22,6 +22,9 @@ import org.testng.annotations.Test;
 
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.item.PlanItemWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.EntityType;
@@ -64,6 +67,8 @@ public class AaptVoipMediationTest extends BaseMediationTest {
     private static final String  AAPT_VOIP_PLAN_CODE                           =  "aaptVoip-Plan" + System.currentTimeMillis();
     private String subScriptionProd01 = "testPlanSubscriptionItem"+ System.currentTimeMillis();
     private String serviceNumber1 = "123456789";
+    private String serviceNumber2 = "123456799";
+    private String serviceNumber3 = "123456798";
 
     private Integer aaptVoipRouteRateCardId;
     private Integer planRatingEnumId;
@@ -121,6 +126,12 @@ public class AaptVoipMediationTest extends BaseMediationTest {
                     envBuilder.idForCode(subScriptionProd01), Collections.emptyList() , planItemProd01WS2);
             logger.debug("Plan created Successfully : {}", planId);
             setPlanLevelMetaField(planId, ROUTE_RATE_CARD_FILE_NAME);
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
         }).test((testEnv, testEnvBuilder) -> {
             Date nextInvoiceDate = Date.from(LocalDate.of(2016, 8, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
             logger.debug(USER_INVOICE_ASSERT, nextInvoiceDate);
@@ -132,6 +143,9 @@ public class AaptVoipMediationTest extends BaseMediationTest {
     @AfterClass
     public void tearDown() {
         JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         super.tearDown();
         if(null!= planRatingEnumId) {
             try {
@@ -173,7 +187,7 @@ public class AaptVoipMediationTest extends BaseMediationTest {
                 users.add(user1.getId());
                 Integer asset1 = buildAndPersistAsset(envBuilder,
                         testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY), testBuilder
-                        .getTestEnvironment().idForCode(ASSET), serviceNumber1);
+                        .getTestEnvironment().idForCode(ASSET), serviceNumber1, "asset-01"+ System.currentTimeMillis());
                 assets.add(asset1);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
 
@@ -253,7 +267,7 @@ public class AaptVoipMediationTest extends BaseMediationTest {
                 logger.info("created user 2 {}", user2.getId());
                 users.add(user2.getId());
                 Integer asset2 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber1);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber2, "asset-01"+ System.currentTimeMillis());
                 assets.add(asset2);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
 
@@ -283,6 +297,8 @@ public class AaptVoipMediationTest extends BaseMediationTest {
                 assertEquals("Mediation Done And Billable ", Integer.valueOf(2), mediationProcess.getDoneAndBillable());
                 assertEquals("Mediation Done And Not Billable", Integer.valueOf(0), mediationProcess.getDoneAndNotBillable());
                 OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_2));
+                JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+                validatePricingFields(viewEvents);
                 assertNotNull("Mediation Should Create Order", order);
                 assertEquals("Invalid resolved quantity", new BigDecimal("3.00"),
                         order.getOrderLines()[0].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
@@ -324,7 +340,7 @@ public class AaptVoipMediationTest extends BaseMediationTest {
                 logger.info("created user 3 {}", user3.getId());
                 users.add(user3.getId());
                 Integer asset3 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber1);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber3, "asset-01"+ System.currentTimeMillis());
                 assets.add(asset3);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
 

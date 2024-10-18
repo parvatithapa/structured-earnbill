@@ -54,12 +54,4 @@
         <name>CALL_CHARGE</name>
         <type>string</type>
     </field>
-    <field>
-        <name>BLANK_FIELD1</name>
-        <type>string</type>
-    </field>
-    <field>
-        <name>BLANK_FIELD2</name>
-        <type>string</type>
-    </field>
 </format>

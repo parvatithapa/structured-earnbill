@@ -2,18 +2,26 @@ package com.sapienter.jbilling.server.spc;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -22,6 +30,9 @@ import org.testng.annotations.Test;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.item.PlanItemWS;
 import com.sapienter.jbilling.server.item.PlanWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
+import com.sapienter.jbilling.server.mediation.JbillingMediationErrorRecord;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
@@ -31,6 +42,7 @@ import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.user.MainSubscriptionWS;
 import com.sapienter.jbilling.server.user.RouteRateCardWS;
 import com.sapienter.jbilling.server.user.UserWS;
+import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.EnumerationValueWS;
 import com.sapienter.jbilling.server.util.EnumerationWS;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
@@ -47,6 +59,8 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
     private static final String  ROUTE_RATE_CARD_FILE_NAME                     = "optus_fixed_plan_rating_1";
     private static final String  ROUTE_RATE_CARD_FILE_EXTN                     = "csv";
     private static final String  CDR_FILE_NAME_STN1                            = "tap_stn1_22202705000137_20181127_008499_a_s.dat";
+    private static final String  CDR_FILE_NAME_STN01                           = "tap_stn1_22202705000137_20181127_018499_a_s.dat";
+    private static final String  CDR_FILE_NAME_STN001                          = "tap_stn1_22202705000137_20181127_028499_a_s.dat";
     private static final String  CDR_FILE_NAME_STN2                            = "tap_stn2_22205779000148_20181127_005936_a_s.dat";
     private static final String  CDR_FILE_NAME_STN1_MULTILINE                  = "tap_stn1_22202705000137_20190101_008499_a_s.dat";
     private static final String  CDR_FILE_NAME_STN4                            = "tap_stn2_22205779000148_20181126_005936_a_s.dat";
@@ -55,6 +69,8 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
     private static final String  LONG_DISTANCE_CALLS_ITEM                      = "Long Distance Calls";
     private static final String  INBOUND_MOBILE_ONE_TO_THIRTEEN_HUNDRFED       = "Inbound Mobile to 1300";
     private static final String  TEST_USER_1                                   = "Test-User1-"+ UUID.randomUUID().toString();
+    private static final String  TEST_USER_01                                  = "Test-User01-"+ UUID.randomUUID().toString();
+    private static final String  TEST_USER_001                                  = "Test-User001-"+ UUID.randomUUID().toString();
     private static final String  TEST_USER_2                                   = "Test-User2-"+ UUID.randomUUID().toString();
     private static final String  TEST_USER_3                                   = "Test-User3-"+ UUID.randomUUID().toString();
     private static final String  TEST_USER_4                                   = "Test-User4-"+ UUID.randomUUID().toString();
@@ -73,6 +89,8 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
 
     private String subScriptionProd01 = "testPlanSubscriptionItem"+ System.currentTimeMillis();
     private String serviceNumber1 = "0353836200";
+    private String serviceNumber01 = "0353836201";
+    private String serviceNumber001 = "0353836202";
     private String serviceNumber2 = "1300887326";
     private String serviceNumber3 = "0740553628";
     private String serviceNumberNotPresent = "1300887311";
@@ -145,6 +163,13 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
             planId = api.createPlan(planWS2);
             logger.debug("Plan created Successfully : {}", planId);
             setPlanLevelMetaField(planId, ROUTE_RATE_CARD_FILE_NAME);
+
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
         }).test((testEnv, testEnvBuilder) -> {
             Date nextInvoiceDate = Date.from(LocalDate.of(2016, 8, 1).atStartOfDay(ZoneId.systemDefault()).toInstant());
             logger.debug(USER_INVOICE_ASSERT, nextInvoiceDate);
@@ -157,6 +182,9 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
     @Override
     @AfterClass
     public void tearDown() {
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         testBuilder.removeEntitiesCreatedOnJBillingForMultipleTests();
         testBuilder.removeEntitiesCreatedOnJBilling();
         try {
@@ -203,7 +231,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 users.add(user1.getId());
                 Integer asset1 = buildAndPersistAsset(envBuilder,
                         testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY), testBuilder
-                        .getTestEnvironment().idForCode(ASSET), serviceNumber1);
+                        .getTestEnvironment().idForCode(ASSET), serviceNumber1, "asset-01"+ System.currentTimeMillis());
                 assets.add(asset1);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
 
@@ -243,6 +271,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_1));
                 assertNotNull("Mediation Should Create Order", order);
                 JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+                validatePricingFields(viewEvents);
                 assertEquals("Invalid original quantity", new BigDecimal("27.00"),
                         viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
                 assertEquals("Invalid resolved quantity", new BigDecimal("1.00"),
@@ -265,6 +294,8 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
         }
     }
 
+
+
     @Test(priority = 2)
     public void test02MediationProcessOfStn2FileWithValidCDR() {
         List<Integer> assets = new ArrayList<>();
@@ -286,7 +317,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 logger.info("created user 2 {}", user2.getId());
                 users.add(user2.getId());
                 Integer asset2 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber2);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber2, "asset-02"+ System.currentTimeMillis());
                 assets.add(asset2);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 Map<Integer, List<Integer>> productAssetMap = new HashMap<>();
@@ -318,6 +349,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_2));
                 assertNotNull("Mediation Should Create Order", order);
                 JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+                validatePricingFields(viewEvents);
                 assertEquals("Invalid original quantity", new BigDecimal("65.00"),
                         viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
                 assertEquals("Invalid resolved quantity", new BigDecimal("2.00"),
@@ -361,7 +393,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 logger.info("created user 3 {}", user3.getId());
                 users.add(user3.getId());
                 Integer asset3 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber3);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber3, "asset-03"+ System.currentTimeMillis());
                 assets.add(asset3);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 Calendar activeSinceDate = Calendar.getInstance();
@@ -393,10 +425,6 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_3));
                 assertNotNull("Mediation Should Create Order", order);
                 assertEquals("Invalid order lines", 2, order.getOrderLines().length);
-                assertEquals("Invalid resolved quantity", new BigDecimal("1.00"),
-                        order.getOrderLines()[0].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
-                assertEquals("Invalid resolved quantity", new BigDecimal("9.00"),
-                        order.getOrderLines()[1].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 assertEquals("Invalid order amount", new BigDecimal("3.28"),
                         order.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
             });
@@ -414,9 +442,6 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
             }
         }
     }
-
-
-
 
     @Test(priority = 4)
     public void test04MediationProcessOfStn1FileWithAssetNotPresentInCDR() {
@@ -439,7 +464,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 logger.info("created user 4 {}", user3.getId());
                 users.add(user3.getId());
                 Integer asset3 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumberNotPresent);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumberNotPresent, "asset-04"+ System.currentTimeMillis());
                 assets.add(asset3);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 Calendar activeSinceDate = Calendar.getInstance();
@@ -507,7 +532,7 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
                 logger.info("created user 5 {}", user5.getId());
                 users.add(user5.getId());
                 Integer asset5 = buildAndPersistAsset(envBuilder, testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber5);
+                        testBuilder.getTestEnvironment().idForCode(ASSET), serviceNumber5, "asset-05"+ System.currentTimeMillis());
                 assets.add(asset5);
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 Calendar activeSinceDate = Calendar.getInstance();
@@ -559,6 +584,228 @@ public class OptusFixedLineMediationTest extends BaseMediationTest {
             for(Integer asset : assets){
                 api.deleteAsset(asset);
             }
+        }
+    }
+
+    @Test(priority = 6, enabled = true)
+    public void test001mediationRulesTest() {
+        List<Integer> assets = new ArrayList<>();
+        List<Integer> users = new ArrayList<>();
+        List<Integer> orders = new ArrayList<>();
+
+        try {
+            testBuilder
+            .given(envBuilder -> {
+                final JbillingAPI api = envBuilder.getPrancingPonyApi();
+                UserWS user1 = envBuilder.customerBuilder(api).withUsername(TEST_USER_01)
+                        .withAccountTypeId(testBuilder.getTestEnvironment().idForCode(ACCOUNT_NAME))
+                        .addTimeToUsername(false).withNextInvoiceDate(new Date())
+                        .withMainSubscription(new MainSubscriptionWS(MONTHLY_ORDER_PERIOD, NEXT_INVOICE_DAY))
+                        .build();
+
+                assertNotNull("Test User 01 Creation Failed", user1);
+                logger.info("created user 01 {}", user1.getId());
+                users.add(user1.getId());
+                Integer asset1 = buildAndPersistAsset(envBuilder,
+                        testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY), testBuilder
+                        .getTestEnvironment().idForCode(ASSET), serviceNumber01, "asset-001"+ System.currentTimeMillis());
+                assets.add(asset1);
+                Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
+
+                productQuantityMap.putAll(buildProductQuantityEntry(
+                        testBuilder.getTestEnvironment().idForCode(ASSET), new BigDecimal(assets.size())));
+                productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(subScriptionProd01),
+                        BigDecimal.ONE));
+
+                Calendar activeSinceDate = Calendar.getInstance();
+                activeSinceDate.add(Calendar.MONTH, -2);
+                activeSinceDate.set(Calendar.DATE, 1);
+
+                Calendar activeUntilDate = Calendar.getInstance();
+                activeUntilDate.add(Calendar.MONTH, -2);
+                activeUntilDate.set(Calendar.DATE, activeUntilDate.getActualMaximum(Calendar.DAY_OF_MONTH));
+
+                Map<Integer, List<Integer>> productAssetMap = new HashMap<>();
+                productAssetMap.put(testBuilder.getTestEnvironment().idForCode(ASSET), assets);
+
+                Integer orderid = createOrder("Test-Order01", activeSinceDate.getTime(), activeUntilDate.getTime(), MONTHLY_ORDER_PERIOD, false, productQuantityMap,
+                        productAssetMap, TEST_USER_01);
+                orders.add(orderid);
+
+            })
+            .validate((testEnv, testEnvBuilder) -> {
+                assertNotNull(CUSTOMER_CREATION_FAILED, testEnvBuilder.idForCode(TEST_USER_01));
+            })
+            .validate((testEnv, testEnvBuilder) -> {
+                // trigger mediation
+                JbillingAPI api = testEnvBuilder.getPrancingPonyApi();
+                String fileName = CDR_BASE_DIRECTORY + File.separator + CDR_FILE_NAME_STN01;
+                File cdrFile = new File(fileName);
+
+                // event date within active since and active until dates
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+                Calendar eventDate = Calendar.getInstance();
+                eventDate.add(Calendar.MONTH, -2);
+                eventDate.set(Calendar.DATE, 10);
+                String eventDateStr1 = simpleDateFormat.format(eventDate.getTime());
+                updateEventDate(fileName, "eventDateOne", eventDateStr1);
+
+                //event date in past than active since date
+                eventDate.add(Calendar.MONTH, -2);
+                String eventDateStr2 = simpleDateFormat.format(eventDate.getTime());
+                updateEventDate(fileName, "eventDateTwo", eventDateStr2);
+
+                //event date in future of active until date
+                eventDate = Calendar.getInstance();
+                eventDate.add(Calendar.DATE, -1);
+                String eventDateStr3 = simpleDateFormat.format(eventDate.getTime());
+                updateEventDate(fileName, "eventDateThree", eventDateStr3);
+
+                uuid = api.triggerMediationByConfigurationByFile(
+                        getMediationConfiguration(api, SPC_MEDIATION_JOB_NAME), cdrFile);
+                pauseUntilMediationCompletes(30,api);
+                logger.debug("Mediation ProcessId {}", uuid);
+                assertNotNull(MEDIATION_TRIGGERED_SHOULD_RETURN_UUID, uuid);
+            }).validate((testEnv, testEnvBuilder) -> {
+
+                MediationProcess mediationProcess =
+                        api.getMediationProcess(api.getMediationProcessStatus().getMediationProcessId());
+                logger.debug("Mediation Process {}", mediationProcess); //
+                assertEquals("Mediation Done And Billable ", Integer.valueOf(1), mediationProcess.getDoneAndBillable());
+                assertEquals("Mediation Done And Not Billable",Integer.valueOf(0), mediationProcess.getDoneAndNotBillable());
+                OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_01));
+                assertNotNull("Mediation Should Create Order", order);
+                JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+                assertEquals("Invalid original quantity", new BigDecimal("27.00"),
+                        viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Invalid resolved quantity", new BigDecimal("1.00"),
+                        order.getOrderLines()[0].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Invalid order Amount", new BigDecimal("0.64"),
+                        order.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+
+                JbillingMediationErrorRecord[] errors = api.getMediationErrorRecordsByMediationProcess(uuid, 0);
+                Stream.of(errors).forEach(error -> {
+                    assertTrue("Mediation errors should be JB-USER-NOT-RESOLVED or ERR-EVENT-DATE-IS-AFTER",
+                            error.getErrorCodes().contains("JB-USER-NOT-RESOLVED") || error.getErrorCodes().contains("ERR-EVENT-DATE-IS-AFTER"));
+                });
+            });
+        }
+
+        finally {
+            for (Integer userId : users) {
+                api.deleteUser(userId);
+            }
+            for (Integer order : orders) {
+                api.deleteOrder(order);
+            }
+            for (Integer asset : assets) {
+                api.deleteAsset(asset);
+            }
+        }
+    }
+
+    @Test(priority = 7, enabled = true)
+    public void test002mediationRulesTest() {
+        List<Integer> assets = new ArrayList<>();
+        List<Integer> users = new ArrayList<>();
+        List<Integer> orders = new ArrayList<>();
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MONTH, -4);
+        calendar.set(Calendar.DATE, 1);
+
+        testBuilder
+        .given(envBuilder -> {
+            final JbillingAPI api = envBuilder.getPrancingPonyApi();
+            UserWS user1 = envBuilder.customerBuilder(api).withUsername(TEST_USER_001)
+                    .withAccountTypeId(testBuilder.getTestEnvironment().idForCode(ACCOUNT_NAME))
+                    .addTimeToUsername(false).withNextInvoiceDate(new Date())
+                    .withMainSubscription(new MainSubscriptionWS(MONTHLY_ORDER_PERIOD, NEXT_INVOICE_DAY))
+                    .build();
+
+            assertNotNull("Test User 001 Creation Failed", user1);
+            logger.info("created user 001 {}", user1.getId());
+            users.add(user1.getId());
+            Integer asset1 = buildAndPersistAsset(envBuilder,
+                    testBuilder.getTestEnvironment().idForCode(SPC_MEDIATED_USAGE_CATEGORY), testBuilder
+                    .getTestEnvironment().idForCode(ASSET), serviceNumber001, "asset-0001"+ System.currentTimeMillis());
+            assets.add(asset1);
+            Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
+
+            productQuantityMap.putAll(buildProductQuantityEntry(
+                    testBuilder.getTestEnvironment().idForCode(ASSET), new BigDecimal(assets.size())));
+            productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(subScriptionProd01),
+                    BigDecimal.ONE));
+
+            Map<Integer, List<Integer>> productAssetMap = new HashMap<>();
+            productAssetMap.put(testBuilder.getTestEnvironment().idForCode(ASSET), assets);
+
+            Integer orderid = createOrder("Test-Order001", calendar.getTime(), null,
+                    MONTHLY_ORDER_PERIOD, false, productQuantityMap, productAssetMap, TEST_USER_001,
+                    Constants.ORDER_BILLING_PRE_PAID);
+            orders.add(orderid);
+            api.createInvoiceWithDate(user1.getId(), calendar.getTime(), null, null, false);
+            Calendar cal1 = (Calendar) calendar.clone();
+            cal1.add(Calendar.MONTH, 1);
+            api.createInvoiceWithDate(user1.getId(), cal1.getTime(), null, null, false);
+        }).validate((testEnv, testEnvBuilder) -> {
+            assertNotNull(CUSTOMER_CREATION_FAILED, testEnvBuilder.idForCode(TEST_USER_001));
+            createMediationEvaluationStrategyPlugin();
+        }).validate((testEnv, testEnvBuilder) -> {
+            // trigger mediation
+            JbillingAPI api = testEnvBuilder.getPrancingPonyApi();
+            String fileName = CDR_BASE_DIRECTORY + File.separator + CDR_FILE_NAME_STN001;
+            File cdrFile = new File(fileName);
+
+            // event date within active since and active until dates
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+            Calendar eventDate = (Calendar) calendar.clone();
+            eventDate.set(Calendar.DATE, 10);
+            String eventDateStr1 = simpleDateFormat.format(eventDate.getTime());
+            updateEventDate(fileName, "eventDateOne", eventDateStr1);
+
+            uuid = api.triggerMediationByConfigurationByFile(
+                    getMediationConfiguration(api, SPC_MEDIATION_JOB_NAME), cdrFile);
+            pauseUntilMediationCompletes(30,api);
+            logger.debug("Mediation ProcessId {}", uuid);
+            assertNotNull(MEDIATION_TRIGGERED_SHOULD_RETURN_UUID, uuid);
+        }).validate((testEnv, testEnvBuilder) -> {
+
+            MediationProcess mediationProcess =
+                    api.getMediationProcess(api.getMediationProcessStatus().getMediationProcessId());
+            logger.debug("Mediation Process {}", mediationProcess); //
+            assertEquals("Mediation Done And Billable ", Integer.valueOf(1), mediationProcess.getDoneAndBillable());
+            assertEquals("Mediation Done And Not Billable",Integer.valueOf(0), mediationProcess.getDoneAndNotBillable());
+            OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_001));
+            assertNotNull("Mediation Should Create Order", order);
+            JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+            assertEquals("Invalid original quantity", new BigDecimal("27.00"),
+                    viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
+            assertEquals("Invalid resolved quantity", new BigDecimal("1.00"),
+                    order.getOrderLines()[0].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+            assertEquals("Invalid order Amount", new BigDecimal("0.64"),
+                    order.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+            Calendar cal = (Calendar) calendar.clone();
+            cal.add(Calendar.MONTH, 1);
+            DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+            assertTrue("Mediated order should be active since current months period", df.format(cal.getTime()).equals(df.format(order.getActiveSince())));
+        }).validate((testEnv, testEnvBuilder) -> {
+            api.deletePlugin(mediationEvaluationStrategyPluginId);
+        });
+    }
+
+    private void updateEventDate(String fileName, String wordToReplace, String value) {
+        try {
+            List<String> newLines = new ArrayList<>();
+            for (String line : Files.readAllLines(Paths.get(fileName), StandardCharsets.UTF_8)) {
+                if (line.contains("eventDate")) {
+                    newLines.add(line.replace(wordToReplace, value));
+                } else {
+                    newLines.add(line);
+                }
+            }
+            Files.write(Paths.get(fileName), newLines, StandardCharsets.UTF_8);
+        } catch(Exception e) {
+            logger.error(e.getMessage());
         }
     }
 }

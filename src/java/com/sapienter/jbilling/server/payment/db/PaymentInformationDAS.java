@@ -45,6 +45,7 @@ public class PaymentInformationDAS extends AbstractDAS<PaymentInformationDTO> {
 	 */
 	public PaymentInformationDTO create(PaymentInformationDTO dto, Integer entityId){
 		PaymentInformationDTO saved = new PaymentInformationDTO(dto.getProcessingOrder(), dto.getUser(), dto.getPaymentMethodType(), dto.getPaymentMethodId());
+		saved.setCreateDateTime(dto.getCreateDateTime());
 		saved.updatePaymentMethodMetaFieldsWithValidation(entityId, dto);
 		return save(saved);
 	}
@@ -82,14 +83,5 @@ public class PaymentInformationDAS extends AbstractDAS<PaymentInformationDTO> {
     	 Query sqlQuery = getSession().createSQLQuery(UPDATE_PAYMENTS_WITH_CREDIT_CARD_ID_NULL);
     	 sqlQuery.setParameter("creditCardId", creditCardId);
     	 sqlQuery.executeUpdate();
-	}
-	public String findCustomPaymentMethodType(Integer id) {
-		Criteria criteria = getSession().createCriteria(PaymentInformationDTO.class, "paymentInfo")
-				.createAlias("paymentInfo.paymentMethodType", "paymentMethod")
-				.add(Restrictions.eq("paymentInfo.id", id))
-				.setProjection(Projections.property("paymentMethod.methodName"));
-
-		String methodName = (String) criteria.uniqueResult();
-		return methodName;
 	}
 }

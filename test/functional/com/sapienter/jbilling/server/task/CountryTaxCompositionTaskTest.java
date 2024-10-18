@@ -56,7 +56,7 @@ import static org.testng.AssertJUnit.*;
  * @since 29-Jul-2011
  *
  */
-@Test(groups = { "integration", "task", "tax", "countrytax" }, testName = "CountryTaxCompositionTaskTest", priority = 7)
+@Test(groups = { "integration", "task", "tax", "countrytax" }, testName = "CountryTaxCompositionTaskTest")
 public class CountryTaxCompositionTaskTest extends ApiTestCase {
 
     private static final Integer COUNTRY_TAX_PLUGIN_TYPE_ID = 90;
@@ -93,7 +93,7 @@ public class CountryTaxCompositionTaskTest extends ApiTestCase {
         // add a new tax item & enable the tax plug-in
 	    ItemDTOEx taxItem = new ItemDTOEx();
 	    taxItem.setCurrencyId(CURRENCY_USD);
-
+	    
 	    PriceModelWS linePercentagePrice = new PriceModelWS();
         linePercentagePrice.setType(PriceModelStrategy.LINE_PERCENTAGE.name());
         linePercentagePrice.setRate(BigDecimal.TEN); // tax rate is %10
@@ -380,7 +380,7 @@ public class CountryTaxCompositionTaskTest extends ApiTestCase {
         linePercentagePrice.setRate(BigDecimal.TEN); // tax is %10
         linePercentagePrice.setCurrencyId(CURRENCY_USD);
         taxItem.addDefaultPrice(CommonConstants.EPOCH_DATE, linePercentagePrice);
-
+        
         taxItem.setDescription("AU Tax");
         taxItem.setEntityId(TEST_ENTITY_ID);
         taxItem.setNumber("TAX-AU");
@@ -542,7 +542,7 @@ public class CountryTaxCompositionTaskTest extends ApiTestCase {
 		type.setOnePerOrder(false);
 		return type;
 	}
-
+	
 	private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
 	    UserWS user = api.getUserWS(userId);
 	    Calendar nextInvoiceDate = Calendar.getInstance();

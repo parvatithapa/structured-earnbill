@@ -31,7 +31,8 @@
                 <div class="input-bg">
                     <g:textField  name = "filters.${filter.name}.stringValue"
                                  value = "${filter.stringValue}"
-                                 class = "{validate:{ maxlength: 50 }} ${filter.value ? 'autoFill' : ''}"/>
+                                 class = "{validate:{ maxlength: 50 }} ${filter.value ? 'autoFill' : ''}"
+                                 data-cy="iccid"/>
                 </div>
                 <label for="filters.${filter.name}.stringValue"><g:message code="filters.userName.label"/></label>               
             </div>

@@ -205,4 +205,10 @@ public interface IBillingProcessSessionBean {
 	public List<Integer> getInvoiceIdsByBillingProcessAndByUser(Integer processId, Integer userId);
 
 	public Integer getInvoiceCountByBillingProcessId(Integer processId);
+
+    public List<Integer> getPagedGeneratedInvoices(Integer processId, Integer limit, Integer offset);
+
+    public List<Integer> findAllInvoiceIdsForByProcessId(Integer processId);
+
+    public List<Integer> findAllInvoiceIdsForByProcessIdAndInvoiceDesign(Integer billingProcessId, String invoiceDesign);
 }

@@ -26,7 +26,7 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.fail;
 
-@Test(groups = { "integration", "task", "order-processing-task" }, testName = "BasicLineTotalTaskTest", priority = 5)
+@Test(groups = { "integration", "task", "order-processing-task" }, testName = "BasicLineTotalTaskTest")
 public class BasicLineTotalTaskTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicLineTotalTaskTest.class);

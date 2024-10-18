@@ -28,7 +28,7 @@
 <div class="column-hold">
     <div class="heading">
         <strong>
-                <g:message code="creditNote.credit.title"/>
+            <g:message code="creditNote.credit.title"/>
             <em>${selected.id}</em>
             <g:if test="${selected.deleted}">
                 <span style="color: #ff0000;">(<g:message code="object.deleted.title"/>)</span>
@@ -45,14 +45,14 @@
                 <tr>
                     <td><g:message code="payment.user.id"/></td>
                     <td class="value">
-                        <jB:secRemoteLink controller="customer" action="show" id="${selected.creationInvoice.baseUser.id}" before="register(this);" onSuccess="render(data, next);">
-                            ${selected.creationInvoice.baseUser.id}
+                        <jB:secRemoteLink controller="customer" action="show" id="${selected.user.id}" before="register(this);" onSuccess="render(data, next);">
+                            ${selected.user.id}
                         </jB:secRemoteLink>
                     </td>
                 </tr>
                 <tr>
                     <td><g:message code="payment.label.user.name"/></td>
-                    <td class="value">${displayer?.getDisplayName(selected.creationInvoice.baseUser)}</td>
+                    <td class="value">${displayer?.getDisplayName(selected.user)}</td>
                 </tr>
             </tbody>
         </table>
@@ -62,7 +62,7 @@
             <tbody>
                 <tr>
                     <td><g:message code="creditNote.date"/></td>
-                    <td class="value"><g:formatDate date="${selected.createDateTime}"/></td>
+                    <td class="value"><g:formatDate date="${selected.creditNoteDate}"/></td>
                 </tr>
                 <tr>
                     <td><g:message code="creditNote.amount"/></td>
@@ -72,19 +72,42 @@
                 <td><g:message code="creditNote.type"/></td>
                 <td class="value">${selected.creditType.getTypeLabel()}</td>
             </tr>
-            <tr>
-                <g:if test="${CreditType.AUTO_GENERATED == selected.creditType}">
-                    <td><g:message code="creditNote.generated.invoice.id"/></td>
-                </g:if>
-                <g:else>
-                    <td><g:message code="invoice.label.id"/></td>
-                </g:else>
-                <td class="value">
-                        <jB:secRemoteLink controller="invoice" action="show" id="${selected.creationInvoice.id}" before="register(this);" onSuccess="render(data, next);">
-                            ${selected.creationInvoice.id}
+            <g:if test="${null != selected.creationInvoice}">
+                <tr>
+                    <g:if test="${CreditType.AUTO_GENERATED == selected.creditType}">
+                        <td><g:message code="creditNote.generated.invoice.id"/></td>
+                    </g:if>
+                    <g:else>
+                        <td><g:message code="invoice.label.id"/></td>
+                    </g:else>
+                    <td class="value">
+                            <jB:secRemoteLink controller="invoice" action="show" id="${selected.creationInvoice.id}" before="register(this);" onSuccess="render(data, next);">
+                                ${selected.creationInvoice.id}
+                            </jB:secRemoteLink>
+                    </td>
+                </tr>
+            </g:if>
+            <g:else>
+                <tr>
+                    <td><g:message code="creditNote.service.id"/></td>
+                    <td class="value">${null != selected.serviceId ? selected.serviceId : ""}</td>
+                </tr>
+                <tr>
+                    <td><g:message code="creditNote.subscription.order.id"/></td>
+                    <g:if test="${null != selected.subscriptionOrder}">
+                        <td class="value">
+                        <jB:secRemoteLink controller="order" action="show" id="${selected.subscriptionOrder.id}" before="register(this);" onSuccess="render(data, next);">
+                            ${selected.subscriptionOrderId}
                         </jB:secRemoteLink>
-                </td>
-            </tr>
+                        </td>
+                    </g:if>
+                    <g:else>
+                        <td class="value"></td>
+                    </g:else>
+                </tr>
+
+            </g:else>
+
             </tbody>
         </table>
 
@@ -104,8 +127,6 @@
                         <g:formatNumber number="${selected.balance}" type="currency" currencySymbol="${selected.currencySymbol}"/>
                     </td>
                 </tr>
-
-
 
             </tbody>
         </table>
@@ -168,35 +189,43 @@
               </table>
           </g:if>
      </div>
+
     </div>
 
+    <div class="heading">
+        <strong><g:message code="order.label.notes"/></strong>
+    </div>
 
+    <!-- Order Notes -->
+    <div class="box">
+        <div class="sub-box">
+            <g:if test="${selected?.notes}">
+                <p>${raw(selected?.notes.replaceAll('\n', '<br/>'))}</p>
+            </g:if>
+            <g:else>
+                <p><em><g:message code="order.prompt.no.notes"/></em></p>
+            </g:else>
+        </div>
+    </div>
 
     <div class="btn-box">
         <g:if test="${!selected.deleted}">
-            <!-- edit or delete unlinked payments -->
             <div class="row">
                 <sec:access url="/invoice/list">
-                    <g:link controller="invoice" action="user" id="${selected.creationInvoice.baseUser.id}" class="submit edit">
+                    <g:link controller="invoice" action="user" id="${selected.user.id}" class="submit edit">
                         <span><g:message code="customer.show.all.invoices"/></span>
                     </g:link>
                 </sec:access>
-                <g:if test="${!selected.paidInvoices && CreditType.AUTO_GENERATED != selected.creditType }">
-                    <sec:ifAllGranted roles="PAYMENT_31">
-
-                            <g:link action="edit" id="${selected.id}" class="submit edit"><span><g:message code="button.edit"/></span></g:link>
-
-                    </sec:ifAllGranted>
-                        <sec:ifAllGranted roles="PAYMENT_32">
+                <g:if test="${!selected.paidInvoices}">
+                        <sec:ifAllGranted roles="CREDIT_NOTE_2001">
                             <a onclick="showConfirm('delete-${selected.id}');" class="submit delete"><span><g:message code="button.delete"/></span></a>
                         </sec:ifAllGranted>
                 </g:if>
-                <g:else>
-                    <em><g:message code="creditNote.cant.edit.linked"/></em>
-                </g:else>
             </div>
         </g:if>
     </div>
+
+
 </div>
 <script type="text/javascript">
     function setUnlinkInvoiceId(paymentId, invoiceId) {

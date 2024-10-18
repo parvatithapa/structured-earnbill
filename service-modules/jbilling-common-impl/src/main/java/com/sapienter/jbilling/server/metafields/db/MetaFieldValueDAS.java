@@ -20,27 +20,31 @@
 
 package com.sapienter.jbilling.server.metafields.db;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import javax.sql.DataSource;
-import org.hibernate.NonUniqueResultException;
-import org.hibernate.criterion.Restrictions;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.Context.Name;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
+import org.hibernate.NonUniqueResultException;
+import org.hibernate.Query;
+import org.hibernate.criterion.Restrictions;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 public class MetaFieldValueDAS extends AbstractDAS<MetaFieldValue> {
 
-	private static final String CHECK_META_FILED_ID_EXISTS = 
-			"SELECT id "
-			+ " FROM meta_field_value "
-			+ " WHERE id = %d "
-			+ " AND meta_field_name_id = %d ";
-	
+    private static final String CHECK_META_FILED_ID_EXISTS =
+            "SELECT id "
+                    + " FROM meta_field_value "
+                    + " WHERE id = %d "
+                    + " AND meta_field_name_id = %d ";
+
     public boolean checkMetaFieldValueExists(Integer metaFieldId, MetaFieldValue<?> value) {
+
         try {
             MetaFieldValue<?> result = (MetaFieldValue<?>) getSession().createCriteria(value.getClass())
                     .add(Restrictions.eq("field.id", metaFieldId))
@@ -50,9 +54,10 @@ public class MetaFieldValueDAS extends AbstractDAS<MetaFieldValue> {
             return result!=null &&
                     checkMetaFieldValueIdExists(value);
         } catch(NonUniqueResultException nonUniqueResultException) {
-            // do noting if exception comes
+            // do nothing if exception comes
             return true;
         }
+
     }
 
     private boolean checkMetaFieldValueIdExists(MetaFieldValue<?> value) {
@@ -68,4 +73,16 @@ public class MetaFieldValueDAS extends AbstractDAS<MetaFieldValue> {
         }
     }
 
+    String getCustomerLevelMetaFieldValuesByMetaFieldName = "SELECT mfv.string_value "
+            + "FROM meta_field_value mfv "
+            + "INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id "
+            + "INNER JOIN customer_meta_field_map map ON map.meta_field_value_id = mfv.id "
+            + "INNER JOIN customer c ON c.id = map.customer_id "
+            + "WHERE mfn.name = :metaFieldName "
+            + "GROUP BY mfv.string_value;";
+    public List<String> getCustomerLevelMetaFieldValuesByMetaFieldName(String metaFieldName) {
+        Query query = getSession().createSQLQuery(getCustomerLevelMetaFieldValuesByMetaFieldName);
+        query.setParameter("metaFieldName", metaFieldName);
+        return query.list();
+    }
 }

@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.resources
 
 import com.sapienter.jbilling.common.ErrorDetails
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.discount.DiscountWS
 import com.sapienter.jbilling.server.user.partner.CommissionProcessConfigurationWS
 import com.sapienter.jbilling.server.user.partner.CommissionProcessRunWS
@@ -41,8 +40,8 @@ class CommissionResource {
         try {
             webServicesSession.createUpdateCommissionProcessConfiguration(conf)
             return Response.status(Response.Status.CREATED).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -59,8 +58,8 @@ class CommissionResource {
         List<CommissionProcessRunWS> processes;
         try {
             processes = Arrays.asList(webServicesSession.getAllCommissionRuns());
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(processes).build()
     }
@@ -86,8 +85,8 @@ class CommissionResource {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(Arrays.asList(commissions)).build();
     }
@@ -107,8 +106,8 @@ class CommissionResource {
             } else {
                 webServicesSession.calculatePartnerCommissionsAsync();
             }
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().build()
     }
@@ -124,8 +123,8 @@ class CommissionResource {
         try {
             Boolean result = webServicesSession.isPartnerCommissionRunning();
             return Response.ok().entity(result.toString()).build()
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

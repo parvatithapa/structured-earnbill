@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.order.OrderPeriodWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler

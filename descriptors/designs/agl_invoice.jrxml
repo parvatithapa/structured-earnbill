@@ -1,0 +1,1159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="565" leftMargin="15" rightMargin="15" topMargin="15" bottomMargin="10" isSummaryWithPageHeaderAndFooter="true" uuid="0a83947c-e151-494c-8eca-1a33729f10df">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="401"/>
+	<parameter name="core.param.companyLogo" class="java.lang.String"/>
+	<parameter name="core.param.first.name" class="java.lang.String"/>
+	<parameter name="core.param.last.name" class="java.lang.String"/>
+	<parameter name="core.param.customer.address" class="java.lang.String"/>
+	<parameter name="core.param.customer.address2" class="java.lang.String"/>
+	<parameter name="core.param.customer.city" class="java.lang.String"/>
+	<parameter name="core.param.customer.province" class="java.lang.String"/>
+	<parameter name="core.param.customer.postalCode" class="java.lang.String"/>
+	<parameter name="core.param.total_due" class="java.math.BigDecimal"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="core.param.dueDate" class="java.lang.String"/>
+	<parameter name="core.param.invoice_date" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="core.param.userId" class="java.lang.Integer"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="billingAddress1" class="java.lang.String"/>
+	<parameter name="billingAddress2" class="java.lang.String"/>
+	<parameter name="core.param.title" class="java.lang.String"/>
+	<parameter name="invoiceNumber" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="credit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="debit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="barcode" class="java.lang.String"/>
+	<parameter name="exclude_from_call_itemisation_category_id" class="java.lang.Integer"/>
+	<parameter name="refNumber" class="java.lang.String"/>
+	<parameter name="billerCode" class="java.lang.Integer"/>
+	<parameter name="core.param.billingPeriodStartDate" class="java.util.Date"/>
+	<parameter name="core.param.billingPeriodEndDate" class="java.util.Date"/>
+	<parameter name="use_payment_create_date" class="java.lang.Boolean"/>
+	<queryString>
+		<![CDATA[SELECT payment_received,
+(
+      SELECT COALESCE(inv_sum_inner.adjustment_charges,0)
+      FROM   invoice_summary inv_sum_inner
+      WHERE  inv_sum_inner.creation_invoice_id IN
+             (
+                    SELECT Max(i.id)
+                    FROM   invoice i
+                    WHERE  i.CREATE_DATETIME::DATE >= inv_sum.LAST_INVOICE_DATE::DATE
+                    AND    i.user_id = inv_sum.user_id ) ) AS previous_adjustment_charges,
+(
+      SELECT COALESCE(sum(amount),0)
+      FROM   invoice_line
+      WHERE  invoice_id = creation_invoice_id
+      AND    type_id != 3
+      AND    deleted = 0
+      AND    item_id NOT IN (
+		SELECT     i.id
+		FROM       item i
+		INNER JOIN item_type_map itm
+		ON         itm.item_id = i.id
+		INNER JOIN item_type it
+		ON         it.id = itm.type_id
+		INNER JOIN order_line_type olt
+		ON         olt.id = it.order_line_type_id
+		INNER JOIN international_description int_des
+		ON         int_des.foreign_id = olt.id
+		INNER JOIN jbilling_table jt
+		ON         jt.id = int_des.table_id
+		WHERE      int_des.content = 'Adjustment'
+		AND        jt.name = 'order_line_type' )
+	) AS total_new_charge,
+(
+      SELECT COALESCE(sum(tax_amount),0)
+      FROM   invoice_line
+      WHERE  invoice_id = creation_invoice_id
+      AND    type_id != 3
+      AND    deleted = 0
+      AND    item_id NOT IN (
+		SELECT     i.id
+		FROM       item i
+		INNER JOIN item_type_map itm
+		ON         itm.item_id = i.id
+		INNER JOIN item_type it
+		ON         it.id = itm.type_id
+		INNER JOIN order_line_type olt
+		ON         olt.id = it.order_line_type_id
+		INNER JOIN international_description int_des
+		ON         int_des.foreign_id = olt.id
+		INNER JOIN jbilling_table jt
+		ON         jt.id = int_des.table_id
+		WHERE      int_des.content = 'Adjustment'
+		AND        jt.name = 'order_line_type' )
+	) AS gst_in_charges,
+(
+      SELECT carried_balance
+      FROM   invoice i
+      WHERE  i.id = inv_sum.creation_invoice_id ) AS carried_balance,
+COALESCE(
+          (
+          SELECT          sum(il.amount)
+          FROM            service_summary ss
+          LEFT OUTER JOIN rollup_codes rc
+          ON              ss.service_description = rc.item_type_description
+          INNER JOIN      invoice i
+          ON              i.id = ss.invoice_id
+          INNER JOIN      invoice_line il
+          ON              il.invoice_id = i.id
+          AND             il.id = ss.invoice_line_id
+          WHERE           i.id = creation_invoice_id
+          AND             ss.plan_id IS NULL
+          AND             il.item_id NOT IN
+                          (
+                                     SELECT     i.id
+                                     FROM       item i
+                                     INNER JOIN item_type_map itm
+                                     ON         itm.item_id = i.id
+                                     INNER JOIN item_type it
+                                     ON         it.id = itm.type_id
+                                     INNER JOIN order_line_type olt
+                                     ON         olt.id = it.order_line_type_id
+                                     INNER JOIN international_description int_des
+                                     ON         int_des.foreign_id = olt.id
+                                     INNER JOIN jbilling_table jt
+                                     ON         jt.id = int_des.table_id
+                                     WHERE      int_des.content = 'Adjustment'
+                                     AND        jt.NAME = 'order_line_type'
+                                     AND        int_des.language_id = 1 )
+          ),0) AS account_charges_amount,
+(
+      SELECT COALESCE(sum(s.amount),0)
+      FROM   (
+                             SELECT          il.amount
+                             FROM            invoice_line il
+                             LEFT OUTER JOIN rollup_codes rc
+                             ON              rc.item_type_description = il.description
+                             WHERE           (
+                                                             il.invoice_id = $P{invoiceId}
+                                             OR              il.invoice_id IN
+                                                             (
+                                                                        SELECT     i.id
+                                                                        FROM       invoice i
+                                                                        INNER JOIN invoice_line il
+                                                                        ON         il.invoice_id = i.id
+                                                                        WHERE      i.deleted = 0
+                                                                        AND        i.user_id =
+                                                                                   (
+                                                                                          SELECT user_id
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.CREATE_DATETIME::DATE >
+                                                                                   (
+                                                                                          SELECT create_datetime - INTERVAL '1 month'
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.CREATE_DATETIME::DATE <=
+                                                                                   (
+                                                                                          SELECT CREATE_DATETIME::DATE
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.balance > 0
+                                                                        AND        i.total > 0
+                                                                        AND        il.item_id IN
+                                                                                   (
+                                                                                              SELECT     i.id
+                                                                                              FROM       item i
+                                                                                              INNER JOIN item_type_map itm
+                                                                                              ON         itm.item_id = i.id
+                                                                                              INNER JOIN item_type it
+                                                                                              ON         it.id = itm.type_id
+                                                                                              INNER JOIN order_line_type olt
+                                                                                              ON         olt.id = it.order_line_type_id
+                                                                                              INNER JOIN international_description int_des
+                                                                                              ON         int_des.foreign_id = olt.id
+                                                                                              INNER JOIN jbilling_table jt
+                                                                                              ON         jt.id = int_des.table_id
+                                                                                              WHERE      int_des.content = 'Adjustment'
+                                                                                              AND        jt.name = 'order_line_type' ) ) )
+                             AND             il.deleted = 0
+                             AND             il.item_id IN
+                                             (
+                                                        SELECT     i.id
+                                                        FROM       item i
+                                                        INNER JOIN item_type_map itm
+                                                        ON         itm.item_id = i.id
+                                                        INNER JOIN item_type it
+                                                        ON         it.id = itm.type_id
+                                                        INNER JOIN order_line_type olt
+                                                        ON         olt.id = it.order_line_type_id
+                                                        INNER JOIN international_description int_des
+                                                        ON         int_des.foreign_id = olt.id
+                                                        INNER JOIN jbilling_table jt
+                                                        ON         jt.id = int_des.table_id
+                                                        WHERE      int_des.content = 'Adjustment'
+                                                        AND        jt.name = 'order_line_type'
+                                                        AND        it.id = $P{credit_products_category_id} )
+
+                             UNION ALL
+
+                             SELECT     il.amount
+                             FROM       credit_note cn
+                             INNER JOIN invoice i
+                             ON         i.id = cn.creation_invoice_id
+                             INNER JOIN invoice_line il
+                             ON         il.invoice_id = i.id
+                             WHERE      cn.creation_invoice_id IN
+                                        (
+                                               SELECT i.id
+                                               FROM   invoice i
+                                               WHERE  i.deleted = 0
+                                               AND    i.user_id =
+                                                      (
+                                                             SELECT user_id
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+                                               AND    i.CREATE_DATETIME::DATE >
+                                                      (
+                                                             SELECT create_datetime - INTERVAL '1 month'
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+                                               AND    i.CREATE_DATETIME::DATE <=
+                                                      (
+                                                             SELECT CREATE_DATETIME::DATE
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+					       AND    i.id != $P{invoiceId})
+                                        -- Exclude carried lines
+                             AND        il.type_id != 3
+                             AND        il.item_id IN
+                                     (
+                                                SELECT     i.id
+                                                FROM       item i
+                                                INNER JOIN item_type_map itm
+                                                ON         itm.item_id = i.id
+                                                INNER JOIN item_type it
+                                                ON         it.id = itm.type_id
+                                                INNER JOIN order_line_type olt
+                                                ON         olt.id = it.order_line_type_id
+                                                INNER JOIN international_description int_des
+                                                ON         int_des.foreign_id = olt.id
+                                                INNER JOIN jbilling_table jt
+                                                ON         jt.id = int_des.table_id
+                                                WHERE      int_des.content = 'Adjustment'
+                                                AND        jt.name = 'order_line_type'
+                                                AND        it.id = $P{credit_products_category_id} )) s ) AS credit,
+(
+      SELECT COALESCE(sum(s.amount),0)
+      FROM   (
+                             SELECT          il.amount
+                             FROM            invoice_line il
+                             LEFT OUTER JOIN rollup_codes rc
+                             ON              rc.item_type_description = il.description
+                             WHERE           (
+                                                             il.invoice_id = $P{invoiceId}
+                                             OR              il.invoice_id IN
+                                                             (
+                                                                        SELECT     i.id
+                                                                        FROM       invoice i
+                                                                        INNER JOIN invoice_line il
+                                                                        ON         il.invoice_id = i.id
+                                                                        WHERE      i.deleted = 0
+                                                                        AND        i.user_id =
+                                                                                   (
+                                                                                          SELECT user_id
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.CREATE_DATETIME::DATE >
+                                                                                   (
+                                                                                          SELECT create_datetime - INTERVAL '1 month'
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.CREATE_DATETIME::DATE <=
+                                                                                   (
+                                                                                          SELECT CREATE_DATETIME::DATE
+                                                                                          FROM   invoice
+                                                                                          WHERE  id = $P{invoiceId})
+                                                                        AND        i.balance >= 0
+                                                                        AND        i.total >= 0
+                                                                        AND        il.item_id IN
+                                                                                   (
+                                                                                              SELECT     i.id
+                                                                                              FROM       item i
+                                                                                              INNER JOIN item_type_map itm
+                                                                                              ON         itm.item_id = i.id
+                                                                                              INNER JOIN item_type it
+                                                                                              ON         it.id = itm.type_id
+                                                                                              INNER JOIN order_line_type olt
+                                                                                              ON         olt.id = it.order_line_type_id
+                                                                                              INNER JOIN international_description int_des
+                                                                                              ON         int_des.foreign_id = olt.id
+                                                                                              INNER JOIN jbilling_table jt
+                                                                                              ON         jt.id = int_des.table_id
+                                                                                              WHERE      int_des.content = 'Adjustment'
+                                                                                              AND        jt.name = 'order_line_type'
+                                                                                              AND        int_des.language_id = 1 ) ) )
+                             AND             il.deleted = 0
+                             AND             il.item_id IN
+                                             (
+                                                        SELECT     i.id
+                                                        FROM       item i
+                                                        INNER JOIN item_type_map itm
+                                                        ON         itm.item_id = i.id
+                                                        INNER JOIN item_type it
+                                                        ON         it.id = itm.type_id
+                                                        INNER JOIN order_line_type olt
+                                                        ON         olt.id = it.order_line_type_id
+                                                        INNER JOIN international_description int_des
+                                                        ON         int_des.foreign_id = olt.id
+                                                        INNER JOIN jbilling_table jt
+                                                        ON         jt.id = int_des.table_id
+                                                        WHERE      int_des.content = 'Adjustment'
+                                                        AND        jt.name = 'order_line_type'
+                                                        AND        int_des.language_id = 1
+                                                        AND        it.id = $P{debit_products_category_id} )
+
+                             UNION ALL
+
+                             SELECT     il.amount
+                             FROM       credit_note cn
+                             INNER JOIN invoice i
+                             ON         i.id = cn.creation_invoice_id
+                             INNER JOIN invoice_line il
+                             ON         il.invoice_id = i.id
+                             WHERE      cn.creation_invoice_id IN
+                                        (
+                                               SELECT i.id
+                                               FROM   invoice i
+                                               WHERE  i.deleted = 0
+                                               AND    i.user_id =
+                                                      (
+                                                             SELECT user_id
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+                                               AND    i.CREATE_DATETIME::DATE >
+                                                      (
+                                                             SELECT create_datetime - INTERVAL '1 month'
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+                                               AND    i.CREATE_DATETIME::DATE <=
+                                                      (
+                                                             SELECT CREATE_DATETIME::DATE
+                                                             FROM   invoice
+                                                             WHERE  id = $P{invoiceId})
+					       AND    i.id != $P{invoiceId})
+                                        -- Exclude carried lines
+                             AND        il.type_id != 3
+                             AND        il.item_id IN
+                                     (
+                                                SELECT     i.id
+                                                FROM       item i
+                                                INNER JOIN item_type_map itm
+                                                ON         itm.item_id = i.id
+                                                INNER JOIN item_type it
+                                                ON         it.id = itm.type_id
+                                                INNER JOIN order_line_type olt
+                                                ON         olt.id = it.order_line_type_id
+                                                INNER JOIN international_description int_des
+                                                ON         int_des.foreign_id = olt.id
+                                                INNER JOIN jbilling_table jt
+                                                ON         jt.id = int_des.table_id
+                                                WHERE      int_des.content = 'Adjustment'
+                                                AND        jt.name = 'order_line_type'
+                                                AND        int_des.language_id = 1
+                                                AND        it.id = $P{debit_products_category_id} )) s ) AS debit,
+COALESCE((
+SELECT total_due
+FROM   invoice_summary
+WHERE  creation_invoice_id =
+       ( CASE WHEN (select value from preference where type_id = 103 and foreign_id = (select entity_id from base_user where id = $P{core.param.userId})) = '0' THEN
+              (SELECT MAX(id)
+                 FROM invoice
+                WHERE user_id = $P{core.param.userId}
+                  AND id < $P{invoiceId}
+                  AND id NOT IN
+                     ( SELECT id
+                         FROM invoice
+                        WHERE user_id = $P{core.param.userId}
+                          AND id IN (SELECT unnest(adjustmentinvoices($P{core.param.userId})))
+                     )
+              )
+         ELSE (SELECT max(i.id)
+                 FROM invoice i
+                WHERE i.user_id = $P{core.param.userId}
+                  AND i.is_review = 0
+                  AND i.deleted = 0
+                  AND i.billing_process_id is not null
+                  AND i.id < $P{invoiceId}
+               )
+          END
+       ) ),0) AS amount_of_last_statement,
+inv_sum.total_due,
+to_char(inv_sum.invoice_date, 'dd Mon yyyy') AS invoice_date,
+to_char((SELECT i.due_date FROM invoice i WHERE i.id = $P{invoiceId}), 'dd Mon yy') AS due_date,
+(
+SELECT
+   CASE
+      WHEN
+         COUNT(*) > 0
+      THEN
+         true
+      ELSE
+         false
+   END
+   AS include_in_gst
+FROM
+   invoice_line il
+WHERE
+   il.invoice_id = $P{invoiceId}
+   AND il.item_id IN
+   (
+      SELECT
+         imfm.item_id
+      FROM
+         item_meta_field_map imfm
+         INNER JOIN
+            meta_field_value mfv
+            ON mfv.id = imfm.meta_field_value_id
+         INNER JOIN
+            meta_field_name mfn
+            ON mfn.id = mfv.meta_field_name_id
+      WHERE
+         mfn.name = 'Tax Scheme'
+         AND mfn.data_type = 'ENUMERATION'
+         AND mfn.entity_type = 'PRODUCT'
+         AND mfv.string_value = 'Tax Exempt'
+   )
+) AS tax_exempt_item_present,
+(
+SELECT COALESCE(SUM(il.amount),0)
+FROM            service_summary ss
+LEFT OUTER JOIN rollup_codes rc
+ON              ss.service_description = rc.item_type_description
+INNER JOIN      invoice i
+ON              i.id = ss.invoice_id
+INNER JOIN      invoice_line il
+ON              il.invoice_id = i.id
+AND             il.id = ss.invoice_line_id
+WHERE           i.id = $P{invoiceId}
+AND             ss.plan_id IS NULL
+AND             il.item_id NOT IN
+                (
+                           SELECT     i.id
+                           FROM       item i
+                           INNER JOIN item_type_map itm
+                           ON         itm.item_id = i.id
+                           INNER JOIN item_type it
+                           ON         it.id = itm.type_id
+                           INNER JOIN order_line_type olt
+                           ON         olt.id = it.order_line_type_id
+                           INNER JOIN international_description int_des
+                           ON         int_des.foreign_id = olt.id
+                           INNER JOIN jbilling_table jt
+                           ON         jt.id = int_des.table_id
+                           WHERE      int_des.content = 'Adjustment'
+                           AND        jt.NAME = 'order_line_type'
+                           AND        int_des.language_id = 1 )
+) AS account_charges_and_credits,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = inv_sum.user_id
+ AND (pmt.method_name ILIKE '%Bank Debit%'
+ OR pmt.method_name ILIKE '%Westpac Credit Cards%')
+) AS direct_debit_count,
+(
+SELECT -1 * COALESCE(SUM(cnl.amount),0)
+FROM credit_note_line cnl
+INNER JOIN credit_note cn
+ON cn.id = cnl.credit_note_id
+INNER JOIN service_summary inner_ss
+ON inner_ss.credit_note_id = cn.id
+WHERE inner_ss.invoice_id = inv_sum.creation_invoice_id
+AND cn.deleted = 0
+AND cn.creation_invoice_id IS NULL
+AND cn.credit_type = 'USER_GENERATED'
+) AS adhoc_credit_note_amount
+FROM   invoice_summary inv_sum
+WHERE  creation_invoice_id = $P{invoiceId};]]>
+	</queryString>
+	<field name="payment_received" class="java.math.BigDecimal"/>
+	<field name="previous_adjustment_charges" class="java.math.BigDecimal"/>
+	<field name="total_new_charge" class="java.math.BigDecimal"/>
+	<field name="gst_in_charges" class="java.math.BigDecimal"/>
+	<field name="carried_balance" class="java.math.BigDecimal"/>
+	<field name="account_charges_amount" class="java.math.BigDecimal"/>
+	<field name="credit" class="java.math.BigDecimal"/>
+	<field name="debit" class="java.math.BigDecimal"/>
+	<field name="amount_of_last_statement" class="java.math.BigDecimal"/>
+	<field name="total_due" class="java.math.BigDecimal"/>
+	<field name="invoice_date" class="java.lang.String"/>
+	<field name="due_date" class="java.lang.String"/>
+	<field name="tax_exempt_item_present" class="java.lang.Boolean"/>
+	<field name="account_charges_and_credits" class="java.math.BigDecimal"/>
+	<field name="direct_debit_count" class="java.lang.Long"/>
+	<field name="adhoc_credit_note_amount" class="java.math.BigDecimal"/>
+	<variable name="LAST_PAGE_NUMBER" class="java.lang.Integer">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="635" splitType="Prevent">
+			<staticText>
+				<reportElement x="369" y="10" width="186" height="15" forecolor="#001CB0" uuid="e88405fe-e53f-427d-b83b-5c2a2fc53b0c"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="11" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Proudly Australian since 1837.]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="98" y="163" width="180" height="56" uuid="b58312c6-c672-4139-ada2-fa2b6128fb92"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{core.param.title}.isEmpty() ? "" : $P{core.param.title}+" ")+$P{core.param.first.name} + " " + $P{core.param.last.name} +"\n"+
+$P{billingAddress1} +"\n"+
+$P{billingAddress2}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="2">
+				<reportElement x="351" y="146" width="205" height="111" backcolor="#CEC8BF" uuid="f622252e-4d9b-469d-877b-39054f92e0b1"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<image>
+				<reportElement x="20" y="20" width="68" height="68" uuid="a72febb0-82c7-4c91-a2d8-fc57db8229a8"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/agl_logo.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="108" y="27" width="230" height="60" forecolor="#001CB0" uuid="b405e67c-a701-465b-9c66-24f942b1fde8"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="22" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					<paragraph lineSpacing="Fixed" lineSpacingSize="13.0"/>
+				</textElement>
+				<text><![CDATA[AGL telecommunications
+account]]></text>
+			</staticText>
+			<rectangle radius="2">
+				<reportElement x="351" y="45" width="205" height="96" forecolor="#000000" backcolor="#CEC8BF" uuid="94355f59-ff88-4104-8d6f-e29b9510a60b"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="362" y="50" width="90" height="15" uuid="55ed216e-2401-42ed-bee4-d3c824fd7c56"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Invoice details]]></text>
+			</staticText>
+			<rectangle radius="2">
+				<reportElement x="351" y="267" width="205" height="310" backcolor="#D1C1E0" uuid="b57e5190-8f10-4fec-884a-9ef8d24e7e5f"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="362" y="271" width="100" height="15" forecolor="#000000" uuid="63838b5c-1500-4c15-b307-5a3032204b15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Your bill overview]]></text>
+			</staticText>
+			<rectangle radius="2">
+				<reportElement x="357" y="295" width="194" height="23" uuid="dc9152cd-1dc0-4666-af25-1185dbcb5349"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="2">
+				<reportElement x="357" y="341" width="194" height="23" uuid="6953563b-e8b4-4e3a-b1ec-e2604217c91f"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="2">
+				<reportElement x="357" y="389" width="194" height="23" uuid="c96e0028-8770-4061-8530-ae8a4d978fb9"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="2">
+				<reportElement x="357" y="420" width="194" height="25" uuid="2cc18eff-c932-4ed6-ad57-e2816d47645a"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="453" y="393" width="90" height="15" forecolor="#000000" uuid="4aa87231-e96d-494a-a9f2-433414c10623"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+""+
+($F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) < 0 ?
+new java.text.DecimalFormat("#,##0.00").format(
+$F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}).negate().setScale(2, BigDecimal.ROUND_HALF_UP)) +'cr' :
+($F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) == 0 || null == $P{core.param.total_due} ? "0.00" : new java.text.DecimalFormat("#,##0.00").format($P{core.param.total_due})))]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="438" y="345" width="105" height="15" uuid="20f925ae-0d51-4047-ac68-ad9c546a4a49"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+''+new java.text.DecimalFormat("#,##0.00").format($F{total_new_charge}.setScale(2, BigDecimal.ROUND_HALF_UP))]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="362" y="345" width="72" height="15" forecolor="#000000" uuid="a6ddd511-540c-40bd-aa00-54ed6ca8c4f4"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[New charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="434" y="320" width="25" height="20" forecolor="#000000" uuid="25c61f7b-8c53-4505-9e5f-cc4829a01e65"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Calibri" size="13" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[+]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="434" y="367" width="25" height="20" forecolor="#000000" uuid="bd5b6e8f-b30a-4e63-8432-f184a6f0acae"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Calibri" size="13" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[=]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="361" y="458" width="142" height="12" forecolor="#000000" uuid="3e763f62-9b52-4624-a7d5-54731bf4199e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="8" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[The above figures include GST.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="503" y="458" width="49" height="12" forecolor="#000000" uuid="0a2f7251-9e1f-4bfd-bad5-2f3d85ebab19"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Thank you.]]></text>
+			</staticText>
+			<rectangle radius="2">
+				<reportElement x="10" y="456" width="330" height="122" backcolor="#D1C1E0" uuid="37b81fd6-1e8e-44f5-a86a-bb978721a689"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="121" y="462" width="116" height="15" uuid="0b8daa3b-9a92-4b1d-a103-f58c6c1e5843"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Useful information]]></text>
+			</staticText>
+			<rectangle radius="1">
+				<reportElement x="11" y="484" width="328" height="93" backcolor="#FFFFFF" uuid="c3909ce9-e5a5-47e1-8d2a-faf5aa1573c0"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="129" y="487" width="85" height="13" forecolor="#000000" uuid="045c463c-6d9e-4aec-b2dd-dbb787722bc2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[We’re here to help]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="54" y="501" width="258" height="13" forecolor="#000000" uuid="f7ce8324-f06e-4ba8-a37c-08457c29b339"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Have some questions, feedback or just need some assistance?]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="123" y="516" width="22" height="13" forecolor="#000000" uuid="b3828cb0-48c0-4127-ba6f-7717115841e8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Visit:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="101" y="530" width="53" height="13" forecolor="#000000" uuid="acd813b7-b836-474c-a1ce-bf8d33f7a755"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Get in touch:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="116" y="544" width="58" height="13" forecolor="#000000" uuid="8a1696f4-ca64-4c29-8736-8c8fb76b074a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Call: Mon-Sun]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="173" y="544" width="85" height="13" forecolor="#000000" uuid="fc3e954d-b775-4679-9718-994c1538c30a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[1300 307 731]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="86" y="558" width="195" height="13" forecolor="#000000" uuid="7678f9b7-af5c-4063-b350-d51846845583"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[(8AM - 8PM AEST) Local call charges may apply.]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="469" y="299" width="76" height="15" isRemoveLineWhenBlank="true" uuid="a401d86f-7611-49a5-859f-602de75afe88"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+''+
+($F{amount_of_last_statement}.add($F{payment_received}) == 0 ? '0.00' :
+($F{amount_of_last_statement}.add($F{payment_received}) < 0 ?
+new java.text.DecimalFormat("#,##0.00").format(
+$F{amount_of_last_statement}.add($F{payment_received}).negate().setScale(2, BigDecimal.ROUND_HALF_UP)) :
+new java.text.DecimalFormat("#,##0.00").format(
+$F{amount_of_last_statement}.add($F{payment_received}).setScale(2, BigDecimal.ROUND_HALF_UP)))) +''+
+($F{amount_of_last_statement}.add($F{payment_received}) < 0 ? 'cr':'')]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="10" y="588" width="547" height="10" isRemoveLineWhenBlank="true" uuid="a9578a80-9f5a-4f71-8c8e-6c189b06c401"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="accountNumber">
+					<subreportParameterExpression><![CDATA[$P{accountNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{core.param.userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="barcode">
+					<subreportParameterExpression><![CDATA[$P{barcode}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="core.param.total_due">
+					<subreportParameterExpression><![CDATA[$P{core.param.total_due}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="billerCode">
+					<subreportParameterExpression><![CDATA[$P{billerCode}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="refNumber">
+					<subreportParameterExpression><![CDATA[$P{refNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_payment_instruments_sub_report.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="361" y="420" width="181" height="24" forecolor="#000000" uuid="fbd982be-5bb6-4680-a4a5-1655ef030f80">
+					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) < 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Payment not required. Your credit will be carried forward to you next bill.]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="362" y="393" width="90" height="15" forecolor="#000000" uuid="e9a8ada4-1501-4eb4-87bf-87deec8791b4"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) < 0 ? 'Account balance':
+($F{direct_debit_count} > 0 ? 'Direct Debit amount':'Total Due')]]></textFieldExpression>
+			</textField>
+			<textField hyperlinkType="Reference">
+				<reportElement x="144" y="516" width="100" height="13" uuid="abf975bc-1d31-4576-b40c-a89da7a43a23"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA['agl.com.au/help']]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA["agl.com.au/help"]]></hyperlinkReferenceExpression>
+			</textField>
+			<rectangle radius="2">
+				<reportElement x="10" y="267" width="330" height="184" backcolor="#F5F4F2" uuid="e086ee26-312b-48b4-9ede-a9b120599e77"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField hyperlinkType="Reference">
+				<reportElement x="153" y="530" width="100" height="13" uuid="85c67b0b-1358-43f5-b570-a43c1494f4b0"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA['agl.com.au/contact']]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA["agl.com.au/contact"]]></hyperlinkReferenceExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="362" y="299" width="106" height="15" forecolor="#000000" uuid="191530fd-b339-488c-9990-15765dc9509a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount_of_last_statement} > 0 && $F{payment_received} == 0 ? 'Overdue pay now' : 'Balance brought forward']]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="20" y="271" width="78" height="15" forecolor="#000000" uuid="dda3b1a8-80a6-42c9-9c20-5e96a6c9c836"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Billing History]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="20" y="422" width="305" height="25" forecolor="#000000" uuid="27e85560-7137-4ff5-9297-328ba4b07c77"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="7" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Tax Invoice Issued: "+$F{invoice_date}+"\n"+
+"Southern Phone Company Limited trading as AGL Telecommunications ABN 42 100 901 184"]]></textFieldExpression>
+			</textField>
+			<rectangle radius="1">
+				<reportElement x="352" y="71" width="203" height="69" uuid="bb6dba16-2db6-4d7f-ad84-eae73259519f"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="358" y="76" width="72" height="12" uuid="ada5ca4d-0cf9-4425-9ecb-10a9a485513e"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Invoice number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="358" y="89" width="72" height="12" uuid="beef108f-41d7-40b3-ae9e-75769108e92b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Issue date]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="dd MMM yyyy" isBlankWhenNull="true">
+				<reportElement x="434" y="89" width="112" height="12" uuid="08cd29fd-54cf-4d64-959a-31af7ae788e0"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="434" y="76" width="112" height="12" uuid="44c955a0-9130-4098-b7cd-af706aaf438f"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceNumber}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="358" y="102" width="72" height="12" uuid="92b31fd4-68e8-40b6-9d8b-77b8ed1b2547"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Billing period]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="dd MMM yyyy" isBlankWhenNull="true">
+				<reportElement x="486" y="102" width="60" height="12" uuid="78be59a1-28cd-42fa-9709-6d185f2f3c79"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("dd MMM yyyy").format($P{core.param.billingPeriodStartDate}) +' to '+ new SimpleDateFormat("dd MMM yyyy").format($P{core.param.billingPeriodEndDate})]]></textFieldExpression>
+			</textField>
+			<rectangle radius="1">
+				<reportElement x="352" y="172" width="203" height="84" backcolor="#FFFFFF" uuid="1987681f-a642-4041-ab5e-a05400c5a5ec"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="362" y="151" width="116" height="15" uuid="febea5c4-a71a-4944-b06f-80171971ba66"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Your account details]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="358" y="190" width="72" height="12" forecolor="#000000" uuid="60db6ad3-0ed1-4aa3-9f47-661d93db64b7"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Account number]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="434" y="190" width="112" height="12" forecolor="#000000" uuid="58fc35f1-1e66-4955-beaf-386e22ced136"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="358" y="177" width="72" height="12" forecolor="#000000" uuid="f35e01ee-6e0c-4de4-94f4-a2705af82263"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Name]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="434" y="177" width="112" height="12" forecolor="#000000" uuid="249b4385-967c-4815-b528-ccb2ec60ae97"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.first.name} +" "+ $P{core.param.last.name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="358" y="203" width="72" height="12" forecolor="#000000" uuid="fb7dc2dc-30a3-4e6a-80fb-6ccc76a93383"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Billing address]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="434" y="203" width="112" height="53" forecolor="#000000" uuid="f74ed879-a9ad-4b53-88a5-797fb103fa4a"/>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["\t"+$P{billingAddress1} +" "+
+$P{billingAddress2}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="0">
+				<reportElement x="351" y="70" width="205" height="2" forecolor="#000000" backcolor="#CEC8BF" uuid="a2ae540d-1896-492e-877f-aab16d4e56f9"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="0">
+				<reportElement x="10" y="482" width="330" height="2" backcolor="#D1C1E0" uuid="9be8a7c0-7ae8-49f8-9246-e81d94be37cb"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="0">
+				<reportElement x="351" y="170" width="205" height="2" forecolor="#000000" backcolor="#CEC8BF" uuid="341e5cd6-482c-4028-af4c-5d458d44f851"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<subreport>
+				<reportElement x="20" y="293" width="296" height="10" uuid="41b38a16-b051-4eb3-8354-2999ad9b65c2"/>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{core.param.userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_bar_graph_sub_report.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="453" y="424" width="90" height="15" forecolor="#000000" uuid="d23cb59f-a21f-4bf8-85d2-0c48120d5d69">
+					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) >= 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{due_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="362" y="424" width="90" height="15" forecolor="#000000" uuid="7f00e220-31f4-4274-95db-7c522f98762e">
+					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}).add($F{total_new_charge}) >= 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direct_debit_count} > 0 ? 'Direct Debit date':'Due date']]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="361" y="449" width="190" height="5" isRemoveLineWhenBlank="true" uuid="be445fb6-9753-46e7-b7b5-5f367825ef0c"/>
+				<subreportParameter name="total_new_charge">
+					<subreportParameterExpression><![CDATA[$F{total_new_charge}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="direct_debit_count">
+					<subreportParameterExpression><![CDATA[$F{direct_debit_count}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="amount_of_last_statement">
+					<subreportParameterExpression><![CDATA[$F{amount_of_last_statement}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="payment_received">
+					<subreportParameterExpression><![CDATA[$F{payment_received}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_subreport.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="30">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 1]]></printWhenExpression>
+			<textField>
+				<reportElement x="458" y="17" width="80" height="13" uuid="b10f19e0-f82d-4fd8-9408-5b351cd9437b"/>
+				<textElement textAlignment="Right">
+					<font fontName="FoundrySterling-Book" size="8" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<rectangle radius="2">
+				<reportElement stretchType="RelativeToBandHeight" x="10" y="0" width="173" height="30" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="2e552c8f-82e8-45e3-bb35-313f18978e80"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="538" y="17" width="40" height="13" uuid="3718b2bd-3652-4ee7-90aa-21b9fbd4920a"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="8" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement positionType="Float" x="182" y="0" width="375" height="1" forecolor="#C5B9AC" uuid="52297bdc-f4d7-4388-9f39-fcf4fd6c7954"/>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="556" y="0" width="1" height="30" forecolor="#C5B9AC" uuid="d2360e6a-da13-43dd-b004-f51aa619671f"/>
+			</line>
+			<rectangle radius="0">
+				<reportElement stretchType="RelativeToBandHeight" x="10" y="28" width="173" height="2" isPrintWhenDetailOverflows="true" backcolor="#C5B9AC" uuid="aff506a9-c561-4b30-979c-d9afc03779ed"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<image>
+				<reportElement x="20" y="3" width="80" height="27" uuid="6a673935-0f3e-4eab-b4c0-f322d402892f">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 2]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/agl_logo.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="17" y="10" width="118" height="15" forecolor="#000000" uuid="19939b17-ec21-4e6d-8085-3645d4f071b2">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Important information]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="189" y="10" width="185" height="16" forecolor="#000000" uuid="2f350cb8-a1f7-4fca-a100-eafcee1d6e84">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="13" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[How we've worked out your bill.]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<pageFooter>
+		<band height="29" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="1" width="565" height="28" forecolor="#000000" uuid="559025bd-101b-4dbb-b53d-8177d6e9696b">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="html">
+					<font fontName="FoundrySterling-Book" size="7" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[AGL and the AGL logo are trade marks of AGL Energy Limited.<br>
+<b>nbn</b>™, nbn co and other <b>nbn</b>™ logos and brands are trade marks of nbn co limited and used under licence.<br>
+BPAY® and the BPAY logo are registered to BPAY Pty Ltd ABN 69 079 137 518.]]></text>
+			</staticText>
+			<line>
+				<reportElement positionType="Float" x="182" y="0" width="375" height="1" isPrintWhenDetailOverflows="true" forecolor="#C5B9AC" uuid="27c0d3cb-4489-4369-8cc7-f1038b94b903">
+					<printWhenExpression><![CDATA[null == $V{LAST_PAGE_NUMBER} ? true : false]]></printWhenExpression>
+				</reportElement>
+			</line>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="10">
+			<subreport>
+				<reportElement positionType="Float" x="10" y="0" width="555" height="10" uuid="8a338605-1b6a-494e-bf21-481fa7e36b0f"/>
+				<subreportParameter name="account_charges_and_credits">
+					<subreportParameterExpression><![CDATA[$F{account_charges_and_credits}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="use_payment_create_date">
+					<subreportParameterExpression><![CDATA[$P{use_payment_create_date}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="adhoc_credit_note_amount">
+					<subreportParameterExpression><![CDATA[$F{adhoc_credit_note_amount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="core.param.currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="exclude_from_call_itemisation_category_id">
+					<subreportParameterExpression><![CDATA[$P{exclude_from_call_itemisation_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="tax_exempt_item_present">
+					<subreportParameterExpression><![CDATA[$F{tax_exempt_item_present}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="amount_of_last_statement">
+					<subreportParameterExpression><![CDATA[$F{amount_of_last_statement}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="core.param.total_due">
+					<subreportParameterExpression><![CDATA[$P{core.param.total_due}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_CONNECTION">
+					<subreportParameterExpression><![CDATA[$P{REPORT_CONNECTION}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="gst_in_charges">
+					<subreportParameterExpression><![CDATA[$F{gst_in_charges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="total_new_charge">
+					<subreportParameterExpression><![CDATA[$F{total_new_charge}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="debit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{debit_products_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$P{core.param.userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="debit">
+					<subreportParameterExpression><![CDATA[$F{debit}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="credit_products_category_id">
+					<subreportParameterExpression><![CDATA[$P{credit_products_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="credit">
+					<subreportParameterExpression><![CDATA[$F{credit}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="payment_received">
+					<subreportParameterExpression><![CDATA[$F{payment_received}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="PAGE_NUMBER" toVariable="LAST_PAGE_NUMBER"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_line_report.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</summary>
+</jasperReport>

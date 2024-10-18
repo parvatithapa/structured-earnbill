@@ -1,0 +1,1751 @@
+/* RTL CSS for all.css */
+
+html[dir="rtl"] .left {
+  text-align: right;
+}
+
+html[dir="rtl"] .right {
+  text-align: left;
+}
+
+html[dir="rtl"] #header h1 {
+  right: 30px;
+  left: auto;
+}
+
+html[dir="rtl"] #header .search {
+  left: 30px;
+  right: auto;
+}
+
+html[dir="rtl"] #header .search .btn {
+  float: left;
+}
+
+html[dir="rtl"] #header .search .input-bg {
+  float: right;
+}
+
+html[dir="rtl"] #header .search .input-bg a {
+  float: left;
+}
+
+html[dir="rtl"] #header .search .input-bg input, html[dir="rtl"] #header .search .input-bg input:focus {
+  padding: 5px 5px 3px 0;
+  float: right;
+}
+
+html[dir="rtl"] #header .search .popup {
+  right: 10px;
+  left: auto;
+}
+
+html[dir="rtl"] #header .search .popup .input-row input, html[dir="rtl"] #header .search .popup .input-row .radioArea, html[dir="rtl"] #header .search .popup .input-row .radioAreaChecked {
+  margin: 0 0 0 5px !important;
+}
+
+html[dir="rtl"] #header .search .popup .input-row label {
+  float: right;
+}
+
+html[dir="rtl"] #header .search .popup .input-row input {
+  margin: 0 0 0 8px;
+  float: right;
+}
+
+html[dir="rtl"] #header .top-nav {
+  left: 269px;
+  right: auto;
+}
+
+html[dir="rtl"] #header .top-nav li {
+  padding: 0 10px 0 7px;
+}
+
+html[dir="rtl"] #header .top-nav li img {
+  margin-left: 4px;
+  margin-right: auto;
+  float: right;
+}
+
+html[dir="rtl"] #navigation {
+    right: 0;
+    left: auto;
+}
+
+html[dir="rtl"] #navigation ul {
+    float: right;
+}
+
+html[dir="rtl"] #navigation ul li {
+    float: right;
+    border-left: 1px solid #1b1917;
+    border-right: 0;
+}
+
+html[dir="rtl"] #navigation ul li.not-active {
+    padding-right: 0;
+}
+
+html[dir="rtl"] #navigation ul li a em {
+    right: 50%;
+    margin-right: -6px;
+    left: auto;
+}
+
+html[dir="rtl"] #navigation ul ul ul {
+    right: 100%;
+    left: auto;
+}
+
+html[dir="rtl"] #spinner {
+  float: left;
+  padding-left: 3px;
+}
+
+html[dir="rtl"] .breadcrumbs {
+    margin: 0px 0px 8px 15px;
+}
+
+html[dir="rtl"] .breadcrumbs ul li {
+  float: right;
+  margin-right: -7px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .breadcrumbs ul li.shortcut {
+  float: right;
+}
+
+html[dir="rtl"] .shortcut2 {
+  float: left;
+}
+
+html[dir="rtl"] .heading {
+  border-radius: 3px 3px 0 0;
+  padding: 0 10px 0 9px;
+}
+
+html[dir="rtl"] .drop {
+  right: -1px;
+  left: auto;
+}
+
+html[dir="rtl"] #login-column-2 {
+    float: right;
+    padding: 125px 30px 0px 10px;
+}
+
+html[dir="rtl"] #login-column-3 {
+    border-right: groove;
+    border-left: none;
+    margin-right: 12px;
+    margin-left: auto;
+}
+
+html[dir="rtl"] #login label, html[dir="rtl"] #reset_password label {
+    text-align: right;
+}
+
+html[dir="rtl"] #login .inp-bg input.field, html[dir="rtl"] #reset_password .inp-bg input.field {
+    padding: 4px 2px 5px 12px;
+}
+
+html[dir="rtl"] #left-column {
+  float: right;
+}
+
+* html [dir="rtl"] #left-column {
+    margin-left: -3px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .accordion li span.title {
+  float: right;
+  padding: 0 8px 0 0;
+}
+
+html[dir="rtl"] #header .search .search-button {
+    float: left;
+    border: 1px solid #c4c4c4;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+html[dir="rtl"] #header .search .search-dropdown, html[dir="rtl"] #header .search .search-dropdown:hover {
+    border-right: 1px solid #999999;
+    border-left: none;
+}
+
+html[dir="rtl"] .accordion li a.delete , html[dir="rtl"] .heading a.clearFilter {
+    float: left;
+}
+
+html[dir="rtl"] .accordion li a.delete:before , html[dir="rtl"] .heading a.clearFilter:before{
+    float: left;
+    margin: 9px 0 0 -4px;
+}
+
+html[dir="rtl"] .order-disc-icon {
+    float: right;
+}
+
+html[dir="rtl"] .heading a.clearFilter:before {
+    margin: 9px 0 0 -13px;
+}
+
+html[dir="rtl"] .accordion li .slide {
+    padding: 0px 0 0 4px;
+}
+
+html[dir="rtl"] .fileupload .placeholder span.placeholder-text {
+    float: right;
+}
+
+html[dir="rtl"] .file-cancel {
+    left: 8px;
+    right: auto;
+}
+
+html[dir="rtl"] .accordion li .slide .input-bg input[name='filters.PRODUCT-NUMBER_BETWEEN_Price_rate.decimalValue'],
+html[dir="rtl"] .accordion li .slide .input-bg input[name='filters.PLAN-NUMBER_BETWEEN_Price_rate.decimalValue'],
+html[dir="rtl"] .accordion li .slide .input-bg input[name='filters.PAYMENT-NUMBER_BETWEEN_Amount.decimalValue'],
+html[dir="rtl"] .accordion li .slide .input-bg input[name='filters.CREDITNOTE-NUMBER_BETWEEN_Balance.decimalValue'],
+html[dir="rtl"] .accordion li .slide .input-bg input[name='filters.CREDITNOTE-NUMBER_BETWEEN_Amount.decimalValue']{
+    float: left;
+}
+
+html[dir="rtl"] .holder .input-bg {
+  float: left;
+}
+
+html[dir="rtl"] .accordion li .slide .input-row .input-bg {
+  float: left;
+  margin-left: 10px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .accordion li .slide .input-row .select-filter, html[dir="rtl"] .accordion li .slide .input-row .select-bg {
+    float: left;
+    margin-left: 10px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .accordion li .slide .input-row .select-filter select, html[dir="rtl"] .accordion li .slide .input-row .select-bg select {
+    float: left;
+}
+
+html[dir="rtl"] .holder .input-bg input {
+    float: right;
+    padding: 5px 5px 3px 0;
+}
+
+html[dir="rtl"] .accordion li .slide .input-bg input {
+    float: right;
+}
+
+html[dir="rtl"] .accordion li .slide .input-bg input.date-text, html[dir="rtl"] .accordion li .slide .input-bg input.date-text:focus {
+  float: right;
+  padding: 5px 5px 3px 0;
+}
+
+html[dir="rtl"] .accordion li .slide label {
+  float: left;
+}
+
+html[dir="rtl"] .accordion li .slide .input-row .select-bg {
+  float: left;
+  padding: 3px 5px 3px 0;
+}
+
+html[dir="rtl"] .accordion li .slide .checkbox-row label {
+  padding-right: 8px;
+  padding-left: 0;
+  float: none;
+}
+
+html[dir="rtl"] .holder .input-bg a, html[dir="rtl"] .accordion li .slide .input-bg a {
+  float: left;
+  margin: 5px 0 0 4px;
+}
+
+html[dir="rtl"] .date img {
+  float: left;
+}
+
+html[dir="rtl"] .submit2, html[dir="rtl"] .submit, html[dir="rtl"] .submit3, html[dir="rtl"] .submit4, html[dir="rtl"] .submit-sm {
+  float: right;
+}
+
+html[dir="rtl"] .submit-sm.no-text {
+    padding-left: 2px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .submit.mediation-error {
+    margin-left: 10px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .submit.next span {
+    background-position: left;
+    padding: 0 0 0 14px;
+}
+
+html[dir="rtl"] .submit-sm.save {
+  margin-left: 4px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .submit2 span {
+     padding: 0 5px 0 0;
+}
+
+html[dir="rtl"] .list {
+  border-radius: 0 0 3px 3px;
+}
+
+html[dir="rtl"] .list li img {
+  float: right;
+  margin: 7px 0 0 5px;
+}
+
+html[dir="rtl"] .msg-box {
+  margin: 0 10px 10px 0;
+}
+
+html[dir="rtl"] .msg-box.wide {
+  margin: 0 0 10px 0;
+}
+
+
+html[dir="rtl"] a.msg-box-close {
+    float: left;
+    padding-left: 5px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .msg-box img {
+  float: right;
+  margin: 0 0 0 10px;
+}
+
+html[dir="rtl"] .msg-box p {
+  margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] .msg-box ul {
+  margin-right: 13px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .columns-holder .column {
+  float: right;
+}
+
+html[dir="rtl"] .columns-holder .column .column-hold {
+  padding-right: 10px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .columns-holder .column .column-hold-large {
+    padding-right: 10px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .column .box, html[dir="rtl"] .box {
+  border-radius: 0 0 3px 6px;
+}
+
+html[dir="rtl"] .column .box .edit {
+  left: 14px;
+  right: auto;
+}
+
+html[dir="rtl"] .column .sub-box, html[dir="rtl"] .sub-box {
+  border-radius: 0px 0px 0px 4px;
+}
+
+html[dir="rtl"] .column .heading .edit {
+  float: right;
+  margin: 3px 0 0 7px;
+}
+
+html[dir="rtl"] .column .box dt {
+  float: right;
+}
+
+html[dir="rtl"] .pager-box {
+    border-radius: 0 0 3px 3px;
+}
+
+html[dir="rtl"] .pager-box a, html[dir="rtl"] .pager-box select {
+    margin-left: -1px;
+    margin-right: initial;
+}
+
+html[dir="rtl"] .pager-box a.firstLink {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+html[dir="rtl"] .pager-box a.lastLink {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+html[dir="rtl"] .pager-box .row-right {
+    float: left;
+}
+
+html[dir="rtl"] .pager-box .row .col2 .paginate {
+  left: 10px;
+  right: auto;
+}
+
+html[dir="rtl"] .pager-box .download {
+  margin-right: 10px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .pager-box .currentStep {
+    margin-left: -1px;
+    margin-right: initial;
+}
+
+html[dir="rtl"] .btn-box a {
+  float: none;
+}
+
+html[dir="rtl"] .btn-box .row {
+  float: right;
+}
+
+html[dir="rtl"] .btn-row a {
+  float: none;
+}
+
+html[dir="rtl"] .column .heading .name {
+  float: right;
+}
+
+html[dir="rtl"] .column .heading .parent {
+  padding-left: 10px;
+  padding-right: 0;
+}
+
+html[dir="rtl"] .holder .form-box {
+  float: right;
+  margin-left: 20px;
+  border-left: 1px solid #a4c0db;
+  margin-right: auto;
+  border-right: none;
+}
+
+html[dir="rtl"] .holder .form-box-1 {
+	float: right;
+	margin-left: 20px;
+	border-left: 1px solid #a4c0db;
+	margin-right: auto;
+    border-right: none;
+}
+
+html[dir="rtl"] .holder .form-box-custom {
+  float: right;
+  margin-left: 20px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .holder .form-box.last {
+  border-left: none;
+}
+
+html[dir="rtl"] .holder .form-box label {
+  float: right;
+}
+
+html[dir="rtl"] .holder .form-box .input-bg {
+  float: right;
+  margin-left: 10px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .holder .submit {
+  margin: 13px 0 0 10px;
+}
+
+html[dir="rtl"] .holder .form-box .submit {
+  margin: 1px 0 0 10px;
+}
+
+html[dir="rtl"] .lightbox {
+  right: 50%;
+  left: auto;
+  margin: -71px -188px 0 0;
+}
+
+html[dir="rtl"] ul.cloud li {
+  float: right;
+}
+
+html[dir="rtl"] #review-box .msg-box ul {
+  margin-right: 0;
+}
+
+html[dir="rtl"] .type-metafield-menu  {
+    margin-right: 30px;
+    margin-left: none;
+}
+
+html[dir="rtl"] #review-lines li.bundled {
+  margin-right: 15px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] #review-lines li.bundled-price {
+  margin-right: 35px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] #review-lines span.description, html[dir="rtl"] #asset-metafield-lines span.description, html[dir="rtl"] #orderLine-metafield-lines span.description, html[dir="rtl"] #orderChange-metafield-lines span.description {
+  padding-right: 3px;
+  float: right;
+  padding-left: auto;
+}
+
+html[dir="rtl"] #review-lines span.qty-price, html[dir="rtl"] #review-lines span.strategy {
+  float: left;
+  margin-left: 15px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] #review-lines span.sub-total, html[dir="rtl"] #review-lines span.rate {
+  float: left;
+  text-align: left;
+}
+
+html[dir="rtl"] #review-lines span.included-qty {
+  float: left;
+  text-align: left;
+}
+
+html[dir="rtl"] #orderLine-metafield-lines .line .mandatory {
+    float: left;
+}
+
+html[dir="rtl"] #orderChange-metafield-lines .line .mandatory {
+    float: left;
+}
+
+html[dir="rtl"] #metafield-ait span.description {
+    padding-right: 3px;
+    float: right;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #metafield-ait span.mandatory {
+    float: left;
+    margin-left: 15px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] #review-lines span.data-type {
+    float: left;
+    text-align: left;
+}
+
+html[dir="rtl"] .total {
+  text-align: left;
+}
+
+html[dir="rtl"] .form-columns a img {
+  right: 4px;
+  margin-left: 4px;
+  left: auto;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .form-columns .column {
+  float: right;
+  padding: 0 30px 0 0;
+}
+
+html[dir="rtl"] .form-columns .column-550 {
+    float: right;
+    padding: 0 30px 0 0;
+}
+
+html[dir="rtl"] .form-columns .column-50 {
+    float: right;
+}
+
+html[dir="rtl"] .form-columns .first {
+    padding-left: 30px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .form-columns .tab-column {
+	float: right;
+	padding: 0 10px 0 0;
+}
+
+html[dir="rtl"] .form-columns .one_column {
+  padding-left: 200px;
+  padding-right: 0;
+}
+
+html[dir="rtl"] .row.row-left label, html[dir="rtl"] .row.row-left div.select-holder, html[dir="rtl"] .row.row-left a {
+  float: right;
+}
+
+html[dir="rtl"] .form-columns label, html[dir="rtl"] .form-columns p {
+  margin: 0 0 0 10px;
+}
+
+html[dir="rtl"] .form-columns label {
+  float: right;
+  text-align: left;
+}
+
+html[dir="rtl"] .form-columns.plan-price label {
+    float: right;
+    text-align: left;
+}
+
+html[dir="rtl"] .plan-price-attribute-dynamic{
+    padding-right: 59px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .product-price-attribute-dynamic{
+    padding-right: 83px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .form-columns p.description {
+  margin-right: 170px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .form-columns a.field {
+  right: 5px;
+  left: auto;
+}
+
+html[dir="rtl"] .form-columns input.cb {
+  float: right;
+  margin: 0 0 0 5px;
+}
+
+html[dir="rtl"] .form-columns .inp-bg {
+  float: right;
+}
+
+html[dir="rtl"] .inp-bg {
+  margin-left: 3px;
+  margin-right: 0px;
+}
+
+html[dir="rtl"] .form-columns .inp-bg-inv {
+    float: right;
+    margin-left: 3px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .form-columns textarea.narrow {
+    margin: 0px auto 0px 5px;
+}
+
+html[dir="rtl"] .form-columns .inp-bg input.field {
+  float: right;
+}
+
+html[dir="rtl"] .form-columns .inp-bg a.delete {
+    padding-right: 3px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .form-columns .inp2 {
+  margin-left: 6px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .form-columns .add-desc a {
+    padding-right: 3px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .form-columns .select4 {
+  margin-left: 7px;
+  float: right;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .form-columns .select5 {
+  margin-left: 7px;
+  float: right;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .form-columns .select6 {
+    margin-left: 10px;
+    float: right;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .jb-dialog .row {
+    padding-right: 10px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .form-columns select {
+  float: right;
+}
+
+html[dir="rtl"] .select-holder {
+    float: right;
+    margin-left: 3px;
+    margin-right: auto;
+    text-align: right;
+    padding-left: 36px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .select-holder.select-holder_small {
+    padding-left: 28px;
+    padding-right : 0;
+}
+
+html[dir="rtl"] .slide .select-holder {
+    float: left;
+}
+
+html[dir="rtl"] .select-holder:before {
+    border-right: 1px solid rgba(203,203,203,.5);
+    margin-left: 0;
+    float: left;
+    left: 0;
+    border-left: none;
+    right: auto;
+}
+
+html[dir="rtl"] .select-holder select {
+    float: right;
+    right: 0;
+    left: auto;
+}
+
+html[dir="rtl"] .box-cards-title {
+    border-radius: 3px 3px 0 0;
+}
+
+html[dir="rtl"] .box-cards-title span {
+  padding-left: 35px;
+  padding-right: 7px;
+}
+
+html[dir="rtl"] .box-cards-title a.btn-open span {
+  padding-right: 32px;
+}
+
+html[dir="rtl"] .box-cards-title a.btn-open span:after {
+    left: 0px;
+    float: left;
+    right: auto;
+}
+
+html[dir="rtl"] .box-cards-open a.btn-open span:after {
+    left: 0px;
+    float: left;
+    right: auto;
+}
+
+html[dir="rtl"] .form-columns label.rb {
+  margin-left: 20px;
+  margin-right: auto
+}
+
+html[dir="rtl"] .form-columns input.rb {
+  float: right;
+  margin: 5px 0 0 5px;
+}
+
+html[dir="rtl"] .box-cards .sel {
+  float: right;
+  margin-left: 6px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .box-cards select.select-date {
+  float: right;
+  margin-left: 6px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .box-cards .form-columns .column {
+  padding-right: 10px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .box-text label {
+      margin-top: -20px;
+}
+
+html[dir="rtl"] .box-text ul {
+  padding: 0 18px 10px 0;
+}
+
+html[dir="rtl"] .buttons ul {
+  float: right;
+  right: 50%;
+  left: auto;
+}
+
+html[dir="rtl"] .buttons ul li {
+  float: right;
+  right: -50%;
+  left: auto;
+}
+
+html[dir="rtl"] .outtaHere {
+  right: -3000px;
+  left: auto;
+}
+
+html[dir="rtl"] .radioArea {
+  float: right;
+  margin: 5px 0 0 5px;
+}
+
+html[dir="rtl"] .radioAreaChecked {
+  float: right;
+  margin: 5px 0 0 5px;
+}
+
+html[dir="rtl"] .checkboxArea {
+  float: right;
+  margin: 1px 0 0 5px;
+}
+
+html[dir="rtl"] .checkboxAreaChecked {
+  float: right;
+  margin: 1px 0 0 5px;
+}
+
+html[dir="rtl"] .selectArea {
+  float: right;
+}
+
+html[dir="rtl"] .selectArea .left {
+  position: absolute;
+  right: 0;
+  left: auto;
+}
+
+html[dir="rtl"] .selectArea a.selectButton {
+  left: 0;
+  right: auto;
+}
+
+html[dir="rtl"] .selectArea .center {
+  padding: 0 6px 0 21px;
+}
+
+html[dir="rtl"] .selectArea .center img {
+  float: right;
+}
+
+html[dir="rtl"] .optionsDivVisible a img {
+  float: right;
+}
+
+html[dir="rtl"] .dataTable.narrow {
+  margin: 0 10px 0 0;
+}
+
+html[dir="rtl"] .dataTable.text-left {
+  text-align: right;
+}
+
+html[dir="rtl"] .dataTable a img {
+  right: 4px;
+  margin-left: 4px;
+  left: auto;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .innerContent {
+    text-align: right;
+}
+
+html[dir="rtl"] .strong{
+    text-align: right;
+}
+
+html[dir="rtl"] .top-nav a {
+  padding-right: 18px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .table-heading strong {
+  float: left;
+}
+
+html[dir="rtl"] td.first {
+    padding: 3px 15px 3px 0;
+}
+
+html[dir="rtl"] td.left-pad {
+    padding-right: 15px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .table-box th, html[dir="rtl"] .innerHeader th {
+  text-align: right;
+}
+
+html[dir="rtl"] .table-box th.first, html[dir="rtl"] .innerHeader th.first {
+    border-top-right-radius: 3px;
+    border-top-left-radius: 0;
+}
+
+html[dir="rtl"] .table-box th.last, html[dir="rtl"] .innerHeader th.last {
+    border-top-left-radius: 3px;
+    padding-left: 5px;
+    border-top-right-radius: 0;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .table-box th:only-child, html[dir="rtl"] .innerHeader th:only-child {
+  padding: 0 15px 0 0;
+}
+
+html[dir="rtl"] .table-box th:first-child, html[dir="rtl"] .innerHeader th:first-child {
+  padding: 3px 12px 3px 0;
+}
+
+html[dir="rtl"] .table-box th.spacing-narrow {
+    padding: 3px 12px 3px 0;
+}
+
+html[dir="rtl"] .sub-box thead tr:before {
+  border-radius: 0 3px 0 0;
+  border-left: none;
+}
+
+html[dir="rtl"] .sub-box thead tr:after {
+  border-right: none;
+}
+
+html[dir="rtl"] .table-box table {
+  border-radius: 3px 3px 0 0;
+}
+
+html[dir="rtl"] .table-box table tr, html[dir="rtl"] .table-box table th, html[dir="rtl"] .table-box table td, html[dir="rtl"] #viewport .panel .table-box td  {
+  text-align: right;
+  padding: 6px 12px;
+}
+
+html[dir="rtl"] .table-box table thead tr:after {
+  border-right: none;
+}
+
+html[dir="rtl"] .table-box tbody tr:after {
+  border-right: none;
+}
+
+html[dir="rtl"] .table-area {
+  margin: 0 1px -1px 0;
+}
+
+html[dir="rtl"] .table-area table thead td {
+  border-radius: 3px 3px 0 0;
+}
+
+html[dir="rtl"] .table-area thead td.first {
+  border-right: 1px solid #1b437d;
+  border-left: none;
+}
+
+html[dir="rtl"] .table-area thead td.last {
+  border-left: 1px solid #1b437d;
+  border-right: none;
+}
+
+html[dir="rtl"] .table-area thead td.col04 {
+  text-align: left;
+}
+
+html[dir="rtl"] .table-area tbody td {
+  border-left: 1px solid #bbbbbb;
+  border-right: none;
+}
+
+html[dir="rtl"] .table-area tbody td em {
+  text-align: right;
+  padding-right: 8px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .table-area tbody td.col02 {
+  border-right: 1px solid #bbbbbb;
+  border-left: none;
+}
+
+html[dir="rtl"] .table-area tbody td.col03 {
+  text-align: right;
+  padding-right: 20px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .table-area tbody td.col01 em {
+  text-align: left;
+}
+
+html[dir="rtl"] .innerTable tbody .bg td {
+  text-align: right;
+}
+
+html[dir="rtl"] .table-area tbody span.small {
+  text-align: right;
+}
+
+.table-area tbody span.large {
+  text-align: right;
+}
+
+html[dir="rtl"] .table-info {
+  margin-right: 1px;
+  margin-left: auto;
+}
+
+html[dir="rtl"] .table-info em {
+  float: right;
+  margin-left: 27px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] table.blacklist tbody td:first-child {
+  padding-right: 12px;
+  padding-left: 0;
+}
+
+html[dir="rtl"] table.blacklist tbody td {
+  text-align: right;
+}
+
+html[dir="rtl"] .column-right-50 {
+    float: left;
+}
+
+html[dir="rtl"] .disjoint-listbox-vert-top  {
+    float:right;
+}
+
+html[dir="rtl"] .disjoint-listbox-vert-btn-col {
+    right: 10px;
+    padding-left: 10px;
+    left: auto;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .dependency-th th {
+    text-align: right;
+}
+
+html[dir="rtl"] td.short-width2.left {
+    text-align: right;
+}
+
+html[dir="rtl"] .column .sub-box-no-pad {
+    padding: 0 20px 0 0;
+}
+
+html[dir="rtl"] #impersonation-text{
+    padding-right: 5px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #edit-changes-box .msg-box ul {
+    margin-right: 0;
+}
+
+html[dir="rtl"] #edit-changes-box ul.plan-order-changes-list span.description {
+  padding-right: 3px;
+  float: right;
+  padding-left: 0;
+}
+
+html[dir="rtl"] #edit-changes-box ul.plan-order-changes-list span.qty-price {
+  float: left;
+  margin-left: 15px;
+  margin-right: auto;
+}
+
+html[dir="rtl"] #edit-changes-box ul.plan-order-changes-list span.sub-total {
+  float: left;
+  text-align: left;
+}
+
+html[dir="rtl"] #edit-changes-box ul.plan-order-changes-list span.included-qty {
+  float: left;
+  text-align: left;
+}
+
+html[dir="rtl"] th.money, html[dir="rtl"] th.qty, html[dir="rtl"] td.money, html[dir="rtl"] td.qty {
+  text-align: left !important;
+}
+
+html[dir="rtl"] .consistencyCheckLabel{
+    text-align: right;
+    margin-left: 10px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] #viewport .panel .table-box td {
+    padding-left: 5px;
+}
+
+html[dir="rtl"] .temp-ver-form .label{
+    text-align: left;
+}
+
+html[dir="rtl"] .plugin-attribute-dynamic{
+    padding-right: 173px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .price-model-help {
+    margin-right: 1px; /*safari*/
+    margin-left: auto;
+}
+
+html[dir="rtl"] .checkbox-group {
+    margin-right: -3.5%;
+    margin-left: auto;
+}
+
+html[dir="rtl"] .phone-text {
+    margin-left: 3px;
+    margin-right: auto;
+}
+
+html[dir="rtl"] #navigation ul#navRight {
+    float: left;
+}
+
+html[dir="rtl"] #confirm-dialog-table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #confirm-dialog-table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .column-50 .table-info span{
+    float: left;
+}
+
+html[dir="rtl"] .column-50 .table-info span a {
+    margin-right: 7px;
+    margin-left: auto;
+}
+
+html[dir="rtl"] .pager-box .row .pager-button {
+    text-align : left;
+}
+
+html[dir="rtl"] .pager-box .row .generate {
+    text-align : left;
+}
+
+html[dir="rtl"] #inner-content-td {
+    padding-left: 20px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #inner-content-td2 {
+    text-align: left;
+}
+
+html[dir="rtl"] #inner-content-td3 {
+    text-align: right;
+}
+
+html[dir="rtl"] #box-card-hold-th {
+    text-align: left;
+}
+
+html[dir="rtl"] #confirm-dialog-save-permissions table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #confirm-dialog-save-permissions table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #role-change-dialog table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #roleChangeMsg {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #save-query-dialog table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #save-query-dialog table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #confirm-dialog span {
+    float: right;
+    margin: 0 0 0 7px;
+}
+
+html[dir="rtl"] #confirm-dialog table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #confirm-dialog table .col1 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #confirm-dialog table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #form-edit-submit {
+    float: left;
+}
+
+html[dir="rtl"] #orderChangeStatuses-table-label1 {
+    text-align: right;
+    padding-right: 12px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #orderChangeStatuses-table-label2 {
+    text-align: right;
+}
+
+html[dir="rtl"] #column-550-a {
+    float: left;
+}
+
+html[dir="rtl"] #custom-div {
+    float: right;
+}
+
+html[dir="rtl"] #custom-div2 {
+    float: left;
+}
+
+html[dir="rtl"] #dependencyDialog {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #dependencyDialog .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #infoTypeName-change-dialog table {
+    margin: 3px 10 0 0;
+}
+
+html[dir="rtl"] #infoTypeName-change-dialog table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #form-div {
+    margin-right: 22px;
+    margin-left: auto;
+}
+
+html[dir="rtl"] #form-div-td {
+    text-align: left;
+}
+
+html[dir="rtl"] #confirm-dialog-delete table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #confirm-dialog-delete table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #background {
+    right: 0px;
+    left: auto;
+}
+
+html[dir="rtl"] #editStatusBlock .btn-box {
+    margin-right: 20%;
+    margin-left: auto;
+}
+
+html[dir="rtl"] #report-filters-submit {
+    padding-right: 350px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #price-box-sub-div {
+    padding-right: 38%;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #invoice-template-error-messages ul {
+    margin-right: 0;
+}
+
+html[dir="rtl"] #invoice-template-success-messages ul {
+    margin-right: 0;
+}
+
+html[dir="rtl"] #submit-sm-span {
+    padding-right: 0px;
+}
+
+html[dir="rtl"] #paging {
+    float: left;
+}
+
+html[dir="rtl"] #dialog-delete-confirm p span, html[dir="rtl"] #dialog-save-error .ui-icon, html[dir="rtl"] #dialog-delete-error .ui-icon {
+    float: right;
+    margin: 0 0 70px 7px;
+}
+
+html[dir="rtl"] #custom-span {
+    float: right;
+    padding-right: 20px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #custom-a {
+    float: left;
+    padding-left: 5px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-table {
+    margin: 3px 10px 0 0;
+}
+
+html[dir="rtl"] #custom-table .col2 {
+    padding-right: 7px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #custom-label {
+    text-align: right;
+    margin-left: 10;
+    margin-right: auto;
+}
+
+html[dir="rtl"] #custom-div3 {
+    margin-right: 8%;
+    margin-left: auto;
+}
+
+html[dir="rtl"] .custom-div4 {
+    padding-right:130px;
+    padding-left: 0;
+}
+
+html[dir="rtl"] #custom-div5 {
+    padding-right: 5em;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .custom-div6 {
+    padding-left: 10px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-td {
+    text-align: left;
+    padding-left: 30px;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-td2 {
+    text-align: left;
+    padding-left: 1%;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-td3 {
+    text-align: left;
+    padding-left: 3%;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-td4 {
+    text-align: left;
+    padding-left: 2%;
+    padding-right: 0;
+}
+
+html[dir="rtl"] #custom-td5 {
+    text-align: left;
+}
+
+html[dir="rtl"] #custom-td6 {
+    text-align: right;
+}
+
+html[dir="rtl"] #download-div #generateCsv {
+    text-align: left;
+}
+
+html[dir="rtl"] #custom-div7 {
+    text-align: left;
+}
+
+html[dir="rtl"] #custom-ul {
+    left: 0;
+    right: auto;
+}
+
+html[dir="rtl"] #header .search .input-bg.search-action {
+    border-radius: 3px;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+html[dir="rtl"] #header .search .input-bg.search-filter, html[dir="rtl"] #header .search .input-bg.search-filter .select-holder {
+    width: 110px;
+    border-radius: 3px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+html[dir="rtl"] #navigation ul ul li {
+    float: none;
+    border-width: 0px 0px 1px;
+}
+
+/* RTL CSS for jquery-ui-1.10.4.custom.css */
+
+html[dir="rtl"] .ui-helper-zfix {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-widget-overlay {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-resizable-n {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-resizable-s {
+    right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-resizable-e {
+	left: -5px;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-resizable-w {
+	right: -5px;
+	left: auto;
+}
+html[dir="rtl"] .ui-resizable-se {
+	left: 1px;
+	right: auto;
+}
+html[dir="rtl"] .ui-resizable-sw {
+	right: -5px;
+	left: auto;
+}
+html[dir="rtl"] .ui-resizable-nw {
+	right: -5px;
+	left: auto;
+}
+html[dir="rtl"] .ui-resizable-ne {
+	left: -5px;
+	right: auto
+}
+
+html[dir="rtl"] .ui-accordion .ui-accordion-header {
+	padding: .5em .7em .5em .5em;
+}
+
+html[dir="rtl"] .ui-accordion .ui-accordion-icons {
+	padding-right: 2.2em;
+	padding-left: 0;
+}
+html[dir="rtl"] .ui-accordion .ui-accordion-noicons {
+	padding-right: .7em;
+	padding-left: 0;
+}
+html[dir="rtl"] .ui-accordion .ui-accordion-icons .ui-accordion-icons {
+	padding-right: 2.2em;
+	padding-left: 0;
+}
+html[dir="rtl"] .ui-accordion .ui-accordion-header .ui-accordion-header-icon {
+	right: .5em;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-autocomplete {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-button {
+	margin-left: .1em;
+	margin-right: auto;
+}
+
+html[dir="rtl"] .ui-button-text-icon-primary .ui-button-text,
+html[dir="rtl"] .ui-button-text-icons .ui-button-text {
+	padding: .4em 2.1em .4em 1em;
+}
+
+html[dir="rtl"] .ui-button-text-icon-secondary .ui-button-text,
+html[dir="rtl"] .ui-button-text-icons .ui-button-text {
+	padding: .4em 1em .4em 2.1em;
+}
+
+html[dir="rtl"] .ui-button-icon-only .ui-icon {
+	right: 50%;
+	margin-right: -8px;
+	left: auto;
+	margin-left: auto;
+}
+
+html[dir="rtl"] .ui-button-text-icon-primary .ui-button-icon-primary,
+html[dir="rtl"] .ui-button-text-icons .ui-button-icon-primary,
+html[dir="rtl"] .ui-button-icons-only .ui-button-icon-primary {
+	right: .5em;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-button-text-icon-secondary .ui-button-icon-secondary,
+html[dir="rtl"] .ui-button-text-icons .ui-button-icon-secondary,
+html[dir="rtl"] .ui-button-icons-only .ui-button-icon-secondary {
+	left: .5em;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-buttonset {
+	margin-left: 7px;
+	margin-right: auto;
+}
+
+html[dir="rtl"] .ui-buttonset .ui-button {
+	margin-right: 0;
+	margin-left: -.3em;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-prev {
+	right: 2px;
+	left: auto;
+}
+html[dir="rtl"] .ui-datepicker .ui-datepicker-next {
+	left: 2px;
+	right: auto;
+}
+html[dir="rtl"] .ui-datepicker .ui-datepicker-prev-hover {
+	right: 1px;
+	left: auto;
+}
+html[dir="rtl"] .ui-datepicker .ui-datepicker-next-hover {
+	left: 1px;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-prev span,
+html[dir="rtl"] .ui-datepicker .ui-datepicker-next span {
+	right: 50%;
+	margin-right: -8px;
+    left: auto;
+    margin-left: auto;
+}
+
+html[dir="rtl"] .ui-datepicker td span,
+html[dir="rtl"] .ui-datepicker td a {
+	text-align: left;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-buttonpane button {
+	float: left;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-buttonpane button.ui-datepicker-current {
+	float: right;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-prev {
+    right: 0px;
+    left: auto;
+}
+
+html[dir="rtl"] .ui-datepicker .ui-datepicker-next {
+    left: 0px;
+    right: auto;
+}
+
+html[dir="rtl"] .ui-datepicker-multi .ui-datepicker-group {
+	float: right;
+}
+
+html[dir="rtl"] .ui-dialog .ui-dialog-title {
+	float: right;
+}
+
+html[dir="rtl"] .ui-dialog .ui-dialog-titlebar-close {
+	left: .3em;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-dialog .ui-dialog-buttonpane {
+	text-align: right;
+	padding: .3em .4em .5em 1;
+}
+
+html[dir="rtl"] .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+	float: right;
+}
+
+html[dir="rtl"] .ui-dialog .ui-dialog-buttonpane button {
+	margin: .5em 0 .5em .4em;
+}
+
+html[dir="rtl"] .ui-dialog .ui-resizable-se {
+	left: -5px;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-menu-icons .ui-menu-item a {
+	padding-right: 2em;
+	padding-left: auto;
+}
+
+html[dir="rtl"] .ui-menu .ui-icon {
+	right: .2em;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-menu .ui-menu-icon {
+	float: left;
+}
+
+html[dir="rtl"] .ui-progressbar {
+	text-align: right;
+}
+
+html[dir="rtl"] .ui-slider {
+	text-align: right;
+}
+
+html[dir="rtl"] .ui-slider-horizontal .ui-slider-handle {
+	margin-right: -.6em;
+	margin-left: auto;
+}
+
+html[dir="rtl"] .ui-slider-horizontal .ui-slider-range-min {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-slider-horizontal .ui-slider-range-max {
+	left: 0;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-slider-vertical .ui-slider-handle {
+	right: -.3em;
+	margin-right: 0;
+	left: auto;
+	margin-left: auto;
+}
+
+html[dir="rtl"] .ui-slider-vertical .ui-slider-range {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-spinner-input {
+	margin-right: .4em;
+	margin-left: 22px;
+}
+
+html[dir="rtl"] .ui-spinner-button {
+	left: 0;
+	right: auto;
+}
+
+html[dir="rtl"] .ui-spinner .ui-icon {
+	right: 0;
+	left: auto;
+}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-nav {
+    padding: 0 0 0 13px;
+}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-nav li {
+    float: right;
+    margin: 1 0 0 .2em;
+}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-nav li a { float: right;}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-panel {
+    border-top: none;
+    border-radius: 0 3px 3px 0;
+    border: 1px solid #cbcbcb;
+}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
+    border-radius: 3px 0 0 3px;
+}
+
+html[dir="rtl"] .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
+	float: right;
+}
+
+html[dir="rtl"] .ui-widget-header {
+    -webkit-border-radius: 3px 0 0 3px;
+    -moz-border-radius: 3px 0 0 3px;
+    -ms-border-radius: 3px 0 0 3px;
+    -o-border-radius: 3px 0 0 3px;
+    border-radius: 3px 0 0 3px;
+    text-align: right;
+}
+
+html[dir="rtl"] .ui-widget-shadow { margin: -8px -8px 0 0;}
+
+html[dir="rtl"] #customer-dialog-icon {
+    float: right;
+}
+
+.total-count{
+        border: 1px solid #cacaca;
+        color: #8e8e8e;
+        padding: 4px 8px;
+        float: left;
+ }

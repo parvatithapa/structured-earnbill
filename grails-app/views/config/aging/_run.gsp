@@ -92,7 +92,7 @@
 
 <div id="confirm-dialog" class="hide-element jb-dialog" title="${g.message(code:'popup.confirm.title')}">
     <p>
-        <span class='ui-icon ui-icon-alert' style='float:left; margin:0 7px 0 0;'></span>
+        <span class='ui-icon ui-icon-alert'></span>
         <g:message code="config.collections.run.confirm"/>
     </p>
 </div>

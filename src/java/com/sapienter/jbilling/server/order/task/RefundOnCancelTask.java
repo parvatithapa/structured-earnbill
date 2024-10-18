@@ -15,30 +15,13 @@
  */
 package com.sapienter.jbilling.server.order.task;
 
-import java.lang.invoke.MethodHandles;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.ResourceBundle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.ItemBL;
 import com.sapienter.jbilling.server.item.ItemDecimalsException;
 import com.sapienter.jbilling.server.item.db.ItemDAS;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.order.OrderBL;
-import com.sapienter.jbilling.server.order.db.OrderBillingTypeDTO;
-import com.sapienter.jbilling.server.order.db.OrderDAS;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.order.db.OrderLineDAS;
-import com.sapienter.jbilling.server.order.db.OrderLineDTO;
-import com.sapienter.jbilling.server.order.db.OrderLineTypeDAS;
-import com.sapienter.jbilling.server.order.db.OrderPeriodDTO;
+import com.sapienter.jbilling.server.order.db.*;
 import com.sapienter.jbilling.server.order.event.PeriodCancelledEvent;
 import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
@@ -52,6 +35,17 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
+
+import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.ResourceBundle;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RefundOnCancelTask extends PluggableTask implements IInternalEventsTask {
 
@@ -69,7 +63,6 @@ public class RefundOnCancelTask extends PluggableTask implements IInternalEvents
         PeriodCancelledEvent.class,
     };
 
-    @Override
     public Class<Event>[] getSubscribedEvents() {
         return events;
     }
@@ -134,7 +127,7 @@ public class RefundOnCancelTask extends PluggableTask implements IInternalEvents
                 skipParameter = true;
             }
 
-            int itemId = Integer.parseInt(parameters.get(name));
+            int itemId = Integer.parseInt((String) parameters.get(name));
             logger.debug("adding item {} to new order", itemId);
             ItemDTO item = new ItemDAS().findNow(itemId);
             if (item == null || getEntityId().equals(entityId)) {
@@ -164,7 +157,6 @@ public class RefundOnCancelTask extends PluggableTask implements IInternalEvents
         }
     }
 
-    @Override
     public void process(Event event) {
         OrderDTO order = ((PeriodCancelledEvent) event).getOrder();
         logger.debug("Plug in processing period cancelled event for order {}", order.getId());
@@ -203,12 +195,9 @@ public class RefundOnCancelTask extends PluggableTask implements IInternalEvents
             OrderBillingTypeDTO type = new OrderBillingTypeDTO();
             type.setId(Constants.ORDER_BILLING_POST_PAID);
             newOrder.setOrderBillingType(type);
-            newOrder.setParentOrder(null);
         }
 
-        newOrder.getChildOrders().clear(); // no child order need to add on new order from order.
-        newOrder.getOrderProcesses().clear(); // no invoices created for a new order.
-        newOrder.getDiscountLines().clear(); // clear discount lines from a new order.
+        newOrder.getOrderProcesses().clear(); // no invoices created for a new order
         newOrder.getLines().clear();
         // starts where the cancellation starts
         Calendar activeSinceDate = Calendar.getInstance();
@@ -272,21 +261,16 @@ public class RefundOnCancelTask extends PluggableTask implements IInternalEvents
 
     private Optional<OrderDTO> findRefundOrderFromSubscriptionOrder(OrderDTO subscriptionOrder) {
         for(OrderDTO order : subscriptionOrder.getChildOrders()) {
-            if (order.getDeleted() == 0) {
-                for(OrderLineDTO line : order.getLines()) {
-                    if (line.getDeleted() == 0) {
-                        Integer itemId = line.getItemId();
-                        if(null!= itemId && itemId.equals(getAdjustmentItemId())) {
-                            return Optional.of(order);
-                        }
-                    }
+            for(OrderLineDTO line : order.getLines()) {
+                Integer itemId = line.getItemId();
+                if(null!= itemId && itemId.equals(getAdjustmentItemId())) {
+                    return Optional.of(order);
                 }
             }
         }
         return Optional.empty();
     }
 
-    @Override
     public String toString() {
         return "RefundOnCancelTask for events " + Arrays.toString(events);
     }

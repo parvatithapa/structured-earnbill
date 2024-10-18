@@ -1,4 +1,4 @@
-    /*
+/*
  * JBILLING CONFIDENTIAL
  * _____________________
  *
@@ -30,27 +30,23 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.sapienter.jbilling.server.item.db.ItemDAS;
-import com.sapienter.jbilling.server.item.db.ItemDTO;
-import com.sapienter.jbilling.server.item.db.ItemDependencyDTO;
-import com.sapienter.jbilling.server.item.db.ItemTypeDTO;
-import com.sapienter.jbilling.server.item.db.PlanItemDTO;
-import com.sapienter.jbilling.server.item.db.ItemDependencyDAS;
-import com.sapienter.jbilling.server.item.db.RatingConfigurationDTO;
-
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.log4j.Logger;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
-import com.sapienter.jbilling.server.util.db.InternationalDescriptionDTO;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.log4j.Logger;
-import org.springframework.dao.EmptyResultDataAccessException;
-
 import com.sapienter.jbilling.server.account.AccountTypeBL;
+import com.sapienter.jbilling.server.item.db.ItemDAS;
+import com.sapienter.jbilling.server.item.db.ItemDTO;
+import com.sapienter.jbilling.server.item.db.ItemDependencyDAS;
+import com.sapienter.jbilling.server.item.db.ItemDependencyDTO;
+import com.sapienter.jbilling.server.item.db.ItemTypeDTO;
+import com.sapienter.jbilling.server.item.db.PlanItemDTO;
+import com.sapienter.jbilling.server.item.db.RatingConfigurationDTO;
 import com.sapienter.jbilling.server.item.event.ItemDeletedEvent;
 import com.sapienter.jbilling.server.item.event.ItemUpdatedEvent;
 import com.sapienter.jbilling.server.item.event.NewItemEvent;
@@ -83,6 +79,7 @@ import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
 import com.sapienter.jbilling.server.util.PreferenceBL;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
+import com.sapienter.jbilling.server.util.db.InternationalDescriptionDTO;
 
 public class ItemBL {
 
@@ -185,17 +182,17 @@ public class ItemBL {
 
         // for parent entity
         if (!dto.getIsPlan()) {
-	        dto.updateMetaFieldsWithValidation(dto.getEntity().getLanguageId(), dto.getEntityId(), null, dto);
-	        //for child entities
-	        if (dto.isGlobal()) {
-	        	for(CompanyDTO company : new CompanyDAS().findChildEntities(dto.getId())) {
-	        		dto.updateMetaFieldsWithValidation(company.getLanguageId(), company.getId(), null, dto);
-	        	}
-	        } else {
-	        	for(Integer id : dto.getChildEntitiesIds()) {
-	        		dto.updateMetaFieldsWithValidation(new CompanyDAS().find(id).getLanguageId(), id, null, dto);
-	        	}
-	        }
+            dto.updateMetaFieldsWithValidation(dto.getEntity().getLanguageId(), dto.getEntityId(), null, dto);
+            //for child entities
+            if (dto.isGlobal()) {
+                for(CompanyDTO company : new CompanyDAS().findChildEntities(dto.getId())) {
+                    dto.updateMetaFieldsWithValidation(company.getLanguageId(), company.getId(), null, dto);
+                }
+            } else {
+                for(Integer id : dto.getChildEntitiesIds()) {
+                    dto.updateMetaFieldsWithValidation(new CompanyDAS().find(id).getLanguageId(), id, null, dto);
+                }
+            }
         }
         //add the orderline meta fields
         if(dto.getOrderLineMetaFields().size() > 0) {
@@ -225,13 +222,13 @@ public class ItemBL {
 
         //triggering processing of event for parent company
         NewItemEvent newItemEvent = new NewItemEvent(item);
-    	EventManager.process(newItemEvent);
+        EventManager.process(newItemEvent);
 
         // triggering process for child companies
         for(Integer id : dto.getChildEntitiesIds()) {
-    		newItemEvent.setEntityId(id);
-    		EventManager.process(newItemEvent);
-    	}
+            newItemEvent.setEntityId(id);
+            EventManager.process(newItemEvent);
+        }
         return item.getId();
     }
 
@@ -247,26 +244,26 @@ public class ItemBL {
             dto.setHasDecimals(0);
         }
 
-            // Backwards compatible with the old ItemDTOEx Web Service API, use the
-            // transient price field as the rate for a default pricing model.
-            if (dto.getPrice() != null) {
-                dto.addDefaultPrice(CommonConstants.EPOCH_DATE, getDefaultPrice(dto.getPrice(),dto.isPercentage()), dto.getPriceModelCompanyId());
-            }
+        // Backwards compatible with the old ItemDTOEx Web Service API, use the
+        // transient price field as the rate for a default pricing model.
+        if (dto.getPrice() != null) {
+            dto.addDefaultPrice(CommonConstants.EPOCH_DATE, getDefaultPrice(dto.getPrice(),dto.isPercentage()), dto.getPriceModelCompanyId());
+        }
 
-            // default currency for new prices (if currency is not explicitly set)
-            if (dto.getDefaultPrices() != null) {
-                for (PriceModelDTO price : dto.getDefaultPrices().iterator().next().getPrices().values()) {
-                    if (price.getCurrency() == null) {
-                        price.setCurrency(entity.getEntity().getCurrency());
-                    }
+        // default currency for new prices (if currency is not explicitly set)
+        if (dto.getDefaultPrices() != null) {
+            for (PriceModelDTO price : dto.getDefaultPrices().iterator().next().getPrices().values()) {
+                if (price.getCurrency() == null) {
+                    price.setCurrency(entity.getEntity().getCurrency());
                 }
             }
+        }
 
-            // validate all pricing attributes
-            if (dto.getDefaultPrices() != null) {
-                LOG.debug("Validating Attributes....");
-                PriceModelBL.validateAttributes(dto.getDefaultPrices().iterator().next().getPrices().values());
-            }
+        // validate all pricing attributes
+        if (dto.getDefaultPrices() != null) {
+            LOG.debug("Validating Attributes....");
+            PriceModelBL.validateAttributes(dto.getDefaultPrices().iterator().next().getPrices().values());
+        }
 
         dto.setDeleted(0);
         if(!isPlan) {
@@ -326,23 +323,23 @@ public class ItemBL {
         item.setEntities(dto.getEntities());
         if(dto.getEntity() != null) {
             if(!dto.getIsPlan()) {
-        	item.updateMetaFieldsWithValidation(dto.getEntity().getLanguageId(), dto.getEntityId(), null, dto);
+                item.updateMetaFieldsWithValidation(dto.getEntity().getLanguageId(), dto.getEntityId(), null, dto);
             }
-        	item.setEntity(dto.getEntity());
+            item.setEntity(dto.getEntity());
         }
         //clear meta fields, in case we have different child entities than the ones assigned before we do not want there meta fields
         item.getMetaFields().clear();
 
         if(!dto.getIsPlan()) {
-	       	if (dto.isGlobal()) {
-	       		for (CompanyDTO company : new CompanyDAS().findChildEntities(dto.getEntityId())) {
-	       			item.updateMetaFieldsWithValidation(company.getLanguageId(), company.getId(), null, dto);
-	       		}
-	        } else {
-	       		for (Integer entityId : dto.getChildEntitiesIds()) {
-	       			item.updateMetaFieldsWithValidation(new CompanyDAS().find(entityId).getLanguageId(), entityId, null, dto);
-	       		}
-	       	}
+            if (dto.isGlobal()) {
+                for (CompanyDTO company : new CompanyDAS().findChildEntities(dto.getEntityId())) {
+                    item.updateMetaFieldsWithValidation(company.getLanguageId(), company.getId(), null, dto);
+                }
+            } else {
+                for (Integer entityId : dto.getChildEntitiesIds()) {
+                    item.updateMetaFieldsWithValidation(new CompanyDAS().find(entityId).getLanguageId(), entityId, null, dto);
+                }
+            }
         }
 
         Collection<Integer> unusedMetaFieldIds = updateProductOrderLineMetaFields(dto.getOrderLineMetaFields());
@@ -375,9 +372,9 @@ public class ItemBL {
         ItemUpdatedEvent itemUpdatedEvent = new ItemUpdatedEvent(item);
         EventManager.process(itemUpdatedEvent);
         for (Integer id : dto.getChildEntitiesIds()) {
-        	LOG.debug("Processing ItemUpdatedEvent using entity id:" + id);
-        	itemUpdatedEvent.setEntityId(id);
-        	EventManager.process(itemUpdatedEvent);
+            LOG.debug("Processing ItemUpdatedEvent using entity id:" + id);
+            itemUpdatedEvent.setEntityId(id);
+            EventManager.process(itemUpdatedEvent);
         }
     }
 
@@ -441,17 +438,17 @@ public class ItemBL {
      * @param dto item holding the updates to apply to this item
      */
     private void updateDefaultPrice(ItemDTO dto) {
-    	//Find the price in item and dto with respect to company
-    	SortedMap<Date, PriceModelDTO> itemPrices = null;
-    	SortedMap<Date, PriceModelDTO> dtoPrices = null;
+        //Find the price in item and dto with respect to company
+        SortedMap<Date, PriceModelDTO> itemPrices = null;
+        SortedMap<Date, PriceModelDTO> dtoPrices = null;
 
-    	if(dto.getPriceModelCompanyId() != null) {
-    		itemPrices = item.getDefaultPricesByCompany(dto.getPriceModelCompanyId());
-    		dtoPrices = dto.getDefaultPricesByCompany(dto.getPriceModelCompanyId());
-    	} else {
-    		itemPrices = item.getGlobalDefaultPrices();
-    		dtoPrices = dto.getGlobalDefaultPrices();
-    	}
+        if(dto.getPriceModelCompanyId() != null) {
+            itemPrices = item.getDefaultPricesByCompany(dto.getPriceModelCompanyId());
+            dtoPrices = dto.getDefaultPricesByCompany(dto.getPriceModelCompanyId());
+        } else {
+            itemPrices = item.getGlobalDefaultPrices();
+            dtoPrices = dto.getGlobalDefaultPrices();
+        }
 
         if (itemPrices == null || itemPrices.isEmpty()) {
             // new default price
@@ -486,28 +483,28 @@ public class ItemBL {
 
         // default price currency should always be the entity currency
         if (itemPrices != null) {
-        	// TODOs
+            // TODOs
             for (PriceModelDTO price : itemPrices.values()) {
                 if (price.getCurrency() == null) {
-                	if(item.getEntity() != null) {
-                		price.setCurrency(item.getEntity().getCurrency());
-                	} else {
-                		if(item.getEntities().iterator().next().getParent()!=null){
-                			price.setCurrency(item.getEntities().iterator().next().getParent().getCurrency());
-                		}else{
-                			price.setCurrency(item.getEntities().iterator().next().getCurrency());
-                		}
-                	}
+                    if(item.getEntity() != null) {
+                        price.setCurrency(item.getEntity().getCurrency());
+                    } else {
+                        if(item.getEntities().iterator().next().getParent()!=null){
+                            price.setCurrency(item.getEntities().iterator().next().getParent().getCurrency());
+                        }else{
+                            price.setCurrency(item.getEntities().iterator().next().getCurrency());
+                        }
+                    }
                 }
             }
         }
         CompanyDTO company = dto.getPriceModelCompanyId() != null ? new CompanyDAS().find(dto.getPriceModelCompanyId()) : null;
 
         if(itemPrices == null || itemPrices.isEmpty()) {
-        	// default prices for given company were removed. Remove price entry.
-        	item.removeDefaultPricesByCompany(company);
+            // default prices for given company were removed. Remove price entry.
+            item.removeDefaultPricesByCompany(company);
         } else {
-        	// Now set the itemPrices in item
+            // Now set the itemPrices in item
             item.setDefaultPricesByCompany(itemPrices, company);
         }
     }
@@ -540,7 +537,7 @@ public class ItemBL {
     }
 
     private void updateTypes(ItemDTO dto)
-            {
+    {
         // update the types relationship
         Collection types = item.getItemTypes();
         types.clear();
@@ -598,8 +595,8 @@ public class ItemBL {
         ItemDeletedEvent itemDeletedEvent = new ItemDeletedEvent(item);
         EventManager.process(itemDeletedEvent);
         for (Integer entityId : item.getChildEntitiesIds()) {
-        	itemDeletedEvent.setEntityId(entityId);
-        	EventManager.process(itemDeletedEvent);
+            itemDeletedEvent.setEntityId(entityId);
+            EventManager.process(itemDeletedEvent);
         }
 
         itemDas.flush();
@@ -629,7 +626,7 @@ public class ItemBL {
      * @return The price in the requested currency
      */
     public BigDecimal getPriceByCurrency(Date date, ItemDTO item, Integer userId, Integer currencyId, OrderDTO order, OrderLineDTO orderLine)  {
-    	return getPriceByCurrency(date, item, userId, currencyId, null, order, orderLine);
+        return getPriceByCurrency(date, item, userId, currencyId, null, order, orderLine);
     }
 
     // return the price calculated with/without quantity (it's depends of PriceModel type)
@@ -647,25 +644,28 @@ public class ItemBL {
             List<PricingField> fields = pricingFields == null ? Collections.emptyList() : pricingFields;
 
             // price for today
+            long startTime = System.currentTimeMillis();
             PriceModelDTO priceModel = item.getPrice(TimezoneHelper.companyCurrentDate(item.getPriceModelCompanyId()), item.getPriceModelCompanyId());
+            LOG.debug("getPriceByCurrency took %s miliseconds for user %s", (System.currentTimeMillis() - startTime), userId);
 
-             if (priceModel != null) {
+            if (priceModel != null) {
 
-            	 if(priceModel.getType().equals(PriceModelStrategy.LINE_PERCENTAGE)) {
+                if(priceModel.getType().equals(PriceModelStrategy.LINE_PERCENTAGE)) {
 
-                     item.setIsPercentage(true);
-                     return priceModel.getRate();
+                    item.setIsPercentage(true);
+                    return priceModel.getRate();
 
-            	 } else if(priceModel.getType().equals(PriceModelStrategy.GRADUATED) || priceModel.getType().equals(PriceModelStrategy.GRADUATED_RATE_CARD)) {
+                } else if(priceModel.getType().equals(PriceModelStrategy.GRADUATED) || priceModel.getType().equals(PriceModelStrategy.GRADUATED_RATE_CARD)) {
 
-            		 priceModel.applyTo(null, null, quantity, result, fields, usage, false, date);
+                    priceModel.applyTo(null, null, quantity, result, fields, usage, false, date);
 
-            	 } else {
-
-                     priceModel.applyTo(null, null ,BigDecimal.ONE, result, fields, usage, false, date);
-            	 }
-                 return result.getPrice() == null ? BigDecimal.ZERO : result.getPrice();
-             }
+                } else {
+                    startTime = System.currentTimeMillis();
+                    priceModel.applyTo(null, null ,BigDecimal.ONE, result, fields, usage, false, date);
+                    LOG.debug("getPriceByCurrency's applyTo took %s for user %s", (System.currentTimeMillis() - startTime), userId);
+                }
+                return result.getPrice() == null ? BigDecimal.ZERO : result.getPrice();
+            }
         }
         return BigDecimal.ZERO;
     }
@@ -677,12 +677,12 @@ public class ItemBL {
     }
 
     public BigDecimal getPrice(Integer userId, Integer currencyId, BigDecimal quantity, Integer entityId) throws SessionInternalError {
-         return getPrice(userId, currencyId, quantity, entityId, null, null, false, null);
+        return getPrice(userId, currencyId, quantity, entityId, null, null, false, null);
     }
 
     public BigDecimal getPrice(Integer entityId, Integer userId ,Integer planId, Integer itemId, List<PricingField> fields, OrderDTO order) throws SessionInternalError {
 
-    	PluggableTaskManager taskManager = null;
+        PluggableTaskManager taskManager = null;
         try {
             taskManager = new PluggableTaskManager(entityId, Constants.PLUGGABLE_TASK_ITEM_PRICING);
         } catch (PluggableTaskException e) {
@@ -706,15 +706,15 @@ public class ItemBL {
 
         BigDecimal finalPrice = null;
         if (priceModelLevel.isPlanLevel()) {
-        	PlanBL planBl = new PlanBL(planId);
-        	for (PlanItemDTO planItem : planBl.getEntity().getPlanItems()) {
-        		if (planItem.getItem().getId() == itemId) {
-        			finalPrice = planItem.getPrice(TimezoneHelper.companyCurrentDate(entityId)).getRate();
-        			break;
-        		}
-        	}
+            PlanBL planBl = new PlanBL(planId);
+            for (PlanItemDTO planItem : planBl.getEntity().getPlanItems()) {
+                if (planItem.getItem().getId() == itemId) {
+                    finalPrice = planItem.getPrice(TimezoneHelper.companyCurrentDate(entityId)).getRate();
+                    break;
+                }
+            }
         } else {
-        	finalPrice = getPrice(userId, BigDecimal.ONE, entityId);
+            finalPrice = getPrice(userId, BigDecimal.ONE, entityId);
         }
 
         return finalPrice;
@@ -733,7 +733,7 @@ public class ItemBL {
      * @param order order being created or edited, maybe used for additional pricing calculations    @return The price in the requested currency. It always returns a price,
      * */
     public BigDecimal getPrice(Integer userId, Integer currencyId, BigDecimal quantity, Integer entityId, OrderDTO order, OrderLineDTO orderLine,
-                               boolean singlePurchase, Date eventDate) {
+            boolean singlePurchase, Date eventDate) {
 
         if (currencyId == null || entityId == null) {
             throw new SessionInternalError("Can't get a price with null parameters. currencyId = " + currencyId +
@@ -741,13 +741,14 @@ public class ItemBL {
         }
 
         CurrencyBL currencyBL;
+        long startCurrencyLoadTime = System.currentTimeMillis();
         try {
             currencyBL = new CurrencyBL(currencyId);
             priceCurrencySymbol = currencyBL.getEntity().getSymbol();
         } catch (Exception e) {
             throw new SessionInternalError(e);
         }
-
+        LOG.debug("loadCurrency Took %s for user %s", (System.currentTimeMillis() - startCurrencyLoadTime), userId);
         Date pricingDate = null;
         if (eventDate != null) {
             pricingDate = eventDate;
@@ -758,7 +759,9 @@ public class ItemBL {
         // set price model company id
         item.setPriceModelCompanyId(entityId);
         // default "simple" price
+        long loadPriceByCurrency = System.currentTimeMillis();
         BigDecimal price = getPriceByCurrency(pricingDate, item, userId, currencyId, quantity, order, orderLine);
+        LOG.debug("loadPriceByCurrency Took %s for user %s", (System.currentTimeMillis() - loadPriceByCurrency), userId);
 
         // run a plug-in with external logic (rules), if available
         try {
@@ -771,64 +774,6 @@ public class ItemBL {
             }
         } catch (Exception e) {
             throw new SessionInternalError("Item pricing task error", ItemBL.class, e);
-        }
-
-        return price;
-    }
-
-    /**
-     * Returns the basic price for an item and currency, without considering
-     * the current/existing usages if any during pricing calculation. This
-     * method does execute pricing plug-ins but with zero usage to get the
-     * correct price even if tiered model is used.
-     */
-    public BigDecimal getPriceForOverage(Integer userId, BigDecimal quantity, Integer entityId) {
-        UserBL user = new UserBL(userId);
-        Integer currencyId = user.getCurrencyId();
-        OrderDTO order = null;
-        OrderLineDTO orderLine = null;
-        boolean singlePurchase = false;
-        Date eventDate = null;
-        Date pricingDate = null;
-
-        if (currencyId == null || entityId == null) {
-            throw new SessionInternalError("Can't get a price with null parameters. currencyId = " + currencyId +
-                    " entityId = " + entityId);
-        }
-
-        CurrencyBL currencyBL;
-        try {
-            currencyBL = new CurrencyBL(currencyId);
-            priceCurrencySymbol = currencyBL.getEntity().getSymbol();
-        } catch (Exception e) {
-            throw new SessionInternalError(e);
-        }
-
-        // set price model company id
-        item.setPriceModelCompanyId(entityId);
-        // default "simple" price
-        BigDecimal price = getPriceByCurrency(pricingDate, item, userId, currencyId, quantity, order, orderLine);
-
-        // run a plug-in with external logic (rules), if available
-        try {
-            PluggableTaskManager<IPricing> taskManager = new PluggableTaskManager<>(entityId, Constants.PLUGGABLE_TASK_ITEM_PRICING);
-            PriceModelPricingTask priceModelPricingTask = null;
-            IPricing myTask = taskManager.getNextClass();
-            while(myTask != null) {
-                if (myTask instanceof PriceModelPricingTask) {
-                    priceModelPricingTask = (PriceModelPricingTask) myTask;
-                    break;
-                }
-                myTask = taskManager.getNextClass();
-            }
-            if (priceModelPricingTask == null) {
-                LOG.error("Price Model Pricing task is not configured");
-                throw new SessionInternalError("No Price Model Pricing Task Available");
-            }
-            PriceContextDTO priceContext = PriceContextDTO.of(item, quantity, userId, currencyId, pricingFields, eventDate);
-            price = priceModelPricingTask.getPriceForOverage(priceContext, price, order, orderLine, singlePurchase);
-        } catch(Exception e) {
-            throw new SessionInternalError("Error Handling Price Model Pricing Task");
         }
 
         return price;
@@ -872,7 +817,7 @@ public class ItemBL {
         // run a plug-in with external logic (rules), if available
         try {
             PluggableTaskManager<IPricing> taskManager
-                    = new PluggableTaskManager<>(entityId, Constants.PLUGGABLE_TASK_ITEM_PRICING);
+            = new PluggableTaskManager<>(entityId, Constants.PLUGGABLE_TASK_ITEM_PRICING);
             IPricing myTask = taskManager.getNextClass();
             PriceContextDTO priceContext = PriceContextDTO.of(item, quantity, userId, currencyId, pricingFields, eventDate);
             while(myTask != null) {
@@ -898,7 +843,7 @@ public class ItemBL {
      * @throws SessionInternalError if an internal exception occurs processing request
      */
     public ItemDTO getDTO(Integer languageId, Integer userId, Integer entityId, Integer currencyId)
-        throws SessionInternalError {
+            throws SessionInternalError {
         return getDTO(languageId, userId, entityId, currencyId, BigDecimal.ONE, null, null, false, null);
     }
 
@@ -936,9 +881,9 @@ public class ItemBL {
      * @throws SessionInternalError if an internal exception occurs processing request
      */
     public ItemDTO getDTO(Integer languageId, Integer userId, Integer entityId, Integer currencyId, BigDecimal quantity,
-                          OrderDTO order) throws SessionInternalError {
+            OrderDTO order) throws SessionInternalError {
 
-    	return getDTO(languageId, userId, entityId, currencyId, quantity, order, null, false, null);
+        return getDTO(languageId, userId, entityId, currencyId, quantity, order, null, false, null);
     }
 
 
@@ -962,21 +907,21 @@ public class ItemBL {
      * @throws SessionInternalError if an internal exception occurs processing request
      */
     public ItemDTO getDTO(Integer languageId, Integer userId, Integer entityId, Integer currencyId, BigDecimal quantity,
-                          OrderDTO order, OrderLineDTO orderLine, boolean singlePurchase, Date eventDate) throws SessionInternalError {
+            OrderDTO order, OrderLineDTO orderLine, boolean singlePurchase, Date eventDate) throws SessionInternalError {
 
         ItemDTO dto = new ItemDTO(
-            item.getId(),
-            item.getInternalNumber(),
-            item.getGlCode(),
-            new CompanyDAS().find(entityId),
-            item.getDescription(languageId),
-            item.getDeleted(),
-            currencyId,
-            null,
-            item.getPercentage(),
-            null, // to be set right after
-            item.getHasDecimals(),
-            item.getAssetManagementEnabled(),item.isPercentage());
+                item.getId(),
+                item.getInternalNumber(),
+                item.getGlCode(),
+                new CompanyDAS().find(entityId),
+                item.getDescription(languageId),
+                item.getDeleted(),
+                currencyId,
+                null,
+                item.getPercentage(),
+                null, // to be set right after
+                item.getHasDecimals(),
+                item.getAssetManagementEnabled(),item.isPercentage());
 
         // if item is also attached to some child entities
         dto.setEntities(item.getEntities());
@@ -1054,7 +999,7 @@ public class ItemBL {
         }
 
         if(other.getEntityId() != null) {
-        	retValue.setEntity(companyDAS.find(other.getEntityId()));
+            retValue.setEntity(companyDAS.find(other.getEntityId()));
         }
 
         retValue.setNumber(other.getNumber());
@@ -1082,7 +1027,7 @@ public class ItemBL {
         	MetaFieldBL.fillMetaFieldsFromWS(retValue.getEntityId(), retValue, other.getMetaFieldsMap().get(retValue.getEntityId()));
         }*/
 
-       	if(retValue.isGlobal()){
+        if(retValue.isGlobal()){
             if(retValue.getEntity() != null) {
                 List<Integer> allEntities = new CompanyDAS().getChildEntitiesIds(other.getEntityId());
                 allEntities.add(other.getEntityId());
@@ -1091,13 +1036,13 @@ public class ItemBL {
                     MetaFieldBL.fillMetaFieldsFromWS(id, retValue, other.getMetaFieldsMap().get(id));
                 }
 
-       			if (other.getOrderLineMetaFields() != null) {
-       	            for (MetaFieldWS metaField : other.getOrderLineMetaFields()) {
-       	                retValue.getOrderLineMetaFields().add(MetaFieldBL.getDTO(metaField,retValue.getEntityId()));
-       	            }
-       	        }
-       		}
-       	} else {
+                if (other.getOrderLineMetaFields() != null) {
+                    for (MetaFieldWS metaField : other.getOrderLineMetaFields()) {
+                        retValue.getOrderLineMetaFields().add(MetaFieldBL.getDTO(metaField,retValue.getEntityId()));
+                    }
+                }
+            }
+        } else {
             for(Integer id : other.getEntities()) {
                 LOG.debug("other.getMetaFieldsMap().get(id)  %s", (Object)other.getMetaFieldsMap().get(id));
                 MetaFieldBL.fillMetaFieldsFromWS(id, retValue, other.getMetaFieldsMap().get(id));
@@ -1107,12 +1052,12 @@ public class ItemBL {
                         retValue.getOrderLineMetaFields().add(MetaFieldBL.getDTO(metaField,retValue.getEntityId()));
                     }
                 }
-       		}
+            }
 
         }
 
-       	// convert PriceModelWS to PriceModelDTO
-       	CompanyDTO priceModelCompany = other.getPriceModelCompanyId() != null ? companyDAS.find(other.getPriceModelCompanyId()) : null;
+        // convert PriceModelWS to PriceModelDTO
+        CompanyDTO priceModelCompany = other.getPriceModelCompanyId() != null ? companyDAS.find(other.getPriceModelCompanyId()) : null;
         retValue.setDefaultPricesByCompany(PriceModelBL.getDTO(other.getDefaultPrices()), priceModelCompany);
         retValue.setPriceModelCompanyId(other.getPriceModelCompanyId());
         retValue.setMasterPartnerPercentage(other.getMasterPartnerPercentageAsDecimal());
@@ -1128,9 +1073,9 @@ public class ItemBL {
         retValue.setActiveUntil(other.getActiveUntil());
 
         /* #10256 - Asset Reservation */
-//        We always need to save asset value as it's not nullable field in database.
+        //        We always need to save asset value as it's not nullable field in database.
         if (other.getReservationDuration() == null || other.getReservationDuration() == 0) {
-//            If other.getReservationDuration() does not have any value, we should add default value saved in Preference.
+            //            If other.getReservationDuration() does not have any value, we should add default value saved in Preference.
             retValue.setReservationDuration(Util.convertFromMinutesToMs(Integer.parseInt(PreferenceBL.getPreferenceValue(other.getEntityId(), CommonConstants.PREFERENCE_ASSET_RESERVATION_DURATION))));
         } else {
             retValue.setReservationDuration(Util.convertFromMinutesToMs(other.getReservationDuration()));
@@ -1141,11 +1086,11 @@ public class ItemBL {
     }
 
     public ItemDTOEx getWS(ItemDTO other) {
-    	if (other == null) {
+        if (other == null) {
             other = item;
         }
 
-    	return getItemDTOEx(other);
+        return getItemDTOEx(other);
     }
 
     public static ItemDTOEx getItemDTOEx(ItemDTO other){
@@ -1154,7 +1099,7 @@ public class ItemBL {
         retValue.setId(other.getId());
 
         if(other.getEntity() != null) {
-        	retValue.setEntityId(other.getEntity().getId());
+            retValue.setEntityId(other.getEntity().getId());
         }
 
         if(other.getEntities() != null) {
@@ -1197,19 +1142,19 @@ public class ItemBL {
         if(other.isGlobal()) {
             List<Integer> companyIds = new CompanyDAS().getChildEntitiesIds(other.getEntityId());
             companyIds.add(other.getEntityId());
-        	for (int entityId :companyIds) {
-        		MetaFieldValueWS[] childMetaFields = MetaFieldBL.convertMetaFieldsToWS(entityId, other);
-        		retValue.getMetaFieldsMap().put(entityId, childMetaFields);
-
-        		metaFields = (MetaFieldValueWS[]) ArrayUtils.addAll(metaFields, childMetaFields);
-        	}
-        } else {
-        	for (int entityId : other.getChildEntitiesIds()) {
+            for (int entityId :companyIds) {
                 MetaFieldValueWS[] childMetaFields = MetaFieldBL.convertMetaFieldsToWS(entityId, other);
-        		retValue.getMetaFieldsMap().put(entityId, childMetaFields);
+                retValue.getMetaFieldsMap().put(entityId, childMetaFields);
 
-        		metaFields = (MetaFieldValueWS[]) ArrayUtils.addAll(metaFields, childMetaFields);
-        	}
+                metaFields = (MetaFieldValueWS[]) ArrayUtils.addAll(metaFields, childMetaFields);
+            }
+        } else {
+            for (int entityId : other.getChildEntitiesIds()) {
+                MetaFieldValueWS[] childMetaFields = MetaFieldBL.convertMetaFieldsToWS(entityId, other);
+                retValue.getMetaFieldsMap().put(entityId, childMetaFields);
+
+                metaFields = (MetaFieldValueWS[]) ArrayUtils.addAll(metaFields, childMetaFields);
+            }
         }
         retValue.setMetaFields(metaFields);
 
@@ -1219,16 +1164,16 @@ public class ItemBL {
         SortedMap<Date, PriceModelDTO> prices = other.getDefaultPricesByCompany(other.getPriceModelCompanyId());
 
         if(prices == null) {
-        	prices = other.getGlobalDefaultPrices();
-        	retValue.setPriceModelCompanyId(null);
+            prices = other.getGlobalDefaultPrices();
+            retValue.setPriceModelCompanyId(null);
         } else {
-        	retValue.setPriceModelCompanyId(other.getPriceModelCompanyId());
+            retValue.setPriceModelCompanyId(other.getPriceModelCompanyId());
         }
 
         if(prices != null) {
-        	retValue.setDefaultPrices(PriceModelBL.getWS(prices));
-	        // today's price
-	        retValue.setDefaultPrice(PriceModelBL.getWsPriceForDate(retValue.getDefaultPrices(), TimezoneHelper.companyCurrentDate(other.getEntityId())));
+            retValue.setDefaultPrices(PriceModelBL.getWS(prices));
+            // today's price
+            retValue.setDefaultPrice(PriceModelBL.getWsPriceForDate(retValue.getDefaultPrices(), TimezoneHelper.companyCurrentDate(other.getEntityId())));
         }
 
         //Add RatingConfiguration
@@ -1251,9 +1196,9 @@ public class ItemBL {
         List<InternationalDescriptionWS> descriptionWSList = new LinkedList<>();
         List<InternationalDescriptionDTO> descriptionDTOList = new ItemDAS().getDescriptions(itemId);
         descriptionDTOList.forEach(internationalDescriptionDTO ->
-                descriptionWSList.add(new InternationalDescriptionWS(
-                        internationalDescriptionDTO.getId().getLanguageId(),
-                        internationalDescriptionDTO.getContent()
+        descriptionWSList.add(new InternationalDescriptionWS(
+                internationalDescriptionDTO.getId().getLanguageId(),
+                internationalDescriptionDTO.getContent()
                 )));
         return descriptionWSList;
     }
@@ -1272,7 +1217,7 @@ public class ItemBL {
      * @return an array of all items
      */
     public ItemDTOEx[] getAllItems(Integer entityId) {
-    	EntityBL entityBL = new EntityBL(entityId);
+        EntityBL entityBL = new EntityBL(entityId);
         CompanyDTO entity = entityBL.getEntity();
         Collection<ItemDTO> itemEntities = itemDas.findByEntityId(entityId);
         ItemDTOEx[] items = new ItemDTOEx[itemEntities.size()];
@@ -1280,7 +1225,7 @@ public class ItemBL {
         // iterate through returned item entities, converting them into a DTO
         int index = 0;
         for (ItemDTO item : itemEntities) {
-		    set(item.getId());
+            set(item.getId());
             items[index++] = getWS(getDTO(entity.getLanguageId(), null, entityId, entity.getCurrencyId()));
         }
 
@@ -1303,9 +1248,9 @@ public class ItemBL {
 
         int index = 0;
         for (ItemDTO item : results) {
-        	// set caller company id of item to get price model
-        	item.setPriceModelCompanyId(entityId);
-        	items[index++] = getWS(item);
+            // set caller company id of item to get price model
+            item.setPriceModelCompanyId(entityId);
+            items[index++] = getWS(item);
         }
 
         return items;
@@ -1333,14 +1278,14 @@ public class ItemBL {
         int preferenceUniqueProductCode = 0;
         boolean value = false;
         try {
-        	for (Integer entityId : entities) {
-        		preferenceUniqueProductCode =
-        				PreferenceBL.getPreferenceValueAsIntegerOrZero(
-        						entityId, Constants.PREFERENCE_UNIQUE_PRODUCT_CODE);
-        		if (1 == preferenceUniqueProductCode) {
-        			value = true;
-        		}
-        	}
+            for (Integer entityId : entities) {
+                preferenceUniqueProductCode =
+                        PreferenceBL.getPreferenceValueAsIntegerOrZero(
+                                entityId, Constants.PREFERENCE_UNIQUE_PRODUCT_CODE);
+                if (1 == preferenceUniqueProductCode) {
+                    value = true;
+                }
+            }
         } catch (EmptyResultDataAccessException e) {
             // default will be used
         }
@@ -1359,13 +1304,13 @@ public class ItemBL {
     }
 
     public static boolean isUniqueProductCode(ItemDTO item, List<Integer> entities, boolean isNew) {
-    	for (Integer entityId : entities) {
-    		Long productCodeUsageCount = new ItemDAS().findProductCountByInternalNumber(item.getInternalNumber(), entityId, isNew, item.getId());
-    		if(productCodeUsageCount != 0) {
+        for (Integer entityId : entities) {
+            Long productCodeUsageCount = new ItemDAS().findProductCountByInternalNumber(item.getInternalNumber(), entityId, isNew, item.getId());
+            if(productCodeUsageCount != 0) {
                 LOG.debug("Its a duplicate product code ");
                 return false;
             }
-    	}
+        }
         LOG.debug("Its a unique product code");
         return true;
     }
@@ -1373,7 +1318,7 @@ public class ItemBL {
     private void validateProductOrderLinesMetaFields(Collection<MetaField> newMetaFields) throws SessionInternalError {
         Collection<MetaField> currentMetaFields = item != null && item.getId() > 0 ? item.getOrderLineMetaFields() : new LinkedList<MetaField>();
         if(currentMetaFields.size()>0){
-        	MetaFieldBL.validateMetaFieldsChanges(newMetaFields, currentMetaFields);
+            MetaFieldBL.validateMetaFieldsChanges(newMetaFields, currentMetaFields);
         }
     }
 
@@ -1405,16 +1350,16 @@ public class ItemBL {
      * @param source dto metafield with updated properties
      */
     private void mergeBasicProperties(MetaField destination, MetaField source) {
-       destination.setName(source.getName());
-       destination.setPrimary(source.getPrimary());
-       destination.setValidationRule(source.getValidationRule());
-       destination.setDataType(source.getDataType());
-       destination.setDefaultValue(source.getDefaultValue());
-       destination.setDisabled(source.isDisabled());
-       destination.setMandatory(source.isMandatory());
-       destination.setDisplayOrder(source.getDisplayOrder());
-       destination.setFieldUsage(source.getFieldUsage());
-   }
+        destination.setName(source.getName());
+        destination.setPrimary(source.getPrimary());
+        destination.setValidationRule(source.getValidationRule());
+        destination.setDataType(source.getDataType());
+        destination.setDefaultValue(source.getDefaultValue());
+        destination.setDisabled(source.isDisabled());
+        destination.setMandatory(source.isMandatory());
+        destination.setDisplayOrder(source.getDisplayOrder());
+        destination.setFieldUsage(source.getFieldUsage());
+    }
 
     /**
      * Calculates all the parents and childs of a given id
@@ -1423,34 +1368,34 @@ public class ItemBL {
      * @return
      */
     public List<Integer> getParentAndChildIds(Integer entityId) {
-    	 Integer parentId = getRootEntityId(entityId);
-         List<Integer> entities = new ArrayList<Integer>(0);
+        Integer parentId = getRootEntityId(entityId);
+        List<Integer> entities = new ArrayList<Integer>(0);
 
-         entities.add(parentId);
-         entities.addAll(findChilds(parentId));
+        entities.add(parentId);
+        entities.addAll(findChilds(parentId));
 
-         return entities;
+        return entities;
     }
 
     private List<Integer> findChilds(Integer parentId) {
-    	List<Integer> entities = new ArrayList<Integer>();
+        List<Integer> entities = new ArrayList<Integer>();
 
-    	List<CompanyDTO> childs = new CompanyDAS().findChildEntities(parentId);
-    	for(CompanyDTO child : childs) {
-    		entities.add(child.getId());
-    		entities.addAll(findChilds(child.getId()));
-    	}
+        List<CompanyDTO> childs = new CompanyDAS().findChildEntities(parentId);
+        for(CompanyDTO child : childs) {
+            entities.add(child.getId());
+            entities.addAll(findChilds(child.getId()));
+        }
 
-    	return entities;
+        return entities;
     }
 
     private Integer getRootEntityId(Integer entityId) {
-    	CompanyDTO company = new CompanyDAS().find(entityId);
-    	if(company.getParent() == null) {
-    		return entityId;
-    	} else {
-    		return getRootEntityId(company.getParent().getId());
-    	}
+        CompanyDTO company = new CompanyDAS().find(entityId);
+        if(company.getParent() == null) {
+            return entityId;
+        } else {
+            return getRootEntityId(company.getParent().getId());
+        }
     }
 
 
@@ -1482,7 +1427,7 @@ public class ItemBL {
     }
 
     public boolean itemHasVariableUsagePricing(Date pricingDate, Integer entityId) {
-    	return getEntity().getPrice(pricingDate, entityId).getStrategy().isVariableUsagePricing();
+        return getEntity().getPrice(pricingDate, entityId).getStrategy().isVariableUsagePricing();
     }
 
     public Integer getOrderLineTypeId() {

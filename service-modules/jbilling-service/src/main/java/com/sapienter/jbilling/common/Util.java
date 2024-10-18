@@ -16,40 +16,42 @@
 
 package com.sapienter.jbilling.common;
 
-import com.sapienter.jbilling.server.user.MainSubscriptionWS;
-import com.sapienter.jbilling.server.util.Constants;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.SystemUtils;
-import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.sql.Timestamp;
-import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.SystemUtils;
+import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sapienter.jbilling.server.user.MainSubscriptionWS;
+import com.sapienter.jbilling.server.util.Constants;
 
 /**
  * Client miscelaneous utility functions
@@ -173,8 +175,9 @@ public class Util {
     }
 
     static public Date truncateDate (Date arg) {
-        if (arg == null)
+        if (arg == null) {
             return null;
+        }
         GregorianCalendar cal = new GregorianCalendar();
 
         cal.setTime(arg);
@@ -197,7 +200,7 @@ public class Util {
 
         cal.setTime(date);
         return cal.get(GregorianCalendar.YEAR) + "-" + (cal.get(GregorianCalendar.MONTH) + 1) + "-"
-                + cal.get(GregorianCalendar.DATE);
+        + cal.get(GregorianCalendar.DATE);
     }
 
     /**
@@ -239,56 +242,67 @@ public class Util {
     }
 
 
-    /**
-     * Executes a command on the OS.
-     *
-     * @param command - Command to execute
-     * @param workingDir - Working directory
-     * @return command output
-     */
-    public static String executeCommand(String[] command, File workingDir) {
-        return executeCommand(command, workingDir, false);
+    public static class ExecutionResult {
+        private String output;
+        private String error;
+
+        public ExecutionResult(String output, String error) {
+            this.output = output;
+            this.error = error;
+        }
+
+        public String getOutput() {
+            return output;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public String outputAndError() {
+            StringBuilder outputAndError = new StringBuilder();
+            outputAndError.append("[Output]").append(StringUtils.isNotEmpty(output) ? output : StringUtils.EMPTY);
+            outputAndError.append("[Error]").append(StringUtils.isNotEmpty(error) ? error : StringUtils.EMPTY);
+            return outputAndError.toString();
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("ExecutionResult [");
+            builder.append(outputAndError());
+            builder.append("]");
+            return builder.toString();
+        }
     }
+
     /**
      * Executes a command on the OS.
      *
      * @param command - Command to execute
      * @param workingDir - Working directory
-     * @param trimOutput - trim the output value
-     *
      * @return command output
      */
-    public static String executeCommand(String[] command, File workingDir, boolean trimOutput) {
-        StringBuilder output = new StringBuilder();
-
-        Process p;
+    public static ExecutionResult executeCommand(String[] command, File workingDir) {
         try {
-            StringBuilder stdOut = new StringBuilder();
-            StringBuilder stdErr = new StringBuilder();
+            StringBuilder output = new StringBuilder();
+            StringBuilder error = new StringBuilder();
+            Process process = Runtime.getRuntime().exec(command, null, workingDir);
 
-            p = Runtime.getRuntime().exec(command, null, workingDir);
-
-            Thread stdoutGobbler = new Thread(new StdInputStreamGobbler(p.getInputStream(), stdOut));
-            Thread stderrGobbler = new Thread(new StdInputStreamGobbler(p.getErrorStream(), stdErr));
+            Thread stdoutGobbler = new Thread(new InputStreamGobbler(process.getInputStream(), output));
+            Thread stderrGobbler = new Thread(new InputStreamGobbler(process.getErrorStream(), error));
 
             stdoutGobbler.start();
             stderrGobbler.start();
 
-            p.waitFor(360, TimeUnit.SECONDS);
+            process.waitFor(360, TimeUnit.SECONDS);
 
             stdoutGobbler.join();
             stderrGobbler.join();
-
-            if (trimOutput) {
-                output.append(StringUtils.trim(stdOut.toString()));
-            } else {
-                output.append("[Output]").append(stdOut);
-                output.append("[Error]").append(stdErr);
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage());
+            return new ExecutionResult(output.toString(), error.toString());
+        } catch(Exception ex) {
+            throw new SessionInternalError("Error executing command!", ex);
         }
-        return output.toString();
     }
 
     /**
@@ -334,8 +348,8 @@ public class Util {
 
         logger.debug("Decrypting: {}", encryptedFile);
 
-        String output = executeCommand(command.toArray(new String[command.size()]), null);
-        return output;
+        return executeCommand(command.toArray(new String[command.size()]), null)
+                .outputAndError();
     }
 
     public static void gzip(String dir) {
@@ -347,24 +361,24 @@ public class Util {
                     entry -> !entry.getFileName().toString().endsWith(".gz"))) {
 
                 StreamSupport.stream(dirStream.spliterator(), false)
-                    .forEach(p -> {
-                        try {
-                            Path out = Paths.get(p.toString() + ".gz");
-                            try (
-                                    FileInputStream fis = new FileInputStream(p.toFile());
-                                    GZIPOutputStream gzipOS = new GZIPOutputStream(Files.newOutputStream(out))
-                            ) {
-                                final byte[] bytes = new byte[1024];
-                                int length;
-                                while ((length = fis.read(bytes)) >= 0) {
-                                    gzipOS.write(bytes, 0, length);
-                                }
+                .forEach(p -> {
+                    try {
+                        Path out = Paths.get(p.toString() + ".gz");
+                        try (
+                                FileInputStream fis = new FileInputStream(p.toFile());
+                                GZIPOutputStream gzipOS = new GZIPOutputStream(Files.newOutputStream(out))
+                                ) {
+                            final byte[] bytes = new byte[1024];
+                            int length;
+                            while ((length = fis.read(bytes)) >= 0) {
+                                gzipOS.write(bytes, 0, length);
                             }
-                            Files.delete(p);
-                        } catch (IOException e) {
-                            e.printStackTrace();
                         }
-                    });
+                        Files.delete(p);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -552,8 +566,9 @@ public class Util {
     }
 
     static public String truncateString (String str, int length) {
-        if (str == null)
+        if (str == null) {
             return null;
+        }
         String retValue;
         if (str.length() <= length) {
             retValue = str;
@@ -607,7 +622,7 @@ public class Util {
      */
     public static int calcLuhnCheckDigit(String number) {
         int sum = 0;
-
+        number = getDigitsOnly(number);
         //loop through all digits in the number
         for (int i = 0; i < number.length(); i++) {
 
@@ -657,10 +672,12 @@ public class Util {
                 sum += addend;
                 timesTwo = !timesTwo;
             }
-            if (sum == 0)
+            if (sum == 0) {
                 return false;
-            if (sum % 10 == 0)
+            }
+            if (sum % 10 == 0) {
                 return true;
+            }
         }
         ;
         return false;
@@ -801,38 +818,39 @@ public class Util {
         return (duration!=null) ? BigDecimal.valueOf(MILISECONDS_IN_SECOND * SECONDS_IN_MINUTE * duration).intValue() : BigDecimal.ZERO.intValue();
     }
 
-	public static BigDecimal string2decimal(String number) {
-		if (StringUtils.isEmpty(number))
-			return null;
-		try {
-			return new BigDecimal(number);
-		} catch (NumberFormatException ex) {
-			return null;
-		}
-	}
+    public static BigDecimal string2decimal(String number) {
+        if (StringUtils.isEmpty(number)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(number);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
 
-	public static final String mapOrderPeriods(Integer periodId,Integer periodDay,String description,Timestamp nextInvoiceDate){
+    public static final String mapOrderPeriods(Integer periodId,Integer periodDay,String description,Timestamp nextInvoiceDate){
 
-		if(Constants.PERIOD_UNIT_WEEK == periodId.intValue()){
-			 return String.format("%s %s", MainSubscriptionWS.weekDaysMap.get(periodDay), description);
-		}
-		else if(Constants.PERIOD_UNIT_MONTH == periodId.intValue()){
-			 return String.format("%s %s",MainSubscriptionWS.monthDays.get(periodDay-1),description);
-		}
-		else if(Constants.PERIOD_UNIT_DAY == periodId.intValue()){
-			 return String.valueOf(description);
-		}
-		else if(Constants.PERIOD_UNIT_YEAR == periodId.intValue()){
-			 return String.format("%s, %s %s",description
-					 						,MainSubscriptionWS.yearMonthsMap.get((nextInvoiceDate != null)?nextInvoiceDate.getMonth()+1:1)
-					 					    ,(nextInvoiceDate != null)?nextInvoiceDate.getDate():1);
-		}
-		else if(Constants.PERIOD_UNIT_SEMI_MONTHLY == periodId.intValue()){
-			 return String.format("%s %s", MainSubscriptionWS.semiMonthlyDaysMap.get(periodDay), description);
-		}
+        if(Constants.PERIOD_UNIT_WEEK == periodId.intValue()){
+            return String.format("%s %s", MainSubscriptionWS.weekDaysMap.get(periodDay), description);
+        }
+        else if(Constants.PERIOD_UNIT_MONTH == periodId.intValue()){
+            return String.format("%s %s",MainSubscriptionWS.monthDays.get(periodDay-1),description);
+        }
+        else if(Constants.PERIOD_UNIT_DAY == periodId.intValue()){
+            return String.valueOf(description);
+        }
+        else if(Constants.PERIOD_UNIT_YEAR == periodId.intValue()){
+            return String.format("%s, %s %s",description
+                    ,MainSubscriptionWS.yearMonthsMap.get((nextInvoiceDate != null)?nextInvoiceDate.getMonth()+1:1)
+                    ,(nextInvoiceDate != null)?nextInvoiceDate.getDate():1);
+        }
+        else if(Constants.PERIOD_UNIT_SEMI_MONTHLY == periodId.intValue()){
+            return String.format("%s %s", MainSubscriptionWS.semiMonthlyDaysMap.get(periodDay), description);
+        }
 
-		return null;
-	}
+        return null;
+    }
 
     public static final String formatRateForDisplay(BigDecimal rate) {
 
@@ -866,16 +884,16 @@ public class Util {
      * @return obscured card number
      */
     public static final String getObscuredCardNumber(char[] cardNumber) {
-	  return StringUtils.leftPad(new String(cardNumber,cardNumber.length-4,4),Constants.OBSCURED_CARD_LENGTH,'*');
+        return StringUtils.leftPad(new String(cardNumber,cardNumber.length-4,4),Constants.OBSCURED_CARD_LENGTH,'*');
     }
-/**
- * New obscured format 6d...3d to get Card type from stored card initial digits for ObscuredvalidationRule on cardnumber
- * @param cardNumber
- * @return
- */
+    /**
+     * New obscured format 6d...3d to get Card type from stored card initial digits for ObscuredvalidationRule on cardnumber
+     * @param cardNumber
+     * @return
+     */
     public static final String getObscuredCardNumberNew(char[] cardNumber) {
         String ccNumber = String.valueOf(cardNumber);
-        if (ccNumber.contains("...")) {
+        if (ccNumber.contains("...") || (ccNumber.contains("**"))) {
             return ccNumber;
         }
         String obscuredCcNumber = "";
@@ -920,27 +938,24 @@ public class Util {
         return decimal.setScale(CommonConstants.BIGDECIMAL_SCALE, CommonConstants.BIGDECIMAL_ROUND);
     }
 
-    private static class StdInputStreamGobbler implements Runnable {
+    private static class InputStreamGobbler implements Runnable {
         private final InputStream    is;
         private final StringBuilder  output;
 
-        public StdInputStreamGobbler (InputStream is, StringBuilder  output) {
+        public InputStreamGobbler (InputStream is, StringBuilder  output) {
             this.is = is;
             this.output = output;
         }
 
         @Override
         public void run () {
-            try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
-                String line = reader.readLine();
-                while (line != null) {
-                    output.append(line);
-                    output.append(System.lineSeparator());
-                    line = reader.readLine();
-                }
+            try {
+                output.append(IOUtils.toString(is, StandardCharsets.UTF_8));
             } catch (IOException e) {
-                logger.error("Error while executeOnSystem", e);
+                throw new SessionInternalError("reading from stream failed", e);
             }
         }
     }
+
+
 }

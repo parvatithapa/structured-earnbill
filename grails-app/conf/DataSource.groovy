@@ -28,6 +28,10 @@ def dbPort     = System.getenv("JBILLING_DB_PORT")     ?: "5432"
 def dbParams   = System.getenv("JBILLING_DB_PARAMS")   ?: ""
 def dbPassword = System.getenv("JBILLING_DB_PASSWORD") ?: ""
 
+def dbUmsUser     = System.getenv("UMS_DB_USER")     ?: "jbilling"
+def dbUmsName     = System.getenv("UMS_DB_NAME")     ?: "billinghub_usage_management_db"
+def dbUmsPassword = System.getenv("UMS_DB_PASSWORD") ?: ""
+
 if (dbParams) {
     dbParams = "?" + dbParams
 }
@@ -38,12 +42,29 @@ dataSource {
     username = dbUser
     password = dbPassword
     url = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}${dbParams}"
+    maxPoolSize = 500
 
     /*
         Other database configuration settings. Do not change unless you know what you are doing!
         See resources.groovy for additional configuration options
     */
-    pooled = true
+    pooled = false
+    configClass = GrailsAnnotationConfiguration.class
+}
+
+dataSourceUms {
+    dialect         = "org.hibernate.dialect.PostgreSQLDialect"
+    driverClassName = "org.postgresql.Driver"
+    username = dbUmsUser
+    password = dbUmsPassword
+    url = "jdbc:postgresql://${dbHost}:${dbPort}/${dbUmsName}${dbParams}"
+    maxPoolSize = 50
+
+    /*
+        Other database configuration settings. Do not change unless you know what you are doing!
+        See resources.groovy for additional configuration options
+    */
+    pooled = false
     configClass = GrailsAnnotationConfiguration.class
 }
 

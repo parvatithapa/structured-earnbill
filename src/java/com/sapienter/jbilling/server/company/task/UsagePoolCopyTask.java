@@ -11,7 +11,6 @@ import com.sapienter.jbilling.server.usagePool.UsagePoolWS;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolDAS;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolDTO;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
-
 import org.apache.log4j.Logger;
 
 import java.util.List;
@@ -61,12 +60,6 @@ public class UsagePoolCopyTask extends AbstractCopyTask {
         for (UsagePoolDTO dto : usagePoolDTOs) {
             usagePoolDAS.reattach(dto);
             UsagePoolWS ws = UsagePoolBL.getUsagePoolWS(dto);
-            /*
-             * Ref : JB-3667
-             *Ids of new consumption actions should be null or empty.
-             *New ids will be generated with respect to new free usage pool.
-             */
-            ws.getConsumptionActions().forEach(action -> action.setId(null));
             Integer[] itemTypesIds = new Integer[ws.getItemTypes().length];
             int index = 0;
             for (ItemTypeDTO itemTypeDTO : dto.getItemTypes()) {

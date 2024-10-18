@@ -19,7 +19,7 @@ public class LoggingValidator {
         for (String logLine : logLines) {
             boolean validLine = logLine.contains(priorityLevel) //valid priority
                     && logLine.contains(callerClass) //valid class
-                    && logLine.contains("juser=\"1\", jcompany=\"1\", ip=") // valid user, company and ip
+                    && logLine.contains("juser=\"1\", jcompany=\"1\", ip=\"127.0.0.1\"") // valid user, company and ip
                     && logFile.contains(apiMethod) //valid API method
                     && logLine.contains(module.toString()) // valid module
                     && logLine.contains(status.toString()) // valid status
@@ -33,7 +33,7 @@ public class LoggingValidator {
         }
         String errorMessage = "priorityLevel=" + priorityLevel +
                 ", callerClass=" + callerClass +
-                ", juser=\"1\", jcompany=\"1\", ip=" +
+                ", juser=\"1\", jcompany=\"1\", ip=\"127.0.0.1\"" +
                 ", apiMethod=" + apiMethod +
                 ", module=" + module.toString() +
                 ", status=" + status.toString() +

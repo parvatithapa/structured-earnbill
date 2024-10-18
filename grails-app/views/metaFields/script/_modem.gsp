@@ -84,7 +84,7 @@
     <g:hiddenField name="metaField_${field.id}.value" value="${fieldValue}" />
     <content tag="label"><g:message code="${field.name}"/><g:if test="${field.mandatory}"><span id="mandatory-meta-field">*</span></g:if></content>
     <content tag="label.for">metaField_${field.id}.value</content>
-    <div style="float:left">
+    <div id="custom-div">
         <g:radio id="modem${field.id}Residential" class="modem${field.id}"
                  name="modem${field.id}" value="Residential"/>Residential
         <br>

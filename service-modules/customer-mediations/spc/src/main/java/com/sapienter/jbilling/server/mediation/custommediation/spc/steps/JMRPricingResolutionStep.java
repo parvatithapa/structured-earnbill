@@ -57,7 +57,8 @@ public class JMRPricingResolutionStep extends AbstractMediationStep<MediationSte
         SPCConstants.CALL_CHARGE,
         SPCConstants.CODE_STRING,
         SPCConstants.TARIFF_CODE,
-        Constants.PLAN_ID
+        Constants.PLAN_ID,
+        SPCConstants.PURCHASE_ORDER_ID
     };
 
     @Override

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_subreport" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b71384e0-0b93-4e8a-a3a9-e385bcfc61d9">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="direct_debit_count" class="java.lang.Integer"/>
+	<parameter name="amount_of_last_statement" class="java.math.BigDecimal"/>
+	<parameter name="payment_received" class="java.math.BigDecimal"/>
+	<parameter name="total_new_charge" class="java.math.BigDecimal"/>
+	<queryString language="SQL">
+		<![CDATA[SELECT 1]]>
+	</queryString>
+	<detail>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="190" height="24" isRemoveLineWhenBlank="true" forecolor="#000000" uuid="3bd7aaea-3582-4ac2-b424-6164a0959006">
+					<printWhenExpression><![CDATA[$P{direct_debit_count} > 0 &&
+$P{amount_of_last_statement}.add($P{payment_received}).add($P{total_new_charge}) > 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Please ensure you have sufficient funds available by the Direct Debit date to avoid additional charges.]]></text>
+			</staticText>
+		</band>
+		<band height="15">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="181" height="13" isRemoveLineWhenBlank="true" forecolor="#000000" uuid="a4d4cb82-4173-435e-86e4-5e0541a4b924">
+					<printWhenExpression><![CDATA[$P{total_new_charge} > 0 &&
+$P{direct_debit_count} == 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Late payment fee if applicable]]></text>
+			</staticText>
+		</band>
+		<band height="14">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="181" height="13" isRemoveLineWhenBlank="true" forecolor="#000000" uuid="96617e39-9342-4eb2-9f35-87e20c1e49d8">
+					<printWhenExpression><![CDATA[$P{amount_of_last_statement}.add($P{payment_received}).add($P{total_new_charge}) == 0 ? true:false]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Payment not required.]]></text>
+			</staticText>
+		</band>
+	</detail>
+</jasperReport>

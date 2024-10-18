@@ -168,15 +168,24 @@ public class UsagePoolBL {
                 action.setMediumType(actionWS.getMediumType().name());
             }
         }
-        action.setPercentage(toint(actionWS.getPercentage()));
+        action.setPercentage(percentToInt(actionWS.getPercentage()));
         action.setType(actionWS.getType());
         action.setId(toint(actionWS.getId()));
         return action;
     }
+    
+	private Integer percentToInt(String s) {
+		String value = StringUtils.trimToNull(s);
+		if (StringUtils.isNotBlank(value)) {
+			int val = NumberUtils.toInt(value);
+			return val < 0 ? null : val;
+		}
+		return null;
+	}
 
     private Integer toint(String s) {
-	String value= "";
-        if ((value = StringUtils.trimToNull(s))!=null) {
+	String value= StringUtils.trimToNull(s);
+        if (StringUtils.isNotBlank(value)) {
 		int val = NumberUtils.toInt(value);
             return val==0 ? null : val;
         }
@@ -238,7 +247,7 @@ public class UsagePoolBL {
                 ItemDTO item = new ItemDAS().findNow(toint(productId));
                 boolean isGlobal = null != item ? item.isGlobal() : false;
     			if (!StringUtils.isEmpty(percentage)) {
-					if (!StringUtils.isNumeric(percentage) || AttributeUtils.parseInteger(percentage) <= 0 ||
+					if (!StringUtils.isNumeric(percentage) || AttributeUtils.parseInteger(percentage) < 0 ||
 							AttributeUtils.parseInteger(percentage) > 100) {
 						throw new SessionInternalError("Usage Pool Consumption % must be an integer value greater than zero and less than or equal to 100",
 								new String[]{ "UsagePoolWS,attribute_key,usagePool.error.attribute.key.must.be.positive.integer" });

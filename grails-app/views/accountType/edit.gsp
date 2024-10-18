@@ -142,6 +142,7 @@
                                   optionValue="methodName"
                                   value="${selectedPaymentMethodTypeIds}" />
                     </g:applyLayout>
+
                 </div>
 
                 <div class="btn-box buttons">

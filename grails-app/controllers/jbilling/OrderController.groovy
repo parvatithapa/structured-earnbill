@@ -16,33 +16,56 @@
 
 package jbilling
 
+import grails.converters.JSON
+import grails.gorm.PagedResultList
+import grails.plugin.springsecurity.SpringSecurityUtils
+import grails.plugin.springsecurity.annotation.Secured
+import grails.util.Holders
+
+import org.apache.commons.lang.ArrayUtils
+import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
+import org.hibernate.Criteria
+import org.hibernate.criterion.MatchMode
+import org.hibernate.criterion.Restrictions
+
+import com.sapienter.jbilling.client.metafield.MetaFieldBindHelper
 import com.sapienter.jbilling.client.util.Constants
 import com.sapienter.jbilling.client.util.DownloadHelper
-import com.sapienter.jbilling.common.IMethodTransactionalWrapper;
+import com.sapienter.jbilling.client.util.SortableCriteria
+import com.sapienter.jbilling.common.IMethodTransactionalWrapper
 import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.customer.CustomerBL
-import com.sapienter.jbilling.server.filter.FilterFactory;
+import com.sapienter.jbilling.server.filter.FilterFactory
 import com.sapienter.jbilling.server.filter.JbillingFilterConverter
 import com.sapienter.jbilling.server.invoice.InvoiceBL
+import com.sapienter.jbilling.server.invoice.InvoiceWS
 import com.sapienter.jbilling.server.invoice.db.InvoiceDAS
 import com.sapienter.jbilling.server.item.AssetWS
 import com.sapienter.jbilling.server.item.CurrencyBL
+import com.sapienter.jbilling.server.metafields.EntityType
+import com.sapienter.jbilling.server.metafields.MetaFieldBL
+import com.sapienter.jbilling.server.metafields.MetaFieldValueWS
 import com.sapienter.jbilling.server.metafields.db.MetaField
 import com.sapienter.jbilling.server.order.OrderBL
 import com.sapienter.jbilling.server.order.OrderChangePlanItemWS
 import com.sapienter.jbilling.server.order.OrderChangeWS
+import com.sapienter.jbilling.server.order.OrderLineItemizedUsageWS
+import com.sapienter.jbilling.server.order.OrderStatusFlag
 import com.sapienter.jbilling.server.order.OrderWS
 import com.sapienter.jbilling.server.order.db.OrderDAS
 import com.sapienter.jbilling.server.order.db.OrderDTO
 import com.sapienter.jbilling.server.order.db.OrderExportableWrapper
 import com.sapienter.jbilling.server.order.db.OrderLineDTO
 import com.sapienter.jbilling.server.order.db.OrderProcessDAS
+import com.sapienter.jbilling.server.order.db.OrderStatusDAS
 import com.sapienter.jbilling.server.order.validator.OrderHierarchyValidator
+import com.sapienter.jbilling.server.process.db.PeriodUnitDTO
 import com.sapienter.jbilling.server.security.Validator
 import com.sapienter.jbilling.server.usagePool.SwapPlanHistoryWS
 import com.sapienter.jbilling.server.user.UserBL
 import com.sapienter.jbilling.server.user.UserHelperDisplayerFactory
 import com.sapienter.jbilling.server.user.UserWS
+import com.sapienter.jbilling.server.user.db.CompanyDTO
 import com.sapienter.jbilling.server.user.db.CustomerDTO
 import com.sapienter.jbilling.server.user.db.UserDAS
 import com.sapienter.jbilling.server.user.db.UserDTO
@@ -52,30 +75,8 @@ import com.sapienter.jbilling.server.util.PreferenceBL
 import com.sapienter.jbilling.server.util.SecurityValidator
 import com.sapienter.jbilling.server.util.csv.CsvExporter
 import com.sapienter.jbilling.server.util.csv.CsvFileGeneratorUtil
-import com.sapienter.jbilling.server.util.csv.DynamicExport;
+import com.sapienter.jbilling.server.util.csv.DynamicExport
 import com.sapienter.jbilling.server.util.csv.Exporter
-import com.sapienter.jbilling.server.user.db.CompanyDTO
-import com.sapienter.jbilling.server.order.db.OrderStatusDAS
-import com.sapienter.jbilling.server.order.OrderStatusFlag
-import com.sapienter.jbilling.client.util.SortableCriteria
-import com.sapienter.jbilling.server.invoice.InvoiceWS
-import com.sapienter.jbilling.server.metafields.MetaFieldBL
-import com.sapienter.jbilling.server.metafields.EntityType
-import com.sapienter.jbilling.client.metafield.MetaFieldBindHelper
-import com.sapienter.jbilling.server.metafields.MetaFieldValueWS
-import com.sapienter.jbilling.server.process.db.PeriodUnitDTO
-
-import grails.converters.JSON
-import grails.gorm.PagedResultList
-import grails.plugin.springsecurity.SpringSecurityUtils
-import grails.plugin.springsecurity.annotation.Secured
-import grails.util.Holders;
-
-import org.apache.commons.lang.ArrayUtils
-import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
-import org.hibernate.Criteria
-import org.hibernate.criterion.MatchMode
-import org.hibernate.criterion.Restrictions
 /**
  *
  * @author vikas bodani
@@ -85,17 +86,17 @@ import org.hibernate.criterion.Restrictions
 
 @Secured(["MENU_92"])
 class OrderController {
-	static scope = "prototype"
+    static scope = "prototype"
     static pagination = [ max: 10, offset: 0, sort: 'id', order: 'desc' ]
     static versions = [ max: 25 ]
 
     // Matches the columns in the JQView grid with the corresponding field
     static final viewColumnsToFields =
-            ['customer': 'user.userName',
-             'company': 'company.description',
-             'orderid': 'id',
-             'date': 'createDate',
-             'amount': 'total']
+    ['customer': 'user.userName',
+        'company': 'company.description',
+        'orderid': 'id',
+        'date': 'createDate',
+        'amount': 'total']
 
     IWebServicesSessionBean webServicesSession
     def viewUtils
@@ -125,7 +126,7 @@ class OrderController {
         return orderDTOList;
     }
 
-	def getFilteredOrderIds(filters, params, ids) {
+    def getFilteredOrderIds(filters, params, ids) {
         return getOrderIds(filters, params, ids)
     }
 
@@ -141,10 +142,10 @@ class OrderController {
         def customersForUser = new ArrayList()
         if( partnerDtos.size > 0 ){
             customersForUser =  CustomerDTO.createCriteria()
-                                           .list(){
-                                                createAlias("partners", "partners")
-                                                'in'('partners.id', partnerDtos*.id)
-                                           }
+                    .list(){
+                        createAlias("partners", "partners")
+                        'in'('partners.id', partnerDtos*.id)
+                    }
         }
 
         if (ids) filters.add(new Filter(constraintType: FilterConstraint.IN, field: 'id', listValue: ids))
@@ -185,7 +186,7 @@ class OrderController {
                             new Filter(constraintType: FilterConstraint.IN, field: 'user.id', listValue: customersForUser.baseUser.userId),
                             new Filter(constraintType: FilterConstraint.EQ, field: 'user.id', integerValue: session['user_id'] as Integer)
                         ]
-                ));
+                        ));
             }
         }
 
@@ -201,10 +202,10 @@ class OrderController {
     private filterOrders(filters, params, ids) {
         filters = createFilters(filters, params, ids);
         return webServicesSession.findOrdersByFilters(params.offset as int,
-                                                      params.max as int,
-                                                      params.sort as String,
-                                                      params.order.equals("null") ? "asc" : params.order as String,
-                                                      JbillingFilterConverter.convert(filters))
+                params.max as int,
+                params.sort as String,
+                params.order.equals("null") ? "asc" : params.order as String,
+                JbillingFilterConverter.convert(filters))
     }
 
     private List<Integer> getOrderIds(filters, params, ids) {
@@ -223,22 +224,22 @@ class OrderController {
         return orderIds
     }
 
-	List<OrderExportableWrapper> getOrders(def orderIds,  def dynamicExport) {
-		List<OrderExportableWrapper> orders = new ArrayList<>()
-		for(Integer orderId: orderIds) {
-			orders.add(new OrderExportableWrapper(orderId, dynamicExport))
-		}
-		return orders
-	}
+    List<OrderExportableWrapper> getOrders(def orderIds,  def dynamicExport) {
+        List<OrderExportableWrapper> orders = new ArrayList<>()
+        for(Integer orderId: orderIds) {
+            orders.add(new OrderExportableWrapper(orderId, dynamicExport))
+        }
+        return orders
+    }
 
 
     def childrenMap(orders) {
         if (!orders) return [:]
         def queryResults = OrderDTO.executeQuery(
-               "select ord.parentOrder.id as id, count(*) as childCount from ${OrderDTO.class.getSimpleName()} ord " +
-               " where ord.parentOrder.id in (:orderIds) and ord.deleted = 0 group by ord.parentOrder.id ",
+                "select ord.parentOrder.id as id, count(*) as childCount from ${OrderDTO.class.getSimpleName()} ord " +
+                " where ord.parentOrder.id in (:orderIds) and ord.deleted = 0 group by ord.parentOrder.id ",
                 [orderIds: orders.collect { it.id }]
-        )
+                )
         def results = [:];
         queryResults.each({ record -> results.put(record[0], record[1]) })
         PagedResultList
@@ -325,8 +326,8 @@ class OrderController {
                 render template: 'ordersTemplate', model: [currencies: retrieveCurrencies(), filters: filters, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
             }else {
                 render view: 'list', model: [currencies: retrieveCurrencies(), filters: filters, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
-                                             orderChanges: orderChanges, assetsMap: assetsMap,
-                                             futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges]
+                    orderChanges: orderChanges, assetsMap: assetsMap,
+                    futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges]
             }
             return
         }
@@ -342,17 +343,17 @@ class OrderController {
 
         if (params.applyFilter || params.partial) {
             render template: 'ordersTemplate', model: [ orders: orders, order: selected, user: user, currencies: retrieveCurrencies(),
-								filters: filters, ids: params.ids, children: childrenMap(orders),
-                                isCurrentCompanyOwning: isCurrentCompanyOwning, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+                filters: filters, ids: params.ids, children: childrenMap(orders),
+                isCurrentCompanyOwning: isCurrentCompanyOwning, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
 
         } else {
 
-			PeriodUnitDTO periodUnit = selected?.dueDateUnitId ? PeriodUnitDTO.get(selected.dueDateUnitId) : null
+            PeriodUnitDTO periodUnit = selected?.dueDateUnitId ? PeriodUnitDTO.get(selected.dueDateUnitId) : null
             render view: 'list', model: [ orders: orders, order: selected, user: user, currencies: retrieveCurrencies(),
-								filters: filters, ids: params.ids, periodUnit: periodUnit, children: childrenMap(orders),
-                                isCurrentCompanyOwning: isCurrentCompanyOwning, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
-                                 orderChanges: orderChanges, assetsMap: assetsMap,
-                                futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges]
+                filters: filters, ids: params.ids, periodUnit: periodUnit, children: childrenMap(orders),
+                isCurrentCompanyOwning: isCurrentCompanyOwning, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
+                orderChanges: orderChanges, assetsMap: assetsMap,
+                futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges]
         }
     }
 
@@ -407,7 +408,7 @@ class OrderController {
         def children = getChildren(params, true)
 
         render template: 'ordersTemplate', model: [ orders: children, parent: parent, children: childrenMap(children),
-                                                    displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+            displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
     }
 
     /**
@@ -432,7 +433,7 @@ class OrderController {
 
     def getSelectedOrder(selected, orderIds) {
         def idFilter = new Filter(type: FilterType.ALL, constraintType: FilterConstraint.EQ,
-                field: 'id', template: 'id', visible: true, integerValue: selected.id)
+        field: 'id', template: 'id', visible: true, integerValue: selected.id)
         getFilteredOrders([idFilter], params, orderIds)
     }
 
@@ -452,19 +453,21 @@ class OrderController {
         recentItemService.addRecentItem(order.id, RecentItemType.ORDER)
         breadcrumbService.addBreadcrumb(controllerName, 'list', null, order.id)
 
-		SwapPlanHistoryWS[] swapPlanLogs = webServicesSession.getSwapPlanHistroyByOrderId(order?.id)
-		PeriodUnitDTO periodUnit = order.dueDateUnitId ? PeriodUnitDTO.get(order.dueDateUnitId) : null
+        SwapPlanHistoryWS[] swapPlanLogs = webServicesSession.getSwapPlanHistroyByOrderId(order?.id)
+        OrderLineItemizedUsageWS[] itemizedUsages = webServicesSession.getItemizedUsagesForOrder(order?.id)
+        PeriodUnitDTO periodUnit = order.dueDateUnitId ? PeriodUnitDTO.get(order.dueDateUnitId) : null
         render template:'show', model: [
-                order: order,
-                user: user,
-                currencies: retrieveCurrencies(),
-                periodUnit: periodUnit,
-                filterStatusId : params.int('filterStatusId'),
-                singleOrder : params.boolean("singleOrder"),
-                isCurrentCompanyOwning: isCurrentCompanyOwning, swapPlanLogs:swapPlanLogs,
-                displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
-                orderChanges: orderChanges, assetsMap: assetsMap,
-                futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges
+            order: order,
+            user: user,
+            currencies: retrieveCurrencies(),
+            periodUnit: periodUnit,
+            filterStatusId : params.int('filterStatusId'),
+            singleOrder : params.boolean("singleOrder"),
+            isCurrentCompanyOwning: isCurrentCompanyOwning, swapPlanLogs:swapPlanLogs,
+            displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
+            orderChanges: orderChanges, assetsMap: assetsMap,
+            futureOrderChanges: futureOrderChanges, futureOrderAssetsChanges: futureOrderAssetsChanges,
+            itemizedUsages:itemizedUsages
         ]
     }
 
@@ -473,33 +476,33 @@ class OrderController {
      */
     @Secured(["ORDER_25"])
     def csv () {
-		try {
-		        def filters = new ArrayList(filterService.getFilters(FilterType.ORDER, params))
-		        params.sort = viewColumnsToFields[params.sidx] != null ? viewColumnsToFields[params.sidx] : params.sort
-		        params.order = params.sord
-		        params.max = CsvExporter.MAX_RESULTS
+        try {
+            def filters = new ArrayList(filterService.getFilters(FilterType.ORDER, params))
+            params.sort = viewColumnsToFields[params.sidx] != null ? viewColumnsToFields[params.sidx] : params.sort
+            params.order = params.sord
+            params.max = CsvExporter.MAX_RESULTS
 
-		        def orderIds = parameterIds
-                List<Integer> filterOrderIds = getOrderIds(filters, params, orderIds)
-				if(PreferenceBL.getPreferenceValueAsIntegerOrZero(session['company_id'], Constants.PREFERENCE_BACKGROUND_CSV_EXPORT) != 0) {
-					def orders  = getOrders(filterOrderIds, DynamicExport.YES)
-					if (orders.size() > CsvExporter.GENERATE_CSV_LIMIT) {
-						flash.error = message(code: 'error.export.exceeds.maximum')
-						flash.args = [ CsvExporter.GENERATE_CSV_LIMIT ]
-						render "failure"
-					} else {
-						CsvFileGeneratorUtil.generateCSV(com.sapienter.jbilling.client.util.Constants.ORDER_CSV, orders, session['company_id'],session['user_id']);
-						render "success"
-					}
-				} else {
-					def orders = getOrders(filterOrderIds, DynamicExport.NO)
-					renderOrderCsvFor(orders)
-				}
-			} catch (SessionInternalError e) {
-				log.error e.getMessage()
-				viewUtils.resolveException(flash, session.locale, e);
+            def orderIds = parameterIds
+            List<Integer> filterOrderIds = getOrderIds(filters, params, orderIds)
+            if(PreferenceBL.getPreferenceValueAsIntegerOrZero(session['company_id'], Constants.PREFERENCE_BACKGROUND_CSV_EXPORT) != 0) {
+                def orders  = getOrders(filterOrderIds, DynamicExport.YES)
+                if (orders.size() > CsvExporter.GENERATE_CSV_LIMIT) {
+                    flash.error = message(code: 'error.export.exceeds.maximum')
+                    flash.args = [ CsvExporter.GENERATE_CSV_LIMIT ]
+                    render "failure"
+                } else {
+                    CsvFileGeneratorUtil.generateCSV(com.sapienter.jbilling.client.util.Constants.ORDER_CSV, orders, session['company_id'],session['user_id']);
+                    render "success"
+                }
+            } else {
+                def orders = getOrders(filterOrderIds, DynamicExport.NO)
+                renderOrderCsvFor(orders)
             }
+        } catch (SessionInternalError e) {
+            log.error e.getMessage()
+            viewUtils.resolveException(flash, session.locale, e);
         }
+    }
 
     /**
      * Called from the suborders table
@@ -527,18 +530,18 @@ class OrderController {
         }
     }
 
-	def renderOrderCsvFor(orderExportables) {
-		if (orderExportables.size() > CsvExporter.MAX_RESULTS) {
-			flash.error = message(code: 'error.export.exceeds.maximum')
-			flash.args = [ CsvExporter.MAX_RESULTS ]
-			redirect action: 'list', id: params.id
+    def renderOrderCsvFor(orderExportables) {
+        if (orderExportables.size() > CsvExporter.MAX_RESULTS) {
+            flash.error = message(code: 'error.export.exceeds.maximum')
+            flash.args = [ CsvExporter.MAX_RESULTS ]
+            redirect action: 'list', id: params.id
 
-		} else {
-			DownloadHelper.setResponseHeader(response, "orders.csv")
-			Exporter<OrderExportableWrapper> exporter = CsvExporter.createExporter(OrderExportableWrapper.class);
-			render text: exporter.export(orderExportables), contentType: "text/csv"
-		}
-	}
+        } else {
+            DownloadHelper.setResponseHeader(response, "orders.csv")
+            Exporter<OrderExportableWrapper> exporter = CsvExporter.createExporter(OrderExportableWrapper.class);
+            render text: exporter.export(orderExportables), contentType: "text/csv"
+        }
+    }
 
     /**
      * Convenience shortcut, this action shows all invoices for the given user id.
@@ -656,19 +659,19 @@ class OrderController {
         invoices as List
     }
 
-	def retrieveCompanies(){
-		def parentCompany = CompanyDTO.get(session['company_id'])
-		def childs = CompanyDTO.findAllByParent(parentCompany)
-		childs.add(parentCompany)
-		return childs;
-	}
+    def retrieveCompanies(){
+        def parentCompany = CompanyDTO.get(session['company_id'])
+        def childs = CompanyDTO.findAllByParent(parentCompany)
+        childs.add(parentCompany)
+        return childs;
+    }
 
     def retrieveInvoiceMetaFields() {
         return MetaFieldBL.getAvailableFieldsList(session["company_id"], EntityType.INVOICE);
     }
 
     def retrieveCurrencies() {
-		//in this controller we need only currencies objects with inUse=true without checking rates on date
+        //in this controller we need only currencies objects with inUse=true without checking rates on date
         return new CurrencyBL().getCurrenciesWithoutRates(session['language_id'].toInteger(), session['company_id'].toInteger(),true)
     }
 
@@ -680,10 +683,10 @@ class OrderController {
         log.debug("Found ${orders.size()} orders.")
         if (params.applyFilter || params.partial) {
             render template: 'ordersTemplate', model: [orders: orders, filters: filters, children: childrenMap(orders), processId: processId,
-                                                        displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+                displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
         } else {
             render view: 'list', model: [orders: orders, filters: filters, children: childrenMap(orders), processId: processId,
-                                         displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+                displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
         }
     }
 
@@ -701,10 +704,10 @@ class OrderController {
         log.debug("Found ${orders?.size()} orders.")
         if (params.applyFilter || params.partial) {
             render template: 'ordersTemplate', model: [orders: orders, filters: filters, ids: params.ids, children: childrenMap(orders),
-                                                       mediationId: mediationId, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+                mediationId: mediationId, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
         } else {
             render view: 'list', model: [orders: orders, filters: filters, ids: params.ids, children: childrenMap(orders),
-                                         mediationId:mediationId, filterAction: 'byMediation', filterId:mediationId, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+                mediationId:mediationId, filterAction: 'byMediation', filterId:mediationId, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
         }
     }
 
@@ -778,7 +781,7 @@ class OrderController {
         def lines = auditBL.find(OrderLineDTO.class, getOrderLineSearchPrefix(order))
 
         def records = [
-                [ name: 'order', id: order.id, current: currentOrder, versions: orderVersions ]
+            [ name: 'order', id: order.id, current: currentOrder, versions: orderVersions ]
         ]
 
         render view: '/audit/history', model: [ records: records, historyid: order.id, lines: lines, linecontroller: 'order', lineaction: 'linehistory' ]
@@ -797,7 +800,7 @@ class OrderController {
         def lineVersions = auditBL.get(OrderLineDTO.class, line.getAuditKey(line.id), versions.max)
 
         def records = [
-                [ name: 'line', id: line.id, current: currentLine, versions: lineVersions ]
+            [ name: 'line', id: line.id, current: currentLine, versions: lineVersions ]
         ]
 
         render view: '/audit/history', model: [ records: records, historyid: line.purchaseOrder.id ]
@@ -844,7 +847,7 @@ class OrderController {
 
     private boolean hasFutureOrderChanges(OrderChangeWS[] orderChanges){
         if(orderChanges){
-          return orderChanges.any {it.status.equalsIgnoreCase(Constants.ORDER_STATUS_PENDING)}
+            return orderChanges.any {it.status.equalsIgnoreCase(Constants.ORDER_STATUS_PENDING)}
         }
         return false;
     }

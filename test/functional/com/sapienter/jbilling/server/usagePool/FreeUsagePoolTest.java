@@ -24,6 +24,7 @@ import static org.testng.AssertJUnit.fail;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -37,6 +38,7 @@ import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.ItemTypeWS;
+import com.sapienter.jbilling.server.notification.NotificationMediumType;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.util.Constants;
@@ -153,7 +155,45 @@ public class FreeUsagePoolTest {
         api.deleteUsagePool(usagePoolId);
 
 	}
-	
+
+	/**
+	 * Test added for (JBSPC-622 : Allowing zero value in usage pool consumption percentage)
+	 * @throws Exception
+	 */
+    @Test
+    public void test0001CreateFreeUsagePool() throws Exception {
+        UsagePoolConsumptionActionWS usagePoolConsumptionAction1 = new UsagePoolConsumptionActionWS();
+        usagePoolConsumptionAction1.setPercentage("0");
+        usagePoolConsumptionAction1.setType(Constants.FUP_CONSUMPTION_NOTIFICATION);
+        usagePoolConsumptionAction1.setMediumType(NotificationMediumType.EMAIL);
+        usagePoolConsumptionAction1.setNotificationId("1");
+        UsagePoolWS usagePool = populateFreeUsagePoolObject("100 National Calls 2", BigDecimal.ONE.toString(), Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS,
+                "Zero", usagePoolConsumptionAction1);
+
+        logger.debug("Creating usagePool ...{}", usagePool);
+        usagePoolId = api.createUsagePool(usagePool);
+        assertNotNull("The item was not created", usagePoolId);
+
+        UsagePoolWS usagePoolWSToUpdate = api.getUsagePoolWS(usagePoolId);
+        usagePoolConsumptionAction1.setPercentage("50");
+        usagePoolWSToUpdate.setConsumptionActions(Arrays.asList(usagePoolConsumptionAction1));
+        api.updateUsagePool(usagePoolWSToUpdate);
+        UsagePoolWS usagePoolWSToValidate = api.getUsagePoolWS(usagePoolId);
+        System.out.println("usagePoolWSToValidate.getConsumptionActions().get(0).percentage = " + usagePoolWSToValidate.getConsumptionActions().get(0).percentage);
+        assertEquals("usage pool consumption action percentage should be updated to 50", "50",
+                usagePoolWSToValidate.getConsumptionActions().get(0).percentage);
+
+        UsagePoolWS usagePoolWSToUpdate2 = api.getUsagePoolWS(usagePoolId);
+        usagePoolConsumptionAction1.setPercentage("0");
+        usagePoolWSToUpdate2.setConsumptionActions(Arrays.asList(usagePoolConsumptionAction1));
+        api.updateUsagePool(usagePoolWSToUpdate2);
+        UsagePoolWS usagePoolWSToValidate2 = api.getUsagePoolWS(usagePoolId);
+        assertEquals("usage pool consumption action percentage should be updated to 0", "0",
+                usagePoolWSToValidate2.getConsumptionActions().get(0).percentage);
+
+        api.deleteUsagePool(usagePoolId);
+    }
+
 	@Test
     public void test002UpdateUsagePool() {
         usagePoolId = createFreeUsagePool("200 Smart Phones free", "100", Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS, "Zero");
@@ -410,22 +450,24 @@ public class FreeUsagePoolTest {
         assertNotNull("Free usage pool should not be null ", poolId);
         return poolId;
 	}
-		
-	private UsagePoolWS populateFreeUsagePoolObject(String usagePoolName, String quantity, String cyclePeriodUnit, String resetValue) {
-		
+
+    private UsagePoolWS populateFreeUsagePoolObject(String usagePoolName, String quantity, String cyclePeriodUnit, String resetValue,
+            UsagePoolConsumptionActionWS ... usagePoolConsumptionActions) {
         UsagePoolWS usagePool = new UsagePoolWS();
-		usagePool.setName(usagePoolName + today);
-		usagePool.setQuantity(quantity);
-		usagePool.setPrecedence(new Integer(1));
-		usagePool.setCyclePeriodUnit(cyclePeriodUnit);
-		usagePool.setCyclePeriodValue(new Integer(1));
-		usagePool.setItemTypes(new Integer[]{itemTypeId});
+        usagePool.setName(usagePoolName + today);
+        usagePool.setQuantity(quantity);
+        usagePool.setPrecedence(new Integer(1));
+        usagePool.setCyclePeriodUnit(cyclePeriodUnit);
+        usagePool.setCyclePeriodValue(new Integer(1));
+        usagePool.setItemTypes(new Integer[]{itemTypeId});
         usagePool.setItems(new Integer[]{itemId});
         usagePool.setEntityId(PRANCING_PONY);
         usagePool.setUsagePoolResetValue(resetValue);
-        
+        if(usagePoolConsumptionActions.length > 0)
+            usagePool.setConsumptionActions(Arrays.asList(usagePoolConsumptionActions));
+
         return usagePool;
-	}
+    }
 		
     private UsagePoolWS createUsagePoolWithMultipleNames() {
         List<InternationalDescriptionWS> names = new java.util.ArrayList<InternationalDescriptionWS>();

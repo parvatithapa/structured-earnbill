@@ -183,7 +183,8 @@ class EntityDefaults {
 				autoCreditNoteApplication: 1,
 				applyCreditNotesBeforePayments: 1,
 				lastDayOfMonth: false,
-				proratingType: ProratingType.PRORATING_AUTO_OFF
+				proratingType: ProratingType.PRORATING_AUTO_OFF,
+				skipEmails: 0
         ).save()
 
 
@@ -286,7 +287,6 @@ class EntityDefaults {
         createNotificationMessage(Constants.NOTIFICATION_TYPE_SSO_ENABLED, 'signup.notification.sso.enabled.email.title', 'signup.notification.sso.enabled.email')
         createNotificationMessage(Constants.NOTIFICATION_TYPE_SCHEDULED_JOB_STARTED, 'signup.notitication.scheduled.task.started.title', 'signup.notitication.scheduled.task.started.body')
         createNotificationMessage(Constants.NOTIFICATION_TYPE_SCHEDULED_JOB_COMPLETED, 'signup.notitication.scheduled.task.completed.title', 'signup.notitication.scheduled.task.completed.body')
-        createNotificationMessage(Constants.NOTIFY_PASSWORD_CHANGE, 'signup.password.notification.notify.title', 'signup.notification.notify.user')
 
 
         /*

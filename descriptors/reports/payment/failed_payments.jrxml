@@ -120,17 +120,17 @@
                 </textElement>
                 <text><![CDATA[PaySafe Failed Transactions]]></text>
             </staticText>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="901" y="21" width="75" height="20" uuid="f74b14f9-5668-44e3-b04f-40fdf30e42cb"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="901" y="41" width="75" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="901" y="1" width="76" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
@@ -269,14 +269,14 @@
     </columnHeader>
     <detail>
         <band height="20">
-            <textField pattern="MMMM dd, yyyy">
+            <textField pattern="MMMM dd, YYYY">
                 <reportElement x="0" y="0" width="108" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
                 <textElement verticalAlignment="Middle">
                     <font size="8"/>
                 </textElement>
                 <textFieldExpression><![CDATA[$F{payment_date}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMMM dd, yyyy">
+            <textField pattern="MMMM dd, YYYY">
                 <reportElement x="108" y="0" width="108" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
                 <textElement verticalAlignment="Middle">
                     <font size="8"/>

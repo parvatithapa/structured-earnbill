@@ -10,7 +10,6 @@
         <version>1.0.0</version>
     </parent>
 
-    <groupId>com.sapienter.jbilling</groupId>
     <artifactId>usage-pool-service</artifactId>
     <version>1.0.0</version>
 

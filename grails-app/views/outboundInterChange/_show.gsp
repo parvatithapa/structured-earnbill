@@ -14,7 +14,7 @@
   is strictly forbidden.
   --}%
 
-<%@ page import="groovy.json.JsonOutput;com.sapienter.jbilling.server.timezone.TimezoneHelper; com.sapienter.jbilling.server.integration.db.OutBoundInterchange;" %>
+<%@ page import="groovy.json.JsonException; groovy.json.JsonOutput;com.sapienter.jbilling.server.timezone.TimezoneHelper; com.sapienter.jbilling.server.integration.db.OutBoundInterchange;" %>
 <%--
   Shows details of a selected outboundInterChange.
 
@@ -23,6 +23,11 @@
 --%>
 <g:set var="outboundInterChange" value="${OutBoundInterchange.findById(selected?.id)}"/>
 <g:set var="JsonOutput" value="${JsonOutput}"/>
+<% def response=outboundInterChange.getResponse()
+try {
+    response= JsonOutput.prettyPrint outboundInterChange.getResponse()
+} catch (JsonException e) {}
+%>
 <div class="column-hold">
     <div class="heading">
         <strong>
@@ -72,11 +77,11 @@
                 </tr>
                 <tr >
                     <td><g:message code="outboundInterChange.request.title"/></td>
-                    <td class="value"><textarea id="json-area" rows="12" cols="45" readonly="readonly" wrap='off' >${JsonOutput.prettyPrint(selected.request)}</textarea></td>
+                    <td class="value"><textarea id="json-area" rows="12" cols="45" readonly="readonly" wrap='off' >${selected.request}</textarea></td>
                 </tr>
                 <tr>
                     <td><g:message code="outboundInterChange.response.title"/></td>
-                    <td class="value"><textarea rows="12" cols="45" readonly="readonly" wrap='off'>${(selected.response)}</textarea></td>
+                    <td class="value"><textarea rows="12" cols="45" readonly="readonly" wrap='off'>${response}</textarea></td>
                 </tr>
                 </tbody>
             </table>

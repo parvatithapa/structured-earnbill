@@ -18,7 +18,6 @@ public class SpaConstants {
     public static final String PROVINCE = "Province";
     public static final String PHONE_NUMBER_1 = "Phone Number 1";
     public static final String PHONE_NUMBER_2 = "Phone Number 2";
-    public static final String PHONE_NUMBER = "Phone Number";
     public static final String EMAIL_ADDRESS = "Email Address";
     public static final String EMAIL_VERIFIED = "Email Verified Time Stamp";
     public static final String CONFIRMATION_NUMBER = "Confirmation Number";

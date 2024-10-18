@@ -25,7 +25,6 @@
     </g:preferenceEquals>
 </head>
 <body>
-
 <g:if test="${accountTypes}" >
     <sec:ifAllGranted roles="MENU_90">
         <content tag="column1">
@@ -38,13 +37,13 @@
     %{--show all user's details--}%
     <sec:ifAllGranted roles="MENU_90">
         <content tag="column1">
-            <g:render template="customersTemplate" model="[users: users, displayer: displayer]"/>
+            <g:render template="customersTemplate" model="[isAssetAvailable : isAssetAvailable , isSimIssued: isSimIssued ,walletBalance: walletBalance,holdAmount: holdAmount, users: users, displayer: displayer]"/>
         </content>
 
         <content tag="column2">
             <g:if test="${selected}">
                 <!-- show selected user details -->
-                <g:render template="show" model="[selected: selected, contact: contact, displayer: displayer]"/>
+                <g:render template="show" model="[isAssetAvailable : isAssetAvailable ,isSimIssued: isSimIssued ,walletBalance:walletBalance,holdAmount: holdAmount, selected: selected, contact: contact, displayer: displayer]"/>
             </g:if>
             <g:else>
                 <!-- show empty block -->
@@ -58,7 +57,7 @@
         <content tag="column1">
             <g:if test="${selected}">
                 <!-- show selected user details only -->
-                <g:render template="show" model="[customerNotes: customerNotes, selected: selected, contact: contact]"/>
+                <g:render template="show" model="[isAssetAvailable : isAssetAvailable ,isSimIssued : isSimIssued , walletBalance: walletBalance,holdAmount: holdAmount, customerNotes: customerNotes, selected: selected, contact: contact]"/>
             </g:if>
             <g:else>
                 <!-- show empty block -->
@@ -66,7 +65,6 @@
             </g:else>
         </content>
     </sec:ifNotGranted>
-
 </g:else>
 </body>
 </html>

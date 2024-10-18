@@ -105,9 +105,7 @@ public class ActivePeriodChargingTask extends PluggableTask implements IInternal
                          .collect(Collectors.toCollection(() -> cycles));
             } else {
                 CustomerStatusChangeHistoryDTO lastHistory =  customerStatusChangeHistoryDAS.getLastSuspendedPeriod(userId);
-                if (lastHistory != null) {
-                    cycles.add(new SuspendedCycle(lastHistory.getModifiedAt(), null));
-                }
+                cycles.add(new SuspendedCycle(lastHistory.getModifiedAt(), null));
             }
         }
     }
@@ -142,7 +140,7 @@ public class ActivePeriodChargingTask extends PluggableTask implements IInternal
             this.endDate = endDate;
         }
 
-        public List<PeriodOfTime> splitPeriods(PeriodOfTime period, SuspendedCycle suspendedCycle, Boolean isPreviousCyclePresent) {
+        public List<PeriodOfTime> splitPeriods(PeriodOfTime period) {
             List<PeriodOfTime> periods = new ArrayList<>();
 
             if (this.getEndDate() == null) {
@@ -154,17 +152,8 @@ public class ActivePeriodChargingTask extends PluggableTask implements IInternal
             } else if (period.getStart() == null && period.getEnd() == null) {
                 periods.add(PeriodOfTime.OneTimeOrderPeriodOfTime);
             } else if (this.getStartDate().after(period.getStart()) && this.getEndDate().before(period.getEnd())) {
-                Date periodStartDate = period.getStart();
-                Date periodEndDate = period.getEnd();
-                if (null != suspendedCycle) {
-                    periodEndDate = suspendedCycle.getStartDate().before(period.getEnd()) ? suspendedCycle.getStartDate() :
-                        period.getEnd();
-                }
-                if(isPreviousCyclePresent) {
-                    periodStartDate = this.getStartDate();
-                }
-                periods.add(new PeriodOfTime(periodStartDate, this.getStartDate(), period.getDaysInCycle()));
-                periods.add(new PeriodOfTime(this.getEndDate(), periodEndDate, period.getDaysInCycle()));
+                periods.add(new PeriodOfTime(period.getStart(), this.getStartDate(), period.getDaysInCycle()));
+                periods.add(new PeriodOfTime(this.getEndDate(), period.getEnd(), period.getDaysInCycle()));
             } else if (this.getStartDate().before(period.getStart()) && this.getEndDate().before(period.getEnd()) &&
                             this.getEndDate().after(period.getStart())) {
                 periods.add(new PeriodOfTime(this.getEndDate(), period.getEnd(), period.getDaysInCycle()));

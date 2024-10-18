@@ -891,8 +891,14 @@ class PaymentController {
                             flash.message = 'payment.successful'
                             flash.args = [ payment.id ]
 
-                        } else {						
-							//Strong customer Authentication (SCA)
+                        } else {
+						
+							/* BillingHub - Stripe payment gateway integration 
+							 * 
+							 * 3DS, Strong customer Authentication (SCA)
+							 * 
+							 */							
+						
 							def securePaymentWS = authorization.getSecurePaymentWS()
 							
 							if(securePaymentWS != null){
@@ -902,16 +908,18 @@ class PaymentController {
 									flash.error = 'payment.failed.sca'
 									flash.args = [authorization.getSecurePaymentWS().getStatus()]
 								}
+							/* End BillingHub - Stripe payment gateway integration */
 							}else {
+							
 								def autorizationMessage = authorization.responseMessage;
-								PaymentDTO paymentDTO = PaymentDTO.get(payment.getId())
-								if (paymentDTO.resultId== CommonConstants.RESULT_BILLING_INFORMATION_NOT_FOUND){
-									autorizationMessage = "Payer Billing Information Not found."
-								}else if (autorizationMessage == null ) {
-									autorizationMessage = "Payment processor unavailable"
-								}
-								flash.error = 'payment.failed'
-								flash.args = [ payment.id, autorizationMessage ]								
+	                            PaymentDTO paymentDTO = PaymentDTO.get(payment.getId())
+	                            if (paymentDTO.resultId== CommonConstants.RESULT_BILLING_INFORMATION_NOT_FOUND){
+	                                autorizationMessage = "Payer Billing Information Not found."
+	                            }else if (autorizationMessage == null ) {
+	                                autorizationMessage = "Payment processor unavailable"
+	                            }
+	                            flash.error = 'payment.failed'
+	                            flash.args = [ payment.id, autorizationMessage ]
 							}
                         }
 

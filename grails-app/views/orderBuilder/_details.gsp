@@ -516,13 +516,13 @@
 	</script>
     <!-- confirmation dialog for status changes -->
     <div id="status-suspended-dialog" title="${message(code: 'popup.confirm.title')}">
-        <table style="margin: 3px 0 0 10px">
+        <table id="custom-table">
             <tbody>
             <tr>
                 <td valign="top">
                     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
                 </td>
-                <td class="col2" style="padding-left: 7px">
+                <td class="col2">
                     <g:message code="order.prompt.set.suspended" args="[order?.id]"/>
                 </td>
             </tr>
@@ -531,13 +531,13 @@
     </div>
 
     <div id="status-finished-dialog" title="${message(code: 'popup.confirm.title')}">
-        <table style="margin: 3px 0 0 10px">
+        <table id="custom-table">
             <tbody>
             <tr>
                 <td valign="top">
                     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
                 </td>
-                <td class="col2" style="padding-left: 7px">
+                <td class="col2">
                     <g:message code="order.prompt.set.finished" args="[order?.id]"/>
                 </td>
             </tr>

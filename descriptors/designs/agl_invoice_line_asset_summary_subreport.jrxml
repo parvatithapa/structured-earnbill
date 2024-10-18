@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_line_asset_summary_subreport" language="groovy" pageWidth="375" pageHeight="200" columnWidth="375" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="ee152d9b-baf2-4d63-b6e5-00bbc8499cb9">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="call_identifier" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="description" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="order_id" class="java.lang.Integer"/>
+	<parameter name="exclude_from_call_itemisation_category_id" class="java.lang.Integer"/>
+	<parameter name="subscription_order_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT jmr.source AS call_identifier,
+TO_CHAR(event_date, 'dd Mon yy') AS event_date,
+TO_CHAR(event_date, 'HH24:MI:SS') AS event_time,
+jmr.destination AS number_called,
+TO_CHAR((jmr.original_quantity || ' sec')::interval, 'HH24:MI:SS') AS min_sec,
+jmr.rated_price_with_tax AS inc_gst,
+(CASE WHEN il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+	AND jmr.pricing_fields like '%telstramth%'
+THEN 't'
+ELSE 'f'
+END) AS is_telstra_monthly,
+jmr.description AS telstra_monthly_description,
+il.description,
+(SELECT TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',8),21,8),'YYYYMMDD'),'dd Mon yy')
+FROM jbilling_mediation_record jmr_inner
+WHERE il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+AND jmr_inner.id = jmr.id
+AND jmr_inner.pricing_fields like '%Start+Date%') AS start_date,
+(SELECT
+CASE WHEN SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8) IS NOT NULL
+	AND SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8) != ''
+THEN TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8),'YYYYMMDD'),'dd Mon yy')
+-- if end date is null then show start date
+ELSE TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',8),21,8),'YYYYMMDD'),'dd Mon yy')
+END
+FROM jbilling_mediation_record jmr_inner
+WHERE il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+AND jmr_inner.id = jmr.id
+AND jmr_inner.pricing_fields like '%End+Date%') AS end_date,
+jmr.original_quantity
+FROM jbilling_mediation_record jmr
+INNER JOIN purchase_order po ON po.id = jmr.order_id
+INNER JOIN order_line ol ON ol.id = jmr.order_line_id
+INNER JOIN invoice i ON i.user_id = jmr.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id
+INNER JOIN base_user bu ON bu.id = i.user_id
+WHERE i.id = $P{invoice_id}
+AND il.order_id = po.id
+AND il.item_id = ol.item_id
+AND il.call_identifier IS NOT NULL
+AND il.call_identifier = jmr.source
+AND il.call_identifier = $P{call_identifier}
+AND il.description = $P{description}
+-- Exclude items from call itemisation
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{exclude_from_call_itemisation_category_id}
+)
+AND ol.deleted = 0
+AND
+(
+SELECT po_inner.id AS subscription_order_id
+FROM purchase_order po_inner
+WHERE po_inner.id IN
+(
+ SELECT ol_inner.order_id
+ FROM order_line ol_inner
+ WHERE ol_inner.id IN
+ (
+  SELECT aa_inner.order_line_id
+  FROM asset_assignment aa_inner
+  WHERE aa_inner.asset_id IN
+  (
+   SELECT a_inner.id
+   FROM asset a_inner
+   WHERE a_inner.identifier = il.call_identifier
+  )
+  AND (CASE WHEN aa_inner.end_datetime IS NOT NULL
+          THEN aa_inner.start_datetime <= po.active_since AND aa_inner.end_datetime >= po.active_since
+          ELSE aa_inner.start_datetime <= po.active_since
+          END)
+ )
+)
+AND po_inner.user_id = i.user_id limit 1
+) = $P{subscription_order_id}
+ORDER BY jmr.event_date ASC;]]>
+	</queryString>
+	<field name="call_identifier" class="java.lang.String"/>
+	<field name="event_date" class="java.lang.String"/>
+	<field name="event_time" class="java.lang.String"/>
+	<field name="number_called" class="java.lang.String"/>
+	<field name="min_sec" class="java.lang.String"/>
+	<field name="inc_gst" class="java.math.BigDecimal"/>
+	<field name="is_telstra_monthly" class="java.lang.String"/>
+	<field name="telstra_monthly_description" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="start_date" class="java.lang.String"/>
+	<field name="end_date" class="java.lang.String"/>
+	<field name="original_quantity" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="GroupByDescription" calculation="Sum">
+		<variableExpression><![CDATA[$F{inc_gst}]]></variableExpression>
+	</variable>
+	<group name="GroupByDescription" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="60">
+		<groupExpression><![CDATA[$F{description}]]></groupExpression>
+		<groupHeader>
+			<band height="27">
+				<textField isBlankWhenNull="true">
+					<reportElement x="0" y="0" width="222" height="13" uuid="8055ef0b-6cec-4d7a-82b4-b81539f686ed"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="1" y="14" width="58" height="13" uuid="12143762-936c-421c-b644-f5c7dc329161">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="219" y="14" width="75" height="13" uuid="321241ea-ac3b-4463-963b-4e3dfb0591e3">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Duration]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="60" y="14" width="58" height="13" uuid="b805aac8-cf23-4d50-92db-0a67e6e77d59">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Time]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="294" y="14" width="65" height="13" uuid="60472851-d3ee-470c-a409-577ae779b1cb"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="122" y="14" width="95" height="13" uuid="691a44fe-7607-4c0b-b832-0a3a52a7d505">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !$F{description}.toLowerCase().contains('sms')]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Number Called]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="121" y="14" width="170" height="13" uuid="84197a2e-0898-4ee3-b601-b9df81bd92a0">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Description]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="1" y="14" width="58" height="13" uuid="867a011a-bb51-4b35-8260-28b17ce18582">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Start Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="60" y="14" width="58" height="13" uuid="348491ea-fb21-47c4-bdbd-669916b164b6">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[End Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="219" y="14" width="75" height="13" uuid="77181b82-b7e1-46e3-8cb9-69d235d76477">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && ($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="121" y="14" width="95" height="13" uuid="09e5ef43-b5dc-4231-946b-aa80d272d3c2">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && $F{description}.toLowerCase().contains('sms')]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Number]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="13">
+				<staticText>
+					<reportElement x="109" y="0" width="183" height="13" forecolor="#000000" uuid="ab3827b9-11f9-46f3-b334-b75e9de77936"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<text><![CDATA[Total]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="294" y="0" width="65" height="13" forecolor="#000000" uuid="b82848bc-72f8-4ff4-a1d0-5ea12abdba17"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+(new java.text.DecimalFormat("#,##0.00").format($V{sub_total}.setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<textField>
+				<reportElement x="294" y="1" width="65" height="13" uuid="2609d19f-db06-42f7-b5f8-a41c69fdc6ab"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+(new java.text.DecimalFormat("#,##0.00").format($F{inc_gst}.setScale(2, BigDecimal.ROUND_HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="219" y="1" width="75" height="13" uuid="82c841f5-30d6-497d-b27d-8eb59d584794">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{min_sec}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="122" y="1" width="95" height="13" uuid="4373341c-7825-4a7b-9597-15681e4ca716">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{number_called}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="1" width="58" height="13" uuid="d55721d2-2a2e-45d8-9bc8-74195a7ab715">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="60" y="1" width="58" height="13" uuid="2e4b4c27-6a63-499a-b724-83b11ecfd8fd">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{event_time}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="121" y="1" width="170" height="13" uuid="e3d6cf4c-36a5-4bc8-82f5-18ae1b8be1da">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{telstra_monthly_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="1" width="58" height="13" uuid="66e419ab-567a-4f33-9734-fabb88a3e3bb">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{start_date}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="60" y="1" width="58" height="13" uuid="2417b828-3743-49b1-ba47-d488a8c6d2c2">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="219" y="1" width="75" height="13" uuid="11c8a2db-b27b-4e69-8ad0-3f22f90d69d3">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && ($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{original_quantity}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

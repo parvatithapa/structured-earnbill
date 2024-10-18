@@ -16,17 +16,19 @@
 
 
 import com.sapienter.jbilling.server.user.IUserSessionBean
+import com.sapienter.jbilling.server.util.Context
 import grails.plugin.springsecurity.SpringSecurityUtils
 
 class LogoutController {
 	static scope = "singleton"
-	IUserSessionBean userSession
 	/**
 	 * Index action. Redirects to the Spring security logout uri.
 	 */
 	def filterService
 	def index () {
-		userSession.logout(session['user_id'])
+        //get bean to update event audit log during log out
+        IUserSessionBean iUserSessionBean = (IUserSessionBean) Context.getBean(Context.Name.USER_SESSION)
+        iUserSessionBean.logout(session['user_id'])
 
 		def filters = filterService.getCurrentFilters();
         filters?.each{

@@ -17,6 +17,23 @@
 
 package jbilling
 
+import static com.sapienter.jbilling.server.adennet.AdennetExternalConfigurationTask.ORDER_LEVEL_SUBSCRIBER_TYPE_MF_NAME
+import com.sapienter.jbilling.server.adennet.config.ExternalConfig
+import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException
+import grails.plugin.springsecurity.annotation.Secured
+import grails.transaction.Transactional
+
+import javax.xml.XMLConstants
+import javax.xml.bind.JAXB
+import javax.xml.transform.stream.StreamSource
+import javax.xml.validation.Schema
+import javax.xml.validation.SchemaFactory
+
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+
+import com.sapienter.jbilling.client.pricing.util.PlanHelper
 import com.sapienter.jbilling.common.CommonConstants
 import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.csrf.RequiresValidFormToken
@@ -35,7 +52,7 @@ import com.sapienter.jbilling.server.payment.blacklist.BlacklistBL
 import com.sapienter.jbilling.server.payment.db.PaymentDTO
 import com.sapienter.jbilling.server.pricing.PriceModelBL
 import com.sapienter.jbilling.server.pricing.PriceModelWS
-import com.sapienter.jbilling.client.pricing.util.PlanHelper
+
 import com.sapienter.jbilling.server.security.Validator
 import com.sapienter.jbilling.server.spa.SpaImportBL
 import com.sapienter.jbilling.server.timezone.TimezoneHelper
@@ -55,17 +72,6 @@ import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.server.util.SecurityValidator
 import com.sapienter.jbilling.server.util.Util
 
-import grails.plugin.springsecurity.annotation.Secured
-import grails.transaction.Transactional
-
-import javax.xml.XMLConstants
-import javax.xml.bind.JAXB
-import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.Schema
-import javax.xml.validation.SchemaFactory
-
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 
 @Secured(["CUSTOMER_13"])
 class CustomerInspectorController {
@@ -73,6 +79,8 @@ class CustomerInspectorController {
     static pagination = [max: 10, offset: 0]
 	static scope = "prototype"
 	IWebServicesSessionBean webServicesSession
+
+    def adennetHelperService
     def viewUtils
     def breadcrumbService
     def productService
@@ -157,11 +165,28 @@ class CustomerInspectorController {
 			}
 		}
 
+        def userId = params.id as Integer
+        def pageNumber = 1
+        def pageLimit = params.max
+        def walletTransactionResponse
+        def consumptionUsageMapResponse
+        walletTransactionResponse = adennetHelperService.getWalletTransactions(userId, pageNumber, pageLimit, null)
+        consumptionUsageMapResponse = adennetHelperService.getConsumptionUsageDetails(userId, pageNumber, pageLimit)
+
+        if(walletTransactionResponse==null)
+            flash.error = message(code:'error.wallet.transaction')
+        if(consumptionUsageMapResponse==null)
+            flash.error = message(code:'error.consumption.usage')
+
+        // get order level meta-field from external config
+        def subscriberTypeMFName = externalConfigValue(ORDER_LEVEL_SUBSCRIBER_TYPE_MF_NAME)
         breadcrumbService.addBreadcrumb(controllerName, actionName, null, params.int('id'))
 
         String xml = session['configurationFile'] ?: CompanyDTO.get(session['company_id']).getCustomerInformationDesign()?:new File(DEFAULT_TEMPLATE_FILE).text
 
         [
+                consumptionUsageMapResponse : consumptionUsageMapResponse,
+                walletTransactionResponse : walletTransactionResponse,
                 configurationPreview : params.configurationPreview,
                 customerInformation: createCustomerInformation(xml),
                 user: user,
@@ -188,7 +213,8 @@ class CustomerInspectorController {
                 isCurrentCompanyOwning : user.company?.id?.equals(session['company_id']) ? true : false,
                 displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
                 retrieveItems: retrieveItemsMethod(),
-                isDistributel: SpaImportBL.isDistributel(session['company_id'])
+                isDistributel: SpaImportBL.isDistributel(session['company_id']),
+                subscriberTypeMF : subscriberTypeMFName
         ]
     }
 
@@ -290,6 +316,30 @@ class CustomerInspectorController {
         render template: 'products', model: [typeId: params.typeId, itemTypes: itemTypes, products: products ]
     }
 
+    def filterWalletTransactions () {
+        def userId = params.userId as Integer
+        params.max = params?.max?.toInteger() ?: pagination.max
+        params.offset = params?.offset?.toInteger() ?: pagination.offset
+        def pageNumber = (params.offset/params.max)+1 as Integer
+        def pageLimit = params.max
+        def walletTransactionResponse
+        walletTransactionResponse = adennetHelperService.getWalletTransactions(userId, pageNumber, pageLimit, null)
+        if(walletTransactionResponse==null)
+            flash.error = message(code:'error.wallet.transaction')
+        render template: 'walletLedger', model: [ walletTransactionResponse: walletTransactionResponse ]
+    }
+    def filterConsumptionUsages () {
+        def userId = params.userId as Integer
+        params.max = params?.max?.toInteger() ?: pagination.max
+        params.offset = params?.offset?.toInteger() ?: pagination.offset
+        def pageNumber = (params.offset/params.max)+1 as Integer
+        def pageLimit = params.max
+        def consumptionUsageMapResponse
+        consumptionUsageMapResponse = adennetHelperService.getConsumptionUsageDetails(userId, pageNumber, pageLimit)
+        if(consumptionUsageMapResponse==null)
+            flash.error = message(code:'error.consumption.usage')
+        render template: 'consumptionUsage', model: [ consumptionUsageMapResponse: consumptionUsageMapResponse ]
+    }
     def productPrices () {
         def itemId = params.int('id')
         def product = ItemDTO.get(itemId)
@@ -566,5 +616,8 @@ class CustomerInspectorController {
             }
         }
         return items
+    }
+    private String externalConfigValue(ParameterDescription param) throws PluggableTaskException {
+        return new ExternalConfig().getValueFromExternalConfigParams(param, session['company_id'] as Integer)
     }
 }

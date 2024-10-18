@@ -163,9 +163,9 @@
             </div>
         </sec:access>
         <sec:ifAnyGranted roles="INVOICE_73">
-        <div class="download">
+        <div id="download-div" class="download">
 			<g:if test="${csvExportFlag != 0}">
-				<div class="pager-button" id="generateCsv" style="text-align: right;">
+				<div class="pager-button" id="generateCsv">
 					<a onclick="generateCSV(); showMessage()">
 					<g:message code="generate.csv.link" /></a>
                 </div>

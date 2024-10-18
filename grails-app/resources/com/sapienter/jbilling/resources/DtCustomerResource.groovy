@@ -3,7 +3,6 @@ package com.sapienter.jbilling.resources
 import com.sapienter.jbilling.appdirect.subscription.PayloadWS
 
 import com.sapienter.jbilling.appdirect.userCompany.CompanyPayload
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.user.UserWS
 import com.sapienter.jbilling.utils.RestErrorHandler
 import org.slf4j.Logger
@@ -60,9 +59,9 @@ class DtCustomerResource {
         try {
             dtCustomerService.deleteDTCustomer(entityIdentifier, payloadWS)
 
-        } catch (SessionInternalError sie) {
-            logger.error("Error occurred during delete customer", sie)
-            return RestErrorHandler.mapErrorToHttpResponse(sie)
+        } catch (Exception exp) {
+            logger.error("Error occurred during delete customer", exp)
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
 
         return Response.status(Response.Status.OK).build()
@@ -80,9 +79,9 @@ class DtCustomerResource {
         try {
             dtCustomerService.updateCompany(entityIdentifier, companyPayload)
 
-        } catch (SessionInternalError sie) {
-            logger.error("Error occurred during create customer", sie)
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            logger.error("Error occurred during create customer", exp)
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.status(Response.Status.OK).build()
     }

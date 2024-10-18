@@ -2,7 +2,7 @@ package com.sapienter.jbilling.api.automation.collections;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.testng.annotations.Test;
-import static com.sapienter.jbilling.test.framework.helpers.ApiBuilderHelper.*;
+
 import com.sapienter.jbilling.api.automation.EnvironmentHelper;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
@@ -126,9 +126,7 @@ public class CancellationInvoiceCollectionsTest {
         Hashtable<String, String> parameters;
         paymentFakeTask.setProcessingOrder(1);
         paymentFakeTask.setTypeId(api.getPluginTypeWSByClassName(PAYMENT_FILTER_TASK_CLASS_NAME).getId());
-        for(Integer userId : api.getUsersNotInStatus(1)) {
-            updateCustomerStatusToActive(userId, api);
-        }
+
         parameters = new Hashtable<>();
         parameters.put("enable_filter_user_id", "true");
         parameters.put("enable_filter_name", "true");
@@ -801,8 +799,24 @@ public class CancellationInvoiceCollectionsTest {
         UserWS user = api.getUserWS(customerId);
         user.setStatusId(1);
         user.setStatus("Active");
-        user.setPassword(null);
         api.updateUser(user);
+    }
+
+    private static Date addDays(Date inputDate, int days) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(inputDate);
+        cal.add(Calendar.DATE, days);
+        return cal.getTime();
+    }
+
+    private CancellationRequestWS constructCancellationRequestWS(Date cancellationDate, Integer customerId, String reasonText) {
+        CancellationRequestWS cancellationRequestWS = new CancellationRequestWS();
+        cancellationRequestWS.setCancellationDate(cancellationDate);
+        cancellationRequestWS.setCreateTimestamp(new Date());
+        cancellationRequestWS.setCustomerId(customerId);
+        cancellationRequestWS.setReasonText(reasonText);
+        cancellationRequestWS.setStatus(CancellationRequestStatus.APPLIED);
+        return cancellationRequestWS;
     }
 
     private void pause(long t) {

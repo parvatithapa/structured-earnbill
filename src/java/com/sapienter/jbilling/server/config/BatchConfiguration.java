@@ -19,6 +19,8 @@ import com.sapienter.jbilling.batch.billing.BillingBatchService;
 import com.sapienter.jbilling.batch.ignition.IgnitionBatchService;
 import com.sapienter.jbilling.batch.support.NoOpWriter;
 import com.sapienter.jbilling.batch.support.PartitionService;
+import com.sapienter.jbilling.batch.email.EmailBatchJobService;
+import com.sapienter.jbilling.batch.email.EmailBatchService;
 
 @Configuration
 @EnableBatchProcessing
@@ -68,7 +70,6 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     public PartitionService partitionService () {
         return new PartitionService();
     }
-
     
     @Bean
     public NoOpWriter noopWriter () {
@@ -78,5 +79,15 @@ public class BatchConfiguration extends DefaultBatchConfigurer {
     @Bean
     public SkipPolicy skipPolicy () {
         return new AlwaysSkipItemSkipPolicy();
+    }
+    
+    @Bean
+    public EmailBatchJobService emailBatchJobService () {
+        return new EmailBatchJobService();
+    }
+    
+    @Bean
+    public EmailBatchService emailBatchService () {
+        return new EmailBatchService();
     }
 }

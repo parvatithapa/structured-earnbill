@@ -32,7 +32,7 @@
 --%>
 
 <div class="row <g:pageProperty name="page.row.class"/>">
-    <label class="<g:pageProperty name="page.label.class"/>" title="<g:pageProperty name="page.label.title"/>" for="<g:pageProperty name="page.label.for"/>"><g:pageProperty name="page.label"/></label>
+    <label class="<g:pageProperty name="page.label.class"/>" title="<g:pageProperty name="page.label.title"/>" for="<g:pageProperty name="page.label.for"/>" data-cy="<g:pageProperty name="page.label.for"/>"><g:pageProperty name="page.label"/></label>
     <div class="inp-bg <g:pageProperty name="page.style"/>">
         <g:layoutBody/>
     </div>

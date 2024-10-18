@@ -10,6 +10,7 @@ import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepContext;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.AbstractMediationStep;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.MediationStepResult;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.CdrRecordType.TelstraRecord;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.MediationServiceType;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.CdrRecordType.OptusMobileRecord;
@@ -46,7 +47,29 @@ public class DescriptionResolutionStep  extends AbstractMediationStep<MediationS
                 }
                 result.setSource(sourceField.getStrValue());
                 descriptionText = "Content originated from "+sourceField.getStrValue().trim();
+            } else if (MediationServiceType.TELSTRA_MOBILE_4G == MediationServiceType.fromServiceName(mediationType.getStrValue())){
+                PricingField field = PricingField.find(fields, SPCConstants.BILLING_NAME);
+                PricingField callingField = PricingField.find(fields, sourceNumber);
+                PricingField calledField = PricingField.find(fields, destinationNumber);
+                result.setSource(callingField.getStrValue());
+                result.setDestination(calledField.getStrValue());
+
+                if(TelstraRecord.GPRS.getTypeCode().equalsIgnoreCase(field.getStrValue())){
+                    descriptionText = "GPRS usage from "+ callingField.getStrValue();
+                } else {
+                    descriptionText = field.getStrValue() +" originated from "+callingField.getStrValue() + " to " + calledField.getStrValue();
+                }
+            }
+            else if(MediationServiceType.fromServiceName(mediationType.getStrValue()) == MediationServiceType.TELSTRA_FIXED_LINE_MONTHLY ) {
+                PricingField billingTransDesc = PricingField.find(fields, SPCConstants.BILLING_TRANS_DESC);
+                PricingField transTypeDesc = PricingField.find(fields, SPCConstants.TRANS_TYPE_DESC);
+                if(null == billingTransDesc || null == transTypeDesc) {
+                    result.addError("ERR-DESCRIPTION-NOT-FOUND");
+                    return false;
+                }
+                descriptionText = billingTransDesc.getStrValue().trim() + " " + transTypeDesc.getStrValue().trim();
             } else {
+            	String calledFieldStr = "";
                 PricingField callingField = PricingField.find(fields, sourceNumber);
                 PricingField calledField = PricingField.find(fields, destinationNumber);
                 if(null == callingField || null == calledField) {
@@ -54,10 +77,14 @@ public class DescriptionResolutionStep  extends AbstractMediationStep<MediationS
                     return false;
                 }
                 result.setSource(callingField.getStrValue());
-                result.setDestination(calledField.getStrValue());
-                descriptionText = "Call from " + callingField.getStrValue() + " to " + calledField.getStrValue();
+                if(!calledField.getStrValue().chars().allMatch(Character::isDigit)){
+                	calledFieldStr = calledField.getStrValue().substring(2);
+                } else {
+                	calledFieldStr = calledField.getStrValue();
+                }
+                result.setDestination(calledFieldStr);
+                descriptionText = "Call from " + callingField.getStrValue() + " to " + calledFieldStr;
             }
-
             result.setDescription(descriptionText);
             return true;
         } catch(Exception ex) {

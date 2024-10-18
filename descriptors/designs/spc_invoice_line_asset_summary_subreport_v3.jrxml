@@ -9,14 +9,38 @@
 	<parameter name="description" class="java.lang.String"/>
 	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
 	<parameter name="order_id" class="java.lang.Integer"/>
+	<parameter name="exclude_from_call_itemisation_category_id" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT jmr.source AS call_identifier,
-TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS event_date,
-TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'HH24:MI:SS') AS event_time,
+TO_CHAR(event_date, 'DD/MM/YYYY') AS event_date,
+TO_CHAR(event_date, 'HH24:MI:SS') AS event_time,
 jmr.destination AS number_called,
 TO_CHAR((jmr.original_quantity || ' sec')::interval, 'HH24:MI:SS') AS min_sec,
-jmr.rated_price + (jmr.rated_price * il.tax_rate/100) AS inc_gst,
-il.description
+jmr.rated_price_with_tax AS inc_gst,
+(CASE WHEN il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+	AND jmr.pricing_fields like '%telstramth%'
+THEN 't'
+ELSE 'f'
+END) AS is_telstra_monthly,
+jmr.description AS telstra_monthly_description,
+il.description,
+(SELECT TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',8),21,8),'YYYYMMDD'),'DD/MM/YYYY')
+FROM jbilling_mediation_record jmr_inner
+WHERE il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+AND jmr_inner.id = jmr.id
+AND jmr_inner.pricing_fields like '%Start+Date%') AS start_date,
+(SELECT
+CASE WHEN SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8) IS NOT NULL
+	AND SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8) != ''
+THEN TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',9),19,8),'YYYYMMDD'),'DD/MM/YYYY')
+-- if end date is null then show start date
+ELSE TO_CHAR(TO_DATE(SUBSTRING(SPLIT_PART(jmr_inner.pricing_fields,',',8),21,8),'YYYYMMDD'),'DD/MM/YYYY')
+END
+FROM jbilling_mediation_record jmr_inner
+WHERE il.item_id IN (SELECT id FROM item WHERE internal_number = 'tf_service_&_equipment')
+AND jmr_inner.id = jmr.id
+AND jmr_inner.pricing_fields like '%End+Date%') AS end_date,
+jmr.original_quantity
 FROM jbilling_mediation_record jmr
 INNER JOIN purchase_order po ON po.id = jmr.order_id
 INNER JOIN order_line ol ON ol.id = jmr.order_line_id
@@ -30,6 +54,16 @@ AND il.call_identifier IS NOT NULL
 AND il.call_identifier = jmr.source
 AND il.call_identifier = $P{call_identifier}
 AND il.description = $P{description}
+-- Exclude items from call itemisation
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{exclude_from_call_itemisation_category_id}
+)
+AND ol.deleted = 0
 ORDER BY jmr.event_date ASC;]]>
 	</queryString>
 	<field name="call_identifier" class="java.lang.String"/>
@@ -38,76 +72,134 @@ ORDER BY jmr.event_date ASC;]]>
 	<field name="number_called" class="java.lang.String"/>
 	<field name="min_sec" class="java.lang.String"/>
 	<field name="inc_gst" class="java.math.BigDecimal"/>
+	<field name="is_telstra_monthly" class="java.lang.String"/>
+	<field name="telstra_monthly_description" class="java.lang.String"/>
 	<field name="description" class="java.lang.String"/>
+	<field name="start_date" class="java.lang.String"/>
+	<field name="end_date" class="java.lang.String"/>
+	<field name="original_quantity" class="java.math.BigDecimal"/>
 	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="GroupByDescription" calculation="Sum">
 		<variableExpression><![CDATA[$F{inc_gst}]]></variableExpression>
 	</variable>
 	<group name="GroupByDescription" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="60">
 		<groupExpression><![CDATA[$F{description}]]></groupExpression>
 		<groupHeader>
-			<band height="47">
+			<band height="35">
 				<textField isBlankWhenNull="true">
-					<reportElement x="0" y="3" width="222" height="20" uuid="8055ef0b-6cec-4d7a-82b4-b81539f686ed"/>
+					<reportElement x="0" y="0" width="222" height="15" uuid="8055ef0b-6cec-4d7a-82b4-b81539f686ed"/>
 					<textElement verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
 				</textField>
 				<staticText>
-					<reportElement x="1" y="25" width="111" height="20" uuid="12143762-936c-421c-b644-f5c7dc329161"/>
+					<reportElement x="1" y="17" width="111" height="15" uuid="12143762-936c-421c-b644-f5c7dc329161">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Date]]></text>
 				</staticText>
 				<line>
-					<reportElement x="3" y="46" width="550" height="1" uuid="2d2f19b9-1d6b-4a4a-b6a9-f0d29453e30a"/>
+					<reportElement x="0" y="34" width="533" height="1" uuid="2d2f19b9-1d6b-4a4a-b6a9-f0d29453e30a"/>
 					<graphicElement>
 						<pen lineWidth="0.5" lineColor="#FFCCCC"/>
 					</graphicElement>
 				</line>
 				<staticText>
-					<reportElement x="334" y="25" width="111" height="20" uuid="321241ea-ac3b-4463-963b-4e3dfb0591e3"/>
+					<reportElement x="334" y="17" width="111" height="15" uuid="321241ea-ac3b-4463-963b-4e3dfb0591e3">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Hour:min:sec]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="112" y="25" width="111" height="20" uuid="b805aac8-cf23-4d50-92db-0a67e6e77d59"/>
+					<reportElement x="112" y="17" width="111" height="15" uuid="b805aac8-cf23-4d50-92db-0a67e6e77d59">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Time]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="446" y="25" width="70" height="20" uuid="60472851-d3ee-470c-a409-577ae779b1cb"/>
+					<reportElement x="446" y="17" width="70" height="15" uuid="60472851-d3ee-470c-a409-577ae779b1cb"/>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Incl. GST]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="223" y="25" width="111" height="20" uuid="691a44fe-7607-4c0b-b832-0a3a52a7d505"/>
+					<reportElement x="223" y="17" width="111" height="15" uuid="691a44fe-7607-4c0b-b832-0a3a52a7d505">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !$F{description}.toLowerCase().contains('sms')]]></printWhenExpression>
+					</reportElement>
 					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Number Called]]></text>
 				</staticText>
+				<staticText>
+					<reportElement x="222" y="17" width="223" height="15" uuid="84197a2e-0898-4ee3-b601-b9df81bd92a0">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Description]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="1" y="17" width="111" height="15" uuid="867a011a-bb51-4b35-8260-28b17ce18582">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Start Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="111" y="17" width="111" height="15" uuid="348491ea-fb21-47c4-bdbd-669916b164b6">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[End Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="334" y="17" width="111" height="15" uuid="77181b82-b7e1-46e3-8cb9-69d235d76477">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && ($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="223" y="17" width="111" height="15" uuid="09e5ef43-b5dc-4231-946b-aa80d272d3c2">
+						<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && $F{description}.toLowerCase().contains('sms')]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Number]]></text>
+				</staticText>
 			</band>
 		</groupHeader>
 		<groupFooter>
-			<band height="20">
+			<band height="14">
 				<staticText>
-					<reportElement x="261" y="0" width="183" height="20" forecolor="#D6036C" uuid="ab3827b9-11f9-46f3-b334-b75e9de77936"/>
+					<reportElement x="261" y="0" width="183" height="13" forecolor="#D6036C" uuid="ab3827b9-11f9-46f3-b334-b75e9de77936"/>
 					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Total]]></text>
 				</staticText>
 				<textField isBlankWhenNull="true">
-					<reportElement x="446" y="0" width="70" height="20" forecolor="#D6036C" uuid="b82848bc-72f8-4ff4-a1d0-5ea12abdba17"/>
-					<textElement textAlignment="Center" verticalAlignment="Middle">
+					<reportElement x="446" y="0" width="70" height="13" forecolor="#D6036C" uuid="b82848bc-72f8-4ff4-a1d0-5ea12abdba17"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<textFieldExpression><![CDATA[$P{currency_symbol}+''+$V{sub_total}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
@@ -119,41 +211,85 @@ ORDER BY jmr.event_date ASC;]]>
 		<band splitType="Stretch"/>
 	</background>
 	<detail>
-		<band height="22" splitType="Stretch">
+		<band height="14" splitType="Stretch">
 			<textField>
-				<reportElement x="446" y="2" width="70" height="20" uuid="2609d19f-db06-42f7-b5f8-a41c69fdc6ab"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
+				<reportElement x="446" y="1" width="70" height="13" uuid="2609d19f-db06-42f7-b5f8-a41c69fdc6ab"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{inc_gst}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="335" y="2" width="111" height="20" uuid="82c841f5-30d6-497d-b27d-8eb59d584794"/>
+				<reportElement x="335" y="1" width="111" height="13" uuid="82c841f5-30d6-497d-b27d-8eb59d584794">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && !($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{min_sec}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="224" y="2" width="111" height="20" uuid="4373341c-7825-4a7b-9597-15681e4ca716"/>
+			<textField isBlankWhenNull="true">
+				<reportElement x="224" y="1" width="111" height="13" uuid="4373341c-7825-4a7b-9597-15681e4ca716">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{number_called}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="2" y="2" width="111" height="20" uuid="d55721d2-2a2e-45d8-9bc8-74195a7ab715"/>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="1" width="111" height="13" uuid="d55721d2-2a2e-45d8-9bc8-74195a7ab715">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="113" y="2" width="111" height="20" uuid="2e4b4c27-6a63-499a-b724-83b11ecfd8fd"/>
+				<reportElement x="113" y="1" width="111" height="13" uuid="2e4b4c27-6a63-499a-b724-83b11ecfd8fd">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f']]></printWhenExpression>
+				</reportElement>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{event_time}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="222" y="1" width="222" height="13" uuid="e3d6cf4c-36a5-4bc8-82f5-18ae1b8be1da">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{telstra_monthly_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="1" width="111" height="13" uuid="66e419ab-567a-4f33-9734-fabb88a3e3bb">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{start_date}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="111" y="1" width="111" height="13" uuid="2417b828-3743-49b1-ba47-d488a8c6d2c2">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 't']]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="335" y="1" width="111" height="13" uuid="11c8a2db-b27b-4e69-8ad0-3f22f90d69d3">
+					<printWhenExpression><![CDATA[$F{is_telstra_monthly} == 'f' && ($F{description}.toLowerCase().contains('sms') || $F{description}.toLowerCase().contains('mms'))]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{original_quantity}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>

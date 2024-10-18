@@ -1,9 +1,22 @@
 package com.sapienter.jbilling.server.payment.db;
 
-import java.io.Closeable;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import com.sapienter.jbilling.server.metafields.EntityType;
+import com.sapienter.jbilling.server.metafields.MetaContent;
+import com.sapienter.jbilling.server.metafields.MetaFieldBL;
+import com.sapienter.jbilling.server.metafields.MetaFieldExternalHelper;
+import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
+import com.sapienter.jbilling.server.metafields.db.GroupCustomizedEntity;
+import com.sapienter.jbilling.server.metafields.db.MetaField;
+import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
+import com.sapienter.jbilling.server.metafields.db.value.CharMetaFieldValue;
+import com.sapienter.jbilling.server.payment.PaymentInformationWS;
+import com.sapienter.jbilling.server.user.db.CompanyDAS;
+import com.sapienter.jbilling.server.user.db.UserDTO;
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Sort;
+import org.hibernate.annotations.SortType;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -20,21 +33,11 @@ import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-
-import com.sapienter.jbilling.server.metafields.*;
-import com.sapienter.jbilling.server.metafields.db.MetaField;
-import com.sapienter.jbilling.server.metafields.db.value.CharMetaFieldValue;
-import com.sapienter.jbilling.server.user.db.CompanyDAS;
-
-import org.apache.commons.lang.StringUtils;
-import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.Sort;
-import org.hibernate.annotations.SortType;
-
-import com.sapienter.jbilling.server.metafields.db.GroupCustomizedEntity;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
-import com.sapienter.jbilling.server.payment.PaymentInformationWS;
-import com.sapienter.jbilling.server.user.db.UserDTO;
+import java.io.Closeable;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 
@@ -60,6 +63,8 @@ public class PaymentInformationDTO extends GroupCustomizedEntity implements Auto
 	private PaymentMethodTypeDTO paymentMethodType;
 	private List<MetaFieldValue> metaFields = new ArrayList<MetaFieldValue>(0);
 	private Integer paymentMethodId;
+	private Date createDateTime;
+	private Date updateDateTime;
 
 	private int versionNum;
 	
@@ -95,7 +100,9 @@ public class PaymentInformationDTO extends GroupCustomizedEntity implements Auto
 		setPaymentMethodType(new PaymentMethodTypeDAS().find(ws.getPaymentMethodTypeId()));
 		setPaymentMethodId(ws.getPaymentMethodId());
 		setPaymentMethod(new PaymentMethodDAS().find(ws.getPaymentMethodId()));
-		
+		setCreateDateTime(ws.getCreateDateTime());
+		setUpdateDateTime(ws.getUpdateDateTime());
+
 		if(ws.getPaymentMethodId() != null) {
 			setPaymentMethod(new PaymentMethodDTO(ws.getPaymentMethodId()));
 		}
@@ -170,6 +177,24 @@ public class PaymentInformationDTO extends GroupCustomizedEntity implements Auto
 		this.paymentMethodId = paymentMethodId;
 	}
 
+	@Column(name="create_datetime",length = 29)
+	@CreationTimestamp
+	public Date getCreateDateTime() {
+		return createDateTime;
+	}
+
+	public void setCreateDateTime(Date createDateTime) {
+		this.createDateTime = createDateTime;
+	}
+
+	@Column(name = "update_datetime", length = 29)
+	public Date getUpdateDateTime() {
+		return updateDateTime;
+	}
+
+	public void setUpdateDateTime(Date updateDateTime) {
+		this.updateDateTime = updateDateTime;
+	}
 	@Version
     @Column(name = "OPTLOCK")
     public int getVersionNum() {
@@ -239,6 +264,8 @@ public class PaymentInformationDTO extends GroupCustomizedEntity implements Auto
 		paymentInformation.setPaymentMethodId(this.paymentMethodId);
 		paymentInformation.setUser(this.user);
 		paymentInformation.setCvv(this.getCvv());
+		paymentInformation.setCreateDateTime(this.createDateTime);
+		paymentInformation.setUpdateDateTime(this.updateDateTime);
 
 		for(MetaFieldValue metaField : getMetaFields()) {
 			MetaFieldValue value = metaField.getField().createValue();
@@ -263,6 +290,8 @@ public class PaymentInformationDTO extends GroupCustomizedEntity implements Auto
 		paymentInformation.setPaymentMethodType(this.paymentMethodType);
 		paymentInformation.setProcessingOrder(this.processingOrder);
 		paymentInformation.setPaymentMethodId(this.paymentMethodId);
+		paymentInformation.setCreateDateTime(this.createDateTime);
+		paymentInformation.setUpdateDateTime(this.updateDateTime);
 		//paymentInformation.setPayments(this.payments);
 		//paymentInformation.setUser(this.user);
 		

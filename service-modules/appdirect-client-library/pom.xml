@@ -10,7 +10,6 @@
     <version>1.0.0</version>
   </parent>
 
-  <groupId>com.sapienter.jbilling</groupId>
   <artifactId>appdirect-client-library</artifactId>
   <version>1.0.0</version>
 
@@ -27,7 +26,7 @@
       <version>${commons-lang.version}</version>
       <scope>compile</scope>
     </dependency>
-    <!-- Test Dependecies -->
+    <!-- Test Dependencies -->
 
     <!-- test scope -->
     <dependency>

@@ -17,6 +17,12 @@
 package jbilling
 
 import com.sapienter.jbilling.server.timezone.TimezoneHelper
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
+import com.sapienter.jbilling.client.authentication.AuthenticationUserService
 import com.sapienter.jbilling.client.authentication.CompanyUserDetails;
 import com.sapienter.jbilling.client.authentication.model.User;
 import com.sapienter.jbilling.common.LastPasswordOverrideError
@@ -33,10 +39,13 @@ import com.sapienter.jbilling.server.user.db.UserPasswordDAS
 import com.sapienter.jbilling.server.user.permisson.db.PermissionDTO
 import com.sapienter.jbilling.server.user.permisson.db.RoleDTO;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.hibernate.criterion.CriteriaSpecification
-import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder
 
 import javax.servlet.http.HttpSession
@@ -48,6 +57,7 @@ class UserService implements Serializable {
     def messageSource
 //    AuthenticationUserService authenticationUserService
     IUserSessionBean userSession
+    IWebServicesSessionBean webServicesSession
 
     /**
      * Returns a list of User Codes filtered by simple criteria. The given filterBy parameter will
@@ -119,15 +129,9 @@ class UserService implements Serializable {
 
     def updatePassword (ResetPasswordCodeDTO resetCode, String newPassword) {
 
-        int userId = resetCode.user.id
-        UserWS userWS = new UserBL(userId).getUserWS();
-        if (null == userWS) {
-            def message = "User with id  " + userId + "not found!"
-            log.warn(message)
-            throw new SecurityException(message);
-        }
+        UserWS userWS = webServicesSession.getUserWS(resetCode.user.id)
         //encode the password
-
+		
         Integer passwordEncoderId = JBCrypto.getPasswordEncoderId(userWS.mainRoleId)
 		String newPasswordEncoded = JBCrypto.encodePassword(passwordEncoderId, newPassword)
         //compare current password with last six
@@ -135,7 +139,7 @@ class UserService implements Serializable {
         for(String password: passwords) {
             if(JBCrypto.passwordsMatch(passwordEncoderId, password, newPassword)) {
 				LastPasswordOverrideError lastEx = new LastPasswordOverrideError("Password is similar to one of the last six passwords. Please enter a unique Password.");
-
+				
 				throw lastEx;
             }
         }

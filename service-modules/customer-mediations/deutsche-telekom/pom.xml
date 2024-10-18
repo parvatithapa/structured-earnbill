@@ -11,7 +11,6 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.sapienter.jbilling</groupId>
     <artifactId>mediation-deutsche-telekom-impl</artifactId>
     <version>1.0.0</version>
 
@@ -365,6 +364,7 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>${hsqldb.version}</version>
+            <classifier>jdk8</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>

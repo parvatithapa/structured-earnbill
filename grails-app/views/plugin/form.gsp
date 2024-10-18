@@ -83,7 +83,7 @@
                     <!-- box cards -->
                     <div class="box-cards box-cards-open">
                         <div class="box-cards-title">
-                            <span style="float:left;padding-left:20px;">
+                            <span id="custom-span">
                                  <g:message code="plugins.create.parameters"/>
                             </span>
                         </div>

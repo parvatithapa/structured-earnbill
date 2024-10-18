@@ -58,7 +58,7 @@
                 </div>
             </fieldset>
 
-            <div class="btn-box buttons" style="">
+            <div class="btn-box buttons">
                 <ul>
                     <li>
                         <a onclick="$('#saveCommissionConfig').submit();" class="submit save button-primary"><span><g:message

@@ -16,22 +16,6 @@
 
 package com.sapienter.jbilling.server.item;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import com.sapienter.jbilling.common.SessionInternalError;
@@ -59,6 +43,7 @@ import com.sapienter.jbilling.server.order.db.OrderChangeDTO;
 import com.sapienter.jbilling.server.order.db.OrderDAS;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.provisioning.ProvisioningCommandBL;
 import com.sapienter.jbilling.server.provisioning.ProvisioningCommandWS;
 import com.sapienter.jbilling.server.provisioning.ProvisioningRequestWS;
 import com.sapienter.jbilling.server.provisioning.db.AssetProvisioningCommandDTO;
@@ -74,6 +59,22 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
 import com.sapienter.jbilling.server.util.search.SearchCriteria;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -124,17 +125,16 @@ public class AssetBL {
         ws.setEntityId(dto.getEntity()!= null? dto.getEntity().getId() :null);
         ws.setEntities(dto.getChildEntitiesIds());
         ws.setItemId(dto.getItem().getId());
-
-        MetaFieldValueWS[] metaFields= MetaFieldBL.convertMetaFieldsToWS(dto.getItem().
-                findItemTypeWithAssetManagement().getAssetMetaFields(), dto);
-        List <MetaFieldValueWS> newMetaFields = new ArrayList<>();
-
-        for(MetaFieldValueWS mf : metaFields){
-            if(mf.getId() != null){
-                newMetaFields.add(mf);
-            }
-        }
-        ws.setMetaFields(newMetaFields.toArray(new MetaFieldValueWS[newMetaFields.size()]));
+        ws.setMetaFields( MetaFieldBL.convertMetaFieldsToWS(dto.getItem().findItemTypeWithAssetManagement().getAssetMetaFields(), dto));
+        ws.setSubscriberNumber(dto.getSubscriberNumber());
+        ws.setImsi(dto.getImsi());
+        ws.setSuspended(dto.isSuspended());
+        ws.setPin1(dto.getPin1());
+        ws.setPin2(dto.getPin2());
+        ws.setPuk1(dto.getPuk1());
+        ws.setPuk2(dto.getPuk2());
+        ws.setDiscardedIdentifier(dto.getDiscardedIdentifier());
+        ws.setSuspendedBy(dto.getSuspendedBy());
 
         if(dto.getOrderLine() != null) {
             ws.setOrderLineId(dto.getOrderLine().getId());
@@ -173,37 +173,45 @@ public class AssetBL {
         assetWS.setCreateDatetime(dto.getCreateDatetime());
         assetWS.setNotes(dto.getNotes());
         assetWS.setGlobal(dto.isGlobal());
+        assetWS.setAssetStatusId(dto.getAssetStatus().getId());
         Integer languageId = dto.getEntity().getLanguageId();
-        AssetStatusDTO assetStatus = dto.getAssetStatus();
-        assetWS.setAssetStatusId(assetStatus.getId());
-        assetWS.setStatus(assetStatus.getDescription(languageId));
+        assetWS.setStatus(dto.getAssetStatus().getDescription(languageId));
         assetWS.setEntityId(dto.getEntityId());
-        ItemDTO assetItem = dto.getItem();
-        assetWS.setItemId(assetItem.getId());
-        assetWS.setItemDescription(assetItem.getDescription(languageId));
-        assetWS.setProductCode(assetItem.getInternalNumber());
-        assetWS.setCategoryId(assetItem.getTypes()[0]);
+        assetWS.setItemId(dto.getItem().getId());
+        assetWS.setItemDescription(dto.getItem().getDescription(languageId));
+        assetWS.setProductCode(dto.getItem().getInternalNumber());
+
         @SuppressWarnings("rawtypes")
         List<MetaFieldValue> fieldValues = dto.getMetaFields();
         if (CollectionUtils.isNotEmpty(fieldValues)) {
             assetWS.setMetaFieldsMap(fieldValues.stream()
                     .collect(Collectors.toMap(MetaFieldValue::getFieldName, MetaFieldValue::getValue, (mf1, mf2) -> mf1, HashMap :: new)));
         }
-        OrderLineDTO orderLine = dto.getOrderLine();
-        if(null!= orderLine) {
-            assetWS.setOrderLineId(orderLine.getId());
-            assetWS.setOrderId(orderLine.getPurchaseOrder().getId());
+
+        assetWS.setOrderLineId(dto.getOrderLine().getId());
+
+        Set<AssetDTO> containedAssets = dto.getContainedAssets();
+        if (CollectionUtils.isNotEmpty(containedAssets)) {
+            assetWS.setContainedAssetIds(containedAssets.stream()
+                    .map(AssetDTO::getId)
+                    .collect(Collectors.toList())
+                    .toArray(new Integer[0]));
         }
+
         Set<AssetAssignmentDTO> assetAssignmentDTOs = dto.getAssignments();
         if (CollectionUtils.isNotEmpty(assetAssignmentDTOs)) {
-            List<AssetAssignmentWS> assetAssignments = new ArrayList<>();
-            for(AssetAssignmentDTO assetAssignment : assetAssignmentDTOs) {
-                assetAssignments.add(AssetAssignmentBL.toWS(assetAssignment));
-                if(null == assetAssignment.getEndDatetime()) {
-                    assetWS.setStartTime(assetAssignment.getStartDatetime());
-                }
-            }
-            assetWS.setAssignments(assetAssignments.toArray(new AssetAssignmentWS[0]));
+            assetWS.setAssignments(assetAssignmentDTOs.stream()
+                    .map(AssetAssignmentBL::toWS)
+                    .collect(Collectors.toList())
+                    .toArray(new AssetAssignmentWS[0]));
+        }
+
+        List<AssetProvisioningCommandDTO> commandDTOs = dto.getProvisioningCommands();
+        if (CollectionUtils.isNotEmpty(commandDTOs)) {
+            assetWS.setProvisioningCommands(commandDTOs.stream()
+                    .map(ProvisioningCommandBL::getCommandWS)
+                    .collect(Collectors.toList())
+                    .toArray(new ProvisioningCommandWS [0]));
         }
         return assetWS;
     }
@@ -238,7 +246,9 @@ public class AssetBL {
             assetRestWS.setMetaFieldsMap(assetMetaFieldMap);
         }
         assetRestWS.setOrderLineId(assetWS.getOrderLineId());
+        assetRestWS.setContainedAssetIds(assetWS.getContainedAssetIds());
         assetRestWS.setAssignments(assetWS.getAssignments());
+        assetRestWS.setProvisioningCommands(assetWS.getProvisioningCommands());
         return assetRestWS;
     }
 
@@ -320,19 +330,16 @@ public class AssetBL {
      */
     public void update(AssetDTO dto, Integer userId) {
         AssetDTO persistentDto = das.find(dto.getId());
+        boolean suspended = persistentDto.isSuspended();
         AssetStatusDTO oldStatus = persistentDto.getAssetStatus();
 
         Integer entityId = persistentDto.getEntityId();
         Map<String, Object> oldMetaFieldValues = MetaFieldHelper.convertMetaFieldValuesToMap(entityId, null, EntityType.ASSET, persistentDto);
-        if (dto.getMetaFields() != null && dto.getMetaFields().size() > 0) {
-            if (persistentDto != dto) {
-                persistentDto.getMetaFields().clear();
-                for (MetaFieldValue<?> metaFieldValue : dto.getMetaFields()) {
-                    persistentDto.setMetaField(metaFieldValue.getField(), metaFieldValue.getValue());
-                }
+
+        if (persistentDto != dto) {
+            for (MetaFieldValue<?> metaFieldValue : dto.getMetaFields()) {
+                persistentDto.setMetaField(metaFieldValue.getField(), metaFieldValue.getValue());
             }
-        } else {
-            persistentDto.getMetaFields().clear();
         }
 
         persistentDto.setAssetStatus(dto.getAssetStatus());
@@ -341,11 +348,19 @@ public class AssetBL {
         persistentDto.setEntity(dto.getEntity());
         persistentDto.setGlobal(dto.isGlobal());
         persistentDto.setEntities(dto.getEntities());
-
-        // merge the contained assets
+        persistentDto.setSubscriberNumber(dto.getSubscriberNumber());
+        persistentDto.setImsi(dto.getImsi());
+        persistentDto.setSuspended(dto.isSuspended());
+        persistentDto.setPin1(dto.getPin1());
+        persistentDto.setPin2(dto.getPin2());
+        persistentDto.setPuk1(dto.getPuk1());
+        persistentDto.setPuk2(dto.getPuk2());
+        persistentDto.setDiscardedIdentifier(dto.getDiscardedIdentifier());
+        persistentDto.setSuspendedBy(dto.getSuspendedBy());
+        //merge the contained assets
         List<Event> events = mergeContainedAssets(persistentDto, dto.getContainedAssets(), userId);
 
-        // persistentDto.getMetaFields().clear(); This line caused to clear meta field's saved value.
+        //        persistentDto.getMetaFields().clear();        This line caused to clear meta field's saved value.
 
         asset = das.save(persistentDto);
         das.flush();
@@ -355,18 +370,28 @@ public class AssetBL {
         UserDTO assignedTo = (dto.getOrderLine() != null
                 && dto.getOrderLine().getPurchaseOrder() != null) ? dto.getOrderLine().getPurchaseOrder().getUser() : null;
 
-        events.add(new AssetUpdatedEvent(entityId, persistentDto, oldStatus, assignedTo, userId, oldMetaFieldValues));
+                events.add(new AssetUpdatedEvent(entityId, persistentDto, oldStatus, assignedTo, userId, oldMetaFieldValues));
 
-        //fire the events
-        for(Event event: events) {
-            EventManager.process(event);
-        }
+                //fire the events
+                for(Event event: events) {
+                    EventManager.process(event);
+                }
 
-        // triggering process for child companies
-        for (Integer id : dto.getChildEntitiesIds()) {
-            if (!id.equals(entityId)) { //this was once triggered for the owning company
-                EventManager.process(new AssetCreatedEvent(id, asset, assignedTo, userId));
-            }
+                // triggering process for child companies
+                for (Integer id : dto.getChildEntitiesIds()) {
+                    if (!id.equals(entityId)) { //this was once triggered for the owning company
+                        EventManager.process(new AssetCreatedEvent(id, asset, assignedTo, userId));
+                    }
+                }
+
+        // add a log for suspend, active subscriber
+        if(suspended != dto.isSuspended()){
+            eLogger.auditLog( userId,
+                asset.getOrderLine().getPurchaseOrder().getUser().getId(),
+                Constants.TABLE_ASSET,
+                dto.getId(),
+                EventLogger.MODULE_USER_MAINTENANCE,
+                EventLogger.ASSET_UPDATED , null, String.format("Subscriber status was changed from %s ", dto.isSuspended() ? "'Active' to 'Suspended'." : "'Suspended' to 'Active'." ) , null);
         }
     }
 
@@ -443,6 +468,15 @@ public class AssetBL {
 
         dto.setGlobal(ws.isGlobal());
         dto.setEntities(convertToCompanyDTO(ws.getEntities()));
+        dto.setSubscriberNumber(ws.getSubscriberNumber());
+        dto.setImsi(ws.getImsi());
+        dto.setSuspended(ws.isSuspended());
+        dto.setPin1(ws.getPin1());
+        dto.setPin2(ws.getPin2());
+        dto.setPuk1(ws.getPuk1());
+        dto.setPuk2(ws.getPuk2());
+        dto.setDiscardedIdentifier(ws.getDiscardedIdentifier());
+        dto.setSuspendedBy(ws.getSuspendedBy());
 
         if(ws.getProvisioningCommands() != null) {
             List <AssetProvisioningCommandDTO> commandDTOList = new ArrayList<>();
@@ -642,10 +676,9 @@ public class AssetBL {
         assets= assets.stream().filter( it -> it.getId() != dto.getId()).collect(Collectors.toList());
 
         if ( CollectionUtils.isNotEmpty(assets)) {
-            throw new SessionInternalError(
-                    "An asset with the same identifier already exists",
-                    new String[] { "AssetWS,identifier,asset.validation.duplicate.identifier" });
+            throw new SessionInternalError("asset.validation.duplicate.identifier", HttpStatus.SC_BAD_REQUEST);
         }
+        
     }
 
     /**
@@ -885,5 +918,46 @@ public class AssetBL {
         if(!metaFieldDiff.isEmpty()) {
             EventManager.process(new AssetMetaFieldUpdatedEvent(assetId, entityId, metaFieldDiff));
         }
+    }
+
+    /**
+     * This method deletes the asset assignments which has end date set before the start date
+     * @param assetDTO
+     */
+    public void deleteAssignmentsWithEndDateBeforeStartDate(AssetDTO assetDTO) {
+        List<AssetAssignmentDTO> assignmentsToDelete = getAssignmentsForDeletion(assetDTO);
+        for (AssetAssignmentDTO assignmentDTO : assignmentsToDelete) {
+            assetDTO.getAssignments().remove(assignmentDTO);
+            new AssetAssignmentDAS().delete(assignmentDTO);
+        }
+    }
+
+    /**
+     * Helper method to fetch all the asset assignments for the asset where the end date is before the start date
+     * @param asset
+     * @return List of Asset Assignments
+     */
+    private List<AssetAssignmentDTO> getAssignmentsForDeletion(AssetDTO asset) {
+        List<AssetAssignmentDTO> assignments = new ArrayList<>();
+        for (AssetAssignmentDTO assignment : asset.getAssignments()) {
+            if (null != assignment.getEndDatetime() && assignment.getEndDatetime().before(assignment.getStartDatetime())) {
+                assignments.add(assignment);
+            }
+        }
+        return assignments;
+    }
+    public String checkIMSINumberExists(String imsiNumber){
+        return das.findIdentifierByIMSINumber(imsiNumber);
+    }
+
+    public String checkSubscriberNumberExists(String subscriberNumber){
+        return das.findIdentifierBySubscriberNumber(subscriberNumber);
+    }
+
+    public List<AssetWS> getAssetsByUserID(Integer userId) {
+        List<AssetWS> assets = new ArrayList<AssetWS>();
+        List<AssetDTO> assetDtos = das.findAssetsByUser(userId);
+        assetDtos.forEach(assetDTO -> assets.add(AssetBL.getWS(assetDTO)));
+        return assets;
     }
 }

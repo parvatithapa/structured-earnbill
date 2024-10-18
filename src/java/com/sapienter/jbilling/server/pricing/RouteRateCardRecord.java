@@ -15,13 +15,20 @@
  */
 package com.sapienter.jbilling.server.pricing;
 
+import static com.sapienter.jbilling.common.CommonConstants.BIGDECIMAL_ROUND;
+import static com.sapienter.jbilling.common.CommonConstants.BIGDECIMAL_SCALE;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import com.sapienter.jbilling.common.CommonConstants;
+import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.pricing.db.RouteRateCardDTO;
-import com.sapienter.jbilling.server.util.Constants;
 
 /**
  * Route Rate Card Record
@@ -34,12 +41,18 @@ import com.sapienter.jbilling.server.util.Constants;
 @SuppressWarnings("serial")
 public class RouteRateCardRecord implements MatchingRecord {
 
+    private static final Integer MINUTES_TO_SECONDS = 60;
     private int id;
     private String name;
     private BigDecimal eventSurcharge;
     private BigDecimal initialIncrement;
     private BigDecimal subsequentIncrement;
     private BigDecimal charge;
+    private BigDecimal markup;
+    private String useMarkup;
+    private BigDecimal cappedCharge;
+    private BigDecimal cappedDuration;
+    private BigDecimal minimumCharge;
     // route rate card record attributes
     private Map<String, String> attributes = new HashMap<>();
 
@@ -121,29 +134,117 @@ public class RouteRateCardRecord implements MatchingRecord {
         this.routeRateCard = routeRateCard;
     }
 
-    public BigDecimal calculatePrice(BigDecimal quantity) {
-        return calculatePrice(quantity, false);
+    public BigDecimal calculatePrice(BigDecimal quantity, PricingField callCharge) {
+        return calculatePrice(quantity, callCharge, false);
     }
 
-    public BigDecimal calculatePrice(BigDecimal quantity, boolean isMediated) {
+    public BigDecimal getMarkup() {
+        return markup;
+    }
+
+    public void setMarkup(BigDecimal markup) {
+        this.markup = markup;
+    }
+
+    public String getUseMarkup() {
+        return useMarkup;
+    }
+
+    public void setUseMarkup(String useMarkup) {
+        this.useMarkup = useMarkup;
+    }
+
+    public BigDecimal getCappedCharge() {
+        return cappedCharge;
+    }
+
+    public void setCappedCharge(BigDecimal cappedCharge) {
+        this.cappedCharge = cappedCharge;
+    }
+
+    public BigDecimal getCappedDuration() {
+        return cappedDuration;
+    }
+
+    public void setCappedDuration(BigDecimal cappedDuration) {
+        this.cappedDuration = cappedDuration;
+    }
+
+    public BigDecimal getMinimumCharge() {
+        return minimumCharge;
+    }
+
+    public void setMinimumCharge(BigDecimal minimumCharge) {
+        this.minimumCharge = minimumCharge;
+    }
+
+    public BigDecimal calculatePrice(BigDecimal quantity, PricingField callCharge, boolean isMediated) {
         BigDecimal chargeQuantity = quantity;
-        if(!isMediated) {
+        if (!isMediated) {
             if (initialIncrement.compareTo(BigDecimal.ZERO) == 0) {
                 chargeQuantity = quantity;
             } else if (quantity.compareTo(initialIncrement) > 0) {
-                chargeQuantity = (initialIncrement).add(((quantity.subtract(initialIncrement)).divide(subsequentIncrement,
-                        Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND))
-                        .setScale(0, RoundingMode.CEILING).multiply(subsequentIncrement));
+                chargeQuantity = (initialIncrement).add(((quantity.subtract(initialIncrement)).divide(
+                        subsequentIncrement, BIGDECIMAL_SCALE, BIGDECIMAL_ROUND)).setScale(0, RoundingMode.CEILING)
+                        .multiply(subsequentIncrement));
             } else {
                 chargeQuantity = initialIncrement;
             }
         }
+        // Use_Markup is True, then Calculate Charge Using Markup Percentage
+        if (shouldChargeMarkup(callCharge)) {
+            BigDecimal cdrCharge = new BigDecimal(callCharge.getStrValue());
+            BigDecimal markupPercentage = cdrCharge.multiply(validateAndReturn(markup)).divide(new BigDecimal(100), BIGDECIMAL_SCALE, BIGDECIMAL_ROUND);
+            BigDecimal finalCharge = cdrCharge.add(markupPercentage);
+            return finalCharge.compareTo(BigDecimal.ZERO) <= 0 ? BigDecimal.ZERO : finalCharge;
+        }
+
         // charged Quantity * Charge Per price unit * adjustment rate coming from the rate card rating unit
-        BigDecimal price = chargeQuantity.multiply(charge).multiply(routeRateCard.getRatingUnit().getUnitAdjustmentRate());
+        BigDecimal price = chargeQuantity.multiply(charge).multiply(
+                routeRateCard.getRatingUnit().getUnitAdjustmentRate());
 
         if (eventSurcharge != null) {
-            price = price.add(eventSurcharge);
+            price = price.add(eventSurcharge).setScale(CommonConstants.BIGDECIMAL_SCALE, BigDecimal.ROUND_HALF_UP);
+        }
+
+        price = calculateCappedCharge(chargeQuantity, price);
+
+        if (price.compareTo(validateAndReturn(minimumCharge)) < 0) {
+            return minimumCharge;
+        }
+
+        return price;
+    }
+
+    private BigDecimal calculateCappedCharge(BigDecimal chargeQuantity, BigDecimal price) {
+        if (validateAndReturn(cappedCharge).compareTo(BigDecimal.ZERO) > 0
+                && validateAndReturn(cappedDuration).compareTo(BigDecimal.ZERO) > 0 && price.compareTo(cappedCharge) > 0) {
+            BigDecimal cappedDurationInMinutes = cappedDuration.divide(new BigDecimal(MINUTES_TO_SECONDS), 0, BIGDECIMAL_ROUND);
+            if (cappedDurationInMinutes.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal additionalQuantity = BigDecimal.ZERO;
+                BigDecimal additionalCharge = BigDecimal.ZERO;
+                if (chargeQuantity.compareTo(cappedDurationInMinutes) > 0) {
+                    additionalQuantity = chargeQuantity.subtract(cappedDurationInMinutes);
+                }
+                if (additionalQuantity.compareTo(BigDecimal.ZERO) > 0) {
+                    additionalCharge = additionalQuantity.multiply(charge).multiply(
+                            routeRateCard.getRatingUnit().getUnitAdjustmentRate());
+                }
+                price = cappedCharge.add(additionalCharge);
+            }
         }
         return price;
     }
+
+    private boolean shouldChargeMarkup(PricingField callCharge) {
+        return Boolean.valueOf(useMarkup)
+                && null != callCharge
+                && StringUtils.isNotBlank(callCharge.getStrValue())
+                && NumberUtils.isCreatable(callCharge.getStrValue());
+    }
+
+    private BigDecimal validateAndReturn(BigDecimal value) {
+        return (null != value) ? value : BigDecimal.ZERO;
+    }
+
 }

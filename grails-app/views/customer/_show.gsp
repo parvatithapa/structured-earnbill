@@ -30,7 +30,20 @@
 <%@page import="com.sapienter.jbilling.server.timezone.TimezoneHelper;" %>
 <%@page import="grails.plugin.springsecurity.SpringSecurityUtils;" %>
 <%@page import="org.apache.commons.lang.StringEscapeUtils;" %>
-
+<%@ page import="com.sapienter.jbilling.server.util.PreferenceBL;" %>
+<%@ page import="com.sapienter.jbilling.common.CommonConstants;" %>
+<%@ page import="java.time.LocalDateTime; java.time.format.DateTimeFormatter; java.time.ZoneId; java.time.Duration;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.ASSET_STATUS_RELEASED;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.ASSET_STATUS_IN_USE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_RECHARGE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_BUY_SUBSCRIPTION;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_SUSPEND_ACTIVATE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_REISSUE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_RELEASE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_IDENTITY_DOCUMENT;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_REFUND_WALLET_BALANCE;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.ACTIVE_CONSUMPTION_USAGE_MAP;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.ROLE_OPERATION_USER;" %>
 <%--
   Shows details of a selected user.
 
@@ -39,7 +52,14 @@
 --%>
 
 <g:set var="customer" value="${selected.customer}"/>
+
+<%
+    def loggedInUser = new UserBL(session['user_id'] as Integer).getUserWS();
+%>
+
 <style>
+
+×
 	.ui-widget-content .ui-state-error{
 		background-color:white;
 		background: none;
@@ -48,12 +68,43 @@
 		display: table-caption;
 	}
 	.long{
-    display:inline-block;
-    width:100px;
-    white-space: nowrap;
-    overflow:hidden !important;
-    text-overflow: ellipsis;
+        display:inline-block;
+        width:100px;
+        white-space: nowrap;
+        overflow:hidden !important;
+        text-overflow: ellipsis;
 	}
+	.innerContent{
+	    padding-bottom: 5px;
+	}
+
+	.tooltip {
+      position: relative;
+      display: inline-block;
+      border-bottom: 1px dotted black;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 180px;
+      background-color: #ffff9b ;
+      color: #343434;
+      border: 1px solid #e06e00 ;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px 0;
+      top: 100%;
+      left: 50%;
+      margin-left: -70px;
+
+      /* Position the tooltip */
+      position: absolute;
+      z-index: 1;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+    }
 </style>
 
 <script>
@@ -62,7 +113,7 @@ $(function () {
     $(".datepicker").datepicker({
         dateFormat: "${message(code: 'datepicker.jquery.ui.format')}"
             });
-    
+
 });
 
 
@@ -105,7 +156,7 @@ function getCancellation(cancelId,action){
             alert(xhr.responseText); //<----when no data alert the err msg
          }
      });
-    
+
 }
 
     function openCancellationDialog(){
@@ -470,70 +521,71 @@ function getCancellation(cancelId,action){
     </g:form>
 </div>
 </div>
-
-<div class="heading">
-    <strong>
-        <g:if test="${contact?.firstName || contact?.lastName}">
-            ${contact.firstName} ${contact.lastName}
-        </g:if>
-        <g:else>
-            ${displayer?.getDisplayName(selected)}
-        </g:else>
-        <em><g:if test="${contact}">${contact.organizationName}</g:if></em>
-        <g:if test="${selected.deleted}">
-            <span style="color: #ff0000;"><g:message code="user.status.deleted"/></span>
-        </g:if>
-    </strong>
-</div>
-<div class="box">
-    <div class="sub-box">
-        <g:if test="${customerNotes}">
-            <div class="table-box">
-                <table id="users" cellspacing="0" cellpadding="0">
-                    <thead>
-                    <tr class="ui-widget-header first" >
-                    <th width="50px"><g:message code="customer.detail.note.form.author"/></th>
-                    <th width="60px"><g:message code="customer.detail.note.form.createdDate"/></th>
-                    <th class="last" width="150px"><g:message code="customer.detail.note.form.title"/></th>
-                    </thead>
-                    <tbody>
-                    <g:hiddenField name="newNotesTotal" id="newNotesTotal" />
-                    <g:if test="${customerNotes}">
-                        <g:each in="${customerNotes}">
-                            <tr>
-                                <td>${it?.user.userName}</td>
-                                <td><g:formatDate date="${it?.creationTime}" formatName="date.time.format" timeZone="${session['company_timezone']}"/>  </td>
-                                <td>${it?.noteTitle}</td>
-                            </tr>
-                        </g:each>
+<g:if test="${!session['company_id']==60}">
+    <div class="heading">
+        <strong>
+            <g:if test="${contact?.firstName || contact?.lastName}">
+                ${contact.firstName} ${contact.lastName}
+            </g:if>
+            <g:else>
+                ${displayer?.getDisplayName(selected)}
+            </g:else>
+            <em><g:if test="${contact}">${contact.organizationName}</g:if></em>
+            <g:if test="${selected.deleted}">
+                <span style="color: #ff0000;"><g:message code="user.status.deleted"/></span>
+            </g:if>
+        </strong>
+    </div>
+    <div class="box">
+        <div class="sub-box">
+            <g:if test="${customerNotes}">
+                <div class="table-box">
+                    <table id="users" cellspacing="0" cellpadding="0">
+                        <thead>
+                        <tr class="ui-widget-header first" >
+                        <th width="50px"><g:message code="customer.detail.note.form.author"/></th>
+                        <th width="60px"><g:message code="customer.detail.note.form.createdDate"/></th>
+                        <th class="last" width="150px"><g:message code="customer.detail.note.form.title"/></th>
+                        </thead>
+                        <tbody>
+                        <g:hiddenField name="newNotesTotal" id="newNotesTotal" />
+                        <g:if test="${customerNotes}">
+                            <g:each in="${customerNotes}">
+                                <tr>
+                                    <td>${it?.user.userName}</td>
+                                    <td><g:formatDate date="${it?.creationTime}" formatName="date.time.format" timeZone="${session['company_timezone']}"/>  </td>
+                                    <td>${it?.noteTitle}</td>
+                                </tr>
+                            </g:each>
+                        </g:if>
+                        <g:else>
+                            <p><em><g:message code="customer.detail.note.empty.message"/></em></p>
+                        </g:else>
+                        </tbody>
+                    </table>
+                </div>
+            </g:if>
+            <g:else>
+                <p><em><g:message code="customer.detail.note.empty.message"/></em></p>
+            </g:else>
+            <div id="custom-div7">
+                <sec:access url="/customer/saveCustomerNotes">
+                    <g:if test="${!selected.deleted}">
+                        <a onclick="openDialog()"><span><g:message code="button.add.note"/></span></a>
                     </g:if>
-                    <g:else>
-                        <p><em><g:message code="customer.detail.note.empty.message"/></em></p>
-                    </g:else>
-                    </tbody>
-                </table>
+                </sec:access>
+                <sec:access url="/customerInspector/inspect">
+                    <g:link controller = "customerInspector"
+                                action = "inspect"
+                                    id = "${selected.id}"
+                                 title = "${message(code: 'customer.inspect.link')}">
+                        <g:message code="button.show.all"/>
+                    </g:link>
+                </sec:access>
             </div>
-        </g:if>
-        <g:else>
-            <p><em><g:message code="customer.detail.note.empty.message"/></em></p>
-        </g:else>
-        <div style="text-align: right">
-            <sec:access url="/customer/saveCustomerNotes">
-                <g:if test="${!selected.deleted}">
-                    <a onclick="openDialog()"><span><g:message code="button.add.note"/></span></a>
-                </g:if>
-            </sec:access>
-            <sec:access url="/customerInspector/inspect">
-                <g:link controller = "customerInspector"
-                            action = "inspect"
-                                id = "${selected.id}"
-                             title = "${message(code: 'customer.inspect.link')}">
-                    <g:message code="button.show.all"/>
-                </g:link>
-            </sec:access>
         </div>
     </div>
-</div>
+</g:if>
 
     <!-- user details -->
     <div class="heading">
@@ -544,14 +596,14 @@ function getCancellation(cancelId,action){
             <table class="dataTable table-layout-fixed" cellspacing="0" cellpadding="0">
                     <tbody>
                         <tr>
-                            <td><g:message code="customer.detail.user.user.id"/></td>
+                            <td style="width: 80px;"><g:message code="customer.account.number"/></td>
                             <td class="value wide-width">
                                 <sec:access url="/customerInspector/inspect">
                                     <g:link controller = "customerInspector"
                                                 action = "inspect"
                                                     id = "${selected.id}"
                                                  title = "${message(code: 'customer.inspect.link')}">
-                                        ${selected.id}
+                                            ${selected.id}
                                         <span style="font-family: AppDirectIcons;">&#xe03e;</span>
                                     </g:link>
 
@@ -560,17 +612,17 @@ function getCancellation(cancelId,action){
                                     ${selected.id}
                                 </sec:noAccess>
                             </td>
+
                         </tr>
                         <tr>
-                            <td><g:message code="customer.detail.user.username"/></td>
-                            <td class="value wide-width">
+                            <td><g:message code="label.adennet.iccid"/></td>
+                            <td class="value wide-width" data-cy="iccidNumberShowPage">
                                 <g:if test="${!SpringSecurityUtils.isSwitched() && selected.id != session['user_id']}">
                                         ${displayer?.getDisplayName(selected)}
                                 </g:if>
                                 <g:else>
                                     ${displayer?.getDisplayName(selected)}
                                 </g:else>
-
                             </td>
                         </tr>
                         <g:if test="${customer.partners}">
@@ -588,19 +640,19 @@ function getCancellation(cancelId,action){
                         </g:if>
                         <g:isRoot>
                         	<tr>
-                            	<td><g:message code="customer.detail.user.company"/></td>
-                            	<td class="value wide-width">${selected?.company?.description}</td>
+                        	    <td><g:message code="customer.detail.user.company"/></td>
+                            	<td class="value wide-width" data-cy="customerCompanyShowPage">${selected?.company?.description}</td>
                         	</tr>
                         </g:isRoot>
                         <tr>
-							<td><g:message code="customer.detail.user.status" /></td>
+                            <td><g:message code="customer.detail.user.status" /></td>
 							<g:if test='${!selected.deleted}'>
-								<td class="value wide-width">
+								<td class="value wide-width" data-cy="customerStatusShowPage">
                                     ${selected.userStatus.getDescription(session['language_id'])}
                                 </td>
 							</g:if>
 							<g:else>
-								<td class="value wide-width"><g:message code="user.userstatus.deleted" />
+								<td class="value wide-width" data-cy="customerStatusShowPage"><g:message code="user.userstatus.deleted" />
 								</td>
 							</g:else>
 						</tr>
@@ -618,7 +670,7 @@ function getCancellation(cancelId,action){
                     </tr>
                         <tr>
                             <td><g:message code="customer.detail.user.created.date"/></td>
-                            <td class="value wide-width">
+                            <td class="value wide-width" data-cy="createdDate">
                                 <g:formatDate       date = "${selected.createDatetime}"
                                               formatName = "date.time.format"
                                                 timeZone = "${session['company_timezone']}"/>
@@ -653,6 +705,14 @@ function getCancellation(cancelId,action){
                             </g:each>
                             %{--Displaying cusotmer metafield--}%
                             <g:render template="/metaFields/metaFields" model="[metaFields: metaFields-aitMetaField]"/>
+
+                        <sec:ifAllGranted roles="${PERMISSION_VIEW_IDENTITY_DOCUMENT}">
+                            %{--Displaying Customer Image--}%
+                            <g:if test="${PreferenceBL.getPreferenceValueAsBoolean(session['company_id'], CommonConstants.PREFERENCE_CAPTURE_IDENTIFICATION_DOC_FOR_CUSTOMER)}">
+                                <g:render template="showCustomerImage" model="[userId:selected.id, identificationType:selected.getCustomer().getIdentificationType()]"/>
+                            </g:if>
+                        </sec:ifAllGranted>
+
 
                         %{--Display Renewal date & Termination Date on the customer screen even if they don't have any values or they are empty.--}%
                         %{--TODO:should be add the nges specific permission--}%
@@ -771,7 +831,6 @@ function getCancellation(cancelId,action){
                 <tbody>
                 <tr>
                     <td><g:message code="customer.detail.payment.order.date"/></td>
-
                     <td class="value">
                         <sec:access url="/order/show">
                             <g:remoteLink controller="order" action="show" id="${latestOrder?.id}" before="register(this);" onSuccess="render(data, next);">
@@ -826,6 +885,26 @@ function getCancellation(cancelId,action){
                             <sec:access url="/payment/list">
                                 <g:link controller="payment" action="user" id="${selected.id}">
                                     <g:message code="customer.show.all.payments"/>
+                                </g:link>
+                            </sec:access>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><g:message code="customer.detail.credit.date"/></td>
+                        <td class="value">
+                            <sec:access url="/creditNote/show">
+                                <g:remoteLink controller="creditNote" action="show" id="${latestCreditNote?.id}" before="register(this);" onSuccess="render(data, next);">
+                                    <g:formatDate date="${latestCreditNote?.creditNoteDate}" formatName="date.pretty.format"/>
+                                </g:remoteLink>
+                            </sec:access>
+                            <sec:noAccess url="/creditNote/show">
+                                <g:formatDate date="${lastCreditNote?.creditNoteDate}" formatName="date.pretty.format"/>
+                            </sec:noAccess>
+                        </td>
+                        <td class="value">
+                            <sec:access url="/creditNote/list">
+                                <g:link controller="creditNote" action="user" id="${selected.id}">
+                                    <g:message code="customer.show.all.credits"/>
                                 </g:link>
                             </sec:access>
                         </td>
@@ -886,21 +965,38 @@ function getCancellation(cancelId,action){
                         </g:if>
                     </td>
                 </tr>
+                <tr>
+                    <td><g:message code="user.wallet.balance"/></td>
+                    <td class="value" data-cy="walletBalance"><g:formatNumber number="${walletBalance}" type="currency"  currencySymbol="${selected.currency.symbol}" id="balance"/></td>
+                    <td class="value">
+                        <g:if test="${holdAmount>0}">
+                            <sec:access url="/OnHold/edit">
+                                <g:link controller="customer" action="showRechargeRequestPage" id="${selected.id}" params="[ currencySymbol : selected.currency.symbol]">
+                                    <g:message code="refund.amount.hold"/>
+                                    <g:formatNumber number="${holdAmount}" type="currency"  currencySymbol="${selected.currency.symbol}" id="balance"/>
+                                </g:link>
+                            </sec:access>
+                        </g:if>
+                    </td>
+                    <sec:ifAllGranted roles="${PERMISSION_REFUND_WALLET_BALANCE}">
+                        <td class="value">
+                            <g:if test="${walletBalance>0}">
+                                <sec:access url="/refund/edit">
+                                    <g:link controller="customer" action="showRefundPage" id="${selected.id}" params="[ currencySymbol : selected.currency.symbol]">
+                                        <g:message code="refund.title"/>
+                                    </g:link>
+                                </sec:access>
+                            </g:if>
+                        </td>
+                    </sec:ifAllGranted>
+                </tr>
                     <tr>
                         <td><g:message code="customer.detail.payment.lifetime.revenue"/></td>
                         <td class="value"><g:formatNumber number="${revenue}" type="currency"  currencySymbol="${selected.currency.symbol}"/></td>
                     </tr>
-                    <tr>
-                        <td><g:message code="customer.detail.free.call.limit"/></td>
-                        <td class="value"><g:formatNumber number="${customer.numberOfFreeCalls}" type="number" pattern="^[0-9]" /></td>
-                    </tr>
                 </tbody>
-
-
             </table>
-
             <hr/>
-
             <g:each in="${selected.paymentInstruments}" var="paymentInstr">
                 <g:render template="/customer/creditCard" model="[paymentInstr: paymentInstr]"/>
             </g:each>
@@ -908,44 +1004,82 @@ function getCancellation(cancelId,action){
     </div>
 <!-- Assets start  -->
 
-        <div class="box-cards box-cards-no-margin">
-        <div class="box-cards-title">
-            <a class="btn-open"><span><g:message code="order.label.assets"/></span></a>
-        </div>
-        <div class="box-card-hold">
+<div class="heading">
+    <strong><g:message code="order.label.assets"/></strong>
+</div>
+<table class="innerTable" >
+    <thead class="innerHeader">
+    <tr>
+        <th class="first" style="min-width: 35px;"><g:message code="asset.detail.id"/></th>
+        <th><g:message code="label.adennet.subscriber.number"/></th>
+        <th><g:message code="recharge.request.status"/></th>
+        <sec:ifAnyGranted roles="${PERMISSION_SUSPEND_ACTIVATE},${PERMISSION_REISSUE},${PERMISSION_RELEASE}">
+            <th class="last" ><g:message code="asset.link"/></th>
+        </sec:ifAnyGranted>
+    </tr>
+    </thead>
+    <tbody>
+    <g:each var="asset" in="${customerAssets}">
+        <g:set var="subscriberNumber" value="${asset.subscriberNumber}"/>
+        <tr>
+            <td class="innerContent">
+                <jB:secRemoteLink controller="product" action="showAsset" id="${asset.id}" params="['template': 'show']" before="register(this);" onSuccess="render(data, next);">
+                    ${asset.id}
+                </jB:secRemoteLink>
+            </td>
 
-                    <table class="innerTable" >
-                        <thead class="innerHeader">
-                        <tr>
-                            <th class="first" style="min-width: 75px;"><g:message code="asset.detail.id"/></th>
-                            <th class="last" ><g:message code="asset.detail.identifier"/>
-                            </th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <g:each var="asset" in="${customerAssets}">
-
-                            <tr>
-                                <td class="innerContent">
-                                    <jB:secRemoteLink controller="product" action="showAsset" id="${asset.id}" params="['template': 'show']" before="register(this);" onSuccess="render(data, next);">
-                                        ${asset.id}
-                                    </jB:secRemoteLink>
-                                </td>
-                                <td class="innerContent">
-                                    ${asset.identifier}
-                                </td>
-
-                            </tr>
-                        </g:each>
-                        </tbody>
-                    </table>
-
-        </div>
-        </div>
- <br/>
+            <td class="innerContent">
+                <g:if test="${asset.status == ASSET_STATUS_RELEASED}">
+                    ${asset.subscriberNumber}
+                </g:if>
+                <g:else>
+                    <!-- <span id="userStatus" style="font-size:16px;">● </span> -->
+                    ${asset.subscriberNumber}
+                </g:else>
+            </td>
+            <td class="innerContent" data-cy="assetStatus">
+                <g:if test="${asset.status == ASSET_STATUS_RELEASED}">
+                    <g:message code="asset.status.released"/>
+                </g:if>
+                <g:elseif test="${asset.notes}">
+                    <div class="tooltip" data-cy="suspendedOrActive">
+                        <g:message code="${asset.isSuspended ? 'customer.status.suspended' : 'customer.status.active'}"/>
+                        <span class="tooltiptext" data-cy="tooltiptext"> ${asset.notes}</span>
+                    </div>
+                </g:elseif>
+                <g:else>
+                    <g:message code="${asset.isSuspended ? 'customer.status.suspended' : 'customer.status.active'}"/>
+                </g:else>
+            </td>
+            <g:if test="${asset.status != ASSET_STATUS_RELEASED}">
+                <td class="innerContent">
+                    <g:if test="${!selected.deleted}">
+                        <sec:ifAllGranted roles="${PERMISSION_SUSPEND_ACTIVATE}">
+                            <g:if test="${asset.isSuspended}">
+                                <g:if test="${loggedInUser.getUserName() == asset.getSuspendedBy() || loggedInUser.getRole() != ROLE_OPERATION_USER }">
+                                    <g:link controller="adennetAsset" action="showSuspendOrActivate" params="[id : asset.id, userId : "${selected.id}"]">
+                                    <g:message code="${'asset.activation'}"/>
+                                    </g:link>
+                                </g:if>
+                            </g:if>
+                            <g:else>
+                                <g:link controller="adennetAsset" action="showSuspendOrActivate" params="[id : asset.id, userId : "${selected.id}"]">
+                                <g:message code="${'asset.suspension'}"/>
+                                </g:link>
+                            </g:else>
+                        </sec:ifAllGranted>
+                    </g:if>
+                </td>
+            </g:if>
+        </tr>
+    </g:each>
+    </tbody>
+</table>
+<br/>
 <!-- Assets end -->
 
 <!-- cancellation start -->
+    <sec:ifAllGranted roles="CUSTOMER_1906">
     <div class="heading">
         <strong><g:message code="customer.label.cancellation.request"/></strong>
     </div>
@@ -995,6 +1129,7 @@ function getCancellation(cancelId,action){
                     </table>
         </div>
     </div>
+    </sec:ifAllGranted>
     <br/>
 <!-- cancellation end -->
 
@@ -1002,6 +1137,30 @@ function getCancellation(cancelId,action){
     <div class="btn-box">
         <g:if test="${!selected.deleted}">
             <div class="row">
+
+                <g:if test = "${isAssetAvailable}">
+                    <g:if test="${isSimIssued}">
+                        <sec:ifAllGranted roles="${PERMISSION_BUY_SUBSCRIPTION}">
+                            <g:if test="${isCurrentCompanyOwning && (f != 'myAccount')}">
+                                <g:link controller="customer" action="showBuySubscription" params="[userId: selected.id]"
+                                 class="submit payment" data-cy="rechargeBtn"><span><g:message code="recharge.buy.subscription.button"/></span></g:link>
+                            </g:if>
+                        </sec:ifAllGranted>
+                    </g:if>
+                    <g:else>
+                    <g:each var="asset" in="${customerAssets}">
+                        <g:if test="${asset.identifier == selected.userName && !asset.isSuspended && asset.status==ASSET_STATUS_IN_USE}">
+                            <sec:ifAllGranted roles="${PERMISSION_RECHARGE}">
+                                <g:if test="${isCurrentCompanyOwning && (f != 'myAccount')}">
+                                    <g:link controller="customer" action="showRecharge" params="[userId: selected.id]"
+                                        class="submit payment" data-cy="rechargeButton"><span><g:message code="recharge.button"/></span></g:link>
+                                </g:if>
+                            </sec:ifAllGranted>
+                        </g:if>
+                    </g:each>
+                    </g:else>
+                </g:if>
+
                 <sec:ifAllGranted roles="ORDER_20">
                     <g:if test="${isCurrentCompanyOwning}">
                         <g:link controller="orderBuilder" action="edit" params="[userId: selected.id]"
@@ -1014,6 +1173,13 @@ function getCancellation(cancelId,action){
                                 class="submit payment"><span><g:message code="button.make.payment"/></span></g:link>
                     </g:if>
                 </sec:ifAllGranted>
+
+                <sec:ifAllGranted roles="CREDIT_NOTE_2000">
+                    <g:if test="${isCurrentCompanyOwning && (f != 'myAccount')}">
+                        <g:link controller="creditNote" action="edit" params="[userId: selected.id]"
+                                class="submit credit"><span><g:message code="button.create.creditNote"/></span></g:link>
+                    </g:if>
+                </sec:ifAllGranted>
                 <sec:ifAllGranted roles="CUSTOMER_1906">
                     <g:if test="${!isCancelled}">
                         <a onclick="openCancellationDialog()" class="submit add">
@@ -1021,17 +1187,16 @@ function getCancellation(cancelId,action){
                         </a>
                     </g:if>
                 </sec:ifAllGranted>
-            </div>
-            <div class="row">
+
                 <sec:ifAllGranted roles="${permission ? permission : 'CUSTOMER_11'}">
                     <g:if test="${isCurrentCompanyOwning}">
-                        <g:link action="edit" id="${selected.id}" class="submit edit button-secondary"><span><g:message code="button.edit"/></span></g:link>
+                        <g:link action="edit" id="${selected.id}" class="submit edit button-secondary" data-cy="editButton"><span><g:message code="button.edit"/></span></g:link>
                     </g:if>
                 </sec:ifAllGranted>
 
                 <sec:ifAllGranted roles="CUSTOMER_12">
                     <g:if test="${isCurrentCompanyOwning}">
-                        <a onclick="showConfirm('delete-${selected.id}');" class="submit delete"><span><g:message code="button.delete"/></span></a>
+                        <a onclick="showConfirm('delete-${selected.id}');" class="submit delete" data-cy="deleteButton"><span><g:message code="button.delete"/></span></a>
                     </g:if>
                 </sec:ifAllGranted>
 
@@ -1088,4 +1253,32 @@ function getCancellation(cancelId,action){
             registerSlideEvents();
         </g:if>
     });
+/*
+$(document).ready(()=> {
+    isSubscriberOnline()
+        .then((response)=>{
+            const userStatusElement = document.getElementById('userStatus');
+            const [title, status] = response.split(" ");
+            const isOnline = status === 'true';
+            userStatusElement.title = title;
+            userStatusElement.style.color = isOnline ? 'green' : 'grey';
+        })
+        .catch((error) => {
+                    console.error("Error:", error);
+    });
+});
+
+//checking subscriber session status
+function isSubscriberOnline(){
+   return new Promise((resolve, reject)=>{
+   const subscriberNumber = ${subscriberNumber}
+       $.ajax({
+           url: '${createLink(action: 'checkIsSubscriberOnline')}',
+           data: {subscriberNumber :subscriberNumber },
+           success: (response) => resolve(response),
+           error: (error) => reject(error)
+       });
+   });
+}
+*/
 </script>

@@ -18,17 +18,21 @@ package com.sapienter.jbilling.server.util;
 
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.server.process.IBillingProcessSessionBean;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
+import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 
-import com.sapienter.jbilling.server.user.db.UserDTO;
 import org.apache.log4j.Logger;
 import org.joda.time.*;
 import org.joda.time.base.BaseSingleFieldPeriod;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -40,6 +44,8 @@ public class CalendarUtils {
 
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(CalendarUtils.class));
 
+    private static final String DATE_FORMAT="yyyy-MM-dd";
+    
     public static Date findNearestTargetDateInPast(Date sourceDate, Date targetDate,
                                                    Integer nextInvoiceDaysOfPeriod,
                                                    Integer periodUnit, Integer periodValue) {
@@ -230,7 +236,7 @@ public class CalendarUtils {
     
     /**
      * Convenience method to check if the given period unit id is semi-monthly or not.
-     * @param periodUnit
+     * @param periodUnitId
      * @return
      */
     public static boolean isSemiMonthlyPeriod(Integer periodUnitId) {
@@ -317,4 +323,30 @@ public class CalendarUtils {
      	return cal.getTime();
      }
     
+    public static boolean skipEmails(boolean shouldSkipEmails, Date billRunDate, List<String> skipEmailDaysList, List<String> holidaysList) {
+        return shouldSkipEmails && (isSkipEmailDay(billRunDate, skipEmailDaysList) && (isWeekend(billRunDate) || isHoliday(billRunDate, holidaysList)));
+    }
+
+    public static boolean isSkipEmailDay(Date billRunDate, List<String> skipEmailDays) {        
+        return skipEmailDays.contains(String.valueOf(billRunDate.getDate()));
+    }
+
+    public static boolean isHoliday(Date billRunDate, List<String> holidaysList) {        
+        LocalDate date = DateConvertUtils.asLocalDate(billRunDate);
+        String dateStr = getDateFormatted(date, DATE_FORMAT);
+        return holidaysList.contains(dateStr);
+    }    
+
+    public static boolean isWeekend(Date billRunDate) {
+        LocalDate ld = DateConvertUtils.asLocalDate(billRunDate); 
+        DayOfWeek day = DayOfWeek.of(ld.get(ChronoField.DAY_OF_WEEK));
+        return day == DayOfWeek.SUNDAY || day == DayOfWeek.SATURDAY;
+    }
+
+    public static String getDateFormatted(LocalDate date, String format) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(format);
+        return dtf.format(date);
+    }
 }
+
+

@@ -107,7 +107,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="paymentTransfer" action="list" params="${sortableParams(params: [partial: true])}" total="${paymentTransfer?.totalCount ?: 0}" update="column1"/>
     </div>
 </div>

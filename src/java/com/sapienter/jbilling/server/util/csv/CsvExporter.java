@@ -16,12 +16,10 @@
 
 package com.sapienter.jbilling.server.util.csv;
 
-import au.com.bytecode.opencsv.CSVWriter;
-
+import com.opencsv.CSVWriter;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.util.converter.BigDecimalConverter;
 import com.sapienter.jbilling.server.util.converter.TimestampConverter;
-
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.collections.CollectionUtils;

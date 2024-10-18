@@ -16,6 +16,7 @@
 
 package com.sapienter.jbilling.server.nges.export.batch.processor;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
@@ -53,7 +54,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SortedMap;
 
 /**
  * Created by hitesh on 3/8/16.
@@ -76,8 +82,7 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
         LOG.debug("process execute for userId:" + userId);
         this.userId = userId;
         init();
-        ExportRow row = prepare();
-        return row;
+	    return prepare();
     }
 
     private void init() {
@@ -97,7 +102,7 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
 
     public ExportRow prepare() {
         LOG.debug("prepare row for customer");
-        //TODO:make a seprate method for build Account,Billing and Service Information
+        //TODO:make a separate method for build Account,Billing and Service Information
         ExportCustomerRow customerRow = new ExportCustomerRow();
 
         customerRow.setCompanyName(validate(FieldName.COMPANY_NAME, userWS.getCompanyName(), true));
@@ -152,7 +157,7 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
         customerRow.setSwingLowerLimit(validate(UsageLimitPricingStrategy.PARAM_LOWER_LIMIT, priceModelWS.getAttributes().get(UsageLimitPricingStrategy.PARAM_LOWER_LIMIT), false));
 
         //TODO:Need to identify
-        taxesInitialize(findTaxMetaFIeld());
+        taxesInitialize(findTaxMetaField());
         customerRow.setTaxExemptPercentage("");
         customerRow.setCityTax("");
         customerRow.setCountyTax(getTax("COUNTY SALES TAX"));
@@ -208,15 +213,15 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
     }
 
     protected AccountInformationTypeWS getAccountInformationTypeByName(Integer accountTypeId, String name) {
-        Optional<AccountInformationTypeWS> optional = Arrays.asList(webServicesSessionSpringBean.getInformationTypesForAccountType(accountTypeId)).stream().filter(
+        Optional<AccountInformationTypeWS> optional = Arrays.stream(webServicesSessionSpringBean.getInformationTypesForAccountType(accountTypeId)).filter(
                 ait -> ait.getDescriptions().get(0).getContent().equals(name)).findFirst();
-        return optional.isPresent() ? optional.get() : null;
+        return optional.orElse(null);
     }
 
     protected String getAccountName() {
         if (accountTypeWS != null) {
-            String accoutName = validate(FieldName.ACCOUNT_NAME, accountTypeWS.getDescriptions().get(0).getContent(), true);
-            switch (accoutName) {
+            String accountName = validate(FieldName.ACCOUNT_NAME, accountTypeWS.getDescriptions().get(0).getContent(), true);
+            switch (accountName) {
                 case FileConstants.RESIDENTIAL_ACCOUNT_TYPE:
                     return "R";
                 case FileConstants.COMMERCIAL_ACCOUNT_TYPE:
@@ -294,7 +299,7 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
                 PlanDTO planDTO = itemDTO.getPlans().iterator().next();
                 if (planDTO == null) return null;
                 PlanItemDTO planItemDTO = null;
-                if (planDTO.getPlanItems().size() > 0) planItemDTO = planDTO.getPlanItems().get(0);
+                if (!planDTO.getPlanItems().isEmpty()) planItemDTO = planDTO.getPlanItems().get(0);
                 if (planItemDTO == null) return null;
                 ItemDTO item = planItemDTO.getItem();
                 MetaFieldValue metaFieldValue = item.getMetaField(FileConstants.COMMODITY);
@@ -333,7 +338,7 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
     }
 
 
-    private MetaFieldValueWS findTaxMetaFIeld() {
+    private MetaFieldValueWS findTaxMetaField() {
         for (MetaFieldValueWS metaFieldValueWS : userWS.getMetaFields()) {
             if (metaFieldValueWS.getFieldName().equals(FileConstants.CUSTOMER_TAX_METAFIELD)) {
                 return metaFieldValueWS;
@@ -347,13 +352,13 @@ public class NGESExportCustomerProcessor extends AbstractNGESExportProcessor {
         if (taxesMFV != null && taxesMFV.getId() != null) {
             MetaFieldValue mf = new MetaFieldValueDAS().findNow(taxesMFV.getId());
             String taxFieldValue = (String) mf.getValue();
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = new ObjectMapper();
             try {
-                taxes = mapper.readValue((taxFieldValue != null && !taxFieldValue.isEmpty()) ? taxFieldValue : "{}", new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {
+                taxes = mapper.readValue((taxFieldValue != null && !taxFieldValue.isEmpty()) ? taxFieldValue : "{}", new TypeReference<Map<String, Object>>() {
                 });
             } catch (IOException ioe) {
                 taxes = null;
-                LOG.debug("Exception occure while parsing taxes field value");
+                LOG.debug("Exception occurred while parsing taxes field value");
                 LOG.error(ioe.getMessage());
             }
         }

@@ -56,15 +56,17 @@
     <sec:ifLoggedIn>
         <g:render template="/layouts/includes/uiColorStyle"/>
     </sec:ifLoggedIn>
+    <sec:ifNotLoggedIn>
         <g:isBrandingJBilling>
             <style type="text/css">
                #home-logo a {
-                   background: url(${createLink(uri : '/images/EarnBill.png')}) no-repeat;
+                   background: url(${createLink(uri : '/images/jBilling-light-small.png')}) no-repeat;
                    background-position: 50%;
                    background-size: auto 40px;
                }
             </style>
         </g:isBrandingJBilling>
+    </sec:ifNotLoggedIn>
 
 </head>
     <body>

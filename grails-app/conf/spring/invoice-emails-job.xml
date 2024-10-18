@@ -1,0 +1,83 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:batch="http://www.springframework.org/schema/batch"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd"
+	profile="billing.master">
+
+	<!-- partitioner job -->
+	<batch:job id="invoiceEmailDispatcherJob">
+		
+		<batch:listeners>
+			<batch:listener ref="sendInvoiceEmailJobListener" />
+		</batch:listeners>
+
+		<batch:step id="sendInvoiceEmails" allow-start-if-complete="true">
+			<batch:partition partitioner="invoiceEmailsPartitioner"
+				handler="partitionInvoiceEmailsHandler" />
+		</batch:step>
+
+	</batch:job>
+	
+	<bean id="sendInvoiceEmailJobListener"
+		class="com.sapienter.jbilling.batch.email.InvoiceEmailDispatcherJobListener"/>
+
+	<bean id="invoiceEmailsPartitioner"
+		class="com.sapienter.jbilling.batch.email.InvoiceEmailsPartitioner"
+		scope="job" />
+
+	<bean id="partitionInvoiceEmailsHandler" parent="generalMessagePartitionHandler">
+		<property name="stepName" value="partitionInvoicesEmails" />
+		<property name="replyChannel" ref="billing-invoices-aggregated-reply" />
+		<property name="messagingOperations">
+			<bean class="org.springframework.integration.core.MessagingTemplate">
+				<property name="defaultChannel" ref="billing-invoices-requests" />
+				<property name="receiveTimeout" value="100000" />
+			</bean>
+		</property>
+	</bean>
+
+	<!-- second step of the job to send emails -->
+	<batch:step id="partitionInvoicesEmails">
+		<batch:tasklet transaction-manager="transactionManager"
+			task-executor="taskExecutor" throttle-limit="10">
+			<batch:chunk reader="dispatchInvoiceEmailsReader"
+				processor="invoiceEmailDispatcherProcessor" 
+				writer= "noopWriter"
+				commit-interval="1" skip-policy="skipPolicy">
+
+			</batch:chunk>
+		</batch:tasklet>
+	</batch:step>
+
+
+	<!-- reader of the chunk oriented step to read the invoice ids of the users to be 
+		processed later -->
+	<bean id="dispatchInvoiceEmailsReader"
+		class="com.sapienter.jbilling.batch.email.DispatchInvoiceEmailsReader"
+		scope="step">
+		<property name="dataSource" ref="dataSource" />
+		<property name="sql">
+			<value>
+            <![CDATA[
+            SELECT invoice_id
+              FROM email_batch_job_data
+             WHERE billing_process_id = ?
+               AND partition_num = ?
+               AND status = 0
+            ]]>
+			</value>
+		</property>
+	</bean>
+
+	<bean id="invoiceEmailDispatcherProcessor"
+		class="com.sapienter.jbilling.batch.email.DispatchInvoiceEmailProcessor"
+		scope="step">
+		<!-- <property name="threadName" value="#{stepExecutionContext[name]}" 
+			/> -->
+	</bean>
+	
+</beans>

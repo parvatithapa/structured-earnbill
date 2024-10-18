@@ -13,6 +13,8 @@ INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_informatio
 WHERE pimfm.meta_field_value_id = mfv.id
 AND mfn.name = 'Biller Code'
 AND mfv.integer_value IS NOT NULL
+AND mfv.integer_value = 295923
+AND pi.deleted = 0
 UNION ALL
 SELECT CASE WHEN string_value IS NOT NULL THEN CONCAT('Ref: ',string_value) ELSE '' END AS bpay_info
 FROM meta_field_value mfv
@@ -21,15 +23,25 @@ INNER JOIN payment_information pi ON pi.user_id = $P{invoice_user_id}
 INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_information_id = pi.id
 WHERE pimfm.meta_field_value_id = mfv.id
 AND mfn.name = 'Reference Number'
-AND mfv.string_value IS NOT NULL;]]>
+AND mfv.string_value IS NOT NULL
+AND pi.deleted = 0
+AND pi.id IN
+(
+	SELECT pi.id
+	FROM meta_field_value mfv
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+	INNER JOIN payment_information pi ON pi.user_id = $P{invoice_user_id}
+	INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_information_id = pi.id
+	WHERE pimfm.meta_field_value_id = mfv.id
+	AND mfn.name = 'Biller Code'
+	AND mfv.integer_value IS NOT NULL
+	AND mfv.integer_value = 295923
+	AND pi.deleted = 0
+);]]>
 	</queryString>
 	<field name="bpay_info" class="java.lang.String"/>
 	<columnHeader>
-		<band height="1">
-			<line>
-				<reportElement x="0" y="0" width="101" height="1" uuid="d95d5225-c8a6-436c-8f90-556181e161d7"/>
-			</line>
-		</band>
+		<band height="1"/>
 	</columnHeader>
 	<detail>
 		<band height="13" splitType="Stretch">
@@ -41,19 +53,9 @@ AND mfv.string_value IS NOT NULL;]]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{bpay_info}]]></textFieldExpression>
 			</textField>
-			<line>
-				<reportElement x="0" y="0" width="1" height="13" uuid="2c6ee1c6-9577-4894-ba52-87ccba6ee016"/>
-			</line>
-			<line>
-				<reportElement x="100" y="0" width="1" height="13" uuid="a4d5a2a7-98d1-468b-b3e1-7e649b46958c"/>
-			</line>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="1">
-			<line>
-				<reportElement x="0" y="0" width="101" height="1" uuid="e57dbe06-36ac-437e-b124-cc1e75f4a87f"/>
-			</line>
-		</band>
+		<band height="1"/>
 	</columnFooter>
 </jasperReport>

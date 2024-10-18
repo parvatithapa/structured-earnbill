@@ -141,15 +141,17 @@
                                         checked="${configuration?.applyCreditNotesBeforePayments > 0}"/>
                         </g:applyLayout>
                     </div>
-                        <div class="row">
+                    <div class="row">
                         <g:render template="autoPayment" />
-	                        
-                        </div>
+                     </div>
+                     <div class="row">
+                    	<g:render template="skipEmails" />
                     </div>
-                      <div align="center" style="width:600px; border: solid #bbbbbb; border-width: 1px; margin: 0%; margin-bottom: 10px; margin-top: 10px; margin-left: 22px;">
+                    </div>
+                      <div id="form-div" align="center">
                     	  <table style="width: 90%;  margin: 0px; vertical-align: to">
                     	     <tr>
-                    	       <td style="width: 33%; text-align: right; font-size: 12px;">
+                    	       <td id="form-div-td">
                     	     	<g:message code="billing.prorating.options"/>&nbsp;&nbsp;
                     	       </td>
                     	       <td style="width: 67%;">
@@ -172,7 +174,7 @@
 	                   </table>
 	                   <table style="width: 605px;">
 					    	<tr>
-					    		<td style="width: 100%; text-align: right;">
+					    		<td id="custom-td5">
 									<p style="font-size: 12px;"><strong><g:message code="billing.label.note"/>: </strong><g:message code="billing.prorating.note"/></p>
 								<td>
 							</tr>

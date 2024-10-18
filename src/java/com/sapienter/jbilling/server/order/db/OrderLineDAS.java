@@ -22,8 +22,6 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
-import org.hibernate.criterion.Projections;
-import org.hibernate.criterion.Restrictions;
 import org.hibernate.transform.Transformers;
 import org.hibernate.type.LongType;
 
@@ -51,33 +49,6 @@ public class OrderLineDAS extends AbstractDAS<OrderLineDTO> {
         query.setParameter("item", itemId);
 
         return (Long) query.uniqueResult();
-    }
-
-    public Long findFreeCallCounterForAcitveMediatedOrderByAssetIdentifiers(List<String> assetIdentifiers) {
-        return (Long) getSession().createCriteria(OrderLineDTO.class)
-                .add(Restrictions.in("callIdentifier", assetIdentifiers))
-                .add(Restrictions.eq("deleted", 0))
-                .createAlias("purchaseOrder", "order")
-                .add(Restrictions.eq("order.deleted", 0))
-                .add(Restrictions.eq("order.isMediated", Boolean.TRUE))
-                .createAlias("order.orderStatus", "status")
-                .add(Restrictions.eq("status.orderStatusFlag", OrderStatusFlag.INVOICE))
-                .setProjection(Projections.sum("freeCallCounter"))
-                .uniqueResult();
-    }
-
-    public Long findFreeCallCounterForActiveMediatedOrderForUser(Integer userId) {
-        return (Long) getSession().createCriteria(OrderLineDTO.class)
-                .add(Restrictions.eq("deleted", 0))
-                .createAlias("purchaseOrder", "order")
-                .add(Restrictions.eq("order.deleted", 0))
-                .add(Restrictions.eq("order.isMediated", Boolean.TRUE))
-                .createAlias("order.baseUserByUserId", "u")
-                .add(Restrictions.eq("u.id", userId))
-                .createAlias("order.orderStatus", "status")
-                .add(Restrictions.eq("status.orderStatusFlag", OrderStatusFlag.INVOICE))
-                .setProjection(Projections.sum("freeCallCounter"))
-                .uniqueResult();
     }
 
     @SuppressWarnings("unchecked")
@@ -310,9 +281,6 @@ public class OrderLineDAS extends AbstractDAS<OrderLineDTO> {
             "description as description, call_counter as callCounter from order_line where id = :lineId";
 
     public OrderLineFieldsWrapper getOrderLineValuesByLineId(Integer lineId) {
-        final String getOrderLineValuesById = "select item_id as itemId, quantity as quantity, price as price, amount as amount, " +
-                "description as description, call_counter as callCounter from order_line where id = :lineId";
-
         Query query = getSession().createSQLQuery(getOrderLineValuesById)
                 .addScalar("itemId")
                 .addScalar("quantity")
@@ -323,5 +291,20 @@ public class OrderLineDAS extends AbstractDAS<OrderLineDTO> {
                 .setResultTransformer(Transformers.aliasToBean(OrderLineFieldsWrapper.class));
         query.setParameter("lineId", lineId);
         return (OrderLineFieldsWrapper) query.uniqueResult();
+    }
+
+    private static final String FIND_LINE_BY_ITEM_AND_CALLIDENTIFIER_SQL =
+            "SELECT * FROM order_line "
+                    + "      WHERE order_id = :orderId "
+                    + "        AND item_id = :itemId "
+                    + "        AND call_identifier = :callIdentifier";
+
+    public OrderLineDTO findOrderLineByItemAndCallIdentifier(Integer orderId, Integer itemId, String callIdentifier) {
+        return (OrderLineDTO) getSession().createSQLQuery(FIND_LINE_BY_ITEM_AND_CALLIDENTIFIER_SQL)
+                .addEntity(getPersistentClass())
+                .setParameter("orderId", orderId)
+                .setParameter("itemId", itemId)
+                .setParameter("callIdentifier", callIdentifier)
+                .uniqueResult();
     }
 }

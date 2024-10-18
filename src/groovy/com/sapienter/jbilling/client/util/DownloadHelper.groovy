@@ -32,7 +32,8 @@ class DownloadHelper {
      * @param filename filename to set in the response header
      */
     static def setResponseHeader(response, String filename) {
-        response.setHeader("Content-disposition", "attachment; filename=${filename}")
+        //changing Content-disposition, attachment to inline to display pdf on browser
+        response.setHeader("Content-disposition", "inline; filename=${filename}")
         response.setHeader("Expires", "0")
         response.setHeader("Cache-Control", "no-cache")
     }

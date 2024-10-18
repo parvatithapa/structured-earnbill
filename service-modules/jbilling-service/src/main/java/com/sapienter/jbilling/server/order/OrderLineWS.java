@@ -121,7 +121,7 @@ public class OrderLineWS implements Serializable {
     private Boolean isPlan = false;
     private Integer planId = null;
 
-    private Long freeCallCounter = 0L;
+    private Long callCounter = 0L;
 
     @JsonIgnore
     public String getObjectId() {
@@ -159,7 +159,7 @@ public class OrderLineWS implements Serializable {
                        Date create, Integer deleted, Integer newTypeId, Boolean editable, Integer orderId,
                        Boolean useItem, Integer version,String callIdentifier, Integer provisioningStatusId, String provisioningRequestId, 
                        String productCode, Integer[] assetIds, MetaFieldValueWS[] metaFields, 
-                       String sipUri) {
+                       String sipUri, Long callCounter) {
         setId(id);
         setItemId(itemId);
         setDescription(description);
@@ -180,6 +180,7 @@ public class OrderLineWS implements Serializable {
         setSipUri(sipUri);
         setProductCode(productCode);
         setMetaFields(metaFields);
+        setCallCounter(callCounter);
         objectId = UUID.randomUUID().toString();
     }
 
@@ -188,7 +189,7 @@ public class OrderLineWS implements Serializable {
             Boolean useItem, Integer version,String callIdentifier, Integer provisioningStatusId,
             String provisioningRequestId, OrderLineUsagePoolWS[] orderLineUsagePools, String productCode,
             Integer[] assetIds, MetaFieldValueWS[] metaFields, String sipUri, boolean isPercentage,
-            boolean isPlan, Integer planId) {
+            boolean isPlan, Integer planId, Long callCounter) {
         setId(id);
         setItemId(itemId);
         setDescription(description);
@@ -215,6 +216,7 @@ public class OrderLineWS implements Serializable {
         setIsPercentage(isPercentage);
         setIsPlan(isPlan);
         setPlanId(planId);
+        setCallCounter(callCounter);
     }
 
     public OrderLineWS(Integer id, Integer itemId, String description, BigDecimal amount, BigDecimal quantity,
@@ -298,15 +300,6 @@ public class OrderLineWS implements Serializable {
 
     public void setCreateDatetime(Date createDatetime) {
         this.createDatetime = createDatetime;
-    }
-
-    @ApiModelProperty(value = "The counter for the number of free calls under 30")
-    public Long getFreeCallCounter() {
-        return freeCallCounter;
-    }
-
-    public void setFreeCallCounter(Long freeCallCounter) {
-        this.freeCallCounter = freeCallCounter;
     }
 
     @ApiModelProperty(value = "Flag that indicates if this record is logically deleted in the database." +
@@ -651,6 +644,14 @@ public class OrderLineWS implements Serializable {
         this.planId = planId;
     }
 
+    public Long getCallCounter() {
+        return callCounter;
+    }
+
+    public void setCallCounter(Long callCounter) {
+        this.callCounter = callCounter;
+    }
+
     @Override 
     public String toString() {
 
@@ -715,7 +716,6 @@ public class OrderLineWS implements Serializable {
                 nullSafeEquals(this.productCode, orderLine.productCode) &&
                 nullSafeEquals(this.parentLine == null ? 0 : this.parentLine.getId(), orderLine.parentLine == null ? 0 : orderLine.parentLine.getId()) &&
                 nullSafeEquals(this.childLines, orderLine.childLines) &&
-                nullSafeEquals(this.freeCallCounter, orderLine.freeCallCounter) &&
                 (this.isPercentage == orderLine.isPercentage);
     }
 
@@ -742,7 +742,6 @@ public class OrderLineWS implements Serializable {
         result = 31 * result + nullSafeHashCode(this.parentLine == null ? 0 : this.parentLine.getId());
         result = 31 * result + nullSafeHashCode(childLines);
         result = 31 * result + (isPercentage ? 1 : 0);
-        result = 31 * result + nullSafeHashCode(freeCallCounter);
         return result;
     }
 }

@@ -1,18 +1,20 @@
 package com.sapienter.jbilling.server.mediation.custommediation.spc.steps;
 
 import java.lang.invoke.MethodHandles;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
-
+import java.util.Map;
+import java.util.Optional;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.datetime.standard.DateTimeFormatterFactory;
-import org.springframework.util.Assert;
 
 import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepContext;
@@ -32,21 +34,21 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
     private static final String OIGINATING_DATE = "Originating Date";
     private static final String OIGINATING_TIME = "Originating Time";
 
-    private SimpleDateFormat dateFormat;
+    private String datePattern;
     private String timeField;
     private SPCMediationHelperService service;
 
-    public EventDateResolutionStep(SimpleDateFormat format, String timeField, SPCMediationHelperService service) {
-        this.dateFormat = format;
+    public EventDateResolutionStep(String datePattern, String timeField, SPCMediationHelperService service) {
+        this.datePattern = datePattern;
         this.timeField = timeField;
         this.service = service;
-        dateFormat.setLenient(false);
     }
 
     @Override
     public boolean executeStep(MediationStepContext context) {
         MediationStepResult result = context.getResult();
         try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat(datePattern);
             String strDateTime = null;
             PricingField serviceType = PricingField.find(context.getPricingFields(), SPCConstants.SERVICE_TYPE);
             MediationServiceType mediationType = MediationServiceType.fromServiceName(serviceType.getStrValue());
@@ -58,6 +60,13 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
                     return false;
                 }
                 strDateTime = originatingDateField.getStrValue() + originatingTimeField.getStrValue();
+            } else if (mediationType.equals(MediationServiceType.TELSTRA_FIXED_LINE_MONTHLY)){
+                PricingField originatingDateField = PricingField.find(context.getPricingFields(), SPCConstants.START_DATE);
+                if( null == originatingDateField ) {
+                    result.addError("ERR-EVENT-DATE-NOT-FOUND");
+                    return false;
+                }
+                strDateTime = originatingDateField.getStrValue().trim() + "000000";
             } else {
                 PricingField timeStampField = PricingField.find(context.getPricingFields(), timeField);
                 if (null == timeStampField) {
@@ -68,21 +77,23 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
             }
 
             logger.debug("Date time field is {}", strDateTime);
-            String companyTimeZone = service.getCompanyLevelTimeZone(context.getEntityId());
-            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone(companyTimeZone));
-            Date currentDate = calendar.getTime();
+            Date currentDate = service.getCompanyCurrentDate(context.getEntityId());
+
             Date eventDate = null;
 
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
             if (mediationType.equals(MediationServiceType.OPTUS_FIXED_LINE) ||
                     mediationType.equals(MediationServiceType.OPTUS_MOBILE) ||
-                    mediationType.equals(MediationServiceType.TELSTRA_MOBILE_4G) ||
-                    mediationType.equals(MediationServiceType.AAPT_VOIP_CTOP)) {
-                String offset = service.getCompanyLevelTimeZoneOffSet(context.getEntityId());
-                Date eventDateFromCDR = formatDateUsingZonedDateTime(strDateTime, offset);
-                String dateString = dateFormat.format(eventDateFromCDR);
-                eventDate = dateFormat.parse(dateString);
+                    mediationType.equals(MediationServiceType.AAPT_VOIP_CTOP) ||
+                    mediationType.equals(MediationServiceType.TELSTRA_FIXED_LINE_MONTHLY)) {
+                eventDate = formatter.parse(strDateTime);
+            } else if (mediationType.equals(MediationServiceType.TELSTRA_MOBILE_4G)) {
+                PricingField originatingDateField = PricingField.find(context.getPricingFields(), SPCConstants.P1_INITIAL_START_TIME_EC_TIME_OFFSET);
+                String telstraOffset = originatingDateField.getStrValue();
+                if (NumberUtils.isCreatable(telstraOffset) && 14 == strDateTime.length()) {
+                    eventDate = new Date(formatter.parse(strDateTime).getTime() + Long.parseLong(telstraOffset) * 1000);
+                }
             } else {
-                dateFormat.setTimeZone(TimeZone.getTimeZone(companyTimeZone));
                 eventDate = dateFormat.parse(strDateTime);
             }
 
@@ -90,6 +101,21 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
                 result.addError("ERR-EVENT-DATE-IS-IN-FUTURE");
                 return false;
             }
+
+            Integer entityId = context.getEntityId();
+            Map<String, String> companyLevelMetaFieldMap = service.getMetaFieldsForEntity(entityId);
+            String numberOfDaysToBackDatedEventsStr = companyLevelMetaFieldMap.get(SPCConstants.NUMBER_OF_DAYS_TO_BACK_DATED_EVENTS);
+            boolean agedFlag = false;
+            long daysBetween = daysBetween(eventDate, currentDate);
+            if (StringUtils.isNotBlank(numberOfDaysToBackDatedEventsStr) && StringUtils.isNumeric(numberOfDaysToBackDatedEventsStr)) {
+                agedFlag = daysBetween > Integer.parseInt(numberOfDaysToBackDatedEventsStr);
+            }
+            if(agedFlag) {
+                logger.debug("event date is older than {} days", daysBetween);
+                result.addError("ERR-EVENT-DATE-AGED-REJECTED");
+                return false;
+            }
+
             result.setEventDate(eventDate);
             return true;
         } catch (Exception e) {
@@ -97,15 +123,6 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
             result.addError("ERR-INVALID-EVENT-DATE");
             return false;
         }
-    }
-
-    public DateFormat getDateFormat() {
-        return dateFormat;
-    }
-
-    public void setDateFormat(SimpleDateFormat dateFormat) {
-        Assert.notNull(dateFormat, "DateFormat Property can not be Null!");
-        this.dateFormat = dateFormat;
     }
 
     private Date formatDateUsingZonedDateTime(String dateInString, String offset) {
@@ -117,5 +134,13 @@ public class EventDateResolutionStep extends AbstractMediationStep<MediationStep
             return Date.from(zonedDateTime.toInstant());
         }
         return null;
+    }
+
+    private long daysBetween(Date one, Date two) {
+        return Math.abs(Days.daysBetween(new LocalDate(one.getTime()), new LocalDate(two.getTime())).getDays());
+    }
+
+    private <T> boolean checkForNull(T t) {
+        return Optional.ofNullable(t).isPresent();
     }
 }

@@ -564,7 +564,6 @@ public class FullCreativeUtil {
 		oTOrder.setBillingTypeId(Constants.ORDER_BILLING_POST_PAID);
 		oTOrder.setPeriod(Integer.valueOf(1)); // Onetime
 		oTOrder.setCurrencyId(Integer.valueOf(1));
-		oTOrder.setIsMediated(true);
 		
 		OrderLineWS oTline1 = new OrderLineWS();
 		oTline1.setItemId(Integer.valueOf(inboundProductId));

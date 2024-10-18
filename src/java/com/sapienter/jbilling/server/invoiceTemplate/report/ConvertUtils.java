@@ -53,7 +53,7 @@ public class ConvertUtils {
             designText.setForecolor(convertColor(font.getColor()));
             String fontName = font.getFace() == null ? FontFace.DEFAULT.INTERNAL_NAME : font.getFace().INTERNAL_NAME;
             designText.setFontName(fontName);
-            designText.setFontSize(font.getSize());
+            designText.setFontSize((float)font.getSize());
             designText.setBold(font.isBold());
             designText.setItalic(font.isItalic());
         }

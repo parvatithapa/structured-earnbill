@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -31,8 +32,9 @@ import org.hibernate.ScrollableResults;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.type.StringType;
-import org.springframework.util.Assert;
+import org.hibernate.criterion.Projections;
 
+import org.hibernate.criterion.Projections;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.server.item.AssetBL;
 import com.sapienter.jbilling.server.item.AssetSearchResult;
@@ -340,6 +342,12 @@ public class AssetDAS extends AbstractDAS<AssetDTO> {
         return (AssetDTO)query.uniqueResult();
     }
 
+    public AssetDTO getAssetBySubscriberNumber(String subscriberNumber) {
+        Query query = getSession().getNamedQuery("AssetDTO.getForSubscriberNumber");
+        query.setString("subscriberNumber", subscriberNumber);
+        return (AssetDTO)query.uniqueResult();
+    }
+
     private static final String findAssetIdentifiersByUserId = "select identifier from asset where order_line_id in " +
             "(select id from order_line where order_id in " +
             "(select id  from purchase_order where user_id = :userId) and deleted = 0 )";
@@ -402,43 +410,22 @@ public class AssetDAS extends AbstractDAS<AssetDTO> {
         return criteria.list();
     }
 
-    @SuppressWarnings("unchecked")
-    public List<AssetDTO> getAssetsByCategory(Integer categoryId, Integer companyId, Integer offset, Integer max) {
-        return buildAssetCategoryCriteria(categoryId, offset, max)
-                .add(Restrictions.eq("entity.id", companyId))
-                .list();
-    }
+    public List<AssetDTO> getAssetsByCategory(Integer categoryId, Integer companyId, Integer offset, Integer max){
 
-    private static final String FIND_ASSETS_BY_CATEGORY_AND_STATUS_SQL =
-            "SELECT id FROM asset WHERE item_id IN "
-                    + "(SELECT item_id FROM item_type_map WHERE type_id = :categoryId) "
-                    + "AND status_id = :statusId ORDER BY id DESC";
-
-    @SuppressWarnings("unchecked")
-    public List<Integer> getAssetsByCategoryAndStatus(Integer categoryId, Integer statusId, Integer offset, Integer max) {
-        Assert.notNull(categoryId, "category id is null!");
-        Assert.isTrue(null!= offset && offset >= 0, "please proivde positive offset value");
-        Assert.isTrue(null!= max && max >= 0, "please proivde positive max value");
-        SQLQuery sqlQuery = (SQLQuery) getSession().createSQLQuery(FIND_ASSETS_BY_CATEGORY_AND_STATUS_SQL)
-                .setParameter("categoryId", categoryId)
-                .setParameter("statusId", statusId)
-                .setFirstResult(offset)
-                .setMaxResults(max);
-        return sqlQuery.list();
-    }
-
-    private Criteria buildAssetCategoryCriteria(Integer categoryId, Integer offset, Integer max) {
-        Assert.notNull(categoryId, "category id is null!");
-        Assert.isTrue(null!= offset && offset >= 0, "please proivde positive offset value");
-        Assert.isTrue(null!= max && max >= 0, "please proivde positive max value");
-        return getSession().createCriteria(AssetDTO.class)
+        Criteria criteria = getSession().createCriteria(AssetDTO.class)
                 .createAlias("item", "i")
                 .createAlias("i.itemTypes", "itemTypes")
+                .add(Restrictions.eq("entity.id", companyId))
                 .add(Restrictions.eq("itemTypes.id", categoryId))
                 .add(Restrictions.eq("deleted", 0))
-                .addOrder(Order.asc("id"))
-                .setFirstResult(offset)
-                .setMaxResults(max);
+                .addOrder(Order.asc("id"));
+        if (null != max){
+            criteria.setMaxResults(max);
+        }
+        if (null != offset){
+            criteria.setFirstResult(offset);
+        }
+        return criteria.list();
     }
 
     public List<AssetDTO> findAssetByMetaFieldValue(Integer entityId, String name, String value){
@@ -472,4 +459,53 @@ public class AssetDAS extends AbstractDAS<AssetDTO> {
         return query.list();
     }
 
+    private static final String FIND_RELEASED_ASSETS_BY_USER_ID = "select * from asset where " +
+            "status_id in (select a.status_id from asset a join asset_status a_s on a_s.id = a.status_id join international_description i on i.foreign_id= a_s.id where i.content='Released') and " +
+            "id in (select asset_id from asset_transition at where assigned_to_id = :userId )";
+
+    public List<AssetDTO> findReleasedAssetsByUserId(Integer userId) {
+        SQLQuery sqlQuery = getSession().createSQLQuery(FIND_RELEASED_ASSETS_BY_USER_ID);
+        sqlQuery.setParameter("userId",userId);
+        sqlQuery.addEntity(AssetDTO.class);
+        return sqlQuery.list();
+    }
+
+    public String findIdentifierByIMSINumber(String imsiNumber) {
+        Criteria criteria = getSession().createCriteria(AssetDTO.class, "stringValue")
+                .setProjection(Projections.property("identifier"))
+                .add(Restrictions.eq("deleted", 0))
+                .add(Restrictions.eq("imsi", imsiNumber));
+
+        return (String) criteria.uniqueResult();
+    }
+
+    public String findIdentifierBySubscriberNumber(String subscriberNumber) {
+        Criteria criteria = getSession().createCriteria(AssetDTO.class, "stringValue")
+                .setProjection(Projections.property("identifier"))
+                .add(Restrictions.eq("deleted", 0))
+                .add(Restrictions.eq("subscriberNumber", subscriberNumber));
+
+        return (String) criteria.uniqueResult();
+    }
+
+    public String findSubscriberNumberByIdentifier(String identifier) {
+        Criteria criteria = getSession().createCriteria(AssetDTO.class)
+                .setProjection(Projections.property("subscriberNumber"))
+                .add(Restrictions.eq("deleted", 0))
+                .add(Restrictions.eq("identifier", identifier));
+
+        return (String) criteria.uniqueResult();
+    }
+
+    private static final String QUERY = "select a.subscriber_number from purchase_order po join order_line ol on po.id=ol.order_id " +
+            "join asset a on a.order_line_id= ol.id where po.user_id=:userId limit 1";
+
+    public String findSubscriberNumberByUserId(Integer userId) {
+        SQLQuery sqlQuery = getSession().createSQLQuery(QUERY);
+        sqlQuery.setParameter("userId", userId);
+
+        return Optional.ofNullable(sqlQuery.uniqueResult())
+                .map(Object::toString)
+                .orElse(null);
+    }
 }

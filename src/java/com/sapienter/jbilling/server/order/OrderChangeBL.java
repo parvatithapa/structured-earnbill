@@ -47,9 +47,6 @@ import com.sapienter.jbilling.server.order.db.OrderStatusDAS;
 import com.sapienter.jbilling.server.order.validator.OrderAssetsValidator;
 import com.sapienter.jbilling.server.order.validator.OrderHierarchyValidator;
 import com.sapienter.jbilling.server.pricing.PriceModelBL;
-import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
-import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
-import com.sapienter.jbilling.server.pricing.strategy.PricingStrategy;
 import com.sapienter.jbilling.server.provisioning.event.OrderChangeStatusTransitionEvent;
 import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
@@ -296,16 +293,6 @@ public class OrderChangeBL {
                 MetaFieldHelper.updateMetaFieldDefaultValuesWithValidation(languageId, orderChange
                         .getItem()
                         .getOrderLineMetaFields(), orderChange);
-
-                if (null != orderChange.getOrderLine() && !orderChange.getOrderLine().getItem().isPlan()) {
-                    boolean isTeaserPricing = OrderHelper.itemHasTeaserPricing(orderChange.getUser().getId(), 
-                            orderChange.getOrderLine().getItem().getId(), 
-                            new Date(), orderChange.getUser().getCompany().getId());
-                    if (isTeaserPricing) {
-                        orderChange.getOrderLine().setUseItem(Boolean.FALSE);
-                        orderChange.setDescription(orderChange.getOrderLine().getDescription());
-                    }
-                }
                 updateOrderChangeFromItem(orderChange, orderChange.getOrderLine());
                 // When OrderChange NextBillableDate is null, set the Order NextBillableDay
                 if(null == orderChange.getNextBillableDate())
@@ -857,7 +844,7 @@ public class OrderChangeBL {
                 parentLine.getChildLines().add(newLine);
             }
         }
-
+        orderChange.touch();
         // set the meta fields
         MetaFieldHelper
                 .updateMetaFieldsWithValidation(newLine.getItem().getEntity().getLanguageId(), newLine.getItem().getOrderLineMetaFields(),

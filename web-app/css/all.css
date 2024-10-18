@@ -323,7 +323,6 @@ hr {
     vertical-align: middle;
     zoom: 1;
     border-right: 1px solid #1b1917;
-    float: left;
     height: 59px;
 }
 
@@ -582,25 +581,7 @@ th.header-sortable:hover {
   height: 30px;
   overflow: hidden;
 }
-.headingtemp {
-  background-color: whitesmoke;
-  *zoom: 1;
-  width:410px;
-  filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#FF8DC449', endColorstr='#FF7BAA3F');
-  border-radius: 3px 3px 0 0;
-  border-width: 1px;
-  border-style: solid;
-  border-color: #cbcbcb;
-  text-shadow: rgba(255, 255, 255, 0.4) 0 1px 0;
-  color: #9c9c9c;
-  height: 30px;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: uppercase;
-  padding: 0 9px 0 10px;
-  height: 30px;
-  overflow: hidden;
-}
+
 .heading.hold {
     min-width: 1621px !important;
 }
@@ -687,11 +668,6 @@ th.header-sortable:hover {
     margin: 150px auto;
     width: 810px;
 }
-#otpVerify {
-    padding: 20px;
-    margin: 150px auto;
-    width: 410px;
-}
 
 #login-column-1 {
     width: 390px;
@@ -715,7 +691,7 @@ th.header-sortable:hover {
 #reset_password {
     margin: 50px auto;
     padding: 20px;
-    width: 438px;
+    width: 408px;
 }
 
 /* line 405, sass/all.sass */
@@ -723,14 +699,7 @@ th.header-sortable:hover {
   width: auto;
 }
 
-#otpVerify .form-columns, #reset_password .form-columns {
-  width: auto;
-}
 #login .form-hold, #login .buttons, #reset_password .form-hold, #reset_password .buttons {
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
-}
-#otpVerify .form-hold, #otpVerify .buttons, #reset_password .form-hold, #reset_password .buttons {
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
 }
@@ -748,26 +717,12 @@ th.header-sortable:hover {
     font-weight: 700;
 }
 
-#otpVerify label, #reset_password label{
-    text-align: left;
-    width: 100%;
-    font-size: 14px;
-    font-weight: 700;
-    margin-left: 15px;
-}
 #login .inp-bg, #reset_password .inp-bg {
     width: 373px;
     box-sizing: border-box;
     height: 36px;
 }
-#otpVerify .inp-bg, #reset_password .inp-bg {
-    width: 373px;
-    box-sizing: border-box;
-    height: 36px;
-    margin-left: 15px;
-    margin:15px;
-    margin-top:2px;
-}
+
 #login .no-label.keep-logged-in label {
     color: #575757;
     opacity: 0.8;
@@ -786,59 +741,7 @@ th.header-sortable:hover {
     height: 20px;
     width: 100%;
 }
-#login-without-sso {
-    padding: 20px;
-    margin: 150px auto;
-    width: 450px;
-}
-#login-without-sso .form-hold, #login-without-sso .buttons-without-sso, #reset_password .form-hold, #reset_password .buttons-without-sso {
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
-}
-#login-without-sso .row{
-    padding-left: 35px;
-    padding-right: 14px;
-    box-sizing: border-box;
-}
-.buttons-without-sso, .dialog-buttons-without-sso {
-  border-top: 1px solid #bbbbbb;
-  padding: 6px 10px;
-  overflow: hidden;
-  background: #f6f6f6;
-  width: 428px;
-}
-.form-columns.login-without-sso {
-    height: 237px;
-    width: 450px;
-}
-#login-without-sso label, #reset_password label {
-    text-align: left;
-    width: 100%;
-    font-size: 14px;
-    font-weight: 700;
-}
-#login-without-sso .inp-bg, #reset_password .inp-bg {
-    width: 373px;
-    box-sizing: border-box;
-    height: 36px;
-}
-#login-without-sso .no-label.keep-logged-in label {
-    color: #575757;
-    opacity: 0.8;
-    font-weight: normal;
-}
 
-#login-without-sso .no-label label, #reset_password .no-label label {
-    width: 0;
-    margin: 0;
-}
-#login-without-sso .inp-bg input.field, #reset_password .inp-bg input.field {
-    font-size: 14px;
-    line-height: 1.6em;
-    padding: 4px 12px 5px 2px;
-    height: 20px;
-    width: 100%;
-}
 /* line 408, sass/all.sass */
 #left-column {
   width: 150px;
@@ -1005,7 +908,6 @@ th.header-sortable:hover {
     cursor: pointer;
     background-color: white;
     border: 0px;
-    border-right: 1px solid #cacaca;
     width: 200px;
     overflow: hidden;
     color: #cacaca;
@@ -1240,7 +1142,7 @@ input.error, textarea.error,
 /* line 583, sass/all.sass */
 .submit2, .submit, .submit3, .submit4, .submit-sm {
   background-color: whitesmoke;
-  *zoom: 1;
+  zoom: 1;
   filter: progid:DXImageTransform.Microsoft.gradient(gradientType=0, startColorstr='#FF3C9242', endColorstr='#FF347F3A');
   background-size: 100%;
   border: 1px solid #cacaca;
@@ -1256,13 +1158,6 @@ input.error, textarea.error,
   position: relative;
   float: left;
   cursor: pointer;
-}
-.einvoiceGen{
-height : 34px;
-font-size: 14px;
-text-align: center;
-padding: 1px 8px;
-width: auto;
 }
 
 .submit-sm {
@@ -1306,12 +1201,6 @@ width: auto;
     border-color: #939393;
     background-color: #c4c4c4;
     color: #313131;
-}
-
-/* line 619, sass/all.sass */
-.submit2 span {
-  padding-left: 5px;
-  overflow: hidden;
 }
 
 .submit3 {
@@ -1392,6 +1281,11 @@ width: auto;
 }
 /* line 639, sass/all.sass */
 .submit.payment span:before {
+    font-family: Arial;
+    font-weight: normal;
+    content: "\000024\0000A0";
+}
+.submit.credit span:before {
     font-family: Arial;
     font-weight: normal;
     content: "\000024\0000A0";
@@ -1491,6 +1385,7 @@ width: auto;
 /* line 658, sass/all.sass */
 .submit2 span {
      padding: 0 0 0 5px;
+     overflow: hidden;
  }
 
 /* line 660, sass/all.sass */
@@ -1913,13 +1808,16 @@ div.customer-column {
 }
 
 .pager-box .row-center {
-    display: table;
+    /* display: table; */
+    display: inline-flex;
     width: 100%;
     margin-top: 6px;
+    overflow-x: auto;
 }
 
 .pager-box .row-right {
     float: right;
+    display: inline-flex;
 }
 
 .pager-box .row .col1 {
@@ -1967,6 +1865,8 @@ div.customer-column {
     font-family: AppDirectIcons;
     font-weight: normal;
     color: #8e8e8e;
+    margin-top: inherit;
+
 }
 .plus-icon {
     font-size: 12px;
@@ -2542,13 +2442,7 @@ ul#metafield-ait {
   margin: 0 auto;
   padding: 14px 0 0;
 }
-.form-columns-without-sso {
-  overflow: hidden;
-  color: #383838;
-  width: 1000px;
-  margin: 0 auto;
-  padding: 14px 0 0;
-}
+
 .form-columns.login {
     height: 237px;
 }
@@ -2625,7 +2519,6 @@ ul#metafield-ait {
   padding: 6px 0 0;
 }
 
-
 .row.pad-below {
   padding-bottom: 10px;
 }
@@ -2663,13 +2556,6 @@ ul#metafield-ait {
   float: left;
   text-align: right;
   width: 150px;
-  line-height: 24px;
-  word-wrap: break-word;
-}
-.form-columns-without-sso label {
-  float: left;
-  text-align: right;
-  width: 100px;
   line-height: 24px;
   word-wrap: break-word;
 }
@@ -2751,6 +2637,14 @@ ul#metafield-ait {
 
 .inp-bg.inp-short {
     width: 30px;
+}
+
+#asset-filter-form > .row > .inp-bg > #filterBy {
+    width: 320px;
+}
+
+#asset-filter-form > .row > .inp-bg {
+  width: 320px;
 }
 
 .inp-bg {
@@ -3033,7 +2927,6 @@ span.select-value {
 .select-holder {
     float: left;
     position: relative;
-    float: left;
     margin-right: 3px;
     padding: 4px 5px;
     overflow: hidden;
@@ -3101,7 +2994,6 @@ span.select-value {
     border-left: 1px solid rgba(203,203,203,.5);
     margin-right: 0;
     float: right;
-    right: 10px;
     content: "\e61e";
     position: absolute;
     top: 0;
@@ -3410,12 +3302,6 @@ div.box-text {
   overflow: hidden;
   background: #f6f6f6;
 }
-.buttons-without-sso, .dialog-buttons-without-sso {
-  border-top: 1px solid #bbbbbb;
-  padding: 6px 10px;
-  overflow: hidden;
-  background: #f6f6f6;
-}
 
 .dialog-buttons {
     bottom: 0px;
@@ -3439,28 +3325,8 @@ div.box-text {
   position: relative;
   left: -50%;
   padding: 0 5px;
-  list-style: none
 }
-.buttons-without-sso ul li {
-  float: left;
-  position: relative;
-  left: -50%;
-  padding: 0 5px;
-}
-.buttons-without-sso ul {
-  float: left;
-  position: relative;
-  left: 50%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.dialog-buttons-without-sso {
-    bottom: 0px;
-    position: absolute;
-    width: 100%;
-    box-sizing: border-box;
-}
+
 /* line 1423, sass/all.sass */
 .outtaHere {
   position: absolute;
@@ -4710,6 +4576,7 @@ p.validateTips.ui-state-error {
 }
 .error-validate-login{
     font-size: 12px;
+    display: inline-block;
 }
 .phone-text {
     height: 16px;
@@ -4765,13 +4632,310 @@ p.validateTips.ui-state-error {
     opacity: 0.5;
     text-decoration: none;
 }
-#otpVerify .inp-bg input.field, #reset_password .inp-bg input.field {
-    font-size: 14px;
-    line-height: 1.6em;
-    padding: 4px 12px 5px 2px;
-    height: 20px;
+
+#navigation ul#navRight {
+    float: right;
+}
+
+#confirm-dialog-table {
+    margin: 3px 0 0 10px;
+}
+
+#confirm-dialog-table .col2 {
+    padding-left: 7px;
+}
+
+.column-50 .table-info span{
+    float: right;
+    margin-top: 11px;
+}
+
+.column-50 .table-info span a {
+    margin-left: 7px;
+}
+
+.pager-box .row .pager-button {
+    text-align : right;
+}
+
+.pager-box .row .generate {
+    text-align : right;
+}
+
+#inner-content-td {
+    padding-right: 20px;
+}
+
+#inner-content-td2 {
+    text-align: right;
+}
+
+#inner-content-td3 {
+    text-align: left;
+}
+
+#box-card-hold-th {
+    width: 30%;
+    text-align: right;
+}
+
+#confirm-dialog-save-permissions table {
+    margin: 3px 0 0 10px;
+}
+
+#confirm-dialog-save-permissions table .col2 {
+    padding-left: 7px;
+}
+
+#role-change-dialog table {
+    margin: 3px 0 0 10px;
+}
+
+#roleChangeMsg {
+    padding-left: 7px;
+}
+
+#save-query-dialog table {
+    margin: 3px 0 0 10px;
+}
+
+#save-query-dialog table .col2 {
+    padding-left: 7px;
+}
+
+#confirm-dialog span {
+    float: left;
+    margin: 0 7px 0 0;
+}
+
+#confirm-dialog table {
+    margin: 3px 0 0 10px;
+}
+
+#confirm-dialog table .col1 {
+    padding-left: 7px;
+}
+
+#confirm-dialog table .col2 {
+    padding-left: 7px;
+}
+
+#form-edit-submit {
+    float: right;
+}
+
+#orderChangeStatuses-table-label1 {
+    width: 50px;
+    text-align: left;
+    padding-left: 12px;
+}
+
+#orderChangeStatuses-table-label2 {
+    width: 100px;
+    text-align: left;
+}
+
+#column-550-a {
+    float: right;
+}
+
+#custom-div {
+    float: left;
+}
+
+#custom-div2 {
+    float: right;
+}
+
+#dependencyDialog {
+    margin: 3px 0 0 10px;
+}
+
+#dependencyDialog .col2 {
+    padding-left: 7px;
+}
+
+#infoTypeName-change-dialog table {
+    margin: 3px 0 0 10px
+}
+
+#infoTypeName-change-dialog table .col2 {
+    padding-left: 7px;
+}
+
+#form-div {
+    width:600px;
+    border: solid #bbbbbb;
+    border-width: 1px;
+    margin: 0%;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    margin-left: 22px;
+}
+
+#form-div-td {
+    width: 33%;
+    text-align: right;
+    font-size: 12px;
+}
+
+#confirm-dialog-delete table {
+    margin: 3px 0 0 10px;
+}
+
+#confirm-dialog-delete table .col2 {
+    padding-left: 7px;
+}
+
+#background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: grey;
+    top: 0px;
+    left: 0px;
+    opacity: 0.5;
+    display: none;
+}
+
+#editStatusBlock .btn-box {
+    margin-left: 20%;
+}
+
+#report-filters-submit {
+    padding-left: 350px;
+}
+
+#price-box-sub-div {
+    padding-left: 38%;
+}
+
+#invoice-template-error-messages ul {
+    margin-left: 0;
+    list-style: none;
+}
+
+#invoice-template-success-messages ul {
+    margin-left: 0;
+}
+
+#submit-sm-span {
+    padding-left: 0px;
+}
+
+#paging {
+    float: right;
+}
+
+#dialog-delete-confirm p span, #dialog-save-error .ui-icon, #dialog-delete-error .ui-icon {
+    float: left;
+    margin: 0 7px 70px 0;
+}
+
+#custom-span {
+    float: left;
+    padding-left: 20px;
+}
+
+#custom-a {
+    float: right;
+    padding-right: 5px;
+}
+
+#custom-table {
+    margin: 3px 0 0 10px;
+}
+
+#custom-table .col2 {
+    padding-left: 7px;
+}
+
+#custom-label {
+    text-align: left;
+    width:300px;
+    margin-right: 10;
+}
+
+#custom-div3 {
+    width: 90%;
+    margin-left: 8%;
+}
+
+.custom-div4 {
+    padding-left: 130px;
+}
+
+#custom-div5 {
+    padding-left: 5em;
+}
+
+.custom-div6 {
+    padding-right: 10px;
+}
+
+#custom-td {
+    text-align: right;
+    padding-right: 30px;
+}
+
+#custom-td2 {
+    text-align: right;
+    width:5%;
+    padding-right: 1%;
+}
+
+#custom-td3 {
+    text-align: right;
+    width: 11%;
+    padding-right: 3%;
+}
+
+#custom-td4 {
+    text-align: right;
+    padding-right: 2%;
+}
+
+#custom-td5 {
+    text-align: right;
     width: 100%;
 }
-.indent {
-        margin-left: 80px; /* Adjust the value as needed */
+
+#custom-td6 {
+    width: 28%;
+    text-align: left;
 }
+
+#download-div #generateCsv {
+    text-align: right;
+}
+
+#custom-div7 {
+    text-align: right;
+}
+
+#custom-ul {
+    right: 0;
+}
+
+#filters input[type="checkbox"] {
+    vertical-align: text-top;
+}
+
+.pager-box .row-center a, .pager-box .row-center span, .pager-box .row-right a, .pager-box .row-right span {
+    min-width: auto;
+}
+
+#hiddenTabsUl {
+    white-space: nowrap;
+}
+
+#customer-dialog-icon {
+    float: left;
+}
+
+.total-count{
+        border: 1px solid #cacaca;
+        color: #8e8e8e;
+        padding: 4px 8px;
+        float: right;
+ }

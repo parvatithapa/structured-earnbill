@@ -58,4 +58,9 @@ public class AssetBasedCurrentOrder extends CurrentOrder {
         }
         return cacheKeyBuilder.toString();
     }
+
+    @Override
+    protected Date getActualEventDate() {
+        return new Date();
+    }
 }

@@ -15,7 +15,6 @@
  */
 package com.sapienter.jbilling.server.user;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.security.WSSecured;
 
@@ -29,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class CompanyWS implements java.io.Serializable, WSSecured {
 
     private static final long serialVersionUID = 20140605L;
@@ -53,7 +51,6 @@ public class CompanyWS implements java.io.Serializable, WSSecured {
     @Pattern(regexp = "^([a-zA-Z0-9#\\!$%&'\\*\\+/=\\?\\^_`\\{\\|}~-]|(\\\\@|\\\\,|\\\\\\[|\\\\\\]|\\\\ ))+(\\.([a-zA-Z0-9!#\\$%&'\\*\\+/=\\?\\^_`\\{\\|}~-]|(\\\\@|\\\\,|\\\\\\[|\\\\\\]))+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.([A-Za-z]{2,})$", message = "validation.error.email")
     @Size(min = 6, max = 200, message = "validation.error.size,6,200")
     private String failedEmailNotification;
-    private Integer numberOfFreeCalls;
 
     public CompanyWS() {
     }
@@ -92,14 +89,6 @@ public class CompanyWS implements java.io.Serializable, WSSecured {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
     }
 
     public ContactWS getContact() {
@@ -161,7 +150,6 @@ public class CompanyWS implements java.io.Serializable, WSSecured {
     public String toString() {
         return "CompanyWS [id=" + id + ", currencyId=" + currencyId
                 + ", languageId=" + languageId + ", description=" + description
-                + ", numberOfFreeCalls=" + numberOfFreeCalls
                 + ", contact=" + contact + "]";
     }
 

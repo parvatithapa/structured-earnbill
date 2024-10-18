@@ -10,16 +10,17 @@ public enum MediationServiceType {
 
     //Service name (abbreviated word) and file name prefix both should be unique
     OPTUS_FIXED_LINE("ofl", "tap_stn", "optusFixedLineCDRResolver"),
-    OPTUS_MOBILE("om", "RESELL_", "optusMobileCDRResolver"),
+    OPTUS_MOBILE("om", "EB_POSTPAID_", "optusMobileCDRResolver"),
     ENGIN("eng", "ENGINCF", "enginSConnectCDRResolver"),
     SCONNECT("scon", "SConnect_Voice", "enginSConnectCDRResolver"),
     TELSTRA_MOBILE_4G("telstraMobile4G", "Reseller", "telstraMobile4GCDRResolver"),
     AAPT_INTERNET_USAGE("aaptiu", "_Daily_", "aaptInternetUsageCDRResolver"),
     AAPT_VOIP_CTOP("aapvpct","CTOP","aaptVoipCtopCDRResolver"),
-    TELSTRA_FIXED_LINE("telstra", "EBILL", "telstraFixedLineCDRResolver"),
+    TELSTRA_FIXED_LINE("telstraFixedLine", "EBILLDAY", "telstraFixedLineCDRResolver"),
     SERVICE_ELEMENTS_VOICE("sevoice", "BBS", "serviceElementsVoiceCDRResolver"),
     SERVICE_ELEMENTS_DATA("sedata", "BBS", "serviceElementsDataCDRResolver"),
-    SCONNECT_DATA("sConnect_data","SConnect_Data","vocusInternetUsageCDRResolver");
+    SCONNECT_DATA("sConnect_data","SConnect_Data","vocusInternetUsageCDRResolver"),
+    TELSTRA_FIXED_LINE_MONTHLY("telstramth", "EBILLMTH", "telstraMonthlyFixedLineCDRResolver");
 
     private final String serviceName;
     private final String fileNamePrefix;

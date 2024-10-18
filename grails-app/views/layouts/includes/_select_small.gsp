@@ -35,5 +35,6 @@
               keys="${select_keys}"
               valueMessagePrefix="${select_valueMessagePrefix}"
               optionKey="${select_optionKey}" optionValue="${select_optionValue}"
-              noSelection="${select_noSelection}" />
+              noSelection="${select_noSelection}"
+              data-cy="${select_name}"/>
 </div>

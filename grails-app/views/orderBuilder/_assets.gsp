@@ -97,7 +97,7 @@
     </a>
 </div>
 
-<div class="btn-box" id="button-ok-${assetFlow}" style="padding-left:130px;">
+<div class="btn-box custom-div4" id="button-ok-${assetFlow}">
 
     <a id="assets-dialog-cancel-${assetFlow}" class="submit cancel" onclick="closeAssets${assetFlow}Dialog(event);">
         <span><g:message code="prompt.ok"/></span>

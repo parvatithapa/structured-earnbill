@@ -58,10 +58,10 @@ import com.sapienter.jbilling.test.framework.builders.UsagePoolBuilder;
 public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String SUBSCRIPTION_PROD_01 = "testPlanSubscriptionItem_01";
-    private static final String USAGE_POOL_01 = "UP with 100 Quantity"+System.currentTimeMillis();
-    private static final String PLAN_01 = "100 free minute Plan";
-    private static final String USER_01 = "Test-PP-Subscpt-Order-Billing-User-1";
-    private static final String USER_02 = "Test-PP-Subscpt-Order-Billing-User-2";
+    private static final String USAGE_POOL_01 = "UP with 100 Quantity" + System.currentTimeMillis();
+    private static final String PLAN_01 = "100 free minute Plan" + System.currentTimeMillis();
+    private static final String USER_01 = "Test-PP-Subscpt-Order-Billing-User-1" + System.currentTimeMillis();
+    private static final String USER_02 = "Test-PP-Subscpt-Order-Billing-User-2" + System.currentTimeMillis();
     private static final String USAGEPOOL_LOGGER_MSG = "Cycle start date: {} Cycle end date: {}";
     private static final Integer CC_PM_ID = 5;
     private static final Integer NEXT_INVOICE_DAY = 1;
@@ -171,7 +171,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 productQuantityMap.put(environment.idForCode(SUBSCRIPTION_PROD_01), BigDecimal.ONE);
 
                 //Create Order with Active since 1st Jan 2018
-                buildAndPersistOrder(envBuilder, api, "testSubScriptionOrderO1", envBuilder.idForCode(USER_01), nextInvoiceDate.getTime(), null, MONTHLY_ORDER_PERIOD, Constants.ORDER_BILLING_PRE_PAID,
+                buildAndPersistOrder(envBuilder, api, "testSubscriptionOrderO1", envBuilder.idForCode(USER_01), nextInvoiceDate.getTime(), null, MONTHLY_ORDER_PERIOD, Constants.ORDER_BILLING_PRE_PAID,
                         true, productQuantityMap);
             }).validate((testEnv, envBuilder) -> {
                 final JbillingAPI api = envBuilder.getPrancingPonyApi();
@@ -252,12 +252,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 //updating users Next Invoice Date to 1 March 2018
                 user.setNextInvoiceDate(nextInvoiceDate.getTime());
                 api.updateUser(user);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
-                try {
-                    Thread.sleep(3000);
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                }
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
 
                 user = api.getUserWS(envBuilder.idForCode(USER_01));
                 assertEquals(parseDate(nextInvoiceDate.getTime()),parseDate(user.getNextInvoiceDate()));
@@ -300,12 +295,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 //updating users Next Invoice Date to 1 April 2018
                 user.setNextInvoiceDate(nextInvoiceDate.getTime());
                 api.updateUser(user);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
-                try {
-                    Thread.sleep(3000);
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                }
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
 
                 user = api.getUserWS(envBuilder.idForCode(USER_01));
                 assertEquals(parseDate(nextInvoiceDate.getTime()),parseDate(user.getNextInvoiceDate()));
@@ -339,6 +329,8 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
             final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
             Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_01), 10, 0))
                  .forEach(invoice -> api.deleteInvoice(invoice.getId()));
+            Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_01),10,0))
+                    .forEach(order -> api.deleteOrder(order.getId()));
             api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_01));
         }
     }
@@ -354,10 +346,10 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 nextInvoiceDate.set(Calendar.MONTH, 11);
                 nextInvoiceDate.set(Calendar.DAY_OF_MONTH, 1);
 
-                Calendar acticeSince = Calendar.getInstance();
-                acticeSince.set(Calendar.YEAR, 2017);
-                acticeSince.set(Calendar.MONTH, 11);
-                acticeSince.set(Calendar.DAY_OF_MONTH, 1);
+                Calendar activeSince = Calendar.getInstance();
+                activeSince.set(Calendar.YEAR, 2017);
+                activeSince.set(Calendar.MONTH, 11);
+                activeSince.set(Calendar.DAY_OF_MONTH, 1);
 
                 final JbillingAPI api = envBuilder.getPrancingPonyApi();
 
@@ -367,7 +359,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 productQuantityMap.put(environment.idForCode(SUBSCRIPTION_PROD_01), BigDecimal.ONE);
 
                 //Create Order with Active since 1st Dec 2017
-                buildAndPersistOrder(envBuilder, api, "testSubScriptionOrderO1", envBuilder.idForCode(USER_02), acticeSince.getTime(), null, MONTHLY_ORDER_PERIOD, Constants.ORDER_BILLING_POST_PAID,
+                buildAndPersistOrder(envBuilder, api, "testSubscriptionOrderO1", envBuilder.idForCode(USER_02), activeSince.getTime(), null, MONTHLY_ORDER_PERIOD, Constants.ORDER_BILLING_POST_PAID,
                         true, productQuantityMap);
             }).validate((testEnv, envBuilder) -> {
                 final JbillingAPI api = envBuilder.getPrancingPonyApi();
@@ -442,7 +434,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 //updating users Next Invoice Date to 1 Feb 2018
                 user.setNextInvoiceDate(nextInvoiceDate.getTime());
                 api.updateUser(user);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -496,7 +488,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 //updating users Next Invoice Date to 1 March 2018
                 user.setNextInvoiceDate(nextInvoiceDate.getTime());
                 api.updateUser(user);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -532,18 +524,24 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
 
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_02), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_02));
+            clenUp();
         }
+    }
+
+    private void clenUp() {
+        final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_02), 10, 0))
+            .forEach(invoice -> api.deleteInvoice(invoice.getId()));
+        Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_02),10,0))
+                .forEach(order -> api.deleteOrder(order.getId()));
+        api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_02));
     }
 
     private TestBuilder getTestEnvironment() {
         return TestBuilder.newTest(false).givenForMultiple(testEnvCreator -> this.envHelper = EnvironmentHelper.getInstance(testEnvCreator.getPrancingPonyApi()));
     }
 
-    public Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
+    private Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
         AccountTypeWS accountTypeWS = envBuilder.accountTypeBuilder(api)
                 .withName(name)
                 .withPaymentMethodTypeIds(paymentMethodTypeId)
@@ -551,7 +549,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
         return accountTypeWS.getId();
     }
 
-    public Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
+    private Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
         return envBuilder.itemBuilder(api)
                 .itemType()
                 .withCode(code)
@@ -560,7 +558,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 .build();
     }
 
-    public Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
+    private Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
             boolean global, Integer categoryId, String flatPrice, boolean allowDecimal) {
         return envBuilder.itemBuilder(api)
                 .item()
@@ -604,7 +602,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
                 .build().getId();
     }
 
-    public Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
+    private Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
             Integer accountTypeId, Date nextInvoiceDate, Integer periodId, Integer nextInvoiceDay) {
 
         UserWS userWS = envBuilder.customerBuilder(api)
@@ -619,7 +617,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
         return userWS.getId();
     }
 
-    public Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
+    private Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
             Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId,
             boolean prorate, Map<Integer, BigDecimal> productQuantityMap) {
 
@@ -643,7 +641,7 @@ public class PrepaidSubscriptionOrderBillingProcessScenariosTest {
         return orderBuilder.build();
     }
 
-    public static Integer createOneTimeOrder(JbillingAPI api,Integer userId, Date activeSinceDate, String inboundProductQuantity){
+    private static Integer createOneTimeOrder(JbillingAPI api,Integer userId, Date activeSinceDate, String inboundProductQuantity){
 
         logger.debug("Creating One time usage order...");
         OrderWS oTOrder = new OrderWS();

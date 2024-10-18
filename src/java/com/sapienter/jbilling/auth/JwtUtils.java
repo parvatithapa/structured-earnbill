@@ -1,5 +1,8 @@
 package com.sapienter.jbilling.auth;
 
+import com.sapienter.jbilling.server.adennet.AdennetConstants;
+import com.sapienter.jbilling.server.adennet.ws.UserAndAssetAssociationResponseWS;
+import com.sapienter.jbilling.server.util.db.LanguageDAS;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
@@ -21,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
@@ -31,7 +35,6 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -56,8 +59,7 @@ class JwtUtils {
 
 	//TODO get from company level meta field.
 	private static final Integer TOKEN_VALIDITY_IN_HOURS = 2;
-	//TODO get from company level meta field.
-	private static final Integer REFRESH_TOKEN_VALIDITY_IN_DAYS = 10;
+	private static final Integer TOKEN_VALIDITY_IN_MINUTES = 15;
 
 	private PrivateKey privateKey;
 	private PublicKey publicKey;
@@ -65,9 +67,9 @@ class JwtUtils {
 	@Resource
 	private Environment environment;
 	@Resource
-	private UserDetailsService userDetailsService;
-	@Resource
 	private UserDAS userDAS;
+	@Resource
+	private RefreshTokenService refreshTokenService;
 
 	@PostConstruct
 	void init() {
@@ -79,32 +81,40 @@ class JwtUtils {
 		Assert.notNull(publicKey, "publicKey is required");
 	}
 
+	public String jwtToken(User authenticatedUser) {
+		Instant now = Instant.now();
+		List<String> scopeList = collectAuthorities(userDAS.find(authenticatedUser.getId()));
+		String jwtToken = Jwts.builder()
+				.claim("scope", scopeList)
+				.claim("name", authenticatedUser.getUsername())
+				.claim("userId", authenticatedUser.getId())
+				.claim("currencyId", authenticatedUser.getCurrencyId())
+				.claim("entityId", authenticatedUser.getCompanyId())
+				.claim("languageId", authenticatedUser.getLanguageId())
+				.claim("roleId", authenticatedUser.getMainRoleId())
+				.claim("role", RoleType.getRoleTypeById(authenticatedUser.getMainRoleId()).getAuthorityTitle())
+				.claim("locale", authenticatedUser.getLocale().toString())
+				.subject(authenticatedUser.getUsername() + ";" + authenticatedUser.getCompanyId())
+				.issuer("BillingHub")
+				.id(UUID.randomUUID().toString())
+				.issuedAt(Date.from(now))
+				.audience().add("BillingHub").and()
+				.header().add("type", "jwt").and()
+				.expiration(Date.from(now.plus(TOKEN_VALIDITY_IN_HOURS, ChronoUnit.HOURS)))
+				.signWith(privateKey)
+				.compact();
+		logger.debug("jwtToken={} created for user={} for entityId={}", jwtToken,
+				authenticatedUser.getId(), authenticatedUser.getCompanyId());
+		return jwtToken;
+	}
+
 	public JwtTokenResponseWS createJwtToken(User authenticatedUser) {
 		Assert.notNull(authenticatedUser, "user required to create a token");
 		try {
-			Instant now = Instant.now();
-			List<String> scopeList = collectAuthorities(userDAS.find(authenticatedUser.getId()));
-			String jwtToken = Jwts.builder()
-					.claim("scope",  scopeList)
-					.claim("name", authenticatedUser.getUsername())
-					.claim("userId", authenticatedUser.getId())
-					.claim("currencyId", authenticatedUser.getCurrencyId())
-					.claim("entityId", authenticatedUser.getCompanyId())
-					.claim("languageId", authenticatedUser.getLanguageId())
-					.claim("role", RoleType.getRoleTypeById(authenticatedUser.getMainRoleId()).getAuthorityTitle())
-					.setSubject(authenticatedUser.getUsername() + ";" + authenticatedUser.getCompanyId())
-					.setIssuer("BillingHub")
-					.setId(UUID.randomUUID().toString())
-					.setIssuedAt(Date.from(now))
-					.setAudience("BillingHub")
-					.setHeaderParam("type", "jwt")
-					.setExpiration(Date.from(now.plus(TOKEN_VALIDITY_IN_HOURS, ChronoUnit.HOURS)))
-					.signWith(privateKey)
-					.compact();
-			logger.debug("jwtToken={} created for user={} for entityId={}", jwtToken,
-					authenticatedUser.getId(), authenticatedUser.getCompanyId());
-			//TODO store refresh token in data base, to regenerate new token.
-			return new JwtTokenResponseWS(jwtToken, UUID.randomUUID().toString(), Date.from(now).getTime());
+			// generate refresh token.
+			String refreshToken = refreshTokenService.createOrUpdateRefreshToken(authenticatedUser.getId());
+			String jwt = jwtToken(authenticatedUser);
+			return new JwtTokenResponseWS(jwt, refreshToken, System.currentTimeMillis());
 		} catch(Exception ex) {
 			logger.error("token generation failed for user={}, entity={} because of:",
 					authenticatedUser.getUsername(), authenticatedUser.getCompanyId(), ex);
@@ -130,14 +140,14 @@ class JwtUtils {
 	public JwtDecodedTokenInfoWS verifyToken(String token) {
 		JwtDecodedTokenInfoWS tokenInfo = new JwtDecodedTokenInfoWS(token);
 		try {
-			Jws<Claims> claims = Jwts.parserBuilder()
-					.setSigningKey(publicKey)
+			Jws<Claims> claims = Jwts.parser()
+					.verifyWith(publicKey)
 					.build()
-					.parseClaimsJws(token);
+					.parseSignedClaims(token);
 			logger.debug("token={} valid", token);
-			tokenInfo.setClaims(claims.getBody());
-			Integer userId = (Integer) claims.getBody().get("userId");
-			Integer entityId = (Integer) claims.getBody().get("entityId");
+			tokenInfo.setClaims(claims.getPayload());
+			Integer userId = (Integer) claims.getPayload().get("userId");
+			Integer entityId = (Integer) claims.getPayload().get("entityId");
 			UserDTO user = userDAS.findNow(userId);
 			// check user belongs to same entity and not deleted.
 			if(null == user || 1 == user.getDeleted() || entityId != user.getCompany().getId()) {
@@ -145,17 +155,33 @@ class JwtUtils {
 				tokenInfo.setHttpStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			}
 			// check for password change.
-			Date passwordChangeDate = user.getChangePasswordDate();
-			Date jwtCreateDate = claims.getBody().getIssuedAt();
+            assert user != null;
+            Date passwordChangeDate = user.getChangePasswordDate();
+			Date jwtCreateDate = claims.getPayload().getIssuedAt();
 			if(null!= passwordChangeDate && passwordChangeDate.after(jwtCreateDate)) {
 				tokenInfo.setErrorMessage("user password is changed, re authenticate user");
 				tokenInfo.setHttpStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			}
 			// check for permission.
-			List<String> scopeList = (List<String>) claims.getBody().get("scope");
+			List<String> scopeList = (List<String>) claims.getPayload().get("scope");
 			if(!collectAuthorities(user).equals(scopeList)) {
 				tokenInfo.setHttpStatusCode(HttpStatus.SC_FORBIDDEN);
 				tokenInfo.setErrorMessage("User permission has been changed, (re-authenticate user)");
+			}
+			UserBL userBL = new UserBL(user);
+			if(userBL.isAccountLocked()) {
+				tokenInfo.setErrorMessage("user account is locked");
+				tokenInfo.setHttpStatusCode(HttpStatus.SC_UNAUTHORIZED);
+			}
+
+			if(userBL.validateAccountExpired(user.getAccountDisabledDate())) {
+				tokenInfo.setErrorMessage("user account is expired");
+				tokenInfo.setHttpStatusCode(HttpStatus.SC_UNAUTHORIZED);
+			}
+
+			if(userBL.isPasswordExpired()) {
+				tokenInfo.setErrorMessage("credentials expired");
+				tokenInfo.setHttpStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			}
 		} catch(JwtException jwtException) {
 			logger.error("token verification failed because of", jwtException);
@@ -184,13 +210,13 @@ class JwtUtils {
 			privateKey = kf.generatePrivate(keySpec);
 			logger.debug("private key loaded");
 		} catch(IOException | NoSuchAlgorithmException | InvalidKeySpecException exception) {
-			logger.error("privte key loading failed", exception);
+			logger.error("private key loading failed", exception);
 			throw new SessionInternalError("private key file loading failed", exception);
 		}
 	}
 
 	private String defaultPath(String fileName) {
-		return JwtUtils.class.getResource("/" + fileName).getFile();
+		return Objects.requireNonNull(JwtUtils.class.getResource("/" + fileName)).getFile();
 	}
 
 	private void loadPublicKey() {
@@ -209,6 +235,49 @@ class JwtUtils {
 		} catch(IOException | NoSuchAlgorithmException | InvalidKeySpecException exception) {
 			logger.error("public key loading failed", exception);
 			throw new SessionInternalError("public key file loading failed", exception);
+		}
+	}
+
+	public String adennetJwtToken(String subscriberNumber, Integer userId, Integer entityId) {
+		Instant now = Instant.now();
+		String jwtToken = Jwts.builder()
+				.claim("userId", userId)
+				.claim("subscriberNumber", subscriberNumber)
+				.claim("entityId", entityId)
+				.subject(subscriberNumber + ";" + userId)
+				.issuer("BillingHub")
+				.id(UUID.randomUUID().toString())
+				.issuedAt(Date.from(now))
+				.audience().add("BillingHub").and()
+				.header().add("type", "jwt").and()
+				.expiration(Date.from(now.plus(TOKEN_VALIDITY_IN_MINUTES, ChronoUnit.MINUTES)))
+				.signWith(privateKey)
+				.compact();
+		logger.debug("jwtToken={} created for subscriber={} and userId={} ", jwtToken,
+				subscriberNumber, userId);
+		return jwtToken;
+	}
+
+	public AdennetJwtTokenResponseWS createAdennetJwtToken(UserAndAssetAssociationResponseWS subscriber){
+		Assert.notNull(subscriber.getSubscriberNumber(), "Subscriber number is required to create a token");
+		try {
+			// If subscriber is suspended or released, then it will not create jwt token and refresh token
+			if (subscriber.getAssetStatus().equalsIgnoreCase(AdennetConstants.ASSET_STATUS_IN_USE) && subscriber.getUserId() != null
+					&& Boolean.FALSE.equals(subscriber.getIsAssetDeleted()) && Boolean.FALSE.equals(subscriber.getIsSuspended()) && Boolean.FALSE.equals(subscriber.getIsUserDeleted())){
+				// Generate refresh token
+				String refreshToken = refreshTokenService.createOrUpdateRefreshToken(subscriber.getUserId());
+				// Generate jwt token
+				String jwtToken = adennetJwtToken(subscriber.getSubscriberNumber(), subscriber.getUserId(), subscriber.getEntityId());
+				// Get subscriber language description
+				String languageDescription = new LanguageDAS().getLanguageDescriptionByUserId(subscriber.getUserId());
+				return new AdennetJwtTokenResponseWS(jwtToken,refreshToken, System.currentTimeMillis(), AdennetConstants.TOKEN_TYPE_BEARER, subscriber.getSubscriberNumber(), subscriber.getIsSuspended(), subscriber.getIsAssetDeleted(), subscriber.getIsUserDeleted(), subscriber.getAssetStatus(), languageDescription);
+			}
+			return new AdennetJwtTokenResponseWS(null, null, System.currentTimeMillis(), null, subscriber.getSubscriberNumber(),subscriber.getIsSuspended(), subscriber.getIsAssetDeleted(), subscriber.getIsUserDeleted(), subscriber.getAssetStatus(), null);
+
+		}catch (Exception ex){
+			logger.error("Token generation failed for subscriber={} because of:",
+					subscriber.getSubscriberNumber(), ex);
+			throw new SessionInternalError("Token generation failed", HttpStatus.SC_INTERNAL_SERVER_ERROR);
 		}
 	}
 }

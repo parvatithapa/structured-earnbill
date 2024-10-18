@@ -21,7 +21,6 @@
     <meta name="layout" content="public"/>
 
     <title><g:message code="login.page.title"/></title>
-    <script src="https://www.google.com/recaptcha/enterprise.js" async defer></script>
 
     <r:script disposition="head">
         var RecaptchaOptions = {
@@ -84,38 +83,32 @@
                             <content tag="label.for">email</content>
                             <g:textField class="field" name="email" value="${email}"/>
                         </g:applyLayout>
-
+                        
                         <g:applyLayout name="form/input">
                             <content tag="label"><g:message code="forgotPassword.prompt.userName"/></content>
                             <content tag="label.for">userName</content>
                             <g:textField class="field" name="userName" value="${userName}"/>
                         </g:applyLayout>
-                    <g:if test="${!grailsApplication.config.useUniqueLoginName}">
-                    <g:if test="${companyId}">
+                    <g:if test="${params.companyId}">
                         <div class="center-align">
-                            <g:hiddenField name="companyId" value="${companyId}"/>
+                            <g:hiddenField name="companyId" value="${params.companyId}"/>
                         </div>
                     </g:if>
                     <g:else>
                         <g:applyLayout name="form/input">
                             <content tag="label"><g:message code="login.prompt.client.id"/></content>
-                            <content tag="label.for">companyId</content>
+                            <content tag="label.for">userName</content>
                             <g:textField class="field" name="companyId" value="${companyId}"/>
                         </g:applyLayout>
                     </g:else>
-                    </g:if>
-                    <g:else>
-                    <g:if test="${companyId}">
-                            <g:hiddenField name="companyId" value="${companyId}"/>
-                    </g:if>
-                    </g:else>
+
                     <br/>
                     <div align="center">
                         <recaptcha:ifEnabled>
                             <recaptcha:recaptcha/>
                             <recaptcha:ifFailed>CAPTCHA Failed: ${session["recaptcha_error"]}</recaptcha:ifFailed>
                         </recaptcha:ifEnabled>
-                    </div>
+                    </div>                    
                     <br/>
                 </div>
 

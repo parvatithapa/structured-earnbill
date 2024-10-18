@@ -23,6 +23,8 @@ import org.testng.annotations.Test;
 
 import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.PlanItemWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
@@ -42,7 +44,7 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String TELSTRA_RATE_CARD_NAME                   = "telstra_rate_card";
     private static final String TELSTRA_RATE_CARD_HEADER                 = "id,name,surcharge,initial_increment,subsequent_increment,charge,"
-            + "route_id,tariff_code";
+            + "markup,capped_charge,capped_increment,minimum_charge,route_id,tariff_code";
     private static final String  OPERATOR_ASSISTED_CALL                  = "Operator Assisted Call";
     private static final String  TELSTRA_PLAN_ITEM                       = "testPlanSubscriptionItem" + System.currentTimeMillis();
     private static final int     MONTHLY_ORDER_PERIOD                    =  2;
@@ -50,13 +52,13 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
     private static final String  USER_01                                 =  "testUser01-TelstraFixedLine" + System.currentTimeMillis();
     private static final String  USER_02                                 =  "testUser02-TelstraFixedLine" + System.currentTimeMillis();
     private static final int     TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID   =  320104;
-    private static final String  TELSTRA_CDR_FORMAT                      = "UIRSOU00141477%s016390777%s   38660783000161353850A2%s 0      0000     A20353542589 0      "
-            + "0000 A20353393482             20190204  07:05:33Wendouree   SEC  0000003500000000000000US A000000000122500  NM00000";
+    private static final String  TELSTRA_CDR_FORMAT                      = "UIRSOU00141477%s016390777%s   38660783000161353850A20353542589 0      0000     A2%s 0      "
+            + "0000 A20353393482             20190204  07:05:33Wendouree   SEC  0000003500000000000000US A000000000122500    00000";
     private static final String ASSET01_NUMBER                           = "0353542584";
     private static final String ASSET02_NUMBER                           = "0353542585";
     private static final String SUBSCRIPTION_ORDER_01                    = "subscription01"+ System.currentTimeMillis();
     private static final String SUBSCRIPTION_ORDER_02                    = "subscription02"+ System.currentTimeMillis();
-    private static final String MEDIATION_FILE_PREFIX                    = "EBILL";
+    private static final String MEDIATION_FILE_PREFIX                    = "EBILLDAY";
     private Integer telstraRouteRateCardId ;
     private Integer planRatingEnumId ;
 
@@ -71,8 +73,8 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
             routeRateCardWS.setName(TELSTRA_RATE_CARD_NAME);
             routeRateCardWS.setRatingUnitId(spcRatingUnitId);
             routeRateCardWS.setEntityId(api.getCallerCompanyId());
-            List<String> rateRecords = Arrays.asList("1,Operator Assisted Call,0.39,60,60,6,808410W0USAGE,TF:#DIR",
-                    "2,Operator Assisted Call,0.39,60,60,6,808411W0USAGE,TF:#DIR");
+            List<String> rateRecords = Arrays.asList("1,Operator Assisted Call,0.39,60,60,6,0,0,0,0,808410W0USAGE,TF:#DIR",
+                    "2,Operator Assisted Call,0.39,60,60,6,0,0,0,0,808411W0USAGE,TF:#DIR");
 
             String telstraRouteRateCardFilePath = createFileWithData(TELSTRA_RATE_CARD_NAME, ".csv", TELSTRA_RATE_CARD_HEADER, rateRecords);
             logger.debug("Telstra Route Rate card file path {}", telstraRouteRateCardFilePath);
@@ -120,6 +122,12 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
                     envBuilder.idForCode(TELSTRA_PLAN_ITEM), Collections.emptyList() , telstraOperatorAssistedCallPlanItem);
 
             setPlanLevelMetaField(planId, TELSTRA_RATE_CARD_NAME);
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
 
         }).test((testEnv, testEnvBuilder) -> {
             assertNotNull("Operator Assisted Call Product Creation Failed", testEnvBuilder.idForCode(OPERATOR_ASSISTED_CALL));
@@ -144,7 +152,8 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
 
             ItemDTOEx assetEnabledProduct = api.getItem(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, null, null);
 
-            Integer asset1 = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, ASSET01_NUMBER);
+            Integer asset1 = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, ASSET01_NUMBER,
+                    "asset-01"+ System.currentTimeMillis());
             logger.debug("asset created {} for number {}", asset1, ASSET01_NUMBER);
             Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
             productQuantityMap.putAll(buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE));
@@ -180,6 +189,7 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
             OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(USER_01));
             assertNotNull("Mediation Should Create Order", order);
             JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+            validatePricingFields(viewEvents);
             assertEquals("Invalid original quantity", new BigDecimal("35.00"),
                     viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
             assertEquals("Invalid resolved quantity", new BigDecimal("1.00"),
@@ -225,7 +235,8 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
             // creating subscription order
             ItemDTOEx assetEnabledProduct = api.getItem(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, null, null);
 
-            Integer asset = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, ASSET02_NUMBER);
+            Integer asset = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, ASSET02_NUMBER,
+                    "asset-02"+ System.currentTimeMillis());
             logger.debug("asset created {} for number {}", asset, ASSET02_NUMBER);
             Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
             productQuantityMap.putAll(buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE));
@@ -267,6 +278,9 @@ public class TelstraFixedLineMediationTest extends BaseMediationTest {
     @AfterClass
     public void tearDown() {
         JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         super.tearDown();
         if(null!= planRatingEnumId) {
             try {

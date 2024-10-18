@@ -40,12 +40,12 @@
                         <g:if test="${status.deleted == 0}">
                             <tr valign="top">
                                 <td>
-                                    <label style="width: 50px; text-align: left; padding-left: 12px;">${status.id}</label>
+                                    <label id="orderChangeStatuses-table-label1">${status.id}</label>
                                 </td>
                                 <td class="tiny">
                                     <g:each in="${languages}" var="lang">
                                         <div class="lang_description_${lang.id}" style="${lang.id != com.sapienter.jbilling.server.util.Constants.LANGUAGE_ENGLISH_ID ? 'display: none;' : ''}">
-                                            <label style="width: 100px; text-align: left" for="obj_${iter}_description_${lang.id}">${lang.description}</label>
+                                            <label id="orderChangeStatuses-table-label2" for="obj_${iter}_description_${lang.id}">${lang.description}</label>
                                         </div>
                                     </g:each>
                                 </td>
@@ -95,7 +95,7 @@
                         <td >
                             <g:each in="${languages}" var="lang">
                                 <div class="lang_description_${lang.id}" style="${lang.id != com.sapienter.jbilling.server.util.Constants.LANGUAGE_ENGLISH_ID ? 'display: none;' : ''}">
-                                    <label style="width: 100px; text-align: left" for="obj_${nextIndex}_description_${lang.id}">${lang.description}</label>
+                                    <label id="orderChangeStatuses-table-label2" for="obj_${nextIndex}_description_${lang.id}">${lang.description}</label>
                                 </div>
                             </g:each>
                         </td>

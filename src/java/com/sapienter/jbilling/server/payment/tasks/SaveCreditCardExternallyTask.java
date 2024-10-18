@@ -17,12 +17,17 @@
 package com.sapienter.jbilling.server.payment.tasks;
 
 import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.BOOLEAN;
+import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.STR;
 import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.INT;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
 
 import com.sapienter.jbilling.server.metafields.MetaFieldType;
 import com.sapienter.jbilling.server.payment.IExternalCreditCardStorage;
@@ -53,7 +58,7 @@ public class SaveCreditCardExternallyTask extends PluggableTask implements IInte
     private static final Logger logger = LoggerFactory.getLogger(SaveCreditCardExternallyTask.class);
 
     private static final ParameterDescription PARAM_CONTACT_TYPE = new ParameterDescription("contactType", true, INT);
-    private static final ParameterDescription PARAM_EXTERNAL_SAVING_PLUGIN_ID = new ParameterDescription("externalSavingPluginId", true, INT);
+    private static final ParameterDescription PARAM_EXTERNAL_SAVING_PLUGIN_ID = new ParameterDescription("externalSavingPluginId", true, STR);
     private static final ParameterDescription PARAM_REMOVE_ON_FAIL = new ParameterDescription("removeOnFail", false, BOOLEAN);
     private static final ParameterDescription PARAM_OBSCURE_ON_FAIL = new ParameterDescription("obscureOnFail", false, BOOLEAN);
 
@@ -69,7 +74,7 @@ public class SaveCreditCardExternallyTask extends PluggableTask implements IInte
     private static final boolean DEFAULT_OBSCURE_ON_FAIL = false;
 
     private Integer contactType;
-    private Integer externalSavingPluginId;
+    private Integer[] externalSavingPluginIds;
 
     @SuppressWarnings("unchecked")
     private static final Class<Event> events[] = new Class[] {
@@ -108,21 +113,22 @@ public class SaveCreditCardExternallyTask extends PluggableTask implements IInte
     }
 
     /**
-     * Returns the configured external saving event plugin id ({@link IExternalCreditCardStorage})
-     * as an integer.
+     * Returns the configured external saving event plugin ids ({@link IExternalCreditCardStorage})
+     * as comma separated integer values.
      *
-     * @return plugin id of the configured external saving event plugin
+     * @return plugin ids of the configured external saving event plugin
      * @throws PluggableTaskException if id cannot be converted to an integer
      */
-    public Integer getExternalSavingPluginId() throws PluggableTaskException {
-        if (externalSavingPluginId == null) {
-            try {
-                externalSavingPluginId = Integer.parseInt(parameters.get(PARAM_EXTERNAL_SAVING_PLUGIN_ID.getName()));
-            } catch (NumberFormatException e) {
-                throw new PluggableTaskException("Configured externalSavingPluginId must be an integer!", e);
+    public Integer[] getExternalSavingPluginIds() throws PluggableTaskException {
+        String externalSavingPlugins = parameters.get(PARAM_EXTERNAL_SAVING_PLUGIN_ID.getName());
+        if(StringUtils.isNotBlank(externalSavingPlugins)) {
+            if(externalSavingPlugins.contains(",")) {
+                externalSavingPluginIds = Arrays.stream(externalSavingPlugins.split(",")).map(x -> Integer.parseInt(x.trim())).collect(Collectors.toList()).toArray(new Integer[0]);
+            } else {
+                externalSavingPluginIds = new Integer[]{Integer.parseInt(externalSavingPlugins.trim())};
             }
         }
-        return externalSavingPluginId;
+        return externalSavingPluginIds;
     }
 
     /**
@@ -133,79 +139,91 @@ public class SaveCreditCardExternallyTask extends PluggableTask implements IInte
      */
     @Override
     public void process(Event event) throws PluggableTaskException {
-        PluggableTaskBL<IExternalCreditCardStorage> ptbl = new PluggableTaskBL<>(getExternalSavingPluginId());
-        IExternalCreditCardStorage externalCCStorage = ptbl.instantiateTask();
+        Integer[] extSavingPluginIds = getExternalSavingPluginIds();
+        int count = 0;
+        boolean isGatewayKeyGenerated = false;
+        boolean areAllPluginsProcessed = false;
+        for(Integer extSavingPluginId : extSavingPluginIds) {
+            if(isGatewayKeyGenerated) {
+                logger.debug("Gateway key is already generated hence skipping the plugin id : {}",extSavingPluginId);
+                return;
+            }
+            ++count;
+            areAllPluginsProcessed = Objects.equals(count, extSavingPluginIds.length);
+            logger.debug("Processing plugin id : {}",extSavingPluginId);
+            PluggableTaskBL<IExternalCreditCardStorage> ptbl = new PluggableTaskBL<>(extSavingPluginId);
+            IExternalCreditCardStorage externalCCStorage = ptbl.instantiateTask();
+            if (event instanceof NewCreditCardEvent) {
+                logger.debug("Processing NewCreditCardEvent ...");
+                NewCreditCardEvent ev = (NewCreditCardEvent) event;
 
-        if (event instanceof NewCreditCardEvent) {
-            logger.debug("Processing NewCreditCardEvent ...");
-            NewCreditCardEvent ev = (NewCreditCardEvent) event;
-
-            if (new PaymentInformationBL().isBTPayment(ev.getCreditCard())) {
-                logger.debug("Payment Instrument has BT ID - can't save through gateway.");
-            } else {
-                // only save credit cards associated with users
-                if (ev.getCreditCard().getUser() != null) {
-                    String gateWayKey = externalCCStorage.storeCreditCard(null, ev.getCreditCard());
-                    updateCreditCard(ev.getCreditCard(), gateWayKey);
-                } else if(ev.getUserId() != null) {
-                    ContactDTO contact = new UserBL(ev.getUserId()).getEntity().getContact();
-                    PaymentInformationDTO paymentInformationDTO = ev.getCreditCard();
-                    paymentInformationDTO.setUser(new UserDAS().findNow(ev.getUserId()));
-                    String gateWayKey = externalCCStorage.storeCreditCard(contact, ev.getCreditCard());
-                    paymentInformationDTO.setUser(null);
-                    updateCreditCard(ev.getCreditCard(), gateWayKey);
+                if (new PaymentInformationBL().isBTPayment(ev.getCreditCard())) {
+                    logger.debug("Payment Instrument has BT ID - can't save through gateway.");
                 } else {
-                    logger.debug("Credit card is not associated with a user (card for payment) - can't save through gateway.");
+                    // only save credit cards associated with users
+                    if (ev.getCreditCard().getUser() != null) {
+                        String gateWayKey = externalCCStorage.storeCreditCard(null, ev.getCreditCard());
+                        isGatewayKeyGenerated = updateCreditCard(ev.getCreditCard(), gateWayKey, areAllPluginsProcessed);
+                    } else if(ev.getUserId() != null) {
+                        ContactDTO contact = new UserBL(ev.getUserId()).getEntity().getContact();
+                        PaymentInformationDTO paymentInformationDTO = ev.getCreditCard();
+                        paymentInformationDTO.setUser(new UserDAS().findNow(ev.getUserId()));
+                        String gateWayKey = externalCCStorage.storeCreditCard(contact, ev.getCreditCard());
+                        paymentInformationDTO.setUser(null);
+                        isGatewayKeyGenerated = updateCreditCard(ev.getCreditCard(), gateWayKey, areAllPluginsProcessed);
+                    } else {
+                        logger.debug("Credit card is not associated with a user (card for payment) - can't save through gateway.");
+                    }
                 }
-            }
 
-        } else if (event instanceof NewContactEvent) {
-            logger.debug("Processing NewContactEvent ...");
-            NewContactEvent ev = (NewContactEvent) event;
+            } else if (event instanceof NewContactEvent) {
+                logger.debug("Processing NewContactEvent ...");
+                NewContactEvent ev = (NewContactEvent) event;
 
-            Integer userId = ev.getUserId();
-            UserDTO user = new UserDAS().find(userId);
+                Integer userId = ev.getUserId();
+                UserDTO user = new UserDAS().find(userId);
 
-            if(null != user.getCustomer()){
-                Integer groupId = ev.getGroupId();
-                logger.debug("Group Id: {}, plug-in expects: {}",groupId, getContactType());
+                if(null != user.getCustomer()){
+                    Integer groupId = ev.getGroupId();
+                    logger.debug("Group Id: {}, plug-in expects: {}",groupId, getContactType());
 
-                if ((null == groupId && null != ev.getContactDto()) || (getContactType() == groupId)) {
-                    ContactDTO contact = null;
+                    if ((null == groupId && null != ev.getContactDto()) || (getContactType() == groupId)) {
+                        ContactDTO contact = null;
 
-                    if(null != groupId) {
-                        contact = ContactBL.buildFromMetaField(userId, groupId, companyCurrentDate());
-                    } else {
-                        contact = ev.getContactDto();
-                    }
-
-                    UserBL userBl = new UserBL(contact.getUserId());
-                    List<PaymentInformationDTO> creditCards = userBl.getAllCreditCards();
-
-                    if (creditCards != null) {
-                        // credit card has changed or was not previously obscured
-                        for(PaymentInformationDTO creditCard : creditCards) {
-                            if(!new PaymentInformationBL().isBTPayment(creditCard)){
-                                String gateWayKey = externalCCStorage.storeCreditCard(contact, creditCard);
-                                updateCreditCard(creditCard, gateWayKey);
-                            }
+                        if(null != groupId) {
+                            contact = ContactBL.buildFromMetaField(userId, groupId, companyCurrentDate());
+                        } else {
+                            contact = ev.getContactDto();
                         }
-                    } else {
-                        /*  call the external store without a credit card. It's possible the payment gateway
-                            may have some vendor specific recovery facilities, or perhaps they operate on different
-                            data? We'll leave it open ended so we don't restrict possible client implementations.
-                         */
-                        logger.warn("Cannot determine credit card for storage, invoking external store with contact only");
-                        String gateWayKey = externalCCStorage.storeCreditCard(contact, null);
-                        updateCreditCard(null, gateWayKey);
+
+                        UserBL userBl = new UserBL(contact.getUserId());
+                        List<PaymentInformationDTO> creditCards = userBl.getAllCreditCards();
+
+                        if (creditCards != null) {
+                            // credit card has changed or was not previously obscured
+                            for(PaymentInformationDTO creditCard : creditCards) {
+                                if(!new PaymentInformationBL().isBTPayment(creditCard)){
+                                    String gateWayKey = externalCCStorage.storeCreditCard(contact, creditCard);
+                                    isGatewayKeyGenerated = updateCreditCard(creditCard, gateWayKey, areAllPluginsProcessed);
+                                }
+                            }
+                        } else {
+                            /*  call the external store without a credit card. It's possible the payment gateway
+                                may have some vendor specific recovery facilities, or perhaps they operate on different
+                                data? We'll leave it open ended so we don't restrict possible client implementations.
+                             */
+                            logger.warn("Cannot determine credit card for storage, invoking external store with contact only");
+                            String gateWayKey = externalCCStorage.storeCreditCard(contact, null);
+                            isGatewayKeyGenerated = updateCreditCard(null, gateWayKey, areAllPluginsProcessed);
+                        }
                     }
+                } else {
+                    logger.debug("The user is not customer. We do not store CC for non customer users");
                 }
             } else {
-                logger.debug("The user is not customer. We do not store CC for non customer users");
+                throw new PluggableTaskException("Cant not process event " + event);
             }
-        } else {
-            throw new PluggableTaskException("Cant not process event " + event);
-        }
+       }
     }
 
     /**
@@ -218,29 +236,32 @@ public class SaveCreditCardExternallyTask extends PluggableTask implements IInte
      * @param creditCard credit card to update
      * @param gatewayKey gateway key from external storage, null if storage failed.
      */
-    private void updateCreditCard(PaymentInformationDTO creditCard, String gatewayKey) {
+    private boolean updateCreditCard(PaymentInformationDTO creditCard, String gatewayKey, boolean areAllPluginsProcessed) {
         PaymentInformationBL piBl= new PaymentInformationBL();
-        if (gatewayKey != null) {
+        if (null != gatewayKey) {
             logger.debug("Storing gateway key: {}", gatewayKey);
             piBl.updateCharMetaField(creditCard, gatewayKey.toCharArray(), MetaFieldType.GATEWAY_KEY);
             piBl.obscureCreditCardNumber(creditCard);
+            return true;
         } else {
+            if(areAllPluginsProcessed){
+                // obscure credit cards on failure, useful for clients who under no circumstances want a plan-text
+                // card to be stored in the jBilling database
+                if (getParameter(PARAM_OBSCURE_ON_FAIL.getName(), DEFAULT_OBSCURE_ON_FAIL)) {
+                    piBl.obscureCreditCardNumber(creditCard);
+                    logger.warn("gateway key returned from external store is null, obscuring credit card with no key");
+                } else {
+                    logger.warn("gateway key returned from external store is null, credit card will not be obscured!");
+                }
 
-            // obscure credit cards on failure, useful for clients who under no circumstances want a plan-text
-            // card to be stored in the jBilling database
-            if (getParameter(PARAM_OBSCURE_ON_FAIL.getName(), DEFAULT_OBSCURE_ON_FAIL)) {
-                piBl.obscureCreditCardNumber(creditCard);
-                logger.warn("gateway key returned from external store is null, obscuring credit card with no key");
-            } else {
-                logger.warn("gateway key returned from external store is null, credit card will not be obscured!");
-            }
-
-            // delete the credit card on failure so that it cannot be used for future payments. useful when
-            // paired with PARAM_OBSCURE_ON_FAIL as it prevents accidental payments with invalid cards.
-            if (getParameter(PARAM_REMOVE_ON_FAIL.getName(), DEFAULT_REMOVE_ON_FAIL)) {
-                piBl.delete(creditCard.getId());;
-                logger.warn("gateway key returned from external store is null, deleting card and removing from user map");
+                // delete the credit card on failure so that it cannot be used for future payments. useful when
+                // paired with PARAM_OBSCURE_ON_FAIL as it prevents accidental payments with invalid cards.
+                if (getParameter(PARAM_REMOVE_ON_FAIL.getName(), DEFAULT_REMOVE_ON_FAIL)) {
+                    piBl.delete(creditCard.getId());;
+                    logger.warn("gateway key returned from external store is null, deleting card and removing from user map");
+                }
             }
         }
+        return false;
     }
 }

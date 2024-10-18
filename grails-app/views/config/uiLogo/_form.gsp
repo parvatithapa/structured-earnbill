@@ -31,7 +31,7 @@
                         <!-- Navigation bar logo upload -->
                         <g:applyLayout name="form/text">
                             <content tag="label"><g:message code="entity.logo.config.label.logo"/>
-                                <a onclick="defaultLogo('logoImg', '${createLink(controller: 'config', action: 'defaultNavBarLogo')}', 'logo')" style="float: right" class="submit">
+                                <a onclick="defaultLogo('logoImg', '${createLink(controller: 'config', action: 'defaultNavBarLogo')}', 'logo')" id="column-550-a" class="submit">
                                     <g:message code="entity.logo.default"/>
                                 </a>
                             </content>
@@ -63,7 +63,7 @@
                         <!-- favicon logo upload -->
                         <g:applyLayout name="form/text">
                             <content tag="label"><g:message code="entity.logo.favicon.config.label.logo"/>
-                                <a onclick="defaultLogo('favImg', '${createLink(controller: 'config', action: 'defaultFaviconLogo')}', 'favicon')" style="float: right" class="submit">
+                                <a onclick="defaultLogo('favImg', '${createLink(controller: 'config', action: 'defaultFaviconLogo')}', 'favicon')" id="column-550-a" class="submit">
                                     <g:message code="entity.logo.default"/>
                                 </a>
                             </content>

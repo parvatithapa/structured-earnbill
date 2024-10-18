@@ -85,7 +85,7 @@
 
     <div class="pager-box">
 
-        <div class="row">
+        <div class="row-center">
             <g:paginate controller="partner" action="showCommissionRuns" params="${sortableParams(params: [partial: true])}" total="${commissionRuns?.totalCount ?: 0}" />
         </div>
     </div>

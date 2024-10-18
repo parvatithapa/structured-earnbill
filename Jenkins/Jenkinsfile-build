@@ -1,0 +1,170 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = "${params.BRANCH_NAME}"
+
+        JBILLING_BASE_IMAGE = "192.168.1.119:8082/billinghub-jbilling-base-image:${params.JBILLING_BASE_IMAGE_VERSION}"
+
+        DOCKER_REG_HOST="http://192.168.1.119:8082"
+
+        CRED_DOCKER_REG= credentials('docker-registry')
+        DOCKER_REG_USERNAME= "$CRED_DOCKER_REG_USR"
+        DOCKER_REG_PASSWORD= "$CRED_DOCKER_REG_PSW"
+
+        GRAILS_HOME = '/root/.sdkman/candidates/grails/2.4.3'
+        JAVA_HOME = '/root/.sdkman/candidates/java/current'
+        REPORT_NAME="jbilling.csv"  // Don't change the format
+    }
+
+    tools {
+        // Install the Maven version configured as "MAVEN-3.6.3" and add it to the path.
+        maven "MAVEN-3.6.3"
+        jdk "openjdk-8u412-b08"
+    }
+
+    stages {
+        stage('Verify Branch Name') {
+            steps {
+                script {
+
+                    sh "export JAVA_HOME=${JAVA_HOME}"
+
+                    sh "export PATH=$JAVA_HOME/bin:$PATH"
+
+                    if (BRANCH_NAME.isEmpty()) {
+                        error('Branch name is a required parameter')
+                    }
+                }
+            }
+        }
+        stage('git-clone') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch: "${BRANCH_NAME}", credentialsId: 'pat-github-adennet', url: 'https://github.com/billinghub/billinghub-adennet-edition.git'
+                sh "ls -ltr && pwd"
+            }
+        }
+        stage('Get commit details') {
+            steps {
+                script {
+                    env.LAST_COMMIT = sh(returnStdout:true, script:"git rev-parse --short HEAD").trim()
+                    echo "Last Commit : ${env.LAST_COMMIT}"
+                    env.COMMIT_OWNER = sh(returnStdout:true, script:"git log -n 1 --no-merges  --pretty=format:'%an'").trim()
+                    echo "Commit Owner : ${env.COMMIT_OWNER}"
+                    env.IMAGE_TAG = "192.168.1.119:8082/billinghub-jbilling:1.2.0-${env.LAST_COMMIT}"
+                }
+            }
+        }
+        stage('build-service-module') {
+            steps {
+                dir('service-modules') {
+                    sh "mvn clean install"
+                }
+            }
+        }
+        stage('cleanAndCompile') {
+            steps {
+                sh "${GRAILS_HOME}/bin/grails clean && ${GRAILS_HOME}/bin/grails prod compile"
+            }
+        }
+        stage('package') {
+            steps {
+                sh "${GRAILS_HOME}/bin/grails prod war"
+            }
+        }
+        stage('build-docker-image') {
+            steps {
+                sh "docker build -t ${env.IMAGE_TAG} --build-arg JBILLING_BASE_IMAGE=${JBILLING_BASE_IMAGE} ."
+            }
+        }
+        stage('Vulnerability scan') {
+            steps {
+        sh "../grype/grype ${env.IMAGE_TAG} -o json | jq -r \'.matches[] | [ .artifact.name, .vulnerability.severity, .artifact.version, .vulnerability.fix.versions[0], .artifact.type ] | @csv\' | sort -t\',\' -k2,2 > ../vulnerabilityReports/${REPORT_NAME}"
+            }
+        }
+        stage('push-docker-image') {
+            steps {
+                sh "docker login ${DOCKER_REG_HOST} -u ${DOCKER_REG_USERNAME} -p ${DOCKER_REG_PASSWORD}"
+                sh "docker push ${env.IMAGE_TAG}"
+            }
+        }
+        stage ('Prune images') {
+            steps {
+                echo 'Pruning all images without at least one container associated to them'
+                sh 'docker image prune -a --force --filter "until=480h"'
+            }
+        }
+    }
+    post {
+        success {
+            slackSend color: '#36a64f', message: "Job : billinghub-jbilling build\nStatus : *SUCCESS*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nImage Tag : ${env.IMAGE_TAG}\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+            // Vulnerability report for Critical, High, Medium and Low
+            getVulnerabilityReport("${WORKSPACE}/../vulnerabilityReports/${REPORT_NAME}")
+        }
+        failure {
+            slackSend color: '#ff0000', message: "Job : billinghub-jbilling build\nStatus : *FAILURE*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nImage Tag : ${env.IMAGE_TAG}\nBuild Report :${env.BUILD_URL}CI-Build-HTML-Report"
+        }
+    }
+}
+
+def getVulnerabilityReport(String fileName){
+def severities = []
+def table = new StringBuilder()
+def maxNameLength = 'NAME'.length()
+def maxSeverityLength = 'SEVERITY'.length()
+def maxInstalledLength = 'INSTALLED'.length()
+def maxFixedInLength = 'FIXED_IN'.length()
+def maxTypeLength = 'TYPE'.length()
+def padSpace = 2
+
+def data = new File(fileName).readLines().collect { line ->
+    def parts = line.split(',')
+    [NAME: parts[0].trim(), SEVERITY: parts[1].trim(), INSTALLED: parts[2].trim(), FIXED_IN: parts[3].trim(), TYPE: parts[4].trim()]
+}
+
+data.each { entry ->
+  maxNameLength = Math.max(maxNameLength, entry['NAME'].length())
+  maxSeverityLength = Math.max(maxSeverityLength, entry['SEVERITY'].length())
+  maxInstalledLength = Math.max(maxInstalledLength, entry['INSTALLED'].length())
+  maxFixedInLength = Math.max(maxFixedInLength, entry['FIXED_IN'].length())
+  maxTypeLength = Math.max(maxTypeLength, entry['TYPE'].length())
+}
+
+table.append('NAME'.padRight(maxNameLength + padSpace))
+table.append('SEVERITY'.padRight(maxSeverityLength + padSpace))
+table.append('INSTALLED'.padRight(maxInstalledLength + padSpace))
+table.append('FIXED_IN'.padRight(maxFixedInLength + padSpace))
+table.append('TYPE\n')
+
+data.each { entry ->
+  table.append(entry['NAME'].padRight(maxNameLength + padSpace))
+  table.append(entry['SEVERITY'].padRight(maxSeverityLength + padSpace))
+  table.append(entry['INSTALLED'].padRight(maxInstalledLength + padSpace))
+  table.append(entry['FIXED_IN'].padRight(maxFixedInLength + padSpace))
+  table.append(entry['TYPE'] + '\n')
+
+  severities << entry['SEVERITY']
+}
+
+   println table.toString()
+   def colour = getColourCode(severities)
+
+   if(colour != "#008000"){
+    slackSend color: colour, message: "Vulnerability Report:\n ${table.toString()}"
+   }
+}
+
+def getColourCode(severityList) {
+    if (severityList.contains("\"Critical\"")) {
+        return "#FF0000"
+    } else if (severityList.contains("\"High\"")) {
+        return "#FFA500"
+    } else if (severityList.contains("\"Medium\"")) {
+        return "#FFFF00"
+    } else if (severityList.contains("\"Low\"")) {
+        return "#0000FF"
+    } else {
+        return "#008000"
+    }
+}

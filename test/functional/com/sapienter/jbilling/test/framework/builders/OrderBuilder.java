@@ -1,8 +1,13 @@
 package com.sapienter.jbilling.test.framework.builders;
 
 import com.sapienter.jbilling.server.discount.DiscountLineWS;
+import com.sapienter.jbilling.server.item.AssetWS;
+import com.sapienter.jbilling.server.item.ItemDTOEx;
+import com.sapienter.jbilling.server.item.PlanItemWS;
+import com.sapienter.jbilling.server.item.PlanWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
+import com.sapienter.jbilling.server.order.OrderChangePlanItemWS;
 import com.sapienter.jbilling.server.order.OrderChangeWS;
 import com.sapienter.jbilling.server.order.OrderChangeStatusWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
@@ -49,7 +54,8 @@ public class OrderBuilder extends AbstractBuilder{
     private int billingTypeId = Constants.ORDER_BILLING_POST_PAID;
     private Integer dueDateUnit;
     private Integer dueDateValue;
-    private boolean isMediated = false;
+    private Integer planId;
+    private Integer currencyId;
 
     private OrderBuilder(JbillingAPI api, TestEnvironment testEnvironment) {
         super(api, testEnvironment);
@@ -73,6 +79,15 @@ public class OrderBuilder extends AbstractBuilder{
         return this;
     }
 
+    public OrderBuilder withPlanId(Integer planId){
+        this.planId = planId;
+        return this;
+    }
+
+    public OrderBuilder withCurrency(Integer currencyId){
+        this.currencyId = currencyId;
+        return this;
+    }
 
     public OrderBuilder withOrderLines(List<OrderLineWS> orderLines) {
         this.orderLines = orderLines;
@@ -172,11 +187,6 @@ public class OrderBuilder extends AbstractBuilder{
         return this;
     }
 
-    public OrderBuilder withIsMediated(boolean isMediated) {
-        this.isMediated = isMediated;
-        return this;
-    }
-
     private Integer getOrCreateOrderChangeApplyStatus(){
         OrderChangeStatusWS[] list = api.getOrderChangeStatusesForCompany();
         Integer statusId = null;
@@ -203,6 +213,10 @@ public class OrderBuilder extends AbstractBuilder{
         return persistOrder(buildOrder());
     }
 
+    public Integer build( List<AssetWS>  assetWSList) {
+        return persistOrder(buildOrder(),assetWSList);
+    }
+
     public Integer persistOrder (OrderWS order, OrderChangeWS[] orderChanges) {
         Integer orderId = api.createOrder(order, orderChanges);
         testEnvironment.add(codeForTest, orderId, codeForTest, api, TestEntityType.ORDER);
@@ -219,6 +233,38 @@ public class OrderBuilder extends AbstractBuilder{
         testEnvironment.add(codeForTest, orderId, codeForTest, api, TestEntityType.ORDER);
         return orderId;
     }
+    public Integer persistOrder (OrderWS order, List<AssetWS> assetWSList) {
+        Date startDate = null == effectiveDate ? new Date() : effectiveDate;
+        if (null == orderChangeStatusId) {
+            orderChangeStatusId = getOrCreateOrderChangeApplyStatus();
+        }
+            OrderChangeWS[] orderChanges = buildFromOrder(order, orderChangeStatusId, startDate);
+
+            PlanWS planWS = api.getPlanWS ( planId );
+            if (null != planWS) {
+                for ( OrderChangeWS ws : orderChanges) {
+                    if (ws.getItemId().intValue() == planWS.getItemId()) {
+                        for ( PlanItemWS planItemWs : planWS.getPlanItems()) {
+                            ItemDTOEx item = api.getItem(planItemWs.getItemId(), null, null);
+                            boolean assetEnabled = item.isAssetEnabledItem();
+                            if (assetEnabled) {
+                                OrderChangePlanItemWS orderChangePlanItem = new OrderChangePlanItemWS();
+                                orderChangePlanItem.setItemId(item.getId());
+                                orderChangePlanItem.setDescription(item.getDescription());
+                                orderChangePlanItem.setId(0);
+                                orderChangePlanItem.setOptlock(0);
+                                orderChangePlanItem
+                                        .setBundledQuantity(1);
+                                ws.setOrderChangePlanItems(new OrderChangePlanItemWS[] { orderChangePlanItem });
+                            }
+                        }
+                    }
+                }
+            }
+        Integer orderId = api.createOrderWithAssets (order, orderChanges, assetWSList.toArray ( new AssetWS[assetWSList.size ()] ));
+        testEnvironment.add(codeForTest, orderId, codeForTest, api, TestEntityType.ORDER);
+        return orderId;
+    }
 
     public OrderWS buildOrder() {
         OrderWS order = new OrderWS();
@@ -226,7 +272,11 @@ public class OrderBuilder extends AbstractBuilder{
         order.setBillingTypeId(billingTypeId);
         order.setProrateFlag(prorate);
         order.setPeriod(orderPeriodId);
-        order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
+        if (null != currencyId) {
+            order.setCurrencyId(currencyId);
+        } else
+            order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
+        //order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
         order.setActiveSince(null != activeSince ? activeSince : new Date());
         order.setActiveUntil(activeUntil);
         order.setCancellationFee(cancellationFee);
@@ -242,7 +292,6 @@ public class OrderBuilder extends AbstractBuilder{
                 :null);
         order.setDueDateUnitId(dueDateUnit);
         order.setDueDateValue(dueDateValue);
-        order.setIsMediated(isMediated);
         return order;
     }
 

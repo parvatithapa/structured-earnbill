@@ -89,7 +89,7 @@
 </div>
 
 <div class="pager-box">
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="language" action="list" params="${sortableParams(params: [partial: true], order: 'desc')}" total="${languages?.totalCount ?: 0}" update="column1"/>
     </div>
 </div>

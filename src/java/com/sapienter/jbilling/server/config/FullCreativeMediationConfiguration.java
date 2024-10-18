@@ -11,7 +11,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.sapienter.jbilling.server.fullcreative.MediationQuantityHelperService;
 import com.sapienter.jbilling.server.mediation.converter.common.Format;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepType;
 import com.sapienter.jbilling.server.mediation.converter.common.reader.MediationTokenizer;
@@ -106,11 +105,6 @@ public class FullCreativeMediationConfiguration {
         fcReader.setLineMapper(lineMapper);
         fcReader.setRecordSeparatorPolicy(recordSeparatorPolicy);
         return fcReader;
-    }
-
-    @Bean
-    public MediationQuantityHelperService mediationQuantityHelperService() {
-        return new MediationQuantityHelperService();
     }
 
 }

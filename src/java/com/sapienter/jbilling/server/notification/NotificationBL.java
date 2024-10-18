@@ -17,6 +17,7 @@
 package com.sapienter.jbilling.server.notification;
 
 import static com.sapienter.jbilling.common.Util.getSysProp;
+import grails.util.Holders;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,10 +38,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.TextStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 import javax.activation.DataHandler;
@@ -57,11 +72,21 @@ import javax.mail.internet.MimeMultipart;
 import javax.sql.DataSource;
 import javax.sql.rowset.CachedRowSet;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sapienter.jbilling.einvoice.db.EInvoiceLogDAS;
-import com.sapienter.jbilling.einvoice.db.EInvoiceLogDTO;
-import com.sapienter.jbilling.server.util.db.CurrencyDAS;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintPage;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.export.ExporterInput;
+import net.sf.jasperreports.export.ExporterInputItem;
+import net.sf.jasperreports.export.OutputStreamExporterOutput;
+import net.sf.jasperreports.export.ReportExportConfiguration;
+import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.app.VelocityEngine;
@@ -70,24 +95,23 @@ import org.apache.velocity.tools.Scope;
 import org.apache.velocity.tools.ToolContext;
 import org.apache.velocity.tools.ToolboxFactory;
 import org.apache.velocity.tools.config.EasyFactoryConfiguration;
+import org.hibernate.HibernateException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.lowagie.text.pdf.PdfWriter;
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDAS;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDTO;
 import com.sapienter.jbilling.server.fileProcessing.FileConstants;
 import com.sapienter.jbilling.server.ignition.IgnitionConstants;
 import com.sapienter.jbilling.server.invoice.InvoiceBL;
 import com.sapienter.jbilling.server.invoice.InvoiceLineComparator;
 import com.sapienter.jbilling.server.invoice.PaperInvoiceNotificationPlugin;
-import com.sapienter.jbilling.server.invoice.db.InvoiceDAS;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.invoice.db.InvoiceLineDTO;
 import com.sapienter.jbilling.server.invoiceTemplate.report.FormatUtil;
@@ -108,8 +132,6 @@ import com.sapienter.jbilling.server.notification.db.NotificationMessageLineDTO;
 import com.sapienter.jbilling.server.notification.db.NotificationMessageSectionDAS;
 import com.sapienter.jbilling.server.notification.db.NotificationMessageSectionDTO;
 import com.sapienter.jbilling.server.notification.db.NotificationMessageTypeDTO;
-import com.sapienter.jbilling.server.order.db.OrderDAS;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.payment.PaymentBL;
 import com.sapienter.jbilling.server.payment.PaymentDTOEx;
 import com.sapienter.jbilling.server.payment.PaymentInformationBL;
@@ -130,6 +152,7 @@ import com.sapienter.jbilling.server.process.db.BillingProcessDTO;
 import com.sapienter.jbilling.server.process.event.CustomEmailTokenEvent;
 import com.sapienter.jbilling.server.process.event.CustomInvoiceFieldsEvent;
 import com.sapienter.jbilling.server.spa.SpaConstants;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
 import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.usagePool.CustomerUsagePoolBL;
@@ -155,24 +178,8 @@ import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.LogoType;
 import com.sapienter.jbilling.server.util.PreferenceBL;
 import com.sapienter.jbilling.server.util.Util;
-import grails.util.Holders;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRPrintPage;
-import net.sf.jasperreports.engine.JasperExportManager;
-import net.sf.jasperreports.engine.JasperFillManager;
-import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
-import net.sf.jasperreports.engine.export.JRPdfExporter;
-import net.sf.jasperreports.export.ExporterInput;
-import net.sf.jasperreports.export.ExporterInputItem;
-import net.sf.jasperreports.export.OutputStreamExporterOutput;
-import net.sf.jasperreports.export.ReportExportConfiguration;
-import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
-import pl.allegro.finance.tradukisto.MoneyConverters;
-import org.joda.time.DateTime;
-
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 public class NotificationBL extends ResultList implements NotificationSQL {
 
@@ -336,9 +343,7 @@ public class NotificationBL extends ResultList implements NotificationSQL {
 
         if(deliveryMethod.equals(Constants.D_METHOD_NONE)){
             retValue =  new MessageDTO[0];
-        }else if (deliveryMethod.equals(Constants.D_METHOD_EMAIL_AND_PAPER)) {
-            retValue = new MessageDTO[2];
-        } else {
+        }else {
             retValue = new MessageDTO[1];
         }
         if (deliveryMethod.equals(Constants.D_METHOD_EMAIL)
@@ -347,14 +352,6 @@ public class NotificationBL extends ResultList implements NotificationSQL {
                     invoice);
             index++;
         }
-
-        if (deliveryMethod.equals(Constants.D_METHOD_PAPER)
-                || deliveryMethod.equals(Constants.D_METHOD_EMAIL_AND_PAPER)) {
-            retValue[index] = getInvoicePaperMessage(entityId, processId,
-                    languageId, invoice);
-            index++;
-        }
-
         return retValue;
     }
 
@@ -386,7 +383,6 @@ public class NotificationBL extends ResultList implements NotificationSQL {
             sectionContent = new MessageSection(new Integer(2), null);
             retValue.addSection(sectionContent);
         }
-
         return retValue;
     }
 
@@ -479,7 +475,7 @@ public class NotificationBL extends ResultList implements NotificationSQL {
                 Integer lastInvoiceId = null;
                 try {
                     lastInvoiceId = new InvoiceBL().getLastByUser(dto.getUserId());
-                } catch (SQLException e) {
+                } catch (HibernateException e) {
                     logger.info("Error getting last invoice id", e);
                 }
                 Integer invoiceId;
@@ -627,26 +623,20 @@ public class NotificationBL extends ResultList implements NotificationSQL {
         return message;
     }
 
-    public MessageDTO getResetPasswordChangeEmailMessage(Integer entityId, Integer userId, Integer languageId) throws SessionInternalError,
-            NotificationNotFoundException {
-        MessageDTO message = initializeMessage(entityId, userId);
-        message.setTypeId(Constants.NOTIFY_PASSWORD_CHANGE);
-        setContent(message, Constants.NOTIFY_PASSWORD_CHANGE, entityId, languageId);
-
-        return message;
-    }
-
 
     public MessageDTO getInvoiceEmailMessage(Integer entityId,
             Integer languageId, InvoiceDTO invoice)
                     throws SessionInternalError, NotificationNotFoundException {
         MessageDTO message = initializeMessage(entityId, invoice.getBaseUser()
                 .getUserId());
-
-        message.setTypeId(MessageDTO.TYPE_INVOICE_EMAIL);
-
-        setContent(message, MessageDTO.TYPE_INVOICE_EMAIL, entityId,
-                languageId);
+        UserDTO userDto = invoice.getBaseUser();
+        Integer invoiceEmailType = MessageDTO.TYPE_INVOICE_EMAIL;
+        SpcHelperService spcHelperService = Context.getBean(SpcHelperService.class);
+        if (spcHelperService.validateCustomerInvoiceDesign(invoice.getBaseUser().getUserId(), SPCConstants.AGL_INVOICE)) {
+            invoiceEmailType = SPCConstants.NOTIFICATION_TYPE_AGL_INVOICE_EMAIL;
+        }
+        message.setTypeId(invoiceEmailType);
+        setContent(message, invoiceEmailType, entityId,languageId);
 
         message.addParameter("total", Util.formatMoney(invoice.getTotal(),
                 invoice.getBaseUser().getUserId(), invoice.getCurrency().getId(), true));
@@ -680,7 +670,12 @@ public class NotificationBL extends ResultList implements NotificationSQL {
         message.addParameter("dueMonth", Util.getMonthName(invoice.getDueDate()));
         message.addParameter("dueDayOfMOnth", Util.getDayOfMonth(invoice.getDueDate()));
         UserBL user = new UserBL(invoice.getUserId());
-        message.addParameter("total_owed", Util.decimal2string(user.getBalance(user.getEntity().getId()), user.getLocale(), Util.AMOUNT_FORMAT_PATTERN));
+        String totalOwed=Util.decimal2string(user.getBalance(user.getEntity().getId()), user.getLocale(), Util.AMOUNT_FORMAT_PATTERN);
+        BigDecimal totalOwedAmount = user.getBalance(user.getEntity().getId());
+        message.addParameter("total_owed", totalOwed);
+        if (SPCConstants.NOTIFICATION_TYPE_AGL_INVOICE_EMAIL.equals(invoiceEmailType)) {
+            setAGLInvoiceEmailParameters(message, invoice, totalOwed, totalOwedAmount);
+        }
         // if the entity has the preference of pdf attachment, do it
         try {
             int preferencePDFAttachment = 0;
@@ -816,7 +811,7 @@ public class NotificationBL extends ResultList implements NotificationSQL {
             } else {
                 logger.warn("user {} has no invoice but an ageing message is being sent", userId);
             }
-        } catch (SQLException e1) {
+        } catch (HibernateException e1) {
             throw new SessionInternalError(e1);
         }
 
@@ -1233,69 +1228,9 @@ public class NotificationBL extends ResultList implements NotificationSQL {
             //InvoiceTemplateBL.populateMediationRecordLines(invoice);
 
             Map<String, Object> parameters = InvoiceTemplateBL.createAitDynamicParameters(invoice, entityId);
-            if(design.equals("invoice_design_beta_customer") || design.equals("b2b_license_amc_invoice_design")){
-                UserDTO user = new UserDAS().findNow(invoice.getUserId());
 
-                parameters.put("total_in_word", getCurrencyInWords(user.getCurrency().getCode(),invoice.getTotal()));
-
-                Integer orderId = new InvoiceDAS().getFirstOrderIdByInvoiceId(invoice.getId());
-                OrderDTO order = new OrderDAS().findNow(orderId);
-                if (order != null) { // not found
-                    MetaFieldValue value = order.getMetaField("Invoice Date");
-                    if(value != null) {
-                        String invoiceMonth = value.getValue().toString();
-                        if(StringUtils.isNotBlank(invoiceMonth)) {
-                            String[] splitValue = invoiceMonth.split("/");
-                            if(splitValue.length > 2) {
-                                LocalDate localDate = YearMonth.of(Integer.parseInt(splitValue[2]),Integer.parseInt(splitValue[0])).atEndOfMonth();
-                                int lastDay = localDate.getDayOfMonth();
-                                String month = localDate.getMonth().getDisplayName(TextStyle.FULL, Locale.getDefault());
-                                parameters.put("invoice_month", month + " " + splitValue[2]);
-                                parameters.put("invoice_period", "1 - " + lastDay + " " + month + " " + splitValue[2]);
-                            }
-                        }
-                    }
-                }
-                Optional<EInvoiceLogDTO> eInvoiceLogDTO = Optional.ofNullable(new EInvoiceLogDAS().findByInvoiceId(invoice.getId()));
-                eInvoiceLogDTO.ifPresent(e -> {
-                    try {
-                        JsonNode rootNode = new ObjectMapper().readTree(e.geteInvoiceResponse());
-                        String ackDate = rootNode.path("AckDt").asText();
-                        String ackNumber = rootNode.path("AckNoStr").asText();
-                        String signedQRCode = rootNode.path("SignedQRCode").asText();
-
-                        if (StringUtils.isNotBlank(ackDate)) {
-                            String formattedDateOnly = java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy")
-                                    .format(LocalDate.parse(ackDate.split(" ")[0]));
-                            parameters.put("ackDate", formattedDateOnly);
-                        }
-
-                        if (StringUtils.isNotBlank(ackNumber)) {
-                            parameters.put("ackNumber", ackNumber);
-                        }
-
-                        if (StringUtils.isNotBlank(signedQRCode)) {
-                            parameters.put("QR", signedQRCode);
-                        }
-
-                    }catch (Exception exception){
-                        exception.printStackTrace();
-                    }
-                });
-            }
-            if(design.equals("invoice_design_earnbill")) {
-                PaymentUrlLogDTO dto = new PaymentUrlLogDAS().findByInvoiceId(invoice.getId());
-                if(null != dto) {
-                    String paymentUrl = dto.getPaymentUrl();
-                    if (!StringUtils.isBlank(paymentUrl)) {
-                        parameters.put("QR", paymentUrl);
-                    }
-                }
-            }
-
-            List<String> designs = Arrays.asList("invoice_design","invoice_design_ac_uk","invoice_design_earnbill", "invoice_design_beta_customer", "b2b_license_amc_invoice_design");
-
-            if(designs.contains(design)) {
+            if(design.equals("invoice_design") || design.equals("invoice_design_ac_uk") || design.equals("invoice_design_convergent_billing_main")) {
+                parameters.put("tax_rate", getTaxRate(entityId));
                 return generatePaperInvoiceNew(compiledDesign, parameters, useSqlQuery, invoice, from, to, message1, message2, entityId);
             } else {
                 return generatePaperInvoiceDefault(compiledDesign, parameters, useSqlQuery, invoice, from, to, message1, message2, entityId, username, password);
@@ -1748,7 +1683,7 @@ public class NotificationBL extends ResultList implements NotificationSQL {
             parameters.put("LOGO", logo);
         }
 
-
+        parameters.put("BASE_DIR", BASE_DIR);
         // tax calculated
         BigDecimal taxTotal = new BigDecimal(0);
         String tax_price = "";
@@ -2082,7 +2017,6 @@ public class NotificationBL extends ResultList implements NotificationSQL {
 
                     }
                 }
-            }
 
             if (null != retValue) {
                 //Token for Usage Minute Left.
@@ -2097,10 +2031,8 @@ public class NotificationBL extends ResultList implements NotificationSQL {
                         userdDto.getUserId(), userdDto.getCurrency().getId(), true));
 
                 //Token for overage rate per minute rate.
-                BigDecimal overageRatePerMinute = userBl.getOverageRatePerMinute();
-                String overageRateValue = overageRatePerMinute != null ?
-                        Util.formatMoney(overageRatePerMinute, userdDto.getUserId(), userdDto.getCurrencyId(), true) : "";
-                retValue.addParameter("overageRatePerMinute", overageRateValue);
+                retValue.addParameter("overageRatePerMinute", Util.formatMoney(userBl.getOverageRatePerMinute(),
+                        userdDto.getUserId(), userdDto.getCurrencyId(), true));
             }
 
             // the entity info
@@ -2111,8 +2043,6 @@ public class NotificationBL extends ResultList implements NotificationSQL {
                 retValue.addParameter("company_id", entityId.toString());
                 retValue.addParameter("company_name", contact.getEntity().getOrganizationName());
                 retValue.addParameter("url", Holders.getFlatConfig().get("grails.serverURL"));
-                retValue.addParameter("resetPassExpHours", PreferenceBL.getPreferenceValueAsIntegerOrZero(entityId,
-                        CommonConstants.PREFERENCE_FORGOT_PASSWORD_EXPIRATION));
             }
 
             CustomerDTO customerDTO = user.getCustomer();
@@ -2152,7 +2082,7 @@ public class NotificationBL extends ResultList implements NotificationSQL {
             }
 
             logger.debug("Retvalue >>>> {}", retValue.toString());
-
+            }
         } catch (Exception e) {
             throw new SessionInternalError(e);
         }
@@ -2466,10 +2396,8 @@ public class NotificationBL extends ResultList implements NotificationSQL {
                 dto.getUserId(), dto.getCurrency().getId(), true));
 
         //Token for Overage rate per minute.
-        BigDecimal overageRatePerMinute = user.getOverageRatePerMinute();
-        String overageRateValue = overageRatePerMinute != null ?
-                Util.formatMoney(overageRatePerMinute, dto.getUserId(), dto.getCurrency().getId(), true) : "";
-        message.addParameter("overageRatePerMinute", overageRateValue);
+        message.addParameter("overageRatePerMinute", Util.formatMoney(user.getOverageRatePerMinute(),
+                dto.getUserId(), dto.getCurrency().getId(), true));
     }
 
     private BigDecimal getUsageUnitsLeftToken(UserDTO userdDto ){
@@ -2746,51 +2674,154 @@ public class NotificationBL extends ResultList implements NotificationSQL {
         throw new SessionInternalError("no paper invoice notification plugin configured for entity "+ entityId);
     }
 
-    private static String getCurrencyInWords(String currencyCode, BigDecimal invoiceTotal){
-        String splitter = "#";
-        MoneyConverters converters = MoneyConverters.ENGLISH_BANKING_MONEY_VALUE;
-       // BigDecimal total = invoiceTotal;
-        int subunits = invoiceTotal.remainder(BigDecimal.ONE).multiply(new BigDecimal(100)).intValue();
-
-        String amountOutput = converters.asWords(new BigDecimal(invoiceTotal.intValue()), splitter).split(splitter)[0];
-        StringJoiner sj = new StringJoiner(" & Cents ", Currency.getInstance(currencyCode).getDisplayName()+" ", "");
-        sj.add(amountOutput);
-        if (subunits > 0){
-            String centsOutput = converters.asWords(new BigDecimal(subunits), splitter).split(splitter)[0];
-            sj.add(centsOutput);
+    public String getNotificationAlertMessage(String tableName, String planno, String trigger) {
+        logger.debug("Fetching SMS Body from table {} for planNo {} at trigger percentage {} ", tableName, planno, trigger);
+        return messageDas.getNotificationAlertMessage(tableName, planno, trigger);
+    }
+    
+    private void setCustomerAddressFields(CustomerDTO customer, MessageDTO message){
+    	String[] metaFieldArray = {SPCConstants.PO_BOX,SPCConstants.SUB_PREMISES,SPCConstants.STREET_NUMBER,
+                SPCConstants.STREET_NAME, SPCConstants.STREET_TYPE,SPCConstants.CITY,SPCConstants.STATE,SPCConstants.POST_CODE};
+    	
+        Stack<String> tokenLineOneStack = new Stack<String>();
+        Stack<String> tokenLineTwoStack = new Stack<String>();
+		
+        tokenLineOneStack.add("address_line1_token1");
+        tokenLineOneStack.add("address_line1_token2");
+        tokenLineOneStack.add("address_line1_token3");
+        tokenLineOneStack.add("address_line1_token4");
+        tokenLineOneStack.add("address_line1_token5");
+        
+        tokenLineTwoStack.add("address_line2_token1");
+        tokenLineTwoStack.add("address_line2_token2");
+        tokenLineTwoStack.add("address_line2_token3");
+        
+        if(null != customer && null != message){
+        CustomerAccountInfoTypeMetaField metaFieldArrayPostCodeValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[7], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String postCode  = StringUtils.EMPTY;
+        if(null != metaFieldArrayPostCodeValue){
+           postCode = (String)metaFieldArrayPostCodeValue.getMetaFieldValue().getValue();
         }
-
-        String result = Arrays.stream(sj.toString().replace("-", " ")
-                        .split("\\s+"))
-                .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1))
-                .collect(Collectors.joining(" "));
-        return result;
-
+        if(StringUtils.isNotBlank(postCode)){
+        message.addParameter(tokenLineTwoStack.pop(),printable(!postCode.isEmpty() ? postCode : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayStateValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[6], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String state = StringUtils.EMPTY;
+        if(null != metaFieldArrayStateValue){
+           state = (String)metaFieldArrayStateValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(state)){
+        message.addParameter(tokenLineTwoStack.pop(),printable(!state.isEmpty() ? state : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayCityValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[5], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String city = StringUtils.EMPTY;
+        if(null != metaFieldArrayCityValue){
+           city = (String)metaFieldArrayCityValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(city)){
+        message.addParameter(tokenLineTwoStack.pop(),printable(!city.isEmpty() ? city : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayStreetTypeValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[4], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String streetType = StringUtils.EMPTY;
+        if(null != metaFieldArrayStreetTypeValue){
+           streetType = (String)metaFieldArrayStreetTypeValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(streetType)){
+        message.addParameter(tokenLineOneStack.pop(),printable(!streetType.isEmpty() ? streetType : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayStreetNameValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[3], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String streetName = StringUtils.EMPTY;
+        if(null != metaFieldArrayStreetNameValue){
+           streetName = (String)metaFieldArrayStreetNameValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(streetName)){
+        message.addParameter(tokenLineOneStack.pop(),printable(!streetName.isEmpty() ? streetName : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayStreetNumberValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[2], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String streetNumber = StringUtils.EMPTY;
+        if(null != metaFieldArrayStreetNumberValue){
+           streetNumber = (String)metaFieldArrayStreetNumberValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(streetNumber)){
+        message.addParameter(tokenLineOneStack.pop(),printable(!streetNumber.isEmpty() ? streetNumber : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArraySubPremisesValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[1], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String subPremises = StringUtils.EMPTY;
+        if(null != metaFieldArraySubPremisesValue){
+           subPremises = (String)metaFieldArraySubPremisesValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(subPremises)){
+        message.addParameter(tokenLineOneStack.pop(),printable(!subPremises.isEmpty() ? subPremises : StringUtils.EMPTY));
+        }
+        
+        CustomerAccountInfoTypeMetaField metaFieldArrayPoBoxValue = customer.getCustomerAccountInfoTypeMetaField(metaFieldArray[0], SPCConstants.SPC_BILLING_ADDRESS_GROUP_ID);
+        String poBox = StringUtils.EMPTY; 
+        if(null != metaFieldArrayPoBoxValue){
+           poBox = (String)metaFieldArrayPoBoxValue.getMetaFieldValue().getValue();
+        }
+        if(StringUtils.isNotBlank(poBox)){
+        message.addParameter(tokenLineOneStack.pop(),printable(!poBox.isEmpty() ? poBox : StringUtils.EMPTY));
+        }
+        
+        while(tokenLineOneStack.size()>0){
+              message.addParameter(tokenLineOneStack.pop(),StringUtils.EMPTY);
+        }
+        while(tokenLineTwoStack.size()>0){
+              message.addParameter(tokenLineTwoStack.pop(),StringUtils.EMPTY);
+        }
+        }
     }
 
-    public MessageDTO getPaymentLinkEmailMessage(Integer entityId,
-                                                 Integer languageId, InvoiceDTO invoice)
-            throws SessionInternalError, NotificationNotFoundException {
-        PaymentUrlLogDAS paymentUrlLogDAS = new PaymentUrlLogDAS();
-        PaymentUrlLogDTO paymentUrlLogDTO = new PaymentUrlLogDAS().findByInvoiceId(invoice.getId());
-        MessageDTO message = initializeMessage(entityId, invoice.getBaseUser()
-                .getUserId());
+    private void setAGLInvoiceEmailParameters(MessageDTO message, InvoiceDTO invoice, String totalOwed, BigDecimal totalOwedAmount) {
+    	setCustomerAddressFields(invoice.getBaseUser().getCustomer(),message);
+        message.addParameter("due_date", Util.formatAGLInvoiceDate(invoice.getDueDate(), invoice.getUserId()));
+        message.addParameter("bill_issue_date",Util.formatAGLInvoiceDate(invoice.getCreateDatetime(), invoice.getUserId()));
+        
+        BigDecimal zeroAmount = new BigDecimal("00");
+        String totalOwedNumber = null;
+        String totalOwedFraction;
+        if(totalOwed!=null){
+            if(totalOwed.contains(".")) {
+                totalOwedNumber = totalOwed.split("\\.")[0];
+                totalOwedFraction = totalOwed.split("\\.")[1];
+                message.addParameter("total_owed_number", totalOwedNumber);
+                message.addParameter("total_owed_fraction", totalOwedFraction);
+            } else {
+                message.addParameter("total_owed_number", totalOwed);
+                message.addParameter("total_owed_fraction", "00");
+            }
+        }
+        message.addParameter("amount_credit_abbr", "");		
+        if(totalOwedAmount.compareTo(zeroAmount) > 0) {
+            message.addParameter("display_make_payment", "true");		
+        } else if(totalOwedAmount.compareTo(zeroAmount) == 0) {				
+            message.addParameter("display_make_payment", "false");		
+        } else {
+            if(totalOwedNumber!=null) {
+                message.addParameter("total_owed_number", totalOwedNumber.replace("-",""));
+            }
+            message.addParameter("amount_credit_abbr", "cr");		
+            message.addParameter("display_make_payment", "false");						
+        }
+    }
 
-        message.setTypeId(MessageDTO.TYPE_PAYMENT_LINK_EMAIL);
-
-        setContent(message, MessageDTO.TYPE_PAYMENT_LINK_EMAIL, entityId,
-                languageId);
-
-        message.addParameter("currency", new CurrencyDAS().find(entityId).getSymbol());
-        message.addParameter("paymentAmount", paymentUrlLogDTO.getPaymentAmount().doubleValue());
-        message.addParameter("gateway_name", paymentUrlLogDTO.getPaymentProvider());
-        message.addParameter("Reason_for_payment", paymentUrlLogDAS
-                        .getRequestPayloadValueFromPaymentUrl(invoice.getId(),"linkPurpose", false));
-        message.addParameter("gateway_id", paymentUrlLogDTO.getGatewayId());
-        message.addParameter("payment_link", paymentUrlLogDTO.getPaymentUrl());
-        message.addParameter("payment_expiry", DateTime.parse(paymentUrlLogDAS.
-                getRequestPayloadValueFromPaymentUrl(invoice.getId(),"linkExpiry", true)).toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")));
-
-        return message;
-}
+    private static String getTaxRate(int entityId){
+        try{
+            JdbcTemplate jdbcTemplate = Context.getBean(Context.Name.JDBC_TEMPLATE);
+            String query = String.format("SELECT tax_rate FROM route_%s_tax_scheme WHERE description='VAT'", entityId);
+            SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(query);
+            if(sqlRowSet.first()){
+                return sqlRowSet.getString("tax_rate");
+            }
+        }catch (Exception exception){
+            logger.error("Exception occurred in getTaxRate() {}", exception.getLocalizedMessage(), exception);
+        }
+        return null;
+    }
 }

@@ -48,7 +48,7 @@
             <g:hiddenField name="_eventId" value="addLineToNewOrder"/>
             <g:hiddenField name="execution" value="${flowExecutionKey}"/>
         </g:form>
-        <table style="margin: 3px 0 0 10px; width: 100%;">
+        <table id="custom-table" style="width: 100%;">
             <col width="50%"/>
             <col width="50%"/>
             <tbody>
@@ -86,7 +86,7 @@
                         </table>
                     </div>
                 </td>
-                <td class="col2" valign="top" style="padding-left: 7px">
+                <td class="col2" valign="top">
 %{--                    <div class="heading">
                         <strong><g:message code="builder.suborders.title"/></strong>
                     </div>--}%

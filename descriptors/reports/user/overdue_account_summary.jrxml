@@ -230,7 +230,7 @@
         </textElement>
         <text><![CDATA[Report Date:]]></text>
       </staticText>
-      <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+      <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
         <reportElement x="1420" y="1" width="76" height="20"/>
         <textElement verticalAlignment="Middle"/>
         <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
@@ -274,14 +274,14 @@
         <text><![CDATA[Overdue Status]]></text>
       </staticText>
       <staticText>
-        <reportElement x="340" y="0" width="103" height="20"/>
+        <reportElement x="340" y="0" width="120" height="20"/>
         <textElement verticalAlignment="Middle" textAlignment="Left">
           <font size="10" isBold="true"/>
         </textElement>
         <text><![CDATA[Last Payment Date]]></text>
       </staticText>
       <staticText>
-        <reportElement x="448" y="0" width="107" height="20"/>
+        <reportElement x="460" y="0" width="95" height="20"/>
         <textElement verticalAlignment="Middle" textAlignment="Left">
           <font size="10" isBold="true"/>
         </textElement>
@@ -295,7 +295,7 @@
         <text><![CDATA[Cur]]></text>
       </staticText>
       <staticText>
-        <reportElement x="585" y="0" width="90" height="20"/>
+        <reportElement x="585" y="0" width="80" height="20"/>
         <textElement verticalAlignment="Middle" textAlignment="Center">
           <font size="10" isBold="true"/>
         </textElement>
@@ -412,16 +412,16 @@
         </textElement>
         <textFieldExpression><![CDATA[$F{overdue_status}]]></textFieldExpression>
       </textField>
-      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
-        <reportElement x="340" y="0" width="103" height="20">
+      <textField pattern="MMMMM dd, YYYY" isBlankWhenNull="true">
+        <reportElement x="340" y="0" width="120" height="20">
         </reportElement>
         <textElement verticalAlignment="Middle" textAlignment="Left">
           <font size="10"/>
         </textElement>
         <textFieldExpression><![CDATA[$F{last_payment}]]></textFieldExpression>
       </textField>
-      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
-        <reportElement x="448" y="0" width="107" height="20">
+      <textField pattern="MMMMM dd, YYYY" isBlankWhenNull="true">
+        <reportElement x="460" y="0" width="95" height="20">
         </reportElement>
         <textElement verticalAlignment="Middle" textAlignment="Left">
           <font size="10"/>

@@ -46,6 +46,7 @@
     }
 
     $(document).ready(function() {
+        setDirection();
         setImpersonationUser();
         $.widget(
             'ui.dialog',
@@ -72,6 +73,13 @@
             }
         );
     });
+
+    function setDirection() {
+        var localLang = '${session.locale.language}';
+        if(localLang == 'ar') {
+            $('html').attr('dir', 'rtl');
+        }
+    }
 
     function checkLength( o, n, min, max ) {
         if ( o.val().length > max || o.val().length < min ) {
@@ -236,6 +244,15 @@
 
 
 <g:render template="/layouts/includes/uiColorStyle"/>
+<html>
+
+<head>
+    <g:if test="${session.locale.language == 'ar'}">
+        <link type="text/css" href="${resource(file: '/css/all_rtl.css')}" rel="stylesheet" media="screen, projection" />
+    </g:if>
+</head>
+
+<body>
 
 <!-- header -->
 <div id="header">
@@ -248,11 +265,11 @@
     <li id="home-logo" class="">
         <g:link uri="/">&nbsp;</g:link>
     </li>
-    <g:each in="${session['user_tabs']?.tabConfigurationTabs.findAll{it.tab.parentTab == null}}" var="tabConfig">
+    <g:each in="${session['user_tabs'].tabConfigurationTabs.findAll{it.tab.parentTab == null}}" var="tabConfig">
         <jB:userCanAccessTab tab="${tabConfig.tab}">
             <g:if test="${tabConfig.visible && !tabConfig?.tab?.parentTab}">
                 <g:if test="${tabConfig?.tab?.parentTab==null}">
-                    <g:set var="childTabs" value="${session['user_tabs']?.tabConfigurationTabs.tab.findAll{it?.parentTab?.id==tabConfig?.tab?.id}}"/>
+                    <g:set var="childTabs" value="${session['user_tabs'].tabConfigurationTabs.tab.findAll{it?.parentTab?.id==tabConfig?.tab?.id}}"/>
                     <g:set var="childTabsToRemove" value="${new java.util.ArrayList()}"/>
                     <g:each in="${childTabs}" var="childTab">
                         <jB:userCanNotAccessTab tab="${childTab}">
@@ -299,7 +316,7 @@
     <li id="hiddenTabsLi" style="${hiddenTabs.size() <= 0 ? 'display:none;' : ''}"><a class="menuClick" ><span>+</span></a>
         <ul id="hiddenTabsUl" style="display: none;" class="hideOnClick">
             <g:each var="tab" in="${hiddenTabs}">
-                <g:set var="childTabs" value="${session['user_tabs']?.tabConfigurationTabs.tab.findAll{it?.parentTab?.id==tab?.id}}"/>
+                <g:set var="childTabs" value="${session['user_tabs'].tabConfigurationTabs.tab.findAll{it?.parentTab?.id==tab?.id}}"/>
                 <g:set var="childTabsToRemove" value="${new java.util.ArrayList()}"/>
                 <g:each in="${childTabs}" var="childTab">
                     <jB:userCanNotAccessTab tab="${childTab}">
@@ -332,7 +349,7 @@
 </ul>
 
 
-<ul id="navRight" style="float: right;">
+<ul id="navRight">
     <li>
         <div class="search">
             <g:form controller="search" name="search-form" onsubmit="canReloadMessages = false;">
@@ -369,9 +386,9 @@
         </div>
     </li>
     <li>
-        <a class="menuClick menu-dropdown"><span><jB:userFriendlyName/></span></a>
-        <ul style="display: none; right: 0" class="hideOnClick">
-            <li class="not-active"><span><%=company?.getDescription()%></span></li>
+        <a class="menuClick menu-dropdown" data-cy="forLogOut"><span><jB:userFriendlyName/></span></a>
+        <ul id="custom-ul" style="display: none;" class="hideOnClick">
+            <li class="not-active"><span><%=company.getDescription()%></span></li>
             <sec:ifSwitched>
                 <g:set var="switchedUserOriginalUsername" value="${SpringSecurityUtils.switchedUserOriginalUsername}"/>
                 <g:if test="${switchedUserOriginalUsername?.substring(switchedUserOriginalUsername.indexOf(';') + 1, switchedUserOriginalUsername.length()).equals(session['company_id'].toString())}">
@@ -441,7 +458,7 @@
                 </a>
             </li>
             <li>
-                <g:link controller='logout' class="logout">
+                <g:link controller='logout' class="logout" data-cy="logout">
                     <span><g:message code="topnav.link.logout"/></span>
                 </g:link>
             </li>
@@ -490,3 +507,5 @@
 </div>
 </div>
 
+</body>
+</html>

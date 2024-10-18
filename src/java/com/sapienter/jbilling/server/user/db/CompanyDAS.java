@@ -21,35 +21,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
+import org.hibernate.Criteria;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
-import org.hibernate.type.StandardBasicTypes;
 
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
+import org.hibernate.type.StandardBasicTypes;
 
 public class CompanyDAS extends AbstractDAS<CompanyDTO> {
-
+    
     @SuppressWarnings({"unchecked", "deprecation"})
-    public List<CompanyDTO> findEntities() {
+	public List<CompanyDTO> findEntities() {
         return getSession().createCriteria(CompanyDTO.class).list();
     }
-
+    
     @SuppressWarnings({"unchecked", "deprecation"})
-    public List<CompanyDTO> findChildEntities(Integer parentId) {
-        return getSession().createCriteria(CompanyDTO.class)
+	public List<CompanyDTO> findChildEntities(Integer parentId) {
+    	return getSession().createCriteria(CompanyDTO.class)
                 .add(Restrictions.eq("parent.id", parentId)).list();
-    }
-
-    @SuppressWarnings({ "unchecked"})
-    public List<Integer> getEntitiyIds() {
-        return getSession().createCriteria(CompanyDTO.class)
-                .add(Restrictions.eq("deleted", 0))
-                .setProjection(Projections.id())
-                .list();
     }
 
     public CompanyDTO findRootFromSource(Integer companyId) {
@@ -82,10 +74,10 @@ public class CompanyDAS extends AbstractDAS<CompanyDTO> {
         }
         return allEntities;
     }
-
+    
     @SuppressWarnings({"unchecked", "deprecation"})
-    public List<Integer> getChildEntitiesIds(Integer parentId) {
-        return getSession().createCriteria(CompanyDTO.class)
+	public List<Integer> getChildEntitiesIds(Integer parentId) {
+    	return getSession().createCriteria(CompanyDTO.class)
                 .add(Restrictions.eq("parent.id", parentId))
                 .setProjection(Projections.id())
                 .list();
@@ -97,25 +89,25 @@ public class CompanyDAS extends AbstractDAS<CompanyDTO> {
         query.setParameter("entityId", entityId);
         return (Integer) query.uniqueResult();
     }
-
+    
     public boolean isRoot(Integer entityId){
-        CompanyDTO entity = find(entityId);
-
-        if(entity == null) {
-            return false;
-        }
-
-        if(entity.getParent() == null){
-            return true;
-        }
-
-        // if it has some child entities then its root
-        List<CompanyDTO> childs = findChildEntities(entityId);
-        if(childs != null && childs.size() > 0) {
-            return true;
-        }
-        // this entity is consistent to be a non root
-        return false;
+    	CompanyDTO entity = find(entityId);
+    	
+    	if(entity == null) {
+    		return false;
+    	}
+    	
+    	if(entity.getParent() == null){
+    		return true;
+    	}
+    	
+    	// if it has some child entities then its root
+    	List<CompanyDTO> childs = findChildEntities(entityId);
+    	if(childs != null && childs.size() > 0) {
+    		return true;
+    	}
+    	// this entity is consistent to be a non root
+    	return false;
     }
 
     private Criteria _allHierarchyEntities (CompanyDTO entity) {
@@ -232,29 +224,10 @@ public class CompanyDAS extends AbstractDAS<CompanyDTO> {
      * @return string company name.
      */
     public String findCompanyNameByEntityId(Integer entityId) {
-        if (entityId == null) {
-            return null;
-        }
+        if (entityId == null) return null;
         Criteria searchCriteria = getSession().createCriteria(CompanyDTO.class)
                 .add(Restrictions.eq("id", entityId))
                 .setProjection(Projections.property("description"));
         return (String) searchCriteria.uniqueResult();
-    }
-
-    /**
-     * This method used for finding the entity id by Domain Name.
-     *
-     * @param domain name used for finding the id.
-     * @return Integer entityId.
-     */
-    public Integer findEntityIdByDomainName(String domain) {
-        if (domain.isEmpty()) {
-            return null;
-        }
-        Criteria searchCriteria = getSession().createCriteria(CompanyDTO.class)
-            .add(Restrictions.eq("domainName", domain))
-            .add(Restrictions.eq("deleted", 0))
-            .setProjection(Projections.property("id"));
-        return (Integer) searchCriteria.uniqueResult();
     }
 }

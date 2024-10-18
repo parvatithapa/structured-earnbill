@@ -4,14 +4,12 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sapienter.jbilling.server.metafields.MetaFieldType;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.payment.IExternalCreditCardStorage;
 import com.sapienter.jbilling.server.payment.PaymentAuthorizationBL;
 import com.sapienter.jbilling.server.payment.PaymentBL;
@@ -40,8 +38,6 @@ public class UnifiedBrainTreePaymentExternalTask extends PaymentTaskWithTimeout 
     private static final String[] VALID_BT_PAYMENT_TYPE = { "btcc", "ach", "ec", "gc" };
 
     private static final String AMERICAN_EXPRESS = "American Express";
-
-    private static final String AUTHORIZATION_ID_FOR_CAPTURE_PAYMENT = "Authorization Id";
 
     /* Plugin parameters */
     public static final ParameterDescription BUSINESS_ID = new ParameterDescription("Bussiness Id", true,
@@ -155,7 +151,6 @@ public class UnifiedBrainTreePaymentExternalTask extends PaymentTaskWithTimeout 
 
         paymentAuthDTO.setCardCode(brainTreeResult.getCardNumber());
         paymentAuthDTO.setCode2(brainTreeResult.getCardType());
-        paymentAuthDTO.setCode3(brainTreeResult.getPaymentType());
 
         String errorCode = brainTreeResult.getErrorCode();
         String errorShortMsg = brainTreeResult.getErrorMessage();
@@ -257,22 +252,8 @@ public class UnifiedBrainTreePaymentExternalTask extends PaymentTaskWithTimeout 
             return doRefund(payment).shouldCallOtherProcessors();
         }
 
-        String authorizationId = getAuthorizationIdForCapturePayment(payment);
-        if(StringUtils.isNotBlank(authorizationId)) {
-            PaymentAuthorizationDTO auth = new PaymentAuthorizationDTO();
-            auth.setTransactionId(authorizationId);
-            return doCapture(payment, auth).shouldCallOtherProcessors();
-        }
-
         return doPaymentWithStoredBTID(payment).shouldCallOtherProcessors();
 
-    }
-
-    private String getAuthorizationIdForCapturePayment(PaymentDTOEx payment) {
-        Optional<MetaFieldValue> authMetaField = payment.getMetaFields().stream()
-                .filter(mfv -> mfv.getField().getName().equalsIgnoreCase(AUTHORIZATION_ID_FOR_CAPTURE_PAYMENT))
-                .findAny();
-        return authMetaField.isPresent() ? (String) authMetaField.get().getValue() : null;
     }
 
     public boolean process(PaymentDTOEx payment) throws PluggableTaskException {
@@ -319,23 +300,6 @@ public class UnifiedBrainTreePaymentExternalTask extends PaymentTaskWithTimeout 
      */
     public boolean confirmPreAuth(PaymentAuthorizationDTO auth, PaymentDTOEx paymentInfo) throws PluggableTaskException {
         return false;
-    }
-
-    private Result doCapture(PaymentDTOEx payment, PaymentAuthorizationDTO auth) throws PluggableTaskException {
-        try {
-
-            UnifiedBrainTreeResult result = getBTApi().capture(getTimeoutSeconds() * 1000, formatDollarAmount(payment.getAmount()), auth.getTransactionId());
-
-            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(result);
-            storeBrainTreeResult(result, payment, paymentAuthorization, false);
-
-            return new Result(paymentAuthorization, false);
-
-        } catch (Exception e) {
-            logger.error("Couldn't handle payment request due to error", e);
-            payment.setPaymentResult(new PaymentResultDAS().find(Constants.RESULT_UNAVAILABLE));
-            return NOT_APPLICABLE;
-        }
     }
 
     /**

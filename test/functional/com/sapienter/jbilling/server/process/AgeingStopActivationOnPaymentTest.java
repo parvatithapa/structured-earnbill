@@ -68,7 +68,7 @@ import com.sapienter.jbilling.server.item.ItemDTOEx;
  * @author Mahesh Shivarkar
  * @since 05/01/2017
  */
-@Test(groups = { "integration", "ageing" }, testName = "ageing.AgeingStopActivationOnPaymentTest", priority = 17)
+@Test(groups = { "integration", "ageing" }, testName = "ageing.AgeingStopActivationOnPaymentTest")
 public class AgeingStopActivationOnPaymentTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgeingStopActivationOnPaymentTest.class);
@@ -116,14 +116,14 @@ public class AgeingStopActivationOnPaymentTest {
 		final JbillingAPI api = environment.getPrancingPonyApi();
 		// Save ageing configuration as earlier
 		ageingConfiguration(api,false);
-
+		
 		PluggableTaskWS pluggableTask = new PluggableTaskWS();
 		pluggableTask.setProcessingOrder(999);
-		PluggableTaskTypeWS blackListPluginType =
+		PluggableTaskTypeWS blackListPluginType = 
 				api.getPluginTypeWSByClassName(BLACK_LIST_USER_STATUS_TASK);
 		pluggableTask.setTypeId(blackListPluginType.getId());
 		api.createPlugin(pluggableTask);
-
+		
 		testBuilder.removeEntitiesCreatedOnJBillingForMultipleTests();
 		if (null != environmentHelper){
 			environmentHelper = null;
@@ -143,16 +143,16 @@ public class AgeingStopActivationOnPaymentTest {
 			envCreator.itemBuilder(api).item().withCode(PRODUCT_CODE).global(true).withType(CATEGORY_ID)
 					.withFlatPrice("5.00").build();
 			envCreator.accountTypeBuilder(api).withName(ACCOUNT_TYPE_CODE).build().getId();
-
+			
 		});
 	}
 
 	/**
-	 * Check User Status after making full payment
+	 * Check User Status after making full payment 
 	 * & Stop activation on payment is checked
 	 * User next invoice date: 1st Jan 2016
-	 * Order:
-	 * ActiveSince: 1st Dec 2015
+	 * Order: 
+	 * ActiveSince: 1st Dec 2015 
 	 * EffectiveDate: 1st Dec 2015
 	 */
 
@@ -232,10 +232,10 @@ public class AgeingStopActivationOnPaymentTest {
 		});
 	}
 
-	/**
+	/** 
 	 *Check User Status with Credit Note & Stop activation on payment is checked
 	 * User next invoice date: 1st Jan 2016
-	 * ActiveSince: 1st Dec 2015
+	 * ActiveSince: 1st Dec 2015 
 	 * EffectiveDate: 1st Dec 2015
 	 */
 
@@ -301,11 +301,11 @@ public class AgeingStopActivationOnPaymentTest {
 	}
 
 	/**
-	  Check User Status after unlinking/linking payment using apply payment
+	  Check User Status after unlinking/linking payment using apply payment 
 	 * & Stop activation on payment is checked
 	 * User next invoice date: 1st Jan 2016
-	 * Order:
-	 * ActiveSince: 1st Dec 2015
+	 * Order: 
+	 * ActiveSince: 1st Dec 2015 
 	 * EffectiveDate: 1st Dec 2015
 	 */
 
@@ -400,12 +400,12 @@ public class AgeingStopActivationOnPaymentTest {
 		});
 	}
 
-	/**
-	 * Manully Suspend User and then make full Payment
+	/**  
+	 * Manully Suspend User and then make full Payment 
 	 * & check user status
 	 * User next invoice date: 1st Jan 2016
-	 * Order:
-	 * ActiveSince: 1st Dec 2015
+	 * Order: 
+	 * ActiveSince: 1st Dec 2015 
 	 * EffectiveDate: 1st Dec 2015
 	 */
 
@@ -452,7 +452,7 @@ public class AgeingStopActivationOnPaymentTest {
 			assertNotNull("invoiceIdsOfUser2 should not be null",invoiceIdsOfUser2);
 			logger.debug("### invoiceIdsOfUser2: {}", invoiceIdsOfUser2[0]);
 
-			// Manually suspend the user & then make full payment
+			// Manually suspend the user & then make full payment 
 			userWS = api.getUserWS(environment.idForCode(CUSTOMER_CODE4));
 			userWS.setStatusId(Integer.valueOf(2));
 			api.updateUser(userWS);
@@ -513,7 +513,7 @@ public class AgeingStopActivationOnPaymentTest {
 		}).test((env)-> {
 			JbillingAPI api = env.getPrancingPonyApi();
 
-			PluggableTaskWS[] pluggableTask = api.getPluginsWS(api.getCallerCompanyId(), "com.sapienter.jbilling.server.payment.blacklist.tasks.BlacklistUserStatusTask");
+			PluggableTaskWS[] pluggableTask = api.getPluginsWS(api.getCallerCompanyId(), "com.sapienter.jbilling.server.payment.blacklist.tasks.BlacklistUserStatusTask"); 
 			logger.debug("### pluggableTaskId: {}", pluggableTask[0].getId());
 			if (null != pluggableTask[0]) {api.deletePlugin(pluggableTask[0].getId());}
 
@@ -684,7 +684,7 @@ public class AgeingStopActivationOnPaymentTest {
 
 				// Test user status after full payment
 				makePayment("10.00", paymentDate.getTime(), false,CUSTOMER_CODE5);
-
+				
 				userWS = api.getUserWS(userWS.getId());
 				assertEquals("User status should be Day 200", UserDTOEx.STATUS_ACTIVE + 18, userWS.getStatusId().intValue());
 
@@ -770,7 +770,7 @@ public class AgeingStopActivationOnPaymentTest {
 		metaFields.add(ws);
 	}
 
-	private void createOrder(String code,Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId, int statusId,
+	private void createOrder(String code,Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId, int statusId, 
 			boolean prorate, Map<Integer, BigDecimal> productQuantityMap, Map<Integer, Integer> productAssetMap, boolean createNegativeOrder, String userName) {
 		this.testBuilder.given(envBuilder -> {
 			final JbillingAPI api = envBuilder.getPrancingPonyApi();
@@ -789,7 +789,7 @@ public class AgeingStopActivationOnPaymentTest {
 							line.setPrice(item.getPriceAsDecimal().negate());
 							line.setAmount(line.getQuantityAsDecimal().multiply(line.getPriceAsDecimal()));
 						}
-						if(null!=productAssetMap && !productAssetMap.isEmpty()
+						if(null!=productAssetMap && !productAssetMap.isEmpty() 
 								&& productAssetMap.containsKey(line.getItemId())) {
 							line.setAssetIds(new Integer[] {productAssetMap.get(line.getItemId())});
 						}
@@ -825,7 +825,7 @@ public class AgeingStopActivationOnPaymentTest {
 			e.printStackTrace();
 		}
 	}
-
+	
 	private void ageingConfiguration(JbillingAPI api,Boolean stopActivationOnPayment) {
 		// Save ageing configuration as earlier
 		List<AgeingWS> steps = Arrays.asList(api.getAgeingConfiguration(1));
@@ -837,7 +837,7 @@ public class AgeingStopActivationOnPaymentTest {
 				 step.setCollectionType(CollectionType.REGULAR);
 				 return step;
 			 }).<AgeingWS>toArray(AgeingWS[]::new),1);
-
+			 
 	}
 
     private void updateCustomerStatusToActive(Integer customerId, JbillingAPI api){

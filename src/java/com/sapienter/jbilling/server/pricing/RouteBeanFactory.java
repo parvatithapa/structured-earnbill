@@ -24,7 +24,6 @@ import com.sapienter.jbilling.server.pricing.cache.RouteFinder;
 import com.sapienter.jbilling.server.pricing.db.RouteDTO;
 import com.sapienter.jbilling.server.util.Context;
 import org.apache.commons.lang.StringUtils;
-import org.hsqldb.util.DatabaseManager;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;

@@ -11,8 +11,8 @@
 		when order is defined using annotations the order here will always loose, so do all your
 		ordering here or ENTIRELY using groups/method dependency annotations.
 	-->
-
 	<test name="web-services">
+
 		<classes>
 			<class name="com.sapienter.jbilling.test.PaymentInformationBackwardCompatibilityTestCase"/>
             <class name="com.sapienter.jbilling.server.order.WSTest"/>
@@ -97,7 +97,6 @@
 			<class name="com.sapienter.jbilling.server.UsageRatingScheme.UsageRatingSchemeTest"/>
             <class name="com.sapienter.jbilling.server.order.SwapAssetsTest"/>
 			<class name="com.sapienter.jbilling.server.user.ValidateLoginAndUpdatePasswordTest"/>
-			<class name="com.sapienter.jbilling.server.company.CopyCompanyTest"/>
 		</classes>
 	</test>
 
@@ -138,8 +137,8 @@
             <class name="com.sapienter.jbilling.server.task.GenerateCancellationInvoiceTaskTest"/>
             <class name="com.sapienter.jbilling.server.task.PriceCompositionInResellerInvoiceTest"/>
             <class name="com.sapienter.jbilling.server.process.UnlinkPaymentAndCreditNoteTest"/>
-            <class name="com.sapienter.jbilling.server.process.AgeingMinimumBalanceTest"/>
-			<class name="com.sapienter.jbilling.server.task.FreeTrialPlanPeriodHandlerTaskTest"/>
+            <class name="com.sapienter.jbilling.server.task.RemoveAssetFromFinishedOrderTaskTest"/>
+            <class name="com.sapienter.jbilling.server.task.RemovalOfAssetsFromSubscriptionTaskTest"/> 
 		</classes>
 	</test>
 
@@ -163,7 +162,7 @@
 			<class name="com.sapienter.jbilling.server.discounts.UpdateDiscountOrderTest"/>
         </classes>
 	</test>
-
+	
 	<test name="usagePools">
 		<classes>
 			<class name="com.sapienter.jbilling.server.usagePool.FreeUsagePoolTest"/>
@@ -194,7 +193,7 @@
 			<class name="com.sapienter.jbilling.server.fupProrating.AddRemovePlanTest"/>
 		</classes>
 	</test>
-
+	
 	<test name="swapPlan">
 		<classes>
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToOneUsagePoolTest"/>
@@ -209,14 +208,14 @@
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithMultipleToSinglePoolsTest" />
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithMultipleToSinglePoolsWithDiffBundlePriceTest" />
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithMultipleToSinglePoolsWithDiffBundlePriceTest" />
-			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToMultipleUsagePoolsTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToMultipleUsagePoolsTest"/> 
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithOneToMultipleUsagePoolsTest"/>
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToMultipleUsagePoolsWithDiffBundlePriceTest"/>
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithOneToMultipleUsagePoolsWithDiffBundlePriceTest"/>
 			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanCustomerPriceExpiryTest"/>
        </classes>
 	</test>
-
+	
 	<!--
 	   1. billing test group not execute in ant test and ant test-ws
 	   2. This group execute independently. when you do ant test-billing
@@ -323,13 +322,13 @@
             <class name="com.sapienter.jbilling.api.automation.mediation.FutureDatedPlanWithPreUsageTest"/>
         </classes>
     </test>
-
+	
 	<test name="pre-evaluated-sql">
 		<classes>
 			<class name="com.sapienter.jbilling.server.pre_evaluated_sql.PreEvaluatedSQLTest" />
 		</classes>
 	</test>
-
+	
 	 <!-- FullCreative client specific test cases -->
 	<test name="fullcreative">
 		<classes>
@@ -344,7 +343,6 @@
 			<class name="com.sapienter.jbilling.fc.mediation.FullCreativeSingleMediationJobLauncherTest" />
 			<class name="com.sapienter.jbilling.fc.FreeTrialConsumptionTest" />
 			<class name="com.sapienter.jbilling.fc.FullCreativeCustomerAnnouncementsTest" />
-            <!-- <class name="com.sapienter.jbilling.fc.mediation.FullCreativeMediationWith30Under30Test" /> -->
 			<!-- <class name="com.sapienter.jbilling.fc.FullCreativeACHTest" /> -->
 		</classes>
 	</test>
@@ -382,6 +380,7 @@
             <class name="com.sapienter.jbilling.server.payment.PaymentWorldPayTaskTest"/>
             <class name="com.sapienter.jbilling.amaysim.PaymentEp2TaskTest"/>
             <class name="com.sapienter.jbilling.server.distributel.CustomerEmergency911AddressExternalTest"/>
+			<class name="com.sapienter.jbilling.rest.StripeRestTest"/>
         </classes>
     </test>
 
@@ -417,12 +416,11 @@
             <class name="com.sapienter.jbilling.rest.CommissionRestTest"/>
             <class name="com.sapienter.jbilling.rest.CollectionsRestTest"/>
             <class name="com.sapienter.jbilling.rest.MediationRestTest"/>
-		        <class name="com.sapienter.jbilling.rest.CurrencyRestTest"/>
-<!--		        <class name="com.sapienter.jbilling.rest.StripeRestTest"/>-->
-		        <class name="com.sapienter.jbilling.rest.UserImproperAccessRestTest"/>
-		        <class name="com.sapienter.jbilling.rest.OrderImproperAccessRestTest"/>
-		        <class name="com.sapienter.jbilling.rest.InvoiceImproperAccessRestTest"/>
-		        <class name="com.sapienter.jbilling.rest.PaymentImproperAccessRestTest"/>
+		    <class name="com.sapienter.jbilling.rest.CurrencyRestTest"/>
+			<class name="com.sapienter.jbilling.rest.UserImproperAccessRestTest"/>
+			<class name="com.sapienter.jbilling.rest.OrderImproperAccessRestTest"/>
+			<class name="com.sapienter.jbilling.rest.InvoiceImproperAccessRestTest"/>
+			<class name="com.sapienter.jbilling.rest.PaymentImproperAccessRestTest"/>
        </classes>
 	</test>
 
@@ -454,7 +452,7 @@
         <classes>
             <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSwapPlanFreeUsagePoolTest"/>
             <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidCustomerNextInvoiceDateUpdateTest"/>
-            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidCustomerUsagepoolCreationAndEvaluationTest"/>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidCustomerUsagePoolCreationAndEvaluationTest"/>
             <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSubscriptionOrderBillingProcessScenariosTest"/>
             <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSubscriptionOrderCancellationTest"/>
         </classes>
@@ -491,7 +489,7 @@
 			<class name="com.sapienter.jbilling.server.dt.mediation.DtMediationWithRatingTest"/>
 		</classes>
 	</test>
-
+	
 	<test name = "meteredUsageService">
 		<classes>
 			<class name = "com.sapienter.jbilling.server.MeteredUsageService.SimplePriceModelMeteredUsageTest"/>
@@ -501,7 +499,7 @@
 	</test>
 
     <test name = "sapphire" preserve-order = "true">
-        <classes>
+        <classes>            
             <class name = "com.sapienter.jbilling.server.sapphire.SapphireMediationTest"/>
             <class name = "com.sapienter.jbilling.server.sapphire.SapphireSignupProcessTest"/>
             <class name = "com.sapienter.jbilling.server.sapphire.UpdateCustomerLoginNameTaskTest"/>
@@ -512,6 +510,7 @@
             <class name="com.sapienter.jbilling.server.invoiceline.InvoiceLineTaxSupportTest"></class>
         </classes>
     </test>
+
     <test name = "spc" preserve-order="true">
         <classes>
             <class name="com.sapienter.jbilling.server.spc.OptusFixedLineMediationTest"></class>
@@ -522,18 +521,35 @@
             <class name="com.sapienter.jbilling.server.spc.EngineSConnectMediationTest"></class>
             <class name="com.sapienter.jbilling.server.spc.ServiceElementsVoiceMediationTest"></class>
             <class name="com.sapienter.jbilling.server.spc.ServiceElementsDataMediationTest"></class>
-            <class name="com.sapienter.jbilling.server.spc.AaptInternetMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.AaptInternetMediationTest"></class> 
             <class name="com.sapienter.jbilling.server.spc.SConnectDataMediationTest"></class>
-
+            
         </classes>
     </test>
 
-	<test name="test-earnbill">
+    <test name="agl" preserve-order="true">
+        <classes>
+            <class name="com.sapienter.jbilling.server.spc.BasicSpcAglTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.DuplicateAssetIdentifierAglTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.JMRPostProcessorTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.ProRatePeriodCalculatorTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.SPCOrderFilterTaskTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.SPCCustomerUsagePoolEvaluationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.InvoicesTaxAmountsCalculationsTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.AdHocCreditNoteTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.PendingOrderChangesUpdateTest"> </class>
+            <class name="com.sapienter.jbilling.server.spc.SetNIDInBillingCycleChangeTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.SPCInvoiceEmailDispatcherTaskTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.InvoiceDeliveryMethodTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.SPCReportCSVExporterTaskTest"> </class>
+        </classes>
+    </test>
+
+	<test name="adennet" >
 		<classes>
-			<class name="com.sapienter.jbilling.rest.MobileRestTest"/>
-			<class name="com.sapienter.jbilling.rest.PermissionRestTest"/>
-			<class name="com.sapienter.jbilling.server.createCustomInvoice.CreateCustomInvoiceTest"/>
-			<class name="com.sapienter.jbilling.server.gstr1.GenerateGSTR1JSONReportTest"/>
+			<class name="com.sapienter.jbilling.server.adennet.AdennetBasicTest"></class>
+			<class name="com.sapienter.jbilling.server.adennet.AdennetRechargeTest"></class>
+			<class name="com.sapienter.jbilling.server.adennet.AdennetPlanTest"></class>
 		</classes>
 	</test>
 </suite>

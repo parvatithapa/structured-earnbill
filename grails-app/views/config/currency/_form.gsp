@@ -183,7 +183,7 @@
                                         <g:textField name="currencies.${currency.id}.rate" class="field" value="${formatNumber(number: currency.rate, formatName: 'exchange.format')}"/>
                                     </div>
                                 </td>
-                                <td class="innerContent" style="text-align: left;">
+                                <td id="inner-content-td3" class="innerContent">
                                     <g:if test="${currency.id != 1}">
                                     %{-- editable rate --}%
                                         <div class="inp-bg inp4" style="width: 100px;">

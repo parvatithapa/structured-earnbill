@@ -22,9 +22,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +52,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sapienter.jbilling.common.Constants;
 import com.sapienter.jbilling.common.SessionInternalError;
+import com.sapienter.jbilling.server.integration.OutBoundInterchangeWS;
 import com.sapienter.jbilling.server.integration.db.OutBoundInterchange;
 import com.sapienter.jbilling.server.integration.db.OutBoundInterchangeDAS;
 import com.sapienter.jbilling.server.integration.db.Status;
@@ -637,5 +641,60 @@ public class SpcOutBoundInterchangeHelperService {
         JsonNode responseNode = mapper.readTree(response);
         return responseNode.get("errors").size() != 0 && !responseNode.get("api_success").asBoolean();
     }
+    
+    @SuppressWarnings("unchecked")
+    public OutBoundInterchangeWS[] findUnprocessedOutBoundMessages(Integer entityId) {
+    	List<OutBoundInterchange> outboundInterchanges = sessionFactory
+    			.getCurrentSession().createCriteria(OutBoundInterchange.class)
+    			.createAlias("company", "entity")
+    			.add(Restrictions.eq("entity.id", entityId))
+    			.add(Restrictions.eq("status", Status.UNPROCESSED))
+    			.addOrder(Order.asc("id")).list();
+    	List<OutBoundInterchangeWS> outBoundInterchangeWSs = new ArrayList<OutBoundInterchangeWS>();
+    	if (!outboundInterchanges.isEmpty()) {
+    		for (OutBoundInterchange outBoundInterchange : outboundInterchanges) {
+    			outBoundInterchangeWSs.add(getOutBoundInterchangeWS(outBoundInterchange));
+    		}
+    	} else {
+    		logger.debug("No outbound message found with unprocessed status for entity {}", entityId);
+    	}
+    	return outBoundInterchangeWSs.toArray(new OutBoundInterchangeWS[outBoundInterchangeWSs.size()]);
+    }
+    
+    /**
+     * Update UNPROCESSED outbound message status to SENT.
+     * @param outboundRequestId
+     */
+    public Integer updateOutboundMessageStatusToSent(Integer outboundRequestId) {
+    	Integer requestId = null;
+    	OutBoundInterchange outBoundInterchange = outBoundInterchangeDAS.findNow(outboundRequestId);
+    	if (null == outBoundInterchange){
+    		throw new SessionInternalError("Validation failed",
+    				new String [] {String.format("OutBoundInterchange message is not found for the provided id %d !",outboundRequestId)}, HttpStatus.SC_NOT_FOUND);
+    	}
+    	if(null != outBoundInterchange.getStatus() && Status.UNPROCESSED.equals(outBoundInterchange.getStatus())){
+    		outBoundInterchange.setStatus(Status.SENT);
+    		outBoundInterchangeDAS.save(outBoundInterchange);
+    		requestId = outBoundInterchange.getId();
+    	} else {
+    		throw new SessionInternalError("Status of provided id is not equals to UNPROCESSED",
+    				new String [] {String.format("Outbound request status for the provided id %d is not equals to UNPROCESSED!",outboundRequestId)},HttpStatus.SC_BAD_REQUEST);
+    	}
+    	return requestId;
+    }
 
+    public static OutBoundInterchangeWS getOutBoundInterchangeWS(OutBoundInterchange outBoundInterchange){
+    	OutBoundInterchangeWS ws = new OutBoundInterchangeWS();
+    	ws.setId(outBoundInterchange.getId());
+    	ws.setUserId(outBoundInterchange.getUserId());
+    	ws.setCompanyId(outBoundInterchange.getCompany().getId());
+    	ws.setCreateDateTime(outBoundInterchange.getCreateDateTime());
+    	ws.setHttpMethod(outBoundInterchange.getHttpMethod().name());
+    	ws.setMethodName(outBoundInterchange.getMethodName());
+    	ws.setRequest(outBoundInterchange.getRequest());
+    	ws.setResponse(outBoundInterchange.getResponse());
+    	ws.setStatus((outBoundInterchange.getStatus().name()));
+    	ws.setRetryCount(outBoundInterchange.getRetryCount());
+    	return ws;
+    }
 }

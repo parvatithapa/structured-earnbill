@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_payments_received_subreport" language="groovy" pageWidth="375" pageHeight="80" columnWidth="375" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="7c7b416e-0c8f-43d6-bc3a-bd97e93956a3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="use_payment_create_date" class="java.lang.Boolean"/>
+	<queryString>
+		<![CDATA[SELECT  p.amount,
+TO_CHAR(p.create_datetime AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT e.timezone FROM entity e WHERE e.id = bu.entity_id)), 'dd Mon yy') AS payment_date,
+p.is_refund
+   FROM
+    payment p
+   INNER JOIN
+      invoice_summary inv_sum
+      ON inv_sum.user_id = p.user_id
+   INNER JOIN
+      base_user bu
+      ON bu.id = p.user_id
+   WHERE inv_sum.creation_invoice_id = $P{invoice_id}
+   AND
+           CASE
+                      WHEN inv_sum.last_invoice_id IS NOT NULL THEN (p.create_datetime >=
+                                 (
+                                        SELECT i_inner1.create_timestamp
+                                        FROM   invoice i_inner1
+                                        WHERE  i_inner1.id = inv_sum.last_invoice_id )
+                      AND        p.create_datetime <
+                                 (
+                                        SELECT i_inner3.create_timestamp
+                                        FROM   invoice i_inner3
+                                        WHERE  i_inner3.id = $P{invoice_id} ))
+                      ELSE ( p.create_datetime <
+                                 (
+                                        SELECT i_inner3.create_timestamp
+                                        FROM   invoice i_inner3
+                                        WHERE  i_inner3.id = $P{invoice_id} ))
+           END
+   AND p.result_id IN (1, 4)
+   AND p.deleted = 0
+   AND bu.deleted = 0;]]>
+	</queryString>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="payment_date" class="java.lang.String"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="200" height="15" uuid="763a564e-1b16-4890-b517-6a7e3788edc9"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payment_date} + ( $F{is_refund} == 0 ?  ' payment' : ' refund' )]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="259" y="0" width="100" height="15" uuid="77240bab-85b9-4dbc-9a2d-592e4e726b51"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+''+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)+( $F{is_refund} == 0 ? 'cr' : '' )]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

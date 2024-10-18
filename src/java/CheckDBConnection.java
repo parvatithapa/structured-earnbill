@@ -15,7 +15,7 @@ public class CheckDBConnection {
     private static final String ORACLE_URL = "jdbc:oracle://localhost:" + ORACLE_PORT + "/";
 
     //DB Driver Names
-    private static final String MYSQL_DRIVER_NAME = "com.mysql.jdbc.Driver";
+    private static final String MYSQL_DRIVER_NAME = "com.mysql.cj.jdbc.Driver";
     private static final String MSSQL_DRIVER_NAME = "com.microsoft.jdbc.sqlserver.SQLServerDriver";
     private static final String POSTGRES_DRIVER_NAME = "org.postgresql.Driver";
     private static final String ORACLE_DRIVER_NAME = "oracle.jdbc.driver.OracleDriver";

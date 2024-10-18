@@ -16,11 +16,15 @@
 
 package com.sapienter.jbilling.server.process.db;
 
+import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
 
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.notification.db.InvoiceEmailProcessInfoDTO;
 import com.sapienter.jbilling.server.order.OrderStatusFlag;
 
+import org.apache.commons.lang.StringUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
@@ -31,6 +35,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Property;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.Subqueries;
+import org.hibernate.criterion.Order;
 
 import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.user.db.CompanyDTO;
@@ -39,6 +44,8 @@ import com.sapienter.jbilling.server.util.db.AbstractDAS;
 
 public class BillingProcessDAS extends AbstractDAS<BillingProcessDTO> {
 
+    private static final String NL = System.getProperty("line.separator");
+    
     public BillingProcessDTO create(CompanyDTO entity, Date billingProcess,
             Integer periodId, Integer periodValue, Integer retries) {
 
@@ -229,6 +236,24 @@ public class BillingProcessDAS extends AbstractDAS<BillingProcessDTO> {
     				" WHERE i.billingProcess.id = :billingProcessId "+
     				"   AND i.deleted = 0";
 
+    private static final String findInvoiceProcessCountAGLSQL =
+           "SELECT count(*) " +
+                    "  FROM invoice i " +
+                    " INNER JOIN customer c " +
+                    " ON i.user_id = c.user_id" +
+                    " WHERE i.billing_process_id = :billingProcessId "+
+                    "   AND i.deleted = 0"+
+                    "   AND c.invoice_design = :aglInvoice";
+    
+    private static final String findInvoiceProcessCountSPCSQL =
+            "SELECT count(*) " +
+                     "  FROM invoice i " +
+                     " INNER JOIN customer c " +
+                     " ON i.user_id = c.user_id" +
+                     " WHERE i.billing_process_id = :billingProcessId "+
+                     "   AND i.deleted = 0"+
+                     "   AND (c.invoice_design is NULL OR c.invoice_design = '')";
+
     public Long getOrderProcessCount(Integer billingProcessId) {
     	Query query = getSession().createQuery(findOrderProcessCountSQL);
     	query.setParameter("billingProcessId", billingProcessId);
@@ -236,9 +261,19 @@ public class BillingProcessDAS extends AbstractDAS<BillingProcessDTO> {
     }
 
     public Long getInvoiceProcessCount(Integer billingProcessId) {
-    	Query query = getSession().createQuery(findInvoiceProcessCountSQL);
-    	query.setParameter("billingProcessId", billingProcessId);
-    	return (Long) query.uniqueResult();
+        Query query = getSession().createQuery(findInvoiceProcessCountSQL);
+        query.setParameter("billingProcessId", billingProcessId);
+        return (Long) query.uniqueResult();
+    }
+
+    public BigInteger getSPCInvoiceCountForBillRun(Integer billingProcessId,boolean isAGLExtract) {
+        
+        SQLQuery query = isAGLExtract ? getSession().createSQLQuery(findInvoiceProcessCountAGLSQL) : getSession().createSQLQuery(findInvoiceProcessCountSPCSQL);
+        query.setParameter("billingProcessId", billingProcessId);
+        if (isAGLExtract) {
+            query.setParameter("aglInvoice", SPCConstants.AGL_INVOICE);
+        }
+        return (BigInteger) query.uniqueResult();
     }
 
     private static final String findLastBillingProcessDateSQL = "select max(billing_date) from billing_process where entity_id = :entityId and is_review = 0";
@@ -267,5 +302,79 @@ public class BillingProcessDAS extends AbstractDAS<BillingProcessDTO> {
     	query.setParameter("invoicePeriodDate", invoicePeriodDate);
     	query.setParameter("entityId", entityId);
     	return (Integer) query.uniqueResult();
+    }
+
+    public static final String SQL_EMAILS_ESTIMATED= String.join(NL,
+            "SELECT (SELECT COALESCE(count(distinct i.id),0) FROM InvoiceDTO i, CustomerDTO c WHERE i.baseUser=c.baseUser ",
+            "AND c.invoiceDeliveryMethod.id in (1,3) AND i.billingProcess.id = :billingProcessId ) - COALESCE(sum(inf.emailsEstimated),0) ",
+            "FROM InvoiceEmailProcessInfoDTO inf WHERE inf.billingProcess.id= :billingProcessId)");
+
+    public Integer getEmailsEstimatedCount(Integer billingProcessId) {
+        Query query = getSession().createQuery(SQL_EMAILS_ESTIMATED);
+        query.setParameter("billingProcessId", billingProcessId);
+        return ((Long) query.uniqueResult()).intValue();
+    }
+   
+    public static final String SQL_EMAILS_SENT= String.join(NL,
+            "SELECT count(distinct i.id) FROM InvoiceDTO i, InvoiceNotificationMessageArchDTO inma, ",
+            "NotificationMessageArchDTO nma WHERE inma.baseUser=i.baseUser AND inma.invoice.id=i.id AND inma.notificationMessageArch.id=nma.id ",
+            "AND i.billingProcess.id = :billingProcessId AND inma.jobExecutionId =:jobExecutionId AND nma.resultMessage IS NULL");
+
+    /**
+     * Returns Emails sent of a Billing Process
+     * @param billingProcessId
+     * @return
+     */
+    public Integer getEmailsSentCount(Integer billingProcessId, Integer jobExecutionId) {
+        Query query = getSession().createQuery(SQL_EMAILS_SENT);
+        query.setParameter("billingProcessId", billingProcessId);        
+        query.setParameter("jobExecutionId", jobExecutionId);
+        return ((Long) query.uniqueResult()).intValue();
+    }
+
+    public static final String SQL_EMAILS_FAILED= String.join(NL,
+            "SELECT count(distinct i.id) FROM InvoiceDTO i, InvoiceNotificationMessageArchDTO inma, ",
+            "NotificationMessageArchDTO nma WHERE inma.baseUser=i.baseUser AND inma.invoice.id=i.id AND inma.notificationMessageArch.id=nma.id ",
+            "AND i.billingProcess.id = :billingProcessId AND inma.jobExecutionId =:jobExecutionId AND nma.resultMessage IS NOT NULL");
+    
+    /**
+     * Returns Emails failed count of Billing Process
+     * @param billingProcessId
+     * @return
+     */
+    public Integer getEmailsFailedCount(Integer billingProcessId, Integer jobExecutionId) {
+        Query query = getSession().createQuery(SQL_EMAILS_FAILED);
+        query.setParameter("billingProcessId", billingProcessId);
+        query.setParameter("jobExecutionId", jobExecutionId);
+        return ((Long) query.uniqueResult()).intValue();
+    }
+    
+    /**
+     * Returns all the invoice email process info of Billing process
+     * @param billingProcessId
+     * @return
+     */
+    public List<InvoiceEmailProcessInfoDTO> getAllInvoiceEmailProcessInfo(Integer billingProcessId) {
+        Criteria criteria = getSession().createCriteria(InvoiceEmailProcessInfoDTO.class);
+        criteria.createAlias("billingProcess", "bp")
+        .add(Restrictions.eq("bp.id", billingProcessId))
+        .addOrder(Order.asc("startDatetime"));        
+        return criteria.list();
+    }
+
+    private static final String FIND_LAST_BILLING_PROCESS_ID =
+            "select id " +
+                    "  from billing_process" +
+                    " where entity_id = :entityId" +
+                    "   and is_review = 0 order by billing_date desc limit 1 ";
+
+    public Integer getLastBillingProcessId(Integer entityId) {
+        SQLQuery query = getSession().createSQLQuery(FIND_LAST_BILLING_PROCESS_ID);
+        query.setParameter("entityId", entityId);
+        Object result = query.uniqueResult();
+        if(result == null){
+            result = -1;
+        }
+        return (Integer) result;
     }
 }

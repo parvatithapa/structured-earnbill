@@ -24,8 +24,8 @@ public class EmailValidationRuleModel extends AbstractValidationRuleModel {
     private Matcher matcher;
 
     private static final String EMAIL_PATTERN =
-            "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-\\+]+)*@"
-                    + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+            "^[_A-Za-z0-9-'-\\+]+(\\.[_A-Za-z0-9-'-\\+]+)*@"
+                    + "[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z']{2,})$";
 
     public EmailValidationRuleModel() {
         pattern = getMatchingPattern();

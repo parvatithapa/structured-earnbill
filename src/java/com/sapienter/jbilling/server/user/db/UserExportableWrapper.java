@@ -1,16 +1,21 @@
 package com.sapienter.jbilling.server.user.db;
 
 import com.sapienter.jbilling.common.Util;
+import com.sapienter.jbilling.server.adennet.dto.UserInfoRowMapper;
 import com.sapienter.jbilling.server.item.db.AssetDAS;
+import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.metafields.MetaFieldType;
 import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
-import com.sapienter.jbilling.server.user.UserBL;
+import com.sapienter.jbilling.server.util.audit.db.EventLogDAS;
+import com.sapienter.jbilling.server.util.audit.db.EventLogDTO;
 import com.sapienter.jbilling.server.util.csv.DynamicExport;
 import com.sapienter.jbilling.server.util.csv.ExportableWrapper;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,39 +39,23 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
     private static final Map<Integer, List<String>> CUSTOMER_META_FIELD_MAP = new ConcurrentHashMap<>();
     private static final Map<Integer, Map<Integer, String>> ACCOUNT_INFORMATION_TYPE_ID_AND_NAME_MAP = new ConcurrentHashMap<>();
     private static final String[] FIELDS = new String[]{
-            "id",
-            "userName",
-            "status",
-            "subscriberStatus",
-            "deleted",
-            "accountExpired",
-            "accountLocked",
-            "passwordExpired",
-            "lastLogin",
-            "lastStatusChange",
-            "createdDateTime",
-            "language",
-            "currency",
+            "userId",
+            "ICCID",
+            "subscriberNumber",
+            "assetStatus",
 
             // customer
-            "accountType",
-            "invoiceDeliveryMethod",
-            "autoPaymentType",
-            "parentUserId",
-            "isParent",
-            "invoiceIfChild",
-            "excludeAging",
-            "balance",
-            "dynamicBalance",
-            "creditLimit",
-            "autoRecharge",
+            "walletBalance",
+            "planDescription",
+            "planStatus",
+            "customerType",
+            "identificationType",
+            "identificationNumber",
+            "governorate",
 
             // contact
-            "organizationName",
-            "title",
             "firstName",
             "lastName",
-            "initial",
             "address1",
             "address2",
             "city",
@@ -75,7 +64,16 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
             "countryCode",
             "phoneNumber",
             "faxNumber",
-            "email"
+            "email",
+            "createdBy",
+            "createdDate",
+            "updatedBy",
+            "updatedDate",
+            "language",
+            "currency",
+            "accountType",
+            "customerStatus",
+            "lastStatusChange"
     };
 
 
@@ -86,6 +84,11 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
     private DynamicExport dynamicExport = DynamicExport.NO;
     private CustomerDAS customerDAS;
     private ResourceBundle bundle;
+    private BigDecimal walletBalance = BigDecimal.ZERO;
+    private String planDescription = "";
+    private String planStatus = "";
+    private String subscriberNumber = "";
+    private UserInfoRowMapper userInfoRowMapper;
 
     private void init(Integer userId) {
         this.userId = userId;
@@ -98,9 +101,10 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
         init(userId);
     }
 
-    public UserExportableWrapper(Integer userId, DynamicExport dynamicExport) {
+    public UserExportableWrapper(Integer userId, DynamicExport dynamicExport, UserInfoRowMapper userInfoRowMapper) {
         init(userId);
         setDynamicExport(dynamicExport);
+        this.userInfoRowMapper = userInfoRowMapper;
     }
 
     private class CustomerAITMetaFieldInfo {
@@ -151,33 +155,26 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
 
         List<String> fieldsList = new ArrayList<>();
 
-        fieldsList.add("id");
-        fieldsList.add("userName");
-        fieldsList.add("status");
-        fieldsList.add("subscriberStatus");
-        fieldsList.add("deleted");
-        fieldsList.add("accountExpired");
-        fieldsList.add("accountLocked");
-        fieldsList.add("passwordExpired");
-        fieldsList.add("lastLogin");
-        fieldsList.add("lastStatusChange");
-        fieldsList.add("createdDateTime");
-        fieldsList.add("language");
-        fieldsList.add("currency");
+        fieldsList.add("userId");
+        fieldsList.add("ICCID");
+        fieldsList.add("subscriberNumber");
+        fieldsList.add("assetStatus");
 
         // customer
+        fieldsList.add("WalletBalance");
+        fieldsList.add("planDescription");
+        fieldsList.add("planStatus");
+        fieldsList.add("identificationType");
+        fieldsList.add("identificationNumber");
+        fieldsList.add("createdBy");
+        fieldsList.add("createdDate");
+        fieldsList.add("updatedBy");
+        fieldsList.add("updatedDate");
+        fieldsList.add("language");
+        fieldsList.add("currency");
         fieldsList.add("accountType");
-        fieldsList.add("invoiceDeliveryMethod");
-        fieldsList.add("autoPaymentType");
-        fieldsList.add("parentUserId");
-        fieldsList.add("isParent");
-        fieldsList.add("invoiceIfChild");
-        fieldsList.add("excludeAging");
-        fieldsList.add("dynamicBalance");
-        fieldsList.add("creditLimit");
-        fieldsList.add("autoRecharge");
-        fieldsList.add("Asset Identifiers");
-        fieldsList.add("NextInvoiceDate");
+        fieldsList.add("customerStatus");
+        fieldsList.add("lastStatusChange");
 
         if (null == this.aitMetaFields) {
             this.aitMetaFields = getCustomerAITMetaFieldInfo();
@@ -206,48 +203,57 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
         if (null == this.aitMetaFields) {
             this.aitMetaFields = getCustomerAITMetaFieldInfo();
         }
+        if(null != this.userInfoRowMapper){
+            walletBalance = userInfoRowMapper.getWalletBalance();
+            subscriberNumber = userInfoRowMapper.getSubscriberNumber();
+            planDescription = userInfoRowMapper.getPlanDescription();
+            planStatus = userInfoRowMapper.getPlanStatus();
+        }
         UserDTO user = getWrappedInstance();
         List<Object[]> mfValues = new ArrayList<>();
         Collection<String> customerMetaFieldValues = this.getCustomerMetaFieldValues();
-        Integer languageId = user.getLanguage().getId();
-        Object[] objects = new Object[this.aitMetaFields.size() + customerMetaFieldValues.size() + 25];
 
+        // get eventLogs to find who had created/edited the customer
+        List<EventLogDTO> eventLogDTOs = getEventLogDTOS(user.getId());
+        // get created by
+        String createdBy = getCreatedBy(eventLogDTOs);
+        //get EventLogDTO to find who had edited the customer info.
+        EventLogDTO eventLogDTO = getEventLogDTO(eventLogDTOs);
+
+        Integer languageId = user.getLanguage().getId();
+        Object[] objects = new Object[this.aitMetaFields.size() + customerMetaFieldValues.size() + 18];
+
+        //custom fields
         objects[0] = user.getId();
         objects[1] = user.getUserName();
-        objects[2] = getStatus(user);
-        objects[3] = user.getSubscriberStatus() != null ? user.getSubscriberStatus().getDescription(languageId) : null;
-        objects[4] = user.getDeleted();
-        objects[5] = user.isAccountExpired();
-        objects[6] = user.isAccountLocked();
-        objects[7] = user.isPasswordExpired();
-        objects[8] = user.getLastLogin();
-        objects[9] = user.getLastStatusChange();
-        objects[10] = user.getCreateDatetime();
-        objects[11] = user.getLanguage() != null ? user.getLanguage().getDescription() : null;
-        objects[12] = user.getCurrency() != null ? user.getCurrency().getDescription(languageId) : null;
+        objects[2] = subscriberNumber;
+        objects[3] = getAssetStatus(user.getUserName());
 
         // customer
-        objects[13] = customer != null && customer.getAccountType() != null ? customer.getAccountType().getDescription(languageId) : null;
-        objects[14] = customer != null && customer.getInvoiceDeliveryMethod() != null ? customer.getInvoiceDeliveryMethod().getId() : null;
-        objects[15] = customer != null ? customer.getAutoPaymentType() : null;
-        objects[16] = customer != null && customer.getParent() != null ? customer.getParent().getBaseUser().getId() : null;
-        objects[17] = customer != null ? customer.getIsParent() : null;
-        objects[18] = customer != null ? customer.getInvoiceChild() : null;
-        objects[19] = customer != null ? customer.getExcludeAging() : null;
-        objects[20] = customer != null ? customer.getDynamicBalance() : null;
-        objects[21] = customer != null ? customer.getCreditLimit() : null;
-        objects[22] = customer != null ? customer.getAutoRecharge() : null;
-        objects[23] = customer != null ? (getAllUserAssets(user.getId())) : null;
-        objects[24] = customer != null ? customer.getNextInvoiceDate() : null;
+        objects[4] = customer != null ? walletBalance : null;
+        objects[5] = customer != null ? planDescription : null;
+        objects[6] = customer != null ? planStatus : null;
+        objects[7] = customer != null ? customer.getIdentificationType() : null;
+        objects[8] = customer != null ? customer.getIdentificationText() : null;
+        objects[9] = customer != null ? createdBy : null;
+        objects[10] = user.getCreateDatetime();
+        objects[11] = eventLogDTO != null ? eventLogDTO.getBaseUser().getUserName() : null;
+        objects[12] = eventLogDTO != null ? eventLogDTO.getCreateDatetime() : null;
+        objects[13] = user.getLanguage() != null ? user.getLanguage().getDescription() : null;
+        objects[14] = user.getCurrency() != null ? user.getCurrency().getDescription(languageId) : null;
+        objects[15] = customer != null && customer.getAccountType() != null ? customer.getAccountType().getDescription(languageId) : null;
+        objects[16] = getStatus(user);
+        objects[17] = user.getLastStatusChange();
 
-        int i = 25;
+        // The value of initialTotalColumnCount is equal to total number of custom fields.
+        int initialTotalColumnCount = 17;
 
         for (CustomerAITMetaFieldInfo customerAITMetaFieldInfo : this.aitMetaFields) {
-            objects[i++] = customerAITMetaFieldInfo.metaFieldValue;
+            objects[++initialTotalColumnCount] = customerAITMetaFieldInfo.metaFieldValue;
         }
 
         for (Object object : customerMetaFieldValues) {
-            objects[i++] = object;
+            objects[++initialTotalColumnCount] = object;
         }
 
         mfValues.add(objects);
@@ -267,41 +273,40 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
                                                        .collect(Collectors.toList());
         UserDTO user = getWrappedInstance();
         Integer languageId = user.getLanguage().getId();
+        List<String> customerMetaFieldValues = this.getCustomerMetaFieldValues();
+
+        // get eventLogs to find who was created and edited
+        List<EventLogDTO> eventLogDTOs = getEventLogDTOS(user.getId());
+        // get created by
+        String createdBy = getCreatedBy(eventLogDTOs);
+        // get EventLogDTO to find who was edited the customer info
+        EventLogDTO eventLogDTO = getEventLogDTO(eventLogDTOs);
+
+        if(null != this.userInfoRowMapper){
+            walletBalance = userInfoRowMapper.getWalletBalance();
+            subscriberNumber = userInfoRowMapper.getSubscriberNumber();
+            planDescription = userInfoRowMapper.getPlanDescription();
+            planStatus = userInfoRowMapper.getPlanStatus();
+        }
         return new Object[][]{
                 {
                         user.getId(),
                         user.getUserName(),
-                        getStatus(user),
-                        user.getSubscriberStatus() != null ? user.getSubscriberStatus().getDescription() : null,
-                        user.getDeleted(),
-                        user.isAccountExpired(),
-                        user.isAccountLocked(),
-                        user.isPasswordExpired(),
-                        user.getLastLogin(),
-                        user.getLastStatusChange(),
-                        user.getCreateDatetime(),
-                        user.getLanguage() != null ? user.getLanguage().getDescription() : null,
-                        user.getCurrency() != null ? user.getCurrency().getDescription(languageId) : null,
+                        subscriberNumber,
+                        getAssetStatus(user.getUserName()),
 
                         // customer
-                        customer != null && customer.getAccountType() != null ? customer.getAccountType().getDescription(languageId) : null,
-                        customer != null && customer.getInvoiceDeliveryMethod() != null ? customer.getInvoiceDeliveryMethod().getId() : null,
-                        customer != null ? customer.getAutoPaymentType() : null,
-                        customer != null && customer.getParent() != null ? customer.getParent().getBaseUser().getId() : null,
-                        customer != null ? customer.getIsParent() : null,
-                        customer != null ? customer.getInvoiceChild() : null,
-                        customer != null ? customer.getExcludeAging() : null,
-                        customer != null ? UserBL.getBalance(customer.getBaseUser().getId()) : null,
-                        customer != null ? customer.getDynamicBalance() : null,
-                        customer != null ? customer.getCreditLimit() : null,
-                        customer != null ? customer.getAutoRecharge() : null,
+                        customer != null ? walletBalance : null,
+                        customer != null ? planDescription : null,
+                        customer != null ? planStatus : null,
+                        !customerMetaFieldValues.isEmpty() ? customerMetaFieldValues.get(0) : null,
+                        customer != null ? customer.getIdentificationType() : null,
+                        customer != null ? customer.getIdentificationText() : null,
+                        !customerMetaFieldValues.isEmpty() ? customerMetaFieldValues.get(1) : null,
 
                         // contact
-                        getMetaFieldValueByType(metaFieldValues, MetaFieldType.ORGANIZATION),
-                        getMetaFieldValueByType(metaFieldValues, MetaFieldType.TITLE),
                         getMetaFieldValueByType(metaFieldValues, MetaFieldType.FIRST_NAME),
                         getMetaFieldValueByType(metaFieldValues, MetaFieldType.LAST_NAME),
-                        getMetaFieldValueByType(metaFieldValues, MetaFieldType.INITIAL),
                         getMetaFieldValueByType(metaFieldValues, MetaFieldType.ADDRESS1),
                         getMetaFieldValueByType(metaFieldValues, MetaFieldType.ADDRESS2),
                         getMetaFieldValueByType(metaFieldValues, MetaFieldType.CITY),
@@ -314,11 +319,20 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
                         concatMetaFields(getMetaFieldValueByType(metaFieldValues, MetaFieldType.FAX_COUNTRY_CODE),
                                 getMetaFieldValueByType(metaFieldValues, MetaFieldType.FAX_AREA_CODE),
                                 getMetaFieldValueByType(metaFieldValues, MetaFieldType.FAX_NUMBER)),
-                        getMetaFieldValueByType(metaFieldValues, MetaFieldType.EMAIL)
+                        getMetaFieldValueByType(metaFieldValues, MetaFieldType.EMAIL),
+
+                        createdBy,
+                        user.getCreateDatetime(),
+                        eventLogDTO != null ? eventLogDTO.getBaseUser().getUserName() : null,
+                        eventLogDTO != null ? eventLogDTO.getCreateDatetime() : null,
+                        user.getLanguage() != null ? user.getLanguage().getDescription() : null,
+                        user.getCurrency() != null ? user.getCurrency().getDescription(languageId) : null,
+                        customer != null && customer.getAccountType() != null ? customer.getAccountType().getDescription(languageId) : null,
+                        getStatus(user),
+                        user.getLastStatusChange(),
                 }
         };
     }
-
 
     private String getAllUserAssets(Integer userId) {
         String assets = new AssetDAS().findAssetsIdentifierByUserId(userId);
@@ -435,5 +449,32 @@ public class UserExportableWrapper implements ExportableWrapper<UserDTO> {
                 .filter(Objects::nonNull)
                 .map(Object::toString)
                 .collect(Collectors.joining());
+    }
+
+    private List<EventLogDTO> getEventLogDTOS(Integer userId){
+        return new EventLogDAS().getEventLogByAffectedUserId(userId);
+    }
+
+    private String getCreatedBy(List<EventLogDTO> eventLogDTOS) {
+        return eventLogDTOS.stream()
+            .filter(eventLogDto -> eventLogDto.getEventLogMessage().getId() == 25)
+            .map(eventLogDto -> eventLogDto.getBaseUser().getUserName())
+            .findFirst()
+            .orElse(null);
+    }
+
+    private EventLogDTO getEventLogDTO(List<EventLogDTO> eventLogDTOS) {
+        return eventLogDTOS.stream()
+            .filter(eventLogDto -> eventLogDto.getEventLogMessage().getId() == 9)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private String getAssetStatus(String userName) {
+        AssetDTO assetByIdentifier = new AssetDAS().getAssetByIdentifier(userName);
+        if (assetByIdentifier != null) {
+            return assetByIdentifier.getAssetStatus().getId() == 300 ? "Released" : assetByIdentifier.isSuspended() ? "Suspended" : "Active";
+        }
+        return null;
     }
 }

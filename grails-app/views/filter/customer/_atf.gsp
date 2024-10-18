@@ -33,7 +33,7 @@
     <div class="slide">
         <fieldset>
             <div class="input-row">
-                <div class="select-bg" style="float:left;">
+                <div id="custom-div" class="select-bg">
                     <g:set var="company" value="${CompanyDTO.get(session['company_id'])}"/>
                     <g:accountTypeMetaFields filter="${filter}" />
                 </div>

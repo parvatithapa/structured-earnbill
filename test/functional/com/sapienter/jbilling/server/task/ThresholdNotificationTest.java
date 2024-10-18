@@ -54,7 +54,7 @@ import com.sapienter.jbilling.server.util.api.JbillingAPI;
  * @since 07-Jan-2013
  *
  */
-@Test(groups = { "integration", "task", "threshold-notification" }, testName = "ThresholdNotificationTest", priority = 10)
+@Test(groups = { "integration", "task", "threshold-notification" }, testName = "ThresholdNotificationTest")
 public class ThresholdNotificationTest extends ApiTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(ThresholdNotificationTest.class);

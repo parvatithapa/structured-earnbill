@@ -16,7 +16,7 @@
 -->
 
 <project name="Continuous Intergeration Server Build" basedir="."
-    default="test.quick"
+    default="test.quick" 
     xmlns:jacoco="antlib:org.jacoco.ant">
 
     <property name="root.dir" value="."/>
@@ -25,10 +25,9 @@
 
     <property name="grails.properties.file" value="grails-ant.properties" />
     <property file="${grails.properties.file}" />
-
     <path id="test.classpath" path="${test.classpath}" />
-<!--    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml" classpathref="test.classpath" />-->
-<!--    <jacoco:agent property="jacocoagentvmparam" enabled="true" destfile="target/jacoco-it.exec" append="false" />-->
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml" classpathref="test.classpath" />
+    <jacoco:agent property="jacocoagentvmparam" enabled="true" destfile="target/jacoco-it.exec" append="false" />
 
     <condition property="cc-grails.home"
               value="${grails.base.path}${app.grails.version}">
@@ -55,7 +54,7 @@
     </condition>
     <property name="cc-grails" value="${cc-grails.home}/bin/grails"/>
 
-    <!--
+    <!-- 
         Targets
     -->
 
@@ -147,24 +146,22 @@
     </target>
 
 
-    <!--
+    <!-- 
          jBilling Start / Stop
     -->
 
     <target name="start" description="Start jBilling and wait for the application to become available.">
         <ant antfile="build.xml" target="build-grails-ant-properties" inheritall="true" inheritrefs="true"/>
         <exec executable="./startup.sh" spawn="true">
-            <env key="GRAILS_OPTS" value="-server -Xmx1536M -Xms256M -XX:MaxPermSize=384m"/>
+            <env key="GRAILS_OPTS" value="-server -Xmx1536M -Xms256M -XX:MaxPermSize=384m ${jacocoagentvmparam}"/>
             <env key="GRAILS_HOME" value="${cc-grails.home}"/>
             <env key="GRAILS_STARTUP_OPT" value="-Djava.awt.headless=true -noreloading -Dspring.profiles.active='billing.master,billing.slave,mediation.slave' "/>
         </exec>
 
         <echo message="Waiting for application to start on port ${server_port} ..."/>
-<!--
         <waitfor maxwait="12" maxwaitunit="minute" checkevery="500" timeoutproperty="startup.timeout">
             <http url="http://localhost:${server_port}/jbilling"/>
-        </waitfor>
--->
+        </waitfor>  
         <antcall target="stop.if.failed"/>
     </target>
 

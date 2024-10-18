@@ -1,5 +1,22 @@
 package com.sapienter.jbilling.server.pricing.strategy;
 
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.STRING;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import jbilling.RouteService;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.fileProcessing.FileConstants;
@@ -18,16 +35,6 @@ import com.sapienter.jbilling.server.user.db.CustomerAccountInfoTypeMetaField;
 import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.search.Filter;
 import com.sapienter.jbilling.server.util.search.SearchResult;
-import jbilling.RouteService;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-
-import java.math.BigDecimal;
-import java.util.*;
-
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.STRING;
 
 /**
  * The customer pays one rate for usage up to a threshold. All usage above the threshold gets billed at a second rate
@@ -84,13 +91,13 @@ public class BlockIndexRouteRateCardStrategy extends RouteBasedRateCardPricingSt
                 new AttributeDefinition(UNDERAGE_FEE, DECIMAL, false),
                 new AttributeDefinition(PARAM_EVENT_DATE, STRING, true)
 
-        );
+                );
 
         setChainPositions(
                 ChainPosition.START,
                 ChainPosition.MIDDLE,
                 ChainPosition.END
-        );
+                );
 
         setRequiresUsage(false);
         setVariableUsagePricing(false);
@@ -204,7 +211,7 @@ public class BlockIndexRouteRateCardStrategy extends RouteBasedRateCardPricingSt
 
     @Override
     public void applyTo(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields, PriceModelDTO planPrice, BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
-        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(pricingOrder, result, quantity);
+        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(orderLineDTO, result, quantity);
 
         quantity = fupResult.get(FupKey.NEW_QTY);
         usageQuantity=quantity;

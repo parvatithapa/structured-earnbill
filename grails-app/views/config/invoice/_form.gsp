@@ -49,7 +49,7 @@
                         <g:applyLayout name="form/text">
                             <content tag="label">
                                 <g:message code="invoice.config.label.logo"/>
-                                <a onclick="defaultInvoiceLogo()" style="float: right" class="submit">
+                                <a id="form-edit-submit" onclick="defaultInvoiceLogo()" class="submit">
                                     <g:message code="entity.remove.logo"/>
                                 </a>
                             </content>

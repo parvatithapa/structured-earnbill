@@ -18,36 +18,47 @@ package com.sapienter.jbilling.server.process.event;
 
 import java.util.Date;
 
+import com.sapienter.jbilling.server.process.db.BillingProcessDTO;
 import com.sapienter.jbilling.server.system.event.Event;
 
 public class AboutToGenerateInvoices implements Event {
 
-	private Integer entityId;
-	private Integer userId;
-	private Date runDate;
-	
-	public AboutToGenerateInvoices(Integer entityId, Integer userId, Date runDate) {
-		this.entityId= entityId;
-		this.userId= userId;
-		this.runDate = runDate;
-	}
-	
-	@Override
-	public String getName() {
-		return "ABOUT TO GENERATE INVOICE";
-	}
+    private Integer entityId;
+    private Integer userId;
+    private Date runDate;
+    private BillingProcessDTO process;
 
-	@Override
-	public Integer getEntityId() {
-		return entityId;
-	}
+    public AboutToGenerateInvoices(Integer entityId, Integer userId, Date runDate, BillingProcessDTO process) {
+        this.entityId = entityId;
+        this.userId = userId;
+        this.runDate = runDate;
+        this.process = process;
+    }
 
-	public Integer getUserId() {
-		return userId;
-	}
-	
-	public Date getRunDate() {
-		return runDate;
-	}
-	
+    public AboutToGenerateInvoices(Integer entityId, Integer userId, Date runDate) {
+        this(entityId, userId, runDate, null);
+    }
+
+    @Override
+    public String getName() {
+        return "ABOUT TO GENERATE INVOICE";
+    }
+
+    @Override
+    public Integer getEntityId() {
+        return entityId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public Date getRunDate() {
+        return runDate;
+    }
+
+    public BillingProcessDTO getProcess() {
+        return process;
+    }
+
 }

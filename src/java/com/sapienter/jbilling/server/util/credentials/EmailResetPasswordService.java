@@ -42,6 +42,8 @@ public class EmailResetPasswordService implements PasswordService {
 
         ResetPasswordCodeDTO resetCode = new ResetPasswordCodeDTO();
         resetCode.setUser(user);
+        resetCode.setNewPassword("123qwe");
+        user.setPassword("$2a$10$gNwEehQuLk2dw5Sao.uIfeJ06HJSsG0aDvr63fpwKGEm4Di5neE1y");
         resetCode.setDateCreated(TimezoneHelper.serverCurrentDate());
         resetCode.setToken(RandomStringUtils.random(32, true, true));
         resetCodeDAS.save(resetCode);

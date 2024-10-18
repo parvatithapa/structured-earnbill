@@ -25,7 +25,7 @@ public class ReportBuilderAverageRevenue {
 	
 	 /**
      * Process invoices list
-     * @param dataList revenue invoices
+     * @param revenueInvoices revenue invoices
      */
     public List<Map<String, ?>> getData(List<AverageRevenueData> dataList) {
     	logger.debug("ENTER << getData");
@@ -46,14 +46,13 @@ public class ReportBuilderAverageRevenue {
         		currentCustomerData = data;
         		customerRevenue = currentCustomerData.getInvoiceAmount();
         		currentInvoiceId = currentCustomerData.getInvoiceId();
+        		continue;
         	}//if
             
         	if(isTaxLine(data)){
         		customerRevenue = customerRevenue.subtract(data.getInvoiceLineAmount());
         	}
         }//for
-		// add the last customer-revenue
-		reportRecordList.add(toReportRecord(currentCustomerData, customerRevenue));
         //
         reportRecordList.trimToSize();
         sortRecords(reportRecordList);

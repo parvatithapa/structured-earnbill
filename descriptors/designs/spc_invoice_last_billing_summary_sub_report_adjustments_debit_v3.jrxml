@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_last_billing_summary_sub_report_adjustments_debit_v3" language="groovy" pageWidth="263" pageHeight="100" columnWidth="263" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="70baa986-bf7f-4b39-a15e-c13710156c3a">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_last_billing_summary_sub_report_adjustments_debit_v3" language="groovy" pageWidth="236" pageHeight="100" columnWidth="236" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="70baa986-bf7f-4b39-a15e-c13710156c3a">
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -20,7 +20,7 @@
 				<text><![CDATA[Debit]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
-				<reportElement x="155" y="1" width="100" height="15" isRemoveLineWhenBlank="true" uuid="ebd171a3-7d81-46b5-b57b-22a0d59912d9"/>
+				<reportElement x="150" y="1" width="84" height="15" isRemoveLineWhenBlank="true" uuid="ebd171a3-7d81-46b5-b57b-22a0d59912d9"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>

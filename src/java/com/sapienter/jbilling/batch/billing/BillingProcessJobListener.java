@@ -5,8 +5,6 @@ import java.util.Date;
 
 import javax.annotation.Resource;
 
-import com.sapienter.jbilling.server.scheduledTask.event.ScheduledJobNotificationEvent;
-import com.sapienter.jbilling.server.system.event.EventManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
@@ -16,17 +14,24 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.repository.JobRepository;
 
 import com.sapienter.jbilling.batch.BatchConstants;
+import com.sapienter.jbilling.server.notification.db.InvoiceEmailProcessInfoBL;
+import com.sapienter.jbilling.server.notification.db.InvoiceEmailProcessInfoDTO;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
-import com.sapienter.jbilling.server.process.BillingProcessInfoBL;
+import com.sapienter.jbilling.server.process.BillingProcessBL;
 import com.sapienter.jbilling.server.process.BillingProcessFailedUserBL;
+import com.sapienter.jbilling.server.process.BillingProcessInfoBL;
 import com.sapienter.jbilling.server.process.ConfigurationBL;
 import com.sapienter.jbilling.server.process.IBillingProcessSessionBean;
 import com.sapienter.jbilling.server.process.db.BillingProcessDAS;
 import com.sapienter.jbilling.server.process.db.BillingProcessDTO;
 import com.sapienter.jbilling.server.process.task.BasicBillingProcessFilterTask;
 import com.sapienter.jbilling.server.process.task.IBillingProcessFilterTask;
+import com.sapienter.jbilling.server.scheduledTask.event.ScheduledJobNotificationEvent;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
+import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.Context;
 
 /**
  *
@@ -37,6 +42,8 @@ public class BillingProcessJobListener implements JobExecutionListener {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String JOBCONTEXT_BILLING_PROCESS_ID_KEY = "billingProcessId";
+
+    private static final String JOBCONTEXT_INVOICE_EMAIL_PROCESS_INFO_ID_KEY = "invoiceEmailProcessInfoId";
 
     @Resource
     private JobRepository jobRepository;
@@ -56,9 +63,9 @@ public class BillingProcessJobListener implements JobExecutionListener {
      */
     @Override
     public void afterJob (JobExecution jobExecution) {
-
+        
         Integer billingProcessId = jobExecution.getExecutionContext().getInt(JOBCONTEXT_BILLING_PROCESS_ID_KEY);
-
+        
         int totalUsersSuccessful = jdbcService.countSuccessfulUsers(billingProcessId, jobExecution.getId());
         int totalUsersFailed = jdbcService.countFailedUsers(billingProcessId);
 
@@ -69,16 +76,52 @@ public class BillingProcessJobListener implements JobExecutionListener {
                 .create(billingProcessId, jobExecution.getId().intValue(), totalUsersFailed, totalUsersSuccessful)
                 .getId();
 
+        SpcHelperService spcHelperService = Context.getBean(SpcHelperService.class);
+        Integer emailProcessInfoId = null;
+        if(jobExecution.getExecutionContext().containsKey(BatchConstants.JOBCONTEXT_INVOICE_EMAIL_PROCESS_INFO_ID_KEY)){
+            logger.debug("execution context contains the invoice email process info id..{}",jobExecution.getExecutionContext().getInt(BatchConstants.JOBCONTEXT_INVOICE_EMAIL_PROCESS_INFO_ID_KEY));
+            emailProcessInfoId = Integer.valueOf(jobExecution.getExecutionContext().getInt(BatchConstants.JOBCONTEXT_INVOICE_EMAIL_PROCESS_INFO_ID_KEY));
+        }
         // if there are failed users mark the job as FAILED so it could be restarted
         if (totalUsersFailed > 0) {
             BillingProcessFailedUserBL failedUserBL = new BillingProcessFailedUserBL();
             for (Integer failed : jdbcService.listFailedUsers(billingProcessId)) {
                 failedUserBL.create(batchProcessInfoId, failed);
             }
+            try {
+                if(null != emailProcessInfoId) {
+                    logger.debug("There are failed users in job # {}, saving the email counts.", 
+                            jobExecution.getJobId());
+                    InvoiceEmailProcessInfoBL invoiceEmailProcessInfoBL = new InvoiceEmailProcessInfoBL(emailProcessInfoId);
+                    InvoiceEmailProcessInfoDTO invoiceEmailProcessInfoDTO = invoiceEmailProcessInfoBL.getEntity();
+                    invoiceEmailProcessInfoDTO.setEmailsEstimated(invoiceEmailProcessInfoDTO.getEmailsEstimated());
+                    invoiceEmailProcessInfoDTO.setEmailsFailed(billingProcessDAS.getEmailsFailedCount(billingProcessId, jobExecution.getId().intValue()));
+                    invoiceEmailProcessInfoDTO.setEmailsSent(billingProcessDAS.getEmailsSentCount(billingProcessId, jobExecution.getId().intValue()));
+                    invoiceEmailProcessInfoDTO.setEndDatetime(new Date());
+                    spcHelperService.createOrUpdateInvoiceEmailProcessInfo(invoiceEmailProcessInfoDTO);
+                }
+            } catch(Exception e) {
+                logger.error("Cannot save emails counts after the bill run is failed, {}",e.getMessage(),e);
+            }
             logger.debug("There are # {} failed users in job # {}, marking job as failed.", totalUsersFailed,
                     jobExecution.getJobId());
             jobExecution.setStatus(BatchStatus.FAILED);
         } else {
+            try {
+                BillingProcessBL billingProcessBL = new BillingProcessBL(billingProcessId);                
+                if(null != emailProcessInfoId) {                                    
+                    InvoiceEmailProcessInfoBL invoiceEmailProcessInfoBL = new InvoiceEmailProcessInfoBL(emailProcessInfoId);
+                    InvoiceEmailProcessInfoDTO invoiceEmailProcessInfoDTO = invoiceEmailProcessInfoBL.getEntity();
+                    invoiceEmailProcessInfoDTO.setJobExecutionId(jobExecution.getId().intValue());
+                    invoiceEmailProcessInfoDTO.setBillingProcess(billingProcessBL.getEntity());
+                    invoiceEmailProcessInfoDTO.setEmailsFailed(billingProcessDAS.getEmailsFailedCount(billingProcessId, jobExecution.getId().intValue()));
+                    invoiceEmailProcessInfoDTO.setEmailsSent(billingProcessDAS.getEmailsSentCount(billingProcessId, jobExecution.getId().intValue()));
+                    invoiceEmailProcessInfoDTO.setEndDatetime(new Date());                    
+                    spcHelperService.createOrUpdateInvoiceEmailProcessInfo(invoiceEmailProcessInfoDTO);
+                }
+            } catch(Exception e) {
+                logger.error("Cannot save emails counts after the bill run is finished,  {}",e.getMessage(),e);
+            }
             jdbcService.cleanupBillingProcessData(billingProcessId);
         }
 
@@ -105,35 +148,37 @@ public class BillingProcessJobListener implements JobExecutionListener {
         Integer entityId = jobParams.getLong(Constants.BATCH_JOB_PARAM_ENTITY_ID).intValue();
         Date billingDate = jobParams.getDate(BatchConstants.PARAM_BILLING_DATE);
         boolean review = jobParams.getLong(BatchConstants.PARAM_REVIEW) == 1L;
-
+        
         BillingProcessDTO billingProcess = billingProcessDAS.isPresent(entityId, review ? 1 : 0, billingDate);
 
         boolean createBillingProcessData = ( null == billingProcess || review );
-
         Integer billingProcessId = createBillingProcessData
                 ? createBillingProcessDTO(entityId, billingDate, review, jobParams).getId()
-                : billingProcess.getId();
+                    : billingProcess.getId();
 
-        logger.debug("Job will use billing process with id: {}", billingProcessId);
+                logger.debug("Job will use billing process with id: {}", billingProcessId);
 
-        if (createBillingProcessData) {
-            jdbcService.createBillingProcessData(
-                    billingProcessFilter(entityId).findUsersToProcess(entityId, billingDate), billingProcessId);
-        } else {
-            jobExecution.getExecutionContext().putInt("restart", 1);
-        }
+                if (createBillingProcessData) {
+                    jdbcService.createBillingProcessData(
+                            billingProcessFilter(entityId).findUsersToProcess(entityId, billingDate), billingProcessId);
+                } else {
+                    jobExecution.getExecutionContext().putInt("restart", 1);
+                }
 
-        jobExecution.getExecutionContext().putInt(JOBCONTEXT_BILLING_PROCESS_ID_KEY, billingProcessId);
+                jobExecution.getExecutionContext().putInt(JOBCONTEXT_BILLING_PROCESS_ID_KEY, billingProcessId);
 
-        jobRepository.updateExecutionContext(jobExecution);
-        logger.debug("BillingProcessJobListener : beforeJob");
-        try {
-            EventManager.process(new ScheduledJobNotificationEvent(entityId, "BillingProcess",
-                    jobExecution, ScheduledJobNotificationEvent.TaskEventType.BEFORE_JOB));
+                jobRepository.updateExecutionContext(jobExecution);
 
-        } catch (Exception exception) {
-            logger.warn("Cannot send notification on beforeJob for Billing Process Listener");
-        }
+                logger.debug("BillingProcessJobListener : beforeJob");
+                try {
+                    EventManager.process(new ScheduledJobNotificationEvent(entityId, "BillingProcess",
+                            jobExecution, ScheduledJobNotificationEvent.TaskEventType.BEFORE_JOB));
+
+                } catch (Exception exception) {
+                    logger.warn("Cannot send notification on beforeJob for Billing Process Listener");
+                }
+
+
     }
 
     private BillingProcessDTO createBillingProcessDTO (Integer entityId, Date billingDate, boolean review,

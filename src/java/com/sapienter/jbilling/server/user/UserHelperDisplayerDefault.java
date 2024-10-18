@@ -21,6 +21,8 @@ package com.sapienter.jbilling.server.user;
 
 import com.sapienter.jbilling.server.user.db.UserDTO;
 
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.FIRST_NAME;
+
 /**
  * Created by igutierrez on 3/31/17.
  */
@@ -47,5 +49,10 @@ public class UserHelperDisplayerDefault implements UserHelperDisplayer {
     @Override
     public String getDisplayName(UserDTO user) {
         return user.getUserName();
+    }
+
+    @Override
+    public String getDisplayFirstName(UserDTO user) {
+        return user.getCustomer().getCustomerAccountInfoTypeMetaField(FIRST_NAME).getMetaFieldValue().getValue().toString();
     }
 }

@@ -25,12 +25,6 @@ public interface ProcessSQL {
         "   and is_review = 0 " +
         " order by 1";
 
-    static final String lastId =
-        "select id " +
-        "  from billing_process" +
-        " where entity_id = ?" +
-        "   and is_review = 0 order by billing_date desc limit 1 ";
-    
     // needed to avoid getting into a trasaction in the billingProcess.trigger
     // since Collections have to be in transactions
     static String findToRetry =

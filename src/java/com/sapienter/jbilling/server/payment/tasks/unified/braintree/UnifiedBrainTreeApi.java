@@ -27,8 +27,6 @@ public class UnifiedBrainTreeApi {
 
     private static final String API_BRAINTREE_REFUND_TRANSACTION = "/api/braintree/refundTransaction/{businessId}/{transactionId}/{amount}/";
 
-    private static final String API_BRAINTREE_CAPTURE = "/api/braintree/captureTransaction/%s/%s/%s";
-
     private static final Logger logger = LoggerFactory.getLogger(UnifiedBrainTreeApi.class);
 
     private String businessId;
@@ -159,17 +157,6 @@ public class UnifiedBrainTreeApi {
             brainTreeResult.setErrorMessage(null != brainTreeResult.getErrorMessage() ? brainTreeResult
                     .getErrorMessage().concat(", message : "+(String) responseMap.get(MESSAGE)) : (String) responseMap
                     .get(MESSAGE));
-        }
-    }
-
-    public UnifiedBrainTreeResult capture(Integer timeout, String amount, String transactionId) throws PluggableTaskException {
-        try{
-            String url = String.format(remoteRefundAPI + API_BRAINTREE_CAPTURE, businessId, transactionId, amount);
-            UnifiedBrainTreeResult result =  makeApiCall(url, "", timeout);
-            result.setPaymentType("capture");
-            return result;
-        }catch(Exception e){
-            throw new PluggableTaskException("Could not handle capture payment request due to error ", e);
         }
     }
 

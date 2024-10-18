@@ -1,10 +1,7 @@
 package com.sapienter.jbilling.rest;
 
-import org.springframework.web.client.HttpStatusCodeException;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -22,6 +19,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sapienter.jbilling.client.util.Constants;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.payment.PaymentInformationRestWS;
@@ -112,23 +110,13 @@ public class StripeRestTest extends RestTestCase{
     	/* 0000002500003155
     	 * Invalid credit card number
     	 */
-		try{
-			ResponseEntity<SecurePaymentWS> responseInstrument = addPaymentInstrument(null, CARD_INVALID, "04/2000", 1);
-
-			fail("No no");
-		} catch (HttpStatusCodeException e){
-			/*String errorMsg = e.getResponseBodyAsString();
-			assertTrue(errorMsg.contains("MetaFieldValue,value,Payment card number is not valid"), "Response ->"+errorMsg);*/
-			assertEquals(e.getStatusCode().value(), Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-		}
-
-    	/*ResponseEntity<SecurePaymentWS> responseInstrument = addPaymentInstrument(null, CARD_INVALID, "04/2000", 1);
+    	ResponseEntity<SecurePaymentWS> responseInstrument = addPaymentInstrument(null, CARD_INVALID, "04/2000", 1);
     	
-    	RestValidationHelper.validateStatusCode(responseInstrument, Response.Status.OK.getStatusCode());
+    	RestValidationHelper.validateStatusCode(responseInstrument, Response.Status.PAYMENT_REQUIRED.getStatusCode());
         
     	SecurePaymentWS securePaymentWS = responseInstrument.getBody();
     	
-    	assertFail(securePaymentWS, "incorrect_number");*/
+    	assertFail(securePaymentWS, "incorrect_number");
     	
    }
    
@@ -142,7 +130,7 @@ public class StripeRestTest extends RestTestCase{
     	*/
     	ResponseEntity<SecurePaymentWS> responseInstrument = addPaymentInstrument(null, CARD_3DS_REQUIRED, "09/2000", 1);
     	
-    	RestValidationHelper.validateStatusCode(responseInstrument, Response.Status.OK.getStatusCode());
+    	RestValidationHelper.validateStatusCode(responseInstrument, Response.Status.PAYMENT_REQUIRED.getStatusCode());
         
     	SecurePaymentWS securePaymentWS = responseInstrument.getBody();
     	
@@ -233,7 +221,7 @@ public class StripeRestTest extends RestTestCase{
     	
     	ResponseEntity<SecurePaymentWS> response = processPayment(paymentWS);
     	
-    	RestValidationHelper.validateStatusCode(response, Response.Status.OK.getStatusCode());
+    	RestValidationHelper.validateStatusCode(response, Response.Status.PAYMENT_REQUIRED.getStatusCode());
         
     	SecurePaymentWS securePaymentWS = response.getBody();
     	
@@ -252,7 +240,7 @@ public class StripeRestTest extends RestTestCase{
     	
     	ResponseEntity<SecurePaymentWS> response = processPayment(paymentWS);
     	
-    	RestValidationHelper.validateStatusCode(response, Response.Status.OK.getStatusCode());
+    	RestValidationHelper.validateStatusCode(response, Response.Status.PAYMENT_REQUIRED.getStatusCode());
         
     	SecurePaymentWS securePaymentWS = response.getBody();
     	
@@ -270,7 +258,7 @@ public class StripeRestTest extends RestTestCase{
     	
     	ResponseEntity<SecurePaymentWS> response = processPayment(paymentWS);
     	
-    	RestValidationHelper.validateStatusCode(response, Response.Status.OK.getStatusCode());
+    	RestValidationHelper.validateStatusCode(response, Response.Status.PAYMENT_REQUIRED.getStatusCode());
         
     	SecurePaymentWS securePaymentWS = response.getBody();
     	
@@ -381,8 +369,8 @@ public class StripeRestTest extends RestTestCase{
     	assertEquals(securePaymentWS.getNextAction(), securePaymentWS.getNextAction());
     	
     	assertEquals(securePaymentWS.getError(), null);
-
-		assertNotNull(securePaymentWS.getBillingHubRefId(), "Response, BillingHubRefId, should not be null"); // assert Payment instrument id is null
+    	
+    	assertEquals(securePaymentWS.getBillingHubRefId(), Integer.valueOf(0)); // assert Payment instrument id is null
     	
     	if(deleteUser){
 	    	deleteUser(securePaymentWS.getUserId());
@@ -408,16 +396,16 @@ public class StripeRestTest extends RestTestCase{
    private void assertFail(SecurePaymentWS securePaymentWS , String expectedErrorCode){
 	   
 		assertNotNull(securePaymentWS, "Response, SecurePaymentWS, should not be null");
-
-	    assertNotNull(securePaymentWS.getBillingHubRefId(), "Response, BillingHubRefId, should not be null"); // assert Payment instrument id is null
+	   	
+		assertEquals(securePaymentWS.getBillingHubRefId(), Integer.valueOf(0)); // assert Payment instrument id is null
 		   	
 		assertEquals(securePaymentWS.getNextAction(), null); // assert next action is null
 		   	
-		assertEquals(securePaymentWS.getStatus(), "succeeded");
+		assertEquals(securePaymentWS.getStatus(), "failed");
 		   	
-		//assertNotNull(securePaymentWS.getError(), "Response, error, should not be null");
+		assertNotNull(securePaymentWS.getError(), "Response, error, should not be null");
 		   	
-		//assertEquals(securePaymentWS.getError().getCode(), expectedErrorCode);
+		assertEquals(securePaymentWS.getError().getCode(), expectedErrorCode);
 		
 		deleteUser(securePaymentWS.getUserId());
    }
@@ -441,21 +429,47 @@ public class StripeRestTest extends RestTestCase{
         PaymentInformationRestWS instrumentWS = RestEntitiesHelper.buildPaymentInformationWSMock(userId, 1, cardNumber, expiryDate, null);
         
         instrumentWS.setProcessingOrder(processingOrder);
-        
-        ResponseEntity<SecurePaymentWS> responseInstrument = restTemplate.sendRequest(restHelper.getFullRestUrl()+"users/addpaymentinstrument", HttpMethod.POST,
+        ResponseEntity<SecurePaymentWS> responseInstrument = null; 
+        try{
+        	responseInstrument = restTemplate.sendRequest(restHelper.getFullRestUrl()+"users/addpaymentinstrument", HttpMethod.POST,
                 postOrPutHeaders, instrumentWS, SecurePaymentWS.class);
         
-        assertNotNull(responseInstrument, "Response, SecurePaymentWS, should not be null");
+        	assertNotNull(responseInstrument, "Response, SecurePaymentWS, should not be null");        
         
+        }catch(org.springframework.web.client.HttpClientErrorException exp){
+        	try{
+	        	ObjectMapper mapper = new ObjectMapper();
+	        	SecurePaymentWS securePaymentWS =   mapper.readValue(exp.getResponseBodyAsString(), SecurePaymentWS.class) ;
+	        	
+	        	responseInstrument = new ResponseEntity(securePaymentWS, exp.getStatusCode());
+	        	
+	        	System.out.print(exp.getResponseBodyAsString());
+	        }catch(Exception ex){
+	        	ex.printStackTrace();
+			}
+        }
         return responseInstrument;
     }
     
     
     private ResponseEntity<SecurePaymentWS> processPayment(PaymentWS paymentWS ){
-    	ResponseEntity<SecurePaymentWS> responseProcessPayment = restTemplate.sendRequest(restHelper.getFullRestUrl()+"payments/processpayment", HttpMethod.POST,
-                postOrPutHeaders, paymentWS, SecurePaymentWS.class);
-        
-        assertNotNull(responseProcessPayment, "Response, SecurePaymentWS, should not be null");
+    	ResponseEntity<SecurePaymentWS> responseProcessPayment = null; 
+    	
+    	try{
+    		
+    		responseProcessPayment = restTemplate.sendRequest(restHelper.getFullRestUrl()+"payments/processpayment", HttpMethod.POST, postOrPutHeaders, paymentWS, SecurePaymentWS.class);        
+        	assertNotNull(responseProcessPayment, "Response, SecurePaymentWS, should not be null");
+        	
+    	}catch(org.springframework.web.client.HttpClientErrorException exp){
+    		try{
+	        	ObjectMapper mapper = new ObjectMapper();    		
+	    		SecurePaymentWS securePaymentWS =   mapper.readValue(exp.getResponseBodyAsString(), SecurePaymentWS.class);
+	        	responseProcessPayment = new ResponseEntity(securePaymentWS, exp.getStatusCode());
+	        	System.out.print(exp.getResponseBodyAsString());
+    		}catch(Exception ex){
+    			ex.printStackTrace();
+    		}
+        }
         return responseProcessPayment;
     } 
     /*

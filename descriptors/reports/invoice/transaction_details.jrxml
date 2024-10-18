@@ -99,7 +99,7 @@
 				</textElement>
 				<text><![CDATA[Start Date:]]></text>
 			</staticText>
-			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="1460" y="21" width="85" height="20" uuid="218e21e2-5d5b-4950-93ff-304be52da8d8"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
@@ -112,12 +112,12 @@
 				</textElement>
 				<text><![CDATA[End Date:]]></text>
 			</staticText>
-			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="1460" y="41" width="85" height="20" uuid="b1737d92-7f1b-4666-9967-c215b2d088ff"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
 			</textField>
-			<textField pattern="MMM dd, yyyy">
+			<textField pattern="MMM dd, YYYY">
 				<reportElement x="1460" y="1" width="85" height="20" uuid="86b05a22-b40c-419c-bfd1-4c585562eb13"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>

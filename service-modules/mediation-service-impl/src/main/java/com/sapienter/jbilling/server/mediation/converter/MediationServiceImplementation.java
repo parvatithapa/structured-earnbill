@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -32,6 +31,8 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 import com.sapienter.jbilling.server.filter.Filter;
 import com.sapienter.jbilling.server.mediation.JbillingMediationErrorRecord;
@@ -47,8 +48,12 @@ import com.sapienter.jbilling.server.mediation.converter.db.DaoConverter;
 import com.sapienter.jbilling.server.mediation.converter.db.JMErrorRepository;
 import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
 import com.sapienter.jbilling.server.mediation.converter.db.JMRRepositoryDAS;
+import com.sapienter.jbilling.server.util.Context;
+import com.sapienter.jbilling.server.util.Context.Name;
 import com.sapienter.jbilling.server.validator.mediation.InvalidJobParameterException;
 import com.sapienter.jbilling.server.validator.mediation.MediationJobParameterValidator;
+import com.sapienter.jbilling.server.mediation.converter.common.steps.MediationStepResult;
+
 
 
 /**
@@ -67,6 +72,16 @@ public class MediationServiceImplementation implements MediationService, Applica
     public static final String PARAMETER_MEDIATION_ENTITY_ID_KEY = "entityId";
     public static final String PARAMETER_MEDIATION_ORDER_SERVICE_BEAN_NAME_KEY = "orderServiceBeanName";
     public static final String PARAMETER_MEDIATION_JOB_NAME_KEY = "jobName";
+    public static final String PARAMETER_MEDIATION_FILE_NAME = "fileName";
+    public static final String FIND_USER_BY_IDENTIFIER =
+            "SELECT id, currency_id FROM base_user WHERE id = "
+                    + "(SELECT user_id FROM purchase_order WHERE id = "
+                    + "(SELECT order_id FROM order_line WHERE id = "
+                    + "(SELECT order_line_id FROM asset WHERE identifier = ? "
+                    + " AND deleted = 0) "
+                    + " AND deleted = 0) "
+                    + " AND deleted = 0) "
+                    + " AND deleted = 0 ";
 
     private ApplicationContext applicationContext;
 
@@ -132,7 +147,7 @@ public class MediationServiceImplementation implements MediationService, Applica
             path = Files.write(path, records.getBytes(Charset.defaultCharset()));
 
             return triggerMediationJobLauncherByConfiguration(entityId, mediationCfgId,
-                    jobName, path.toFile()).toString();
+                    jobName, path.toFile(), "records").toString();
 
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -385,7 +400,7 @@ public class MediationServiceImplementation implements MediationService, Applica
 
     @Override
     @Transactional(value = Transactional.TxType.NOT_SUPPORTED)
-    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file) {
+    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file, String fileName) {
         MediationProcessService mediationProcessService = (MediationProcessService)applicationContext.getBean(MediationProcessService.BEAN_NAME);
         final MediationContext mediationContext = new MediationContext();
         mediationContext.setEntityId(entityId);
@@ -393,10 +408,7 @@ public class MediationServiceImplementation implements MediationService, Applica
         mediationContext.setJobName(jobName);
         mediationContext.setFileWithCdrs(file);
         validateMediationContext(mediationContext);
-        UUID mediationProcessId = mediationProcessService.saveMediationProcess(entityId, mediationCfgId).getId();
-        logger.debug("mediation process id [{}] created for entity[{}] for file [{}]", mediationProcessId, entityId, file.getName());
-        logger.debug("size of file [{}] is [{}] for mediation process id [{}]", file.getName(),
-                FileUtils.byteCountToDisplaySize(FileUtils.sizeOf(file)), mediationProcessId);
+        UUID mediationProcessId = mediationProcessService.saveMediationProcess(entityId, mediationCfgId, fileName).getId();
         mediationContext.setProcessIdForMediation(mediationProcessId);
         try {
             Optional<JobParameters> jobParameters = createParameters(mediationContext.getEntityId(), mediationContext.getMediationCfgId(),
@@ -407,14 +419,11 @@ public class MediationServiceImplementation implements MediationService, Applica
                         if (mediationContext.getProcessIdForMediation() != null) {
                             parameters.put(PARAMETER_MEDIATION_PROCESS_ID_KEY, new JobParameter("" + mediationContext.getProcessIdForMediation().toString()));
                         }
+                        parameters.put(PARAMETER_MEDIATION_FILE_NAME, new JobParameter(fileName));
                     });
             if(jobParameters.isPresent()) {
-                new Thread(()-> {
-                    logger.debug("trigger mediation job [{}] for entity [{}] with parameters [{}]", jobName, entityId, jobParameters);
-                    triggerMediation(mediationContext.getJobName(), jobParameters.get());
-                }).start();
+                new Thread(()-> triggerMediation(mediationContext.getJobName(), jobParameters.get())).start();
             } else {
-                logger.debug("parameter not found for mediation job [{}] for entity[{}]", jobName, entityId);
                 updateEndDate(mediationProcessId);
             }
         } catch(InvalidJobParameterException ex) {
@@ -426,15 +435,16 @@ public class MediationServiceImplementation implements MediationService, Applica
 
     @Override
     @Transactional(value = Transactional.TxType.NOT_SUPPORTED)
-    public UUID triggerRecycleCdrAsync(final Integer entityId, final Integer mediationCfgId, final String jobName, final UUID processId) {
+    public UUID triggerRecycleCdrAsync(final Integer entityId, final Integer mediationCfgId, final String jobName, final UUID processId, final String fileName) {
         MediationProcessService mediationProcessService = (MediationProcessService)applicationContext.getBean(MediationProcessService.BEAN_NAME);
-        final UUID mediationProcessId = mediationProcessService.saveMediationProcess(entityId, mediationCfgId).getId();
+        final UUID mediationProcessId = mediationProcessService.saveMediationProcess(entityId, mediationCfgId, fileName).getId();
         try {
             String recycleJobName = MediationJobs.getRecycleJobForMediationJob(jobName).getJob();
             Optional<JobParameters> jobParameters = createParameters(entityId, mediationCfgId, recycleJobName , parameters -> {
                 parameters.put(PARAMETER_MEDIATION_CONFIG_ID_KEY, new JobParameter("" + mediationCfgId));
                 parameters.put(PARAMETER_RECYCLE_MEDIATION_PROCESS_ID_KEY, new JobParameter(null!=processId ? processId.toString() : null));
                 parameters.put(PARAMETER_MEDIATION_PROCESS_ID_KEY, new JobParameter(mediationProcessId.toString()));
+                parameters.put(PARAMETER_MEDIATION_FILE_NAME, new JobParameter(fileName));
             });
             if(jobParameters.isPresent()) {
                 logger.debug("Triggering meidation job {} for entity {} with parameters {}", jobName, entityId, jobParameters);
@@ -479,18 +489,59 @@ public class MediationServiceImplementation implements MediationService, Applica
         MediationProcess mediationProcess = mediationProcessService.getMediationProcess(processId);
         if(null == mediationProcess.getStartDate()) {
             mediationProcess.setStartDate(new Date());
-            logger.debug("updating start date {} of mediation process id {}", processId, mediationProcess.getStartDate());
         }
-        logger.debug("updating end date {} of mediation process id {}", processId, mediationProcess.getEndDate());
         mediationProcess.setEndDate(new Date());
         mediationProcessService.updateMediationProcess(mediationProcess);
     }
 
     @Override
-    public List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId, int offset, int limit) {
-        return jmrRepository.getUnBilledMediationEventsByUser(userId, offset, limit)
-                .stream()
-                .map(DaoConverter::getMediationRecord)
+    public List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId) {
+        return jmrRepository.getUnBilledMediationEventsByUser(userId).stream().map(DaoConverter::getMediationRecord)
                 .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<String> getPricingFields(Integer order_id, Integer order_line_id) {
+        return jmrRepository.getPricingFields(order_id,order_line_id);
+    }
+    
+    @Override
+    public List<JbillingMediationRecord> getMediationRecordsByCallIdentifierDateRange(String identifier,Integer offset,Integer limit, Date startDate, Date endDate) {
+    	Map<String, Integer> userCurrencyMap = getUserIdForAssetIdentifier(identifier);
+        if (userCurrencyMap.isEmpty()) {
+            return null;
+        }
+        return jmrRepository.getMediationRecordsByCallIdentifierDateRange(userCurrencyMap.get(MediationStepResult.USER_ID),identifier, offset, limit, startDate, endDate)
+            .stream()
+            .map(DaoConverter::getMediationRecord)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<JbillingMediationRecord> getUnBilledMediationEventsByCallIdentifier(String identifier) {
+    	Map<String, Integer> userCurrencyMap = getUserIdForAssetIdentifier(identifier);
+        if (userCurrencyMap.isEmpty()) {
+            return null;
+        }
+        return jmrRepository.getUnBilledMediationEventsByCallIdentifier(userCurrencyMap.get(MediationStepResult.USER_ID),identifier)
+            .stream()
+            .map(DaoConverter::getMediationRecord)
+            .collect(Collectors.toList());
+    }
+    
+    @SuppressWarnings("unchecked")
+    public Map<String, Integer> getUserIdForAssetIdentifier(String identifier) {
+        JdbcTemplate jdbcTemplate = Context.getBean(Name.JDBC_TEMPLATE);
+        SqlRowSet rs = jdbcTemplate.queryForRowSet(FIND_USER_BY_IDENTIFIER, identifier);
+
+        if(rs.next()) {
+            Map<String, Integer> result = new HashMap<>();
+            result.put(MediationStepResult.USER_ID, rs.getInt("id"));
+            result.put(MediationStepResult.CURRENCY_ID, rs.getInt("currency_id"));
+
+            return result;
+        }
+
+        return Collections.emptyMap();
     }
 }

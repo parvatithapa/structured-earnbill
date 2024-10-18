@@ -16,11 +16,13 @@
 
 package com.sapienter.jbilling.server.item.tasks;
 
-import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.server.rule.Result;
+import java.math.BigDecimal;
+
 import org.apache.log4j.Logger;
 
-import java.math.BigDecimal;
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.server.pricing.RouteRateCardRecord;
+import com.sapienter.jbilling.server.rule.Result;
 
 /**
  * @author emilc
@@ -39,6 +41,7 @@ public class PricingResult extends Result {
     private BigDecimal freeUsageQuantity;
     private boolean isChained;
     private boolean isPercentage;
+    private RouteRateCardRecord routeRateCardRecord;
 
     public PricingResult(Integer itemId, Integer userId, Integer currencyId) {
         this.itemId = itemId;
@@ -95,7 +98,7 @@ public class PricingResult extends Result {
     public void setPricingFieldsResultId(long pricingFieldsResultId) {
         this.pricingFieldsResultId = pricingFieldsResultId;
     }
-    
+
     public BigDecimal getFreeUsageQuantity() {
         return (freeUsageQuantity != null ? freeUsageQuantity : BigDecimal.ZERO);
     }
@@ -111,24 +114,33 @@ public class PricingResult extends Result {
     public void setFreeUsageQuantity(BigDecimal freeUsageQuantity) {
         this.freeUsageQuantity = freeUsageQuantity;
     }
-    
+
     public boolean isChained() {
-		return isChained;
-	}
-    
-	public void setIsChained(boolean isChained) {
-		this.isChained = isChained;
-	}
+        return isChained;
+    }
 
-	public boolean isPercentage() {
-		return isPercentage;
-	}
+    public void setIsChained(boolean isChained) {
+        this.isChained = isChained;
+    }
 
-	public void setIsPercentage(boolean isPercentage) {
-		this.isPercentage = isPercentage;
-	}
-	
-	public String toString() {
+    public boolean isPercentage() {
+        return isPercentage;
+    }
+
+    public void setIsPercentage(boolean isPercentage) {
+        this.isPercentage = isPercentage;
+    }
+
+    public RouteRateCardRecord getRouteRateCardRecord() {
+        return routeRateCardRecord;
+    }
+
+    public void setRouteRateCardRecord(RouteRateCardRecord routeRateCardRecord) {
+        this.routeRateCardRecord = routeRateCardRecord;
+    }
+
+    @Override
+    public String toString() {
         return  "PricingResult:" +
                 "itemId=" + itemId + " " +
                 "userId=" + userId + " " +

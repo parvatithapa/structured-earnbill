@@ -1,20 +1,5 @@
 package com.sapienter.jbilling.test.framework.builders;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 import com.sapienter.jbilling.server.item.AssetStatusDTOEx;
 import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.ItemDependencyDTOEx;
@@ -37,6 +22,21 @@ import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.test.framework.TestEntityType;
 import com.sapienter.jbilling.test.framework.TestEnvironment;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Created by marcolin on 06/11/15.
@@ -105,6 +105,7 @@ public class ItemBuilder extends AbstractBuilder {
         private boolean onePerCustomer = false;
         private Boolean useExactCode = false;
         private Integer typeId;
+        private Set<MetaFieldWS> assetMetaFields = new HashSet<>(0);
 
         public ItemTypeBuilder withCode(String code) {
             this.code = code;
@@ -145,6 +146,11 @@ public class ItemBuilder extends AbstractBuilder {
             return this;
         }
 
+        public ItemTypeBuilder withAssetMetaFields(Set<MetaFieldWS> assetMetaFields){
+            this.assetMetaFields = assetMetaFields;
+            return this;
+        }
+
         public Integer build() {
             ItemTypeWS itemType = new ItemTypeWS();
             itemType.setDescription(useExactCode?code:"TestCategory: " + System.currentTimeMillis());
@@ -155,6 +161,7 @@ public class ItemBuilder extends AbstractBuilder {
             itemType.setOnePerOrder(onePerOrder);
             itemType.setOnePerCustomer(onePerCustomer);
             itemType.setAllowAssetManagement(allowAssetManagement);
+            itemType.setAssetMetaFields(assetMetaFields);
             if(allowAssetManagement ==  1){
 
                 Set<AssetStatusDTOEx> assetStatusDTOExes = new HashSet<>();
@@ -264,6 +271,7 @@ public class ItemBuilder extends AbstractBuilder {
 
     public class ProductBuilder extends AbstractMetaFieldBuilder<ProductBuilder>{
         private String code;
+        private String description;
         private List<Integer> types = new ArrayList<>();
         private SortedMap<Date, PriceModelWS> prices = new TreeMap<>();
         private List<String> dependencyTypes = new ArrayList<>();
@@ -278,14 +286,25 @@ public class ItemBuilder extends AbstractBuilder {
         private Integer companyId;
         private List<MetaFieldWS> orderLineMetaFields = new ArrayList<>();
         private SortedMap<Date, RatingConfigurationWS> ratingConfigurations = new TreeMap<>();
+        private boolean isPlan;
 
         public ProductBuilder withCode(String code) {
             this.code = code;
             return this;
         }
 
+        public ProductBuilder withDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
         public ProductBuilder withType(Integer type) {
             this.types.add(type);
+            return this;
+        }
+
+        public ProductBuilder withTypes(List<Integer> types) {
+            this.types.addAll(types);
             return this;
         }
 
@@ -303,6 +322,13 @@ public class ItemBuilder extends AbstractBuilder {
             prices.put(new Date(),
                     new PriceModelWS(PriceModelStrategy.FLAT.name(),
                             new BigDecimal(flatPrice), api.getCallerCurrencyId()));
+            return this;
+        }
+
+        public ProductBuilder withZeroPrice(String zeroPrice) {
+            prices.put(new Date(01/01/1970),
+                    new PriceModelWS(PriceModelStrategy.ZERO.name(),
+                            new BigDecimal(zeroPrice), api.getCallerCurrencyId()));
             return this;
         }
 
@@ -449,6 +475,11 @@ public class ItemBuilder extends AbstractBuilder {
             return this;
         }
 
+        public ProductBuilder isPlan(Boolean isPlan) {
+            this.isPlan = isPlan;
+            return this;
+        }
+
         public ProductBuilder addRatingConfiguration(RatingConfigurationWS ratingConfiguration) {
             return addRatingConfigurationWithDate(new Date(0L), ratingConfiguration);
         }
@@ -460,13 +491,14 @@ public class ItemBuilder extends AbstractBuilder {
 
         public Integer build() {
             ItemDTOEx item = new ItemDTOEx();
-            item.setDescription("TestItem: " + System.currentTimeMillis());
+            item.setDescription((useExactCode && null != description)? description :"TestItem-" + System.currentTimeMillis());
             item.setNumber(useExactCode?code:"TestItem-" + System.currentTimeMillis());
             item.setTypes(types.toArray(new Integer[types.size()]));
             item.setExcludedTypes(new Integer[0]);
             item.setActiveSince(activeSince);
             item.setActiveUntil(activeUntil);
             item.setGlobal(global);
+            item.setIsPlan(isPlan);
             item.setHasDecimals(allowDecimal ? 1 : 0);
             companyId = companyId != null ? companyId : api.getCallerCompanyId();
             item.setEntityId(companyId);

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class NetRevenueReportProvider {
 
-    private static final String JAR_FILE_NAME = "jbilling-le-1.0.20200810-RELEASE-runtime.jar";
+    private static final String JAR_FILE_NAME = "jbilling-le-1.0.20210119-RELEASE-runtime.jar";
 
     private String jarResourcePath () {
         String resourceFileName = NetRevenueReportProvider.class.getClassLoader().getResource(JAR_FILE_NAME + ".enc").getFile();

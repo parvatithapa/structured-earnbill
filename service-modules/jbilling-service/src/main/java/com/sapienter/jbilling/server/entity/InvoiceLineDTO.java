@@ -21,10 +21,10 @@ package com.sapienter.jbilling.server.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sapienter.jbilling.common.Util;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
-import javax.persistence.Column;
 import javax.xml.bind.annotation.XmlType;
 
 import java.io.Serializable;
@@ -50,9 +50,9 @@ public class InvoiceLineDTO implements Serializable {
     private Integer usagePlanId;
     private Long callCounter = 0l;
 
-    private BigDecimal taxRate;
-    private BigDecimal taxAmount;
-    private BigDecimal grossAmount;
+    private String taxRate;
+    private String taxAmount;
+    private String grossAmount;
     private Integer typeId;
 
     public InvoiceLineDTO() {
@@ -77,8 +77,8 @@ public class InvoiceLineDTO implements Serializable {
 
     public InvoiceLineDTO(Integer id, String description, BigDecimal amount, BigDecimal price, BigDecimal quantity,
             Integer deleted, Integer itemId, Integer sourceUserId, Integer percentage,
-            String callIdentifier, Integer usagePlanId, Long callCounter, BigDecimal taxRate, BigDecimal taxAmount,
-            BigDecimal grossAmount) {
+            String callIdentifier, Integer usagePlanId, Long callCounter, String taxRate, String taxAmount,
+            String grossAmount) {
         this.id = id;
         this.description = description;
         setAmount(amount);
@@ -283,33 +283,48 @@ public class InvoiceLineDTO implements Serializable {
 		this.callCounter = callCounter;
 	}
 
-	@ApiModelProperty(value = "The tax rate of this invoice line", dataType = "BigDecimal")
-    @JsonProperty(value = "taxRate")
-    public BigDecimal getTaxRate() {
+    @JsonIgnore
+    public String getTaxRate() {
         return taxRate;
     }
 
-    public void setTaxRate(BigDecimal taxRate) {
+    public void setTaxRate(String taxRate) {
         this.taxRate = taxRate;
     }
 
-    @ApiModelProperty(value = "The tax amount of this invoice line", dataType = "BigDecimal")
-    @JsonProperty(value = "taxAmount")
-    public BigDecimal getTaxAmount() {
+    @JsonIgnore
+    public String getTaxAmount() {
         return taxAmount;
     }
 
-    public void setTaxAmount(BigDecimal taxAmount) {
+    public void setTaxAmount(String taxAmount) {
         this.taxAmount = taxAmount;
     }
 
-    @ApiModelProperty(value = "The gross amount of this invoice line", dataType = "BigDecimal")
-    @JsonProperty(value = "grossAmount")
-    public BigDecimal getGrossAmount() {
+    @JsonIgnore
+    public String getGrossAmount() {
         return grossAmount;
     }
+    
+    @ApiModelProperty(value = "The Tax Rate of this invoice line", dataType = "BigDecimal")
+    @JsonProperty(value = "taxRate")
+    public BigDecimal getTaxRateAsDecimal() {
+        return Util.string2decimal(taxRate);
+    }
+    
+    @ApiModelProperty(value = "The Tax Amount of this invoice line", dataType = "BigDecimal")
+    @JsonProperty(value = "taxAmount")
+    public BigDecimal getTaxAmountAsDecimal() {
+        return Util.string2decimal(taxAmount);
+    }
+    
+    @ApiModelProperty(value = "The grossAmount of this invoice line", dataType = "BigDecimal")
+    @JsonProperty(value = "grossAmount")
+    public BigDecimal getGrossAmountAsDecimal() {
+        return Util.string2decimal(grossAmount);
+    }
 
-    public void setGrossAmount(BigDecimal grossAmount) {
+    public void setGrossAmount(String grossAmount) {
         this.grossAmount = grossAmount;
     }
 

@@ -20,12 +20,16 @@ import com.sapienter.jbilling.server.fileProcessing.FileConstants;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDeliveryMethodDAS;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
-
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
-import org.hibernate.criterion.*;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.Subqueries;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -135,5 +139,23 @@ public class CustomerDAS extends AbstractDAS<CustomerDTO> {
                 .setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
         
         return criteria.list();
+    }
+
+    /*Onkar Pawar*/
+    public void linkImage(int userId, String identificationType, String imageFileName, String identificationNumber){
+        String query = "UPDATE customer cu SET identification_type = :identificationType, identification_image = :imageFileName, identification_number = :identificationNumber WHERE cu.user_id=:userID";
+        SQLQuery sqlQuery= getSession().createSQLQuery(query);
+        sqlQuery.setParameter("identificationType", identificationType);
+        sqlQuery.setParameter("imageFileName", imageFileName);
+        sqlQuery.setParameter("identificationNumber", identificationNumber);
+        sqlQuery.setParameter("userID", userId);
+        sqlQuery.executeUpdate();
+    }
+
+    public String getImageNameByCustomerID(Integer userId){
+        String query = "SELECT identification_image FROM customer cu WHERE cu.user_id=:userID";
+        SQLQuery sqlQuery= getSession().createSQLQuery(query);
+        sqlQuery.setParameter("userID", userId);
+        return (String) sqlQuery.uniqueResult();
     }
 }

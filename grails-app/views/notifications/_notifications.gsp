@@ -78,7 +78,7 @@
 									   id: categoryId]"/>
 		</div>
 	</div>
-	<div class="row">
+	<div class="row-center">
 		<jB:remotePaginate controller = "notifications"
 						       action = "list"
 						       params = "${sortableParams(params: [partial: true,

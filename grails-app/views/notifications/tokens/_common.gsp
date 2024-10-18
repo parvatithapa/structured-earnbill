@@ -279,13 +279,6 @@
                 code="label.token.company.url"/></span></a>
     </div>
 </div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$resetPassExpHours');"
-           class=""><span><g:message
-                code="label.token.company.resetPasswordExpirationHours"/></span></a>
-    </div>
-</div>
 
 <div class="row">
     <div>
@@ -654,60 +647,6 @@
            class=""
         > <span> <g:message
                 code="label.token.plan.old"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$currency');"
-           class=""
-        > <span> <g:message
-                code="label.token.currency"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$gateway_name');"
-           class=""
-        > <span> <g:message
-                code="label.token.gateway.name"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$gateway_id');"
-           class=""
-        > <span> <g:message
-                code="label.token.gateway.id"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$payment_link');"
-           class=""
-        > <span> <g:message
-                code="label.token.payment.link"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$payment_expiry');"
-           class=""
-        > <span> <g:message
-                code="label.token.payment.expiry"
-        /> </span> </a>
-    </div>
-</div>
-<div class="row">
-    <div>
-        <a href="javascript:void(0)" onclick="testfunc('$Reason_for_payment');"
-           class=""
-        > <span> <g:message
-                code="label.token.payment.reason"
         /> </span> </a>
     </div>
 </div>

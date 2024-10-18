@@ -1,9 +1,9 @@
 package com.sapienter.jbilling.server.metafields;
 
-import static org.apache.commons.lang.StringUtils.isNotBlank;
-
 import java.util.Arrays;
 import java.util.regex.Pattern;
+
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public enum MetaFieldType implements MetaFieldValidator {
     ORGANIZATION{
@@ -67,7 +67,7 @@ public enum MetaFieldType implements MetaFieldValidator {
     FIRST_NAME {
         @Override
         public String validate(String value) {
-            return validLength(0, 30, VALIDATION_ERROR_SIZE_30, value);
+            return validLength(0, 100, VALIDATION_ERROR_SIZE_100, value);
         }
     },
     LAST_NAME {
@@ -274,18 +274,19 @@ public enum MetaFieldType implements MetaFieldValidator {
             return null;
         }
     },
-    GSTIN {
+    CENTREPAY_REF {
         @Override
         public String validate(String value) {
             return null;
         }
     },
-    GST_STATE_CODE {
+    BUSINESS_NAME {
         @Override
         public String validate(String value) {
             return null;
         }
-    };
+    }
+    ;
 
 
     public static MetaFieldType fromString(String name) {

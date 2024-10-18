@@ -5,6 +5,7 @@ import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.security.WSSecured;
+import com.sapienter.jbilling.server.timezone.ConvertToTimezone;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
@@ -17,6 +18,9 @@ import java.lang.AutoCloseable;
 import java.lang.Override;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.springframework.util.ObjectUtils.nullSafeEquals;
 import static org.springframework.util.ObjectUtils.nullSafeHashCode;
@@ -28,12 +32,17 @@ public class PaymentInformationWS implements WSSecured, Serializable, AutoClosea
 	private Integer processingOrder;
 	private Integer paymentMethodTypeId;
 	private Integer paymentMethodId;
+    @ConvertToTimezone
+	private Date createDateTime;
+    @ConvertToTimezone
+	private Date updateDateTime;
 
 	@Valid
     private MetaFieldValueWS[] metaFields;
 	// for worldpay payment
 
 	private char[] cvv;
+	private Map<String, String> metaFieldMap = new HashMap<>();
 
 	public PaymentInformationWS() {
 
@@ -90,7 +99,16 @@ public class PaymentInformationWS implements WSSecured, Serializable, AutoClosea
 		this.metaFields = metaFields;
 	}
 
-	@ApiModelProperty(value = "Identifier of the payment method")
+	@ApiModelProperty(value = "Meta-field values related to this payment info")
+	public Map<String, String> getMetaFieldMap() {
+        return metaFieldMap;
+    }
+
+    public void setMetaFieldMap(Map<String, String> metaFieldMap) {
+        this.metaFieldMap = metaFieldMap;
+    }
+
+    @ApiModelProperty(value = "Identifier of the payment method")
 	public Integer getPaymentMethodId() {
 		return paymentMethodId;
 	}
@@ -102,6 +120,24 @@ public class PaymentInformationWS implements WSSecured, Serializable, AutoClosea
     @ApiModelProperty(value = "payment cvv")
     public String getCvv() {
         return null != this.cvv ? new String(cvv) : StringUtils.EMPTY;
+    }
+
+	@ApiModelProperty(value = "Timestamp of when Payment Information was created")
+    public Date getCreateDateTime() {
+        return createDateTime;
+    }
+
+    public void setCreateDateTime(Date createDateTime) {
+        this.createDateTime = createDateTime;
+    }
+
+	@ApiModelProperty(value = "Timestamp of when Payment Information was updated")
+    public Date getUpdateDateTime() {
+        return updateDateTime;
+    }
+
+    public void setUpdateDateTime(Date updateDateTime) {
+        this.updateDateTime = updateDateTime;
     }
 
     public void setCvv(char[] cvv) {
@@ -135,11 +171,13 @@ public class PaymentInformationWS implements WSSecured, Serializable, AutoClosea
 				", processingOrder=" + processingOrder +
 				", paymentMethodTypeId=" + paymentMethodTypeId +
 				", paymentMethodId=" + paymentMethodId +
+				", createDateTime=" + createDateTime +
+				", updateDateTime=" + updateDateTime +
 				", metaFields=" + Arrays.toString(metaFields) +
 				'}';
 	}
 
-    @Override
+	@Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

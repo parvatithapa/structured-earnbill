@@ -5,8 +5,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 
 /*
  * JBILLING CONFIDENTIAL
@@ -80,6 +80,7 @@ public class JbillingMediationRecordRestWS implements Serializable {
     private Map<String, String> pricingFields = null;
     private TYPE type = TYPE.MEDIATION;
     private Boolean chargeable;
+    private Map<String, String> additionalFields = null;
 
     public JbillingMediationRecordRestWS(STATUS status, TYPE type, Integer jBillingCompanyId,
             Integer mediationCfgId, String recordKey, Integer userId, Date eventDate, 
@@ -348,5 +349,14 @@ public class JbillingMediationRecordRestWS implements Serializable {
 
     public void setChargeable(Boolean chargeable) {
         this.chargeable = chargeable;
+    }
+    
+    @JsonAnyGetter
+    public Map<String, String> getAdditionalFields() {
+        return additionalFields;
+    }
+
+    public void setAdditionalFields(Map<String, String> additionalFields) {
+        this.additionalFields = additionalFields;
     }
 }

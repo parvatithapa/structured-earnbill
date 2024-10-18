@@ -27,8 +27,11 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityNotFoundException;
 import javax.sql.rowset.CachedRowSet;
@@ -52,6 +55,7 @@ import com.sapienter.jbilling.server.metafields.MetaFieldBL;
 import com.sapienter.jbilling.server.metafields.MetaFieldExternalHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldType;
+import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.notification.INotificationSessionBean;
 import com.sapienter.jbilling.server.notification.MessageDTO;
@@ -120,22 +124,18 @@ public class PaymentBL extends ResultList implements PaymentSQL {
      * @param refundPayment
      * @return boolean
      */
-    public static synchronized Boolean validateRefund(PaymentWS refundPayment) {
-        if (refundPayment.getPaymentId() == null) {
-            String msg = "There is no linked payment with this refund";
-            String logMsg = getEnhancedActionMessage(msg);
-            logger.info(logMsg);
-            return false;
-        }
-        // fetch the linked payment from database
-        PaymentDTO linkedPayment = new PaymentBL(refundPayment.getPaymentId()).getEntity();
-        
+    public static synchronized Boolean validateRefund(PaymentWS refundPayment) {    	
+    	// BillingHub - Stripe payment gateway integration
+    	// fetch the linked payment from database
+        PaymentDTO linkedPayment = (refundPayment.getPaymentId() == null) ? null : (new PaymentBL(refundPayment.getPaymentId()).getEntity());
+        // End BillingHub - Stripe payment gateway integration
         if (linkedPayment == null) {
             String msg = "There is no linked payment with this refund";
             String logMsg = getEnhancedActionMessage(msg);
             logger.info(logMsg);
             return false;
-        }
+        }        
+        
         BigDecimal refundableBalance = linkedPayment.getBalance();
         String msg = String.format("Selected payment with ID: %d can be refunded for %s", linkedPayment.getId(), refundableBalance);
         String logMsg = getEnhancedActionMessage(msg);
@@ -834,6 +834,104 @@ public class PaymentBL extends ResultList implements PaymentSQL {
         return ws;
     }
 
+    public static synchronized PaymentResourceWS getResourceWS(PaymentDTOEx dto) {
+        if (null == dto) {
+            return null;
+        }
+        try(PaymentResourceWS ws = new PaymentResourceWS()) {
+            ws.setId(dto.getId());
+            ws.setUserId(dto.getUserId());
+            ws.setAmount(dto.getAmount());
+            ws.setAttempt(dto.getAttempt());
+            ws.setBalance(dto.getBalance());
+            ws.setCreateDatetime(dto.getCreateDatetime());
+            ws.setDeleted(dto.getDeleted());
+            ws.setIsPreauth(dto.getIsPreauth());
+            ws.setIsRefund(dto.getIsRefund());
+            ws.setPaymentDate(dto.getPaymentDate());
+            ws.setUpdateDatetime(dto.getUpdateDatetime());
+            ws.setPaymentNotes(dto.getPaymentNotes());
+            ws.setPaymentPeriod(dto.getPaymentPeriod());
+
+            MetaFieldValueWS[] metaFieldValueWSs = MetaFieldBL.convertMetaFieldsToWS(new UserBL().getEntityId(dto.getUserId()), dto);
+            Map<String, String> metaFields = Stream.of(metaFieldValueWSs).collect(Collectors.toMap(MetaFieldValueWS :: getFieldName, mf -> mf.getValue() + ""));
+            ws.setMetaFields(metaFields);
+            for (MetaFieldValueWS metaFieldValueWS : metaFieldValueWSs) {
+                metaFieldValueWS.getFieldName();
+                metaFieldValueWS.getValue();
+            }
+
+            if (dto.getCurrency() != null) {
+                ws.setCurrencyId(dto.getCurrency().getId());
+            }
+
+            if (dto.getPaymentResult() != null) {
+                ws.setResultId(dto.getPaymentResult().getId());
+            }
+
+            ws.setUserId(dto.getUserId());
+
+            ws.setMethod(dto.getMethod());
+
+            if (dto.getAuthorization() != null) {
+                com.sapienter.jbilling.server.entity.PaymentAuthorizationDTO authDTO = new com.sapienter.jbilling.server.entity.PaymentAuthorizationDTO();
+                authDTO.setAVS(dto.getAuthorization().getAvs());
+                authDTO.setApprovalCode(dto.getAuthorization().getApprovalCode());
+                authDTO.setCardCode(dto.getAuthorization().getCardCode());
+                authDTO.setCode1(dto.getAuthorization().getCode1());
+                authDTO.setCode2(dto.getAuthorization().getCode2());
+                authDTO.setCode3(dto.getAuthorization().getCode3());
+                authDTO.setCreateDate(dto.getAuthorization().getCreateDate());
+                authDTO.setId(dto.getAuthorization().getId());
+                authDTO.setMD5(dto.getAuthorization().getMd5());
+                authDTO.setProcessor(dto.getAuthorization().getProcessor());
+                authDTO.setResponseMessage(dto.getAuthorization().getResponseMessage());
+                authDTO.setTransactionId(dto.getAuthorization().getTransactionId());
+
+                ws.setAuthorization(authDTO);
+            } else {
+                ws.setAuthorization(null);
+            }
+
+            if (dto.getPayment() != null) {
+                ws.setPaymentId(dto.getPayment().getId());
+            } else {
+                ws.setPaymentId(null);
+            }
+
+            // set payment specific instruments, payment instruments are linked through the PaymentInstrumentInfo
+            logger.debug("Payment instruments info are: {}", dto.getPaymentInstrumentsInfo());
+            if (CollectionUtils.isNotEmpty(dto.getPaymentInstrumentsInfo())) {
+                for (PaymentInstrumentInfoDTO paymentInstrument : dto.getPaymentInstrumentsInfo()) {
+                    PaymentInformationWS paymentInformation = PaymentInformationBL.getWS(paymentInstrument.getPaymentInformation());
+                    Map<String, String> metaFieldMap = Stream.of(paymentInformation.getMetaFields()).collect(Collectors.toMap(MetaFieldValueWS :: getFieldName, mf -> mf.getValue() + ""));
+                    paymentInformation.setMetaFieldMap(metaFieldMap);
+                    paymentInformation.setMetaFields(null);
+                    ws.getPaymentInstruments().add(paymentInformation);
+                }
+            }
+
+            if (dto.getPaymentMethod() != null) {
+                ws.setMethodId(dto.getPaymentMethod().getId());
+            }
+
+            PaymentDTO savedPayment = new PaymentDAS().findNow(dto.getId());
+            if(null!=savedPayment) {
+                Set<PaymentInvoiceMapDTO> paymentInvoiceMap = savedPayment.getInvoicesMap();
+                if(CollectionUtils.isNotEmpty(paymentInvoiceMap)) {
+                    ws.setPaymentInvoiceMap(paymentInvoiceMap
+                            .stream()
+                            .map(PaymentBL::convertToPaymentInvoiceMapWS)
+                            .toArray(PaymentInvoiceMapWS[]::new));
+                }
+            }
+            ws.setAccessEntities(getAccessEntities(new UserDAS().find(dto.getUserId())));
+            return ws;
+        } catch (Exception e) {
+            throw new SessionInternalError("Problem getting payment resource."+ e.getMessage());
+        }
+    }
+
     /**
      * Converts {@link PaymentInvoiceMapDTO} to {@link PaymentInvoiceMapWS}
      * @param dto
@@ -975,25 +1073,7 @@ public class PaymentBL extends ResultList implements PaymentSQL {
 
 
     public Integer getLatest(Integer userId) throws SessionInternalError {
-        Integer retValue = null;
-        try {
-            prepareStatement(PaymentSQL.getLatest);
-            cachedResults.setInt(1, userId);
-            cachedResults.setInt(2, userId);
-            execute();
-            if (cachedResults.next()) {
-                int value = cachedResults.getInt(1);
-                if (!cachedResults.wasNull()) {
-                    retValue = value;
-                }
-            }
-            cachedResults.close();
-            conn.close();
-        } catch (Exception e) {
-            throw new SessionInternalError(e);
-        }
-
-        return retValue;
+        return null != userId ? paymentDas.getLatestByUser(userId) : null;
     }
 
     public Integer[] getManyWS(Integer userId, Integer limit, Integer offset, Integer languageId) {
@@ -1332,6 +1412,10 @@ public class PaymentBL extends ResultList implements PaymentSQL {
     public Integer[] getAllPaymentsByUser(Integer userId) {
         List<Integer> results = new PaymentDAS().findIdsByUserId(userId);
         return results.toArray(new Integer[results.size()]);
+    }
+
+    public List<PaymentDTO> getPaymentsByDate(Date from, Date until, Integer offset, Integer limit) {
+        return paymentDas.getPaymentsByDate(from, until, offset, limit);
     }
 
     public List<PaymentWS> findPaymentsByUserPagedSortedByAttribute(Integer userId, int maxResults, int offset,

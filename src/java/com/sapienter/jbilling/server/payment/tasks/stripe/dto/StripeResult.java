@@ -1,11 +1,13 @@
 package com.sapienter.jbilling.server.payment.tasks.stripe.dto;
 
-import lombok.ToString;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import com.sapienter.jbilling.server.payment.SecurePaymentNextAction;
 
 
-@ToString
+@Data
+@NoArgsConstructor
 public class StripeResult {
 
 	private String stripeCustomerId;
@@ -27,7 +29,8 @@ public class StripeResult {
     	PROCESSING("processing"), 
     	REQUIRES_CAPTURE("requires_capture"),
     	CANCELED("canceled"),
-    	SUCCEEDED("succeeded");
+    	SUCCEEDED("succeeded"),
+    	DUPLICATE_REQUEST("duplicate_request");
     	
     	private String value;
 
@@ -40,71 +43,6 @@ public class StripeResult {
             return value;
         }
     }
-    
-    
-    public String getStripePaymentMethodId() {
-        return stripePaymentMethodId;
-    }
-
-    public void setStripePaymentMethodId(String stripePaymentMethodId) {
-        this.stripePaymentMethodId = stripePaymentMethodId;
-    }
-
-    public String getErrorCode() {
-        return errorCode;
-    }
-
-    public void setErrorCode(String errorCode) {
-        this.errorCode = errorCode;
-    }
-    
-    public String getErrorMsg() {
-        return errorMsg;
-    }
-
-    public void setErrorMsg(String errMsg) {
-        this.errorMsg = errMsg;
-    }
-
-	public String getStripeCustomerId() {
-		return stripeCustomerId;
-	}
-
-	public void setStripeCustomerId(String stripeCustomerId) {
-		this.stripeCustomerId = stripeCustomerId;
-	}
-
-	public String getStripePaymentIntentId() {
-		return stripePaymentIntentId;
-	}
-
-	public void setStripePaymentIntentId(String stripePaymentIntentId) {
-		this.stripePaymentIntentId = stripePaymentIntentId;
-	}
-
-	public String getStripeSetupIntentId() {
-		return stripeSetupIntentId;
-	}
-
-	public void setStripeSetupIntentId(String stripeSetupIntentId) {
-		this.stripeSetupIntentId = stripeSetupIntentId;
-	}	
-	
-	public String getStripeRefundId() {
-		return stripeRefundId;
-	}
-
-	public void setStripeRefundId(String stripeRefundId) {
-		this.stripeRefundId = stripeRefundId;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
 
 	public boolean isSucceeded(){
 		return status.equals(StripeIntentStatus.SUCCEEDED.toString());
@@ -125,13 +63,5 @@ public class StripeResult {
 	
 	public boolean isCanceled(){
 		return status.equals(StripeIntentStatus.CANCELED.toString());
-	}
-
-	public SecurePaymentNextAction getNextAction() {
-		return nextAction;
-	}
-
-	public void setNextAction(SecurePaymentNextAction nextAction) {
-		this.nextAction = nextAction;
 	}
 }

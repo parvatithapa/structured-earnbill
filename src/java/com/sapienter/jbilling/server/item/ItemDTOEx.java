@@ -37,7 +37,6 @@ import org.apache.commons.collections.ListUtils;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -61,7 +60,6 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
 
 @DateRange(start = "activeSince", end = "activeUntil", message = "validation.activeUntil.before.activeSince")
 @ApiModel(value = "Item Data", description = "ItemDTOEx model")
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class ItemDTOEx implements WSSecured, HierarchicalEntity, Serializable {
 
     private static final long serialVersionUID = 20130704L;
@@ -481,6 +479,7 @@ public class ItemDTOEx implements WSSecured, HierarchicalEntity, Serializable {
 	}
 
     @Override
+    @JsonIgnore
 	public Integer getOwningEntityId() {
         return getEntityId();
     }

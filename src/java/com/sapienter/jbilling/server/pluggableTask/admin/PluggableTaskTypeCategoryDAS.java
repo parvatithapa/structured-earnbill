@@ -23,9 +23,9 @@ import com.sapienter.jbilling.server.util.db.AbstractDAS;
 
 public class PluggableTaskTypeCategoryDAS extends AbstractDAS<PluggableTaskTypeCategoryDTO> {
 
-	public PluggableTaskTypeCategoryDTO findByInterfaceName(String interfaceName){
-		Criteria criteria = getSession().createCriteria(PluggableTaskTypeCategoryDTO.class)
-				.add(Restrictions.eq("interfaceName", interfaceName));
-		return (PluggableTaskTypeCategoryDTO)criteria.uniqueResult();
-	}
+    public PluggableTaskTypeCategoryDTO findByInterfaceName(String interfaceName) {
+        Criteria criteria = getSession().createCriteria(PluggableTaskTypeCategoryDTO.class)
+                .add(Restrictions.eq("interfaceName", interfaceName));
+        return (PluggableTaskTypeCategoryDTO)criteria.uniqueResult();
+    }
 }

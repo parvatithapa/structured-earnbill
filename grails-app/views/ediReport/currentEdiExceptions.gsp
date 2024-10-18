@@ -41,7 +41,7 @@
                                 <g:select class="field" name="ediTypeId" optionKey="id" optionValue="name" value="${ediTypeId}" from="${ediTypes}" noSelection="['':'']"/>
                             </g:applyLayout>
                         </div>
-                        <div class="form-columns" style="padding-left: 350px">
+                        <div id="report-filters-submit" class="form-columns">
                             <g:submitButton name="filter" class="submit">Filter</g:submitButton>
                         </div>
                     </div>

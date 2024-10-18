@@ -65,11 +65,10 @@ public class OptusMurMediationConfiguration {
     public JMRMediationCdrResolver dataCdrResolver() {
         JMRMediationCdrResolver cdrResolver = new JMRMediationCdrResolver();
         cdrResolver.clearSteps();
+        cdrResolver.addStep(MediationStepType.EVENT_DATE, (IMediationStep<MediationStepResult>) applicationContext.getBean("optusMurEventDateResolutionStep"));
         cdrResolver.addStep(MediationStepType.USER_CURRENCY, (IMediationStep<MediationStepResult>) applicationContext.getBean("optusMurUserResolutionStep"));
         cdrResolver.addStep(MediationStepType.ITEM_RESOLUTION, (IMediationStep<MediationStepResult>) applicationContext.getBean("optusMurDataItemResolutionStep"));
         cdrResolver.addStep(MediationStepType.QUANTITY, (IMediationStep<MediationStepResult>) applicationContext.getBean("optusMurDataItemQuantityResolutionStep"));
-        IMediationStep<MediationStepResult> eventResolutionStep = new EventDateResolutionStep(new SimpleDateFormat(DATA_EVENT_DATE_FORMAT), DATA_EVENT_DATE_FIELD_NAME);
-        cdrResolver.addStep(MediationStepType.EVENT_DATE, eventResolutionStep);
         cdrResolver.addStep(MediationStepType.DESCRIPTION, (IMediationStep<MediationStepResult>) applicationContext.getBean("optusMurDataItemDescriptionResolutionStep"));
         cdrResolver.addStep(MediationStepType.PRICING, (IMediationStep<MediationStepResult>) applicationContext.getBean(SPCConstants.DEFAULT_PRICING_RESOLUTION_STEP));
         return cdrResolver;

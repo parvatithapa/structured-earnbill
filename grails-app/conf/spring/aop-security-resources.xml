@@ -101,9 +101,10 @@
         <property name="order" value="5" />
     </bean>
 
-	<!-- Security check to prevent unauthorized access-->
-	<bean id = "wSSecurityCheck" class = "com.sapienter.jbilling.server.security.WSSecurityCheck"/>
+	<!-- jira saas-202, Security check to prevent unauthorized access-->
+	<bean id = "wSSecurityCheck" class = "com.sapienter.jbilling.server.security.WSSecurityCheck"/>	
 	<bean id = "securityHelperService" class = "com.sapienter.jbilling.server.security.SecurityHelperService"/>
+	
     <!--<bean id="testResetPasswordService"-->
           <!--class="com.sapienter.jbilling.server.util.credentials.TestResetPasswordService"/>-->
 </beans>

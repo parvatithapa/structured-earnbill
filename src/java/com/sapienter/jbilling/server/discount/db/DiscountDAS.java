@@ -116,10 +116,9 @@ public class DiscountDAS extends AbstractDAS<DiscountDTO> {
             return query.list();
     }
 
-    public DiscountDTO getDiscountByCode(String discountCode, Integer entityId) {
+    public DiscountDTO getDiscountByCode(String discountCode) {
         return (DiscountDTO) getSession().createCriteria(getPersistentClass())
-                                         .add(Restrictions.eq("code", discountCode).ignoreCase())
-                                         .add(Restrictions.eq("entity.id", entityId))
-                                         .uniqueResult();
+                           				 .add(Restrictions.eq("code", discountCode).ignoreCase())
+                           				 .uniqueResult();
     }
 }

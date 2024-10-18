@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_usage_charges_section_fc_hosted" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d7023383-6fe7-411e-815b-b74e708d8e5d">
-	<property name="ireport.zoom" value="3.1384283767210035"/>
+	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="115"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="invoiceDate" class="java.lang.String"/>
 	<parameter name="customerId" class="java.lang.String"/>
 	<parameter name="invoiceId" class="java.lang.Integer">
@@ -17,10 +17,8 @@
 	</parameter>
 	<parameter name="currency_symbol" class="java.lang.String"/>
 	<parameter name="core.param.usage_charges" class="java.math.BigDecimal"/>
-	<parameter name="usage_start_date" class="java.util.Date"/>
-	<parameter name="usage_end_date" class="java.util.Date"/>
 	<queryString>
-		<![CDATA[SELECT  CASE WHEN (il.usage_plan_id IS NOT NULL)
+		<![CDATA[SELECT CASE WHEN il.usage_plan_id IS NOT NULL
 	THEN (SELECT idesc.content
 		FROM international_description idesc, plan p, item i
 		WHERE p.item_id = i.id
@@ -31,7 +29,7 @@
 			WHERE name = 'item')
 		AND idesc.language_id = 1
 		AND p.id = il.usage_plan_id)
-        ELSE
+	ELSE
 	'No Plan'
 	END as "plan_description",
 	il.call_identifier AS phone_number,
@@ -46,7 +44,6 @@
 	AND amfm.asset_id = a.id
 	AND a.item_id = i.id
 	AND i.id = item_id
-	AND a.deleted = 0
 	AND a.identifier = call_identifier) AS asset_nick_name,
 	il.call_counter,
 	il.quantity,
@@ -72,7 +69,7 @@ ORDER BY plan_description;]]>
 	<group name="PlanGroup">
 		<groupExpression><![CDATA[$F{plan_description}]]></groupExpression>
 		<groupHeader>
-			<band height="40">
+			<band height="29">
 				<textField isBlankWhenNull="true">
 					<reportElement x="13" y="5" width="284" height="20" forecolor="#505861" uuid="64947afe-8c63-448c-93df-2c4fc5f17ec2"/>
 					<textElement>
@@ -99,42 +96,11 @@ ORDER BY plan_description;]]>
 					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_usage_charges_section_group_by_plan_sub_totals_fc_hosted.jasper"]]></subreportExpression>
 				</subreport>
-				<textField isStretchWithOverflow="true" pattern="dd MMM yy" isBlankWhenNull="true">
-					<reportElement x="39" y="25" width="52" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="25e842d9-44e0-4553-927d-45d6e2cf657f"/>
-					<textElement>
-						<font fontName="Lato" isBold="true"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$P{usage_start_date}]]></textFieldExpression>
-				</textField>
-				<staticText>
-					<reportElement x="86" y="25" width="12" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="4de45336-cf40-494f-946e-0b37a0b0fcc6"/>
-					<textElement>
-						<font fontName="Lato" isBold="true"/>
-					</textElement>
-					<text><![CDATA[to]]></text>
-				</staticText>
-				<staticText>
-					<reportElement x="13" y="25" width="32" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="0a5df835-3f51-416e-bc52-f8245f796fc7"/>
-					<textElement>
-						<font fontName="Lato" isBold="true"/>
-					</textElement>
-					<text><![CDATA[From]]></text>
-				</staticText>
-				<textField isStretchWithOverflow="true" pattern="dd MMM yy" isBlankWhenNull="true">
-					<reportElement x="97" y="25" width="54" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="0cd8ff05-caf0-4561-81f7-7896e1e0738d"/>
-					<textElement>
-						<font fontName="Lato" isBold="true"/>
-					</textElement>
-					<textFieldExpression><![CDATA[$P{usage_end_date}]]></textFieldExpression>
-				</textField>
 			</band>
 		</groupHeader>
 		<groupFooter>
 			<band/>
 		</groupFooter>
-	</group>
-	<group name="usage_period">
-		<groupExpression><![CDATA[$F{plan_description}]]></groupExpression>
 	</group>
 	<background>
 		<band splitType="Stretch"/>

@@ -354,7 +354,7 @@ class MediationConfigController {
             if (doRun) {
 				log.debug "mediation will be triggered or attempted."
 				if (fileInjectionEnabled) {
-					def temp = File.createTempFile(eventFile.fileItem.name, '.tmp')
+                    File temp = new File(System.getProperty("java.io.tmpdir"), eventFile.fileItem.name);
 					eventFile.transferTo(temp)
 					log.debug("Injected event file saved to: " + temp?.getAbsolutePath());
 					webServicesSession.triggerMediationByConfigurationByFile(configId, temp)

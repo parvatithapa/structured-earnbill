@@ -144,15 +144,18 @@ target(prepareTestDb: "Import the test postgresql database.") {
         def sapphireTestData = "descriptors/database/sapphire-client-upgrade.xml"
         ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: sapphireTestData))
 
+        def spcTestData = "descriptors/database/spc-client-upgrade.xml"
+        ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: spcTestData))
+
         def testData = "descriptors/database/test-data-features.xml"
         ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: testData))
+
+        def adennetTestData = "descriptors/database/adennet-client-upgrade.xml"
+        ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: adennetTestData))
 		
 		println "Loading test data for company hierarchy improper access(REST API) unit testing"
 		def testCompHierarchyImpAccessData = "descriptors/database/test-data-company-hierarchy-improper-access.xml"
 		ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: testCompHierarchyImpAccessData))
-
-        def earnbillTestData = "descriptors/database/test-data-mobile-api-access.xml"
-        ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: earnbillTestData))
     }
 }
 

@@ -23,8 +23,8 @@
 ) AS plan,
 ss.display_identifier,
 ss.service_id,
-TO_CHAR(ss.start_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS start_date,
-TO_CHAR(ss.end_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS end_date,
+TO_CHAR(ss.start_date, 'DD/MM/YYYY') AS start_date,
+TO_CHAR(ss.end_date, 'DD/MM/YYYY') AS end_date,
 ss.plan_description,
 CASE WHEN
 il.item_id IN
@@ -48,6 +48,13 @@ CASE WHEN
  INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
  WHERE ircm.item_id = il.item_id
  AND ru.entity_id = bu.entity_id
+ AND ircm.start_date =
+ (
+  SELECT MAX(ircm_inner.start_date)
+  FROM item_rating_configuration_map ircm_inner
+  WHERE ircm_inner.item_id = il.item_id
+  AND ircm_inner.start_date <= DATE(i.create_datetime)
+ )
 ) IS NOT NULL
 THEN
 (
@@ -61,14 +68,34 @@ THEN
  INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
  WHERE ircm.item_id = il.item_id
  AND ru.entity_id = bu.entity_id
+ AND ircm.start_date =
+ (
+  SELECT MAX(ircm_inner.start_date)
+  FROM item_rating_configuration_map ircm_inner
+  WHERE ircm_inner.item_id = il.item_id
+  AND ircm_inner.start_date <= DATE(i.create_datetime)
+ )
 )
 ELSE
 (CASE WHEN (SELECT po.is_mediated FROM purchase_order po where po.id = il.order_id) = 't'
 THEN il.call_counter::int::text
-ELSE COALESCE(il.quantity,0)::int::text
+ELSE COALESCE(il.quantity,1)::int::text
 END)
 END AS quantity,
-COALESCE(il.amount,0) AS amount
+CASE WHEN
+ ss.credit_note_id IS NULL
+THEN
+ COALESCE(il.amount,0)
+ELSE
+(
+ SELECT -1 * COALESCE(cnl.amount,0)
+ FROM credit_note cn
+ INNER JOIN credit_note_line cnl ON cnl.credit_note_id = cn.id
+ WHERE cn.id = ss.credit_note_id
+ AND cn.deleted = 0
+)
+END
+AS amount
 FROM service_summary ss
 INNER JOIN invoice i ON i.id = ss.invoice_id
 LEFT OUTER JOIN invoice_line il ON il.invoice_id = i.id AND il.id = ss.invoice_line_id
@@ -100,20 +127,17 @@ ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
 	</variable>
 	<group name="PlanGroup">
 		<groupExpression><![CDATA[$F{plan}]]></groupExpression>
-		<groupHeader>
-			<band height="5"/>
-		</groupHeader>
 		<groupFooter>
-			<band height="22">
+			<band height="16">
 				<staticText>
-					<reportElement x="307" y="2" width="183" height="20" forecolor="#D6036C" uuid="c281211e-26d4-4c63-9995-a84bfdc7b477"/>
+					<reportElement x="307" y="0" width="183" height="15" forecolor="#D6036C" uuid="c281211e-26d4-4c63-9995-a84bfdc7b477"/>
 					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 					</textElement>
 					<text><![CDATA[Total Monthly Charges]]></text>
 				</staticText>
 				<textField isStretchWithOverflow="true">
-					<reportElement x="492" y="2" width="60" height="20" forecolor="#D6036C" uuid="b2a201c6-a144-4fce-8953-ca7e666e41a9"/>
+					<reportElement x="492" y="0" width="60" height="15" forecolor="#D6036C" uuid="b2a201c6-a144-4fce-8953-ca7e666e41a9"/>
 					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font fontName="Calibri" isBold="true"/>
 						<paragraph rightIndent="1"/>
@@ -124,23 +148,23 @@ ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
 		</groupFooter>
 	</group>
 	<detail>
-		<band height="21" splitType="Stretch">
+		<band height="16" splitType="Stretch">
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="241" y="0" width="180" height="20" uuid="f1f12499-1acf-4ae4-9872-43d36372cf8e"/>
+				<reportElement x="254" y="0" width="170" height="15" uuid="f1f12499-1acf-4ae4-9872-43d36372cf8e"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="422" y="0" width="60" height="20" uuid="b42930b8-2256-4b15-99ef-8cef1a0dce97"/>
+				<reportElement x="425" y="0" width="60" height="15" uuid="b42930b8-2256-4b15-99ef-8cef1a0dce97"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="483" y="1" width="69" height="20" uuid="0f4fdd66-b176-4c23-ae3c-2d212be9e4d9"/>
+				<reportElement x="483" y="1" width="69" height="15" uuid="0f4fdd66-b176-4c23-ae3c-2d212be9e4d9"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 					<paragraph rightIndent="1"/>
@@ -148,7 +172,7 @@ ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
 				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="110" y="0" width="117" height="20" uuid="505a3bed-bc2c-416b-b0aa-b592f4cd11ea"/>
+				<reportElement x="126" y="0" width="117" height="15" uuid="505a3bed-bc2c-416b-b0aa-b592f4cd11ea"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 					<paragraph leftIndent="1"/>
@@ -157,7 +181,7 @@ ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
 (null != $F{start_date} && null != $F{end_date} ? ($F{start_date} +' to '+ $F{end_date}) : '')]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="3" y="0" width="106" height="20" uuid="5f2123a2-235e-49f5-850b-9c304a013935"/>
+				<reportElement x="19" y="0" width="106" height="15" uuid="5f2123a2-235e-49f5-850b-9c304a013935"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>

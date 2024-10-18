@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ums_crm_user_report" language="groovy" pageWidth="975" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="935" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryNewPage="true" uuid="b070bec6-2471-4f31-b774-79a408ac17cc">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[$P{end_date}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/jbilling/Documents/projects/adennet/reports/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="subscriber_number" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="user_name" class="java.util.List">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="process_type" class="java.util.List">
+		<defaultValueExpression><![CDATA[null]]></defaultValueExpression>
+	</parameter>
+	<parameter name="governorate" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="actions" class="java.util.List"/>
+	<parameter name="trn_source" class="java.lang.String">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+	</parameter>
+	<parameter name="plan_name" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+			outerDas.process_id,
+			outerDas.subscriber_number,
+			outerDas.recharge_date,
+			outerDas.action,
+			CASE 	WHEN outerDas.action like 'Refund%'
+					THEN 'Refund'
+				ELSE outerDas.narration
+			END AS narration,
+			outerDas.plan_description,
+			outerDas.amount,
+			outerDas.actual_amount,
+			outerDas.wallet_amount,
+			outerDas.source,
+			outerDas.governorate,
+			outerDas.account_user
+		FROM
+		(
+			SELECT
+				CASE	WHEN wl.action = 'Refund of wallet top up'
+						THEN trn.parent_txn_id
+					ELSE wl.txn_id
+				END AS process_id,
+				wl.subscriber_number,
+				CASE 	WHEN wl.action = 'Refund of wallet top up' THEN (SELECT created_by FROM transaction WHERE id = trn.parent_txn_id)
+						ELSE trn.created_by
+				END as created_by,
+				CASE
+					WHEN wl.action = 'Refund of wallet top up' THEN (SELECT created_at FROM transaction WHERE id = trn.parent_txn_id)
+					WHEN wl.action LIKE 'Refund of%' AND wl.action != 'Refund of wallet top up' THEN trn.created_at
+					ELSE wl.recharge_date
+				END at time zone 'utc' at time zone 'Asia/Aden' AS created_at,
+				wl.recharge_date at time zone 'utc' at time zone 'Asia/Aden' AS recharge_date,
+				wl.action,
+				CASE WHEN  wl.action='Refund of wallet top up' THEN 'Top up'
+					 WHEN  wl.narration='Refund of SIM re-issue fee' THEN  'SIM reissue fee'
+					 ELSE  wl.narration
+				END AS narration,
+				COALESCE(CASE WHEN wl.action='Refund of wallet top up'
+							  THEN (select plan_description from transaction where id=trn.parent_txn_id)
+							  ELSE plan_description
+						 END, 'NA') as plan_description,
+				round(wl.amount, 2) AS amount,
+				round(wl.actual_amount, 2) AS actual_amount,
+				CASE	WHEN wl.narration = 'Plan price'
+						THEN round( (wl.amount - wl.actual_amount), 2)
+					ELSE 0.00
+				END AS wallet_amount,
+				wl.source,
+				trn.governorate,
+				SUBSTRING(wl.created_by, POSITION('|' IN wl.created_by) + 1) AS account_user
+			FROM
+				wallet_ledger wl JOIN transaction trn on trn.id = wl.txn_id
+			WHERE
+				((wl.amount >= 0 AND wl.narration not like 'Reversal%')
+				OR
+				(wl.amount <= 0	AND wl.action like 'Refund%'))
+				AND trn.source = 'POS'
+		) AS outerDas
+		WHERE
+			($X{IN, outerDas.action, actions})
+			AND ($X{IN, outerDas.narration, process_type})
+			AND CASE
+				WHEN $P{trn_source} = ''
+					THEN outerDas.created_at >= $P{start_date}
+					AND outerDas.created_at <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+					AND ($X{IN, outerDas.created_by, user_name})
+				ELSE 	outerDas.action like 'Refund%'
+					AND outerDas.recharge_date >= $P{start_date}
+					AND outerDas.recharge_date <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+					AND ($X{IN, outerDas.account_user, user_name})
+			END
+			AND CASE
+				WHEN $P{governorate}='' THEN true
+				ELSE outerDas.governorate = $P{governorate}
+			END
+			AND CASE
+				WHEN $P{subscriber_number} = '' THEN true
+				ELSE outerDas.subscriber_number = $P{subscriber_number}
+			END
+			AND CASE WHEN $P{plan_name} = '' THEN true
+					ELSE outerDas.plan_description = $P{plan_name}
+				END
+		ORDER BY outerDas.process_id,outerDas.recharge_date;]]>
+	</queryString>
+	<field name="process_id" class="java.lang.Long"/>
+	<field name="subscriber_number" class="java.lang.String"/>
+	<field name="recharge_date" class="java.sql.Timestamp"/>
+	<field name="action" class="java.lang.String"/>
+	<field name="narration" class="java.lang.String"/>
+	<field name="plan_description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="actual_amount" class="java.math.BigDecimal"/>
+	<field name="wallet_amount" class="java.math.BigDecimal"/>
+	<field name="source" class="java.lang.String"/>
+	<field name="governorate" class="java.lang.String"/>
+	<field name="account_user" class="java.lang.String"/>
+	<variable name="tax-amount" class="java.math.BigDecimal" calculation="Sum">
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<variable name="total-amount-with-taxes" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.0]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="133" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="610" height="21" forecolor="#441A3D" uuid="a9d84cee-03f3-468a-b583-46974fffaf10"/>
+				<textElement textAlignment="Left">
+					<font size="18" isBold="true" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[CRM User Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="610" y="0" width="84" height="21" uuid="193a722c-7cb7-4520-b9a1-d130bb715ae2"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy HH.mm.ss">
+				<reportElement x="754" y="0" width="180" height="21" uuid="c2759f82-12df-4262-a441-19c9485a8679"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_FORMAT_FACTORY}.createDateFormat("dd/MM/yyyy HH:mm",$P{REPORT_LOCALE}, java.util.TimeZone.getTimeZone("Asia/Aden")).format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="610" y="21" width="84" height="21" uuid="b5c6de56-12cf-4c5e-a58f-994c1e8e34d9"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="610" y="42" width="84" height="21" uuid="a614874b-51d6-439a-ba20-7d0fa89e47a7"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="754" y="21" width="180" height="21" uuid="2f570bbf-c949-4680-9c4e-9202a2697a9e"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("dd/MM/yyyy").format($P{start_date})]]></textFieldExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement x="754" y="42" width="180" height="21" uuid="b8669d75-3260-4287-85d3-33e37fc1eae3"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("dd/MM/yyyy").format($P{end_date})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="694" y="0" width="60" height="21" uuid="7eb7e159-715f-4c2e-9c01-f2a5e6e02990"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="694" y="21" width="60" height="21" uuid="6dc5f91f-5fe6-46d9-a9ff-9494ab789b25"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="694" y="42" width="60" height="21" uuid="e9595337-33ad-495b-abb8-99dd68a94593"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="84" width="42" height="47" uuid="b686adbf-957e-47f7-801b-96a97543c098"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[#]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="42" y="84" width="78" height="47" uuid="94fca731-7050-4623-9771-4dece47b8414"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="120" y="84" width="63" height="47" uuid="b9db3d45-fbd2-4b73-b4e8-2923d7db5265"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Process Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="183" y="84" width="72" height="47" uuid="6bd7ca31-4f71-4a6d-98a0-c4b79df701b3"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Recharge Date And Time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="255" y="84" width="79" height="47" uuid="5e92292b-d40e-4099-8421-d4e5c54a1868"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Transaction Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="334" y="84" width="74" height="47" uuid="a1f3441f-e504-4568-bcaa-e4e59e53bccd"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Type of Process]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="408" y="84" width="60" height="47" uuid="6c40505b-adf9-4212-a8a1-54ff20adacdc"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Amount In Cash]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="468" y="84" width="64" height="47" uuid="8b0e24fa-c8a6-45c0-b379-177bf1785d04"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Actual Plan Price]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="694" y="84" width="60" height="47" uuid="ae4be412-7805-4a3d-9efa-ac12122ea49d"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Governorate]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="754" y="84" width="119" height="47" uuid="95a7cd46-fb4a-4d07-9357-bd02403a6a85"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Account User]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="873" y="84" width="61" height="47" uuid="cb1fc93f-c197-4dbe-b921-34311ab8cb85"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Source]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="532" y="84" width="78" height="47" uuid="770fa9d6-6364-4d3f-9c39-0741b287963f"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Amount Used From Wallet]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="63" width="934" height="21" uuid="799384ec-ccf6-4148-9da5-b1b726ca2e50"/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="21" width="610" height="21" uuid="5ef4692f-d768-41f4-93d9-976333cb3098"/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="42" width="610" height="21" uuid="505e72d4-940a-4c13-8340-c61ba1a412bb"/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="610" y="84" width="84" height="47" uuid="24359f26-5281-4d95-b931-f1c7260763df"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Plan Name]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="59" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="42" height="59" uuid="5160f2b6-f94d-4e22-b53c-6df81270b792"/>
+				<textElement textAlignment="Left">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="42" y="0" width="78" height="59" uuid="c1a03809-295e-42c8-90af-ab335b9b1403"/>
+				<textElement textAlignment="Left">
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{subscriber_number}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="694" y="0" width="60" height="59" uuid="84583925-048a-4455-a79b-abe7608a620a"/>
+				<textElement textAlignment="Left">
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{governorate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="120" y="0" width="63" height="59" uuid="2bc13dfa-067e-45c9-b154-c53162c7f723"/>
+				<textElement textAlignment="Left">
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{process_id}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="468" y="0" width="64" height="59" uuid="202dd827-b29f-4495-a5ea-19bd40e4a41f"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{actual_amount}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="873" y="0" width="61" height="59" uuid="853789f7-2816-404d-b3bb-95af581afcd1"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{source}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="255" y="0" width="79" height="59" uuid="fa6db1c6-a858-4f0f-80de-e55b2d184ecd"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{action}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="334" y="0" width="74" height="59" uuid="0b508bd3-0076-46df-a892-88e54806228f"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{narration}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="408" y="0" width="60" height="59" uuid="ab60d45f-ee06-4be2-9d55-cf902cb6378e"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="754" y="0" width="119" height="59" uuid="62b97676-9e47-4238-a1a3-2b572675607e"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{account_user}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="183" y="0" width="72" height="59" uuid="112518eb-183b-41a8-8969-a0e34664a601"/>
+				<textElement>
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("dd/MM/yyyy HH:mm").format($F{recharge_date})]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="532" y="0" width="78" height="59" uuid="171836f4-396c-40fe-8c2f-ef91e674fd11"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{wallet_amount}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="610" y="0" width="84" height="59" uuid="2a783fbe-fcf2-4f69-b3b9-28bd65d3fb62"/>
+				<textElement>
+					<font size="12"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{plan_description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20">
+			<textField>
+				<reportElement x="0" y="0" width="934" height="20" uuid="0784fa91-d540-4857-9df5-0016be781fdb"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page: "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="100" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="21" width="183" height="21" uuid="29dafeb8-e820-48bf-a9d3-1115c6ac3914"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Tax Amount]]></text>
+			</staticText>
+			<textField pattern="###0.00">
+				<reportElement x="255" y="0" width="679" height="21" uuid="eb243b79-3b56-467c-a05d-7f5d6c59597f"/>
+				<textElement textAlignment="Left">
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{total-amount-with-taxes}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="42" width="183" height="21" uuid="cefd4443-a412-43da-9791-9b143fb8728c"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Amount With Tax]]></text>
+			</staticText>
+			<textField pattern="###0.00">
+				<reportElement x="255" y="42" width="679" height="21" uuid="35dd382c-a053-46a7-ad94-56b1ea6a6201"/>
+				<textElement textAlignment="Left">
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{total-amount-with-taxes}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="255" y="21" width="679" height="21" uuid="9d6f7e33-c37d-49b0-a050-f0699c00393f"/>
+				<textElement textAlignment="Left">
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($V{tax-amount}==null)?0.00:$V{tax-amount}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="183" height="21" uuid="5095f769-ac42-43f7-bd7d-be47d41d4b3e"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Amount Without Tax]]></text>
+			</staticText>
+			<subreport isUsingCache="true">
+				<reportElement x="0" y="63" width="934" height="34" uuid="d8f65a9e-f1cb-4f99-86ec-7447b46ca575"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_name">
+					<subreportParameterExpression><![CDATA[$P{user_name}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="subscriber_number">
+					<subreportParameterExpression><![CDATA[$P{subscriber_number}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="end_date">
+					<subreportParameterExpression><![CDATA[$P{end_date}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="process_type">
+					<subreportParameterExpression><![CDATA[$P{process_type}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="trn_source">
+					<subreportParameterExpression><![CDATA[$P{trn_source}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="governorate">
+					<subreportParameterExpression><![CDATA[$P{governorate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_date">
+					<subreportParameterExpression><![CDATA[$P{start_date}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="actions">
+					<subreportParameterExpression><![CDATA[$P{actions}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="plan_name">
+					<subreportParameterExpression><![CDATA[$P{plan_name}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ums_crm_user_report_subreport2.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="183" y="21" width="72" height="21" uuid="0cbf495c-744b-46f4-a71d-e601f8e7e4b7"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="183" y="0" width="72" height="21" uuid="bb02326b-7f0a-4f52-a4ab-53436b7ea90d"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="183" y="42" width="72" height="21" uuid="35e8d345-9e97-4c0b-b510-b4475ea9b421"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>

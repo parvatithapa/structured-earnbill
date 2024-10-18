@@ -1,10 +1,5 @@
 package com.sapienter.jbilling.server.usagePool.task;
 
-import com.sapienter.jbilling.server.user.db.UserDAS;
-import com.sapienter.jbilling.server.user.db.UserDTO;
-import grails.plugin.springsecurity.SpringSecurityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import java.util.Arrays;
 import java.util.Date;
 
@@ -39,8 +34,7 @@ public class FreeTrialConsumptionTask extends PluggableTask implements IInternal
             throw new PluggableTaskException("Cannot process event " + event);
         FreeTrialConsumptionEvent freeTrialConsumptionEvent = (FreeTrialConsumptionEvent) event;
         Integer userId = freeTrialConsumptionEvent.getUserId();
-        Integer entityId = freeTrialConsumptionEvent.getEntityId();
-        updateActiveUntilAndGenerateInvoiceForFreeTrialOrders(userId, entityId, new Date());
+        updateActiveUntilAndGenerateInvoiceForFreeTrialOrders(userId, new Date());
 
     }
 
@@ -56,13 +50,10 @@ public class FreeTrialConsumptionTask extends PluggableTask implements IInternal
      * @param userId
      * @param date
      */
-    private void updateActiveUntilAndGenerateInvoiceForFreeTrialOrders(Integer userId, Integer entityId, Date date) {
+    private void updateActiveUntilAndGenerateInvoiceForFreeTrialOrders(Integer userId, Date date) {
         logger.debug("Updating active until date and generating invoice for free trial order for user {}", userId);
         try {
             IWebServicesSessionBean service = Context.getBean(Name.WEB_SERVICES_SESSION);
-            UserDTO user = new UserDAS().findByUserId(userId, entityId);
-            SpringSecurityUtils.reauthenticate(user.getUserName()+";"+entityId, null);
-
             new OrderDAS().findByUserSubscriptionsAndFreeTrialSubscription(userId).stream()
             .forEach(order -> {
                 order.setActiveUntil(date);
@@ -75,9 +66,6 @@ public class FreeTrialConsumptionTask extends PluggableTask implements IInternal
 
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-        }finally {
-            // logout user once api calls are done.
-            SecurityContextHolder.getContext().setAuthentication(null);
         }
     }
 

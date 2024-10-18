@@ -33,14 +33,15 @@
 
     <import resource="edi-process-job-context.xml"/>
     <import resource="boa-file-processing-job.xml"/>
-
-    <import resource="classpath:pre-evaluated-sql-data-base-config.xml"/>
+    
+   	<import resource="classpath:pre-evaluated-sql-data-base-config.xml"/> 
     <import resource="classpath:pre-evaluated-sql-context.xml"/>
 
     <import resource="billing-master.xml"/>
     <import resource="billing-slave.xml"/>
     <import resource="ignition-batch-jobs.xml"/>
     <import resource="ignition-batch-jobs-slave.xml"/>
+    <import resource="invoice-emails-job.xml"/>    
 
     <!-- This will locate the xml file in a production environment -->
     <import resource="classpath:custom-mediations/single-machine/full-creative/fc-mediation-config.xml"/>
@@ -63,9 +64,6 @@
 
     <!-- SPC MUR Mediation Job -->
     <import resource="classpath:spc-mur-mediation-job.xml"/>
-
-    <!-- Distriubtel Price increase and reversal Job   -->
-    <import resource = "distributel-price-increase-reverse-job.xml"/>
 
     <!--
           ***************************************************
@@ -100,6 +98,7 @@
 
     <bean id="dtReserveInstanceWSMapper" class="com.sapienter.jbilling.server.dt.reserve.mapper.DtReserveInstanceWSMapper"/>
 
+	<!-- jira saas-202, Security check to prevent unauthorized access-->
 	<bean id = "jbillingUserService" class = "com.sapienter.jbilling.client.authentication.AuthenticationUserService">
 		<aop:scoped-proxy/>
 	</bean>
@@ -107,7 +106,7 @@
 	<bean id = "passwordEncoder" class = "com.sapienter.jbilling.client.authentication.JBillingPasswordEncoder">
 		<aop:scoped-proxy/>
 	</bean>
-
+	
     <bean id="apiUserDetailBL" class="com.sapienter.jbilling.server.apiUserDetail.service.ApiUserDetailBL">
         <aop:scoped-proxy/>
         <property name="userDetailsService" ref="userDetailsService" />
@@ -183,7 +182,7 @@
         <property name="maxRetries" value="10"/>
         <property name="order" value="0"/>
     </bean>
-
+    
     <bean id = "mediationPartitioningPluginHelperService" class = "com.sapienter.jbilling.server.mediation.task.MediationPartitioningPluginHelperServiceImpl"/>
 
     <bean id = "mediationMRIMServiceImpl" class = "com.sapienter.jbilling.server.mediation.MediationMRIMServiceImpl"/>
@@ -232,27 +231,16 @@
         <property name="webServicesSessionBean" ref="webServicesSession"/>
     </bean>
     <bean id = "scheduledTaskTriggerListener" class = "com.sapienter.jbilling.server.pluggableTask.listener.ScheduledTaskTriggerListener"/>
-
+    
     <bean id = "spcOutBoundInterchangeHelperService" class = "com.sapienter.jbilling.server.spc.wookie.crm.SpcOutBoundInterchangeHelperService"/>
     <bean id = "outBoundInterchangeDAS" class = "com.sapienter.jbilling.server.integration.db.OutBoundInterchangeDAS"/>
     <bean id = "userResourceHelperService" class = "com.sapienter.jbilling.server.user.UserResourceHelperService"/>
     <bean id = "mediationRestHelperService" class = "com.sapienter.jbilling.server.mediation.MediationRestHelperService"/>
-    <bean id = "sapphireHelperService" class = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireHelperService"/>
+    <bean id = "sapphireProvisioningHelperService" class = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireProvisioningHelperService"/>
     <bean id = "orderResourceHelperService" class = "com.sapienter.jbilling.server.order.OrderResourceHelperService"/>
     <bean id = "assetResourceHelperService" class = "com.sapienter.jbilling.server.item.AssetResourceHelperService"/>
     <bean id = "invoiceResourceHelperService" class = "com.sapienter.jbilling.server.invoice.InvoiceResourceHelperService"/>
     <bean id = "exceptionInterceptor" class="com.sapienter.jbilling.common.ExceptionInterceptor"/>
 
-    <bean id = "readOnlyTx" class = "org.springframework.transaction.support.TransactionTemplate">
-        <property name = "propagationBehaviorName" value = "PROPAGATION_REQUIRED"/>
-        <property name = "readOnly"                value = "true"/>
-        <property name = "transactionManager"      ref   = "transactionManager"/>
-    </bean>
-
-    <bean id = "readWriteTx" class = "org.springframework.transaction.support.TransactionTemplate">
-        <property name = "propagationBehaviorName" value = "PROPAGATION_REQUIRES_NEW"/>
-        <property name = "transactionManager"      ref   = "transactionManager"/>
-    </bean>
-
-    <bean id="paymentWebHookService" class="com.sapienter.jbilling.server.payment.PaymentWebHookService"/>
+    <bean id="adennetHelperService" class="com.sapienter.jbilling.server.adennet.AdennetHelperService"/>
 </beans>

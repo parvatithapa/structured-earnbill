@@ -21,8 +21,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -104,12 +102,15 @@ import com.sapienter.jbilling.server.item.event.AssetAddedToOrderEvent;
 import com.sapienter.jbilling.server.item.event.AssetUpdatedEvent;
 import com.sapienter.jbilling.server.item.event.SwapAssetsEvent;
 import com.sapienter.jbilling.server.item.tasks.IItemPurchaseManager;
+import com.sapienter.jbilling.server.item.tasks.ItemPurchaseManagerContext;
 import com.sapienter.jbilling.server.list.ResultList;
 import com.sapienter.jbilling.server.mediation.CallDataRecord;
-import com.sapienter.jbilling.server.metafields.DataType;
-import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationService;
+import com.sapienter.jbilling.server.mediation.evaluation.task.BasicMediationEvaluationStrategyTask;
+import com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask;
+import com.sapienter.jbilling.server.metafields.DataType;
+import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.metafields.MetaFieldBL;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
@@ -153,6 +154,8 @@ import com.sapienter.jbilling.server.pluggableTask.OrderProcessingTask;
 import com.sapienter.jbilling.server.pluggableTask.TaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDAS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDTO;
 import com.sapienter.jbilling.server.pricing.PriceModelBL;
 import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
@@ -324,29 +327,31 @@ public class OrderBL extends ResultList implements OrderSQL {
      */
     public static OrderDTO getOrCreateCurrentOrder(Integer userId, Date eventDate, Integer itemId,
             Integer currencyId, boolean persist, String processId, Integer entityId, String assetIdentifier) {
-        CurrentOrder co = null;
-        if(StringUtils.isNotBlank(assetIdentifier)) {
-            co = new AssetBasedCurrentOrder(userId, eventDate, itemId, processId, entityId, assetIdentifier);
-        } else {
-            co = new CurrentOrder(userId, eventDate, itemId, processId, entityId);
-        }
-        Integer currentOrderId = co.getCurrent();
-        if (currentOrderId == null) {
-            UserBL userBL = new UserBL(co.getUserId());
-            // this is almost an error, put them in a new order?
-            currentOrderId = co.create(co.getEventDate(), userBL.getCurrencyId(), userBL.getEntityId(co.getUserId()));
-            logger.warn("Created current one-time order without a suitable main subscription order: {}", currentOrderId);
-        }
+        PluggableTaskManager<IMediationEvaluationStrategyTask> taskManager;
+        try {
+            PluggableTaskTypeCategoryDTO iMediationEvaluationStrategyTaskCategory =
+                    new PluggableTaskTypeCategoryDAS().findByInterfaceName(IMediationEvaluationStrategyTask.class.getName());
+            taskManager = new PluggableTaskManager<>(entityId, iMediationEvaluationStrategyTaskCategory.getId());
+            IMediationEvaluationStrategyTask task = taskManager.getNextClass();
+            if (task == null) {
+                task = new BasicMediationEvaluationStrategyTask();
+            }
+            OrderDAS orderDas = new OrderDAS();
+            OrderDTO subscriptionOrder = StringUtils.isBlank(assetIdentifier) ?
+                null : orderDas.findOrderByUserAssetIdentifierEffectiveDate(userId, assetIdentifier, eventDate);
+            Integer currentOrderId = task.getCurrent(userId, eventDate, itemId, processId, subscriptionOrder, assetIdentifier);
+            OrderDTO order = orderDas.findNow(currentOrderId);
 
-        OrderDAS orderDas = new OrderDAS();
-        OrderDTO order = orderDas.find(currentOrderId);
+            if (!persist) {
+                order.touch();
+                orderDas.detach(order);
+            }
 
-        if (!persist) {
-            order.touch();
-            orderDas.detach(order);
+            return order;
+        } catch (PluggableTaskException e) {
+            logger.error("exception while getting or creating the current order : {}", e);
+            return null;
         }
-
-        return order;
     }
 
     /**
@@ -375,7 +380,7 @@ public class OrderBL extends ResultList implements OrderSQL {
                 ResourceBundle bundle = ResourceBundle.getBundle("entityNotifications", entity.getLocale());
                 order.setNotes(bundle.getString("order.recurring.new.notes"));
             } catch (Exception e) {
-                throw new SessionInternalError("Error setting the new order notes", CurrentOrder.class, e);
+                throw new SessionInternalError("Error setting the new order notes", OrderBL.class, e);
             }
 
             order.setActiveSince(eventDate);
@@ -763,21 +768,11 @@ public class OrderBL extends ResultList implements OrderSQL {
             if (userCodes.length > 0) {
                 retValue.setUserCode(userCodes[0]);
             }
+
         }
         logger.debug("Ret value ===" + retValue);
 
         retValue.setAccessEntities(getAccessEntities(orderDto.getUser()));
-        if(orderDto.getId()!=null){
-            List<OrderDTO> find = orderDas.findDiscountOrderByMetaFieldsValue(
-                    orderDto.getUser().getCompany().getId(),
-                    Constants.FREE_TRIAL_SUBSCRIPTION_ORDER_ID,
-                    orderDto.getId());
-            OrderDTO discountOrder = find.isEmpty() ? null : find.get(0);
-            if(discountOrder!=null){
-                retValue.setFreeTrial(Boolean.TRUE);
-                retValue.setDiscountOrderFinished(Boolean.valueOf(discountOrder.isFinished()));
-            }
-        }
 
         logger.debug("Ret value === {}", retValue);
         return retValue;
@@ -953,14 +948,23 @@ public class OrderBL extends ResultList implements OrderSQL {
     }
 
     public void addItem(OrderDTO order, Integer itemID, BigDecimal quantity, Integer language, Integer userId,
-            Integer entityId, Integer currencyId, List<CallDataRecord> records, List<OrderLineDTO> lines, boolean singlePurchase, String sipUri, Date eventDate) throws ItemDecimalsException {
-
+            Integer entityId, Integer currencyId, List<CallDataRecord> records, List<OrderLineDTO> lines, boolean singlePurchase, String sipUri, Date eventDate) {
         try {
             PluggableTaskManager<IItemPurchaseManager> taskManager = new PluggableTaskManager<>(entityId, Constants.PLUGGABLE_TASK_ITEM_MANAGER);
             IItemPurchaseManager myTask = taskManager.getNextClass();
-
+            ItemPurchaseManagerContext context = ItemPurchaseManagerContext.build(userId, itemID, quantity)
+                    .addCurrencyId(currencyId)
+                    .addCallDataRecords(records)
+                    .addEntityId(entityId)
+                    .addEventDate(eventDate)
+                    .addOrder(order)
+                    .addOrderLines(lines)
+                    .addSipUri(sipUri)
+                    .isSingePurchase(singlePurchase)
+                    .addLanguageId(language)
+                    .build();
             while (myTask != null) {
-                myTask.addItem(itemID, quantity, language, userId, entityId, currencyId, order, records, lines, singlePurchase, sipUri, eventDate);
+                myTask.addItem(context);
                 myTask = taskManager.getNextClass();
             }
 
@@ -1505,7 +1509,6 @@ public class OrderBL extends ResultList implements OrderSQL {
                 order.setDiscountLines(new LinkedList<>());
             }
             validateDiscountLines();
-            checkPlanItemHasTeaserPricing(orderDto);
 
             order = orderDas.save(orderDto);
             setProvisioningStatus(order);
@@ -1571,31 +1574,6 @@ public class OrderBL extends ResultList implements OrderSQL {
             throw new SessionInternalError("Create exception creating order entity bean", OrderBL.class, e);
         }
         return order.getId();
-    }
-
-    private void checkPlanItemHasTeaserPricing(OrderDTO order) {
-        Set<PlanDTO> plans = null;
-        for(OrderLineDTO line: order.getLines()) {
-            if (null != line.getItem() && line.getItem().hasPlanItems()) {
-                plans = line.getItem().getPlans();
-                continue;
-            }
-            if (null != plans ) {
-                for (PlanDTO plan: plans) {
-                    for (PlanItemDTO planItem: plan.getPlanItems()) {
-                        PriceModelDTO priceModelDto =  planItem.getPrice(new Date());
-                        boolean isTeaserPricing = false;
-                        if(null != priceModelDto){
-                            isTeaserPricing = priceModelDto.getType().equals(PriceModelStrategy.TEASER_PRICING);
-                        }
-                        if (isTeaserPricing) {
-                            line.setUseItem(Boolean.FALSE);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private void setProvisioningStatus(OrderDTO orderDto) {
@@ -2471,7 +2449,7 @@ public class OrderBL extends ResultList implements OrderSQL {
         AssetStatusDTO previousStatus = assetDTO.getAssetStatus();
         // unlink asset only if it linked to current line
         // see addBundledItems() for example of assets reassign
-        if (assetDTO.getOrderLine().equals(line)) {
+        if (assetDTO.getOrderLine().getId() == line.getId()) {
 
             OrderChangeDTO appliedChange = findOrderChange(line, appliedChanges);
             Date assetAssignedEndDate = null != appliedChange ? appliedChange.getStartDate() : TimezoneHelper.serverCurrentDate();
@@ -3639,25 +3617,7 @@ public class OrderBL extends ResultList implements OrderSQL {
 
     public Integer getLatest(Integer userId)
             throws SessionInternalError {
-        Integer retValue = null;
-        try {
-            prepareStatement(OrderSQL.getLatest);
-            cachedResults.setInt(1, userId);
-            cachedResults.setInt(2, userId);
-            execute();
-            if (cachedResults.next()) {
-                int value = cachedResults.getInt(1);
-                if (!cachedResults.wasNull()) {
-                    retValue = value;
-                }
-            }
-            cachedResults.close();
-            conn.close();
-        } catch (Exception e) {
-            throw new SessionInternalError(e);
-        }
-
-        return retValue;
+            return null != userId ? orderDas.getLastByUser(userId) : null;
     }
 
     public Integer getLatestByItemType(Integer userId, Integer itemTypeId)
@@ -4184,13 +4144,13 @@ public class OrderBL extends ResultList implements OrderSQL {
                                             MetaFieldHelper.toWSArray(line.getMetaFields()),
                                             line.getSipUri(),
                                             line.isPercentage(),
-                            (null != line.getItem() ? line.getItem().isPlan() : false),
-                            (null != line.getItem() && null != line.getItem().getPlans() &&
-                                line.getItem().getPlans().iterator().hasNext() ?
-                                    (null != line.getItem().getPlans().iterator().next() ?
-                                            line.getItem().getPlans().iterator().next().getId() :
-                                                null)
-                                : null ));
+                                            (null != line.getItem() ? line.getItem().isPlan() : false),
+                                            (null != line.getItem() && null != line.getItem().getPlans() &&
+                                            line.getItem().getPlans().iterator().hasNext() ?
+                                                    (null != line.getItem().getPlans().iterator().next() ?
+                                                            line.getItem().getPlans().iterator().next().getId() :
+                                                                null)
+                                                                : null),line.getCallCounter());
 
             if(null != this.order && PreferenceBL.isTierCreationAllowed(this.order.getUser().getEntity().getId()) &&
                     line.hasOrderLineTiers()) {
@@ -4215,7 +4175,6 @@ public class OrderBL extends ResultList implements OrderSQL {
 
             retValue.setAssetAssignmentIds(line.getAssetAssignmentIds());
             retValue.setChildLines(new OrderLineWS[line.getChildLines().size()]);
-            retValue.setFreeCallCounter(line.getFreeCallCounter());
             int index = 0;
             for (OrderLineDTO childLine : line.getChildLines()) {
                 retValue.getChildLines()[index] = getOrderLineWS(childLine, linesMapForHierarchy);
@@ -4429,7 +4388,6 @@ public class OrderBL extends ResultList implements OrderSQL {
             line.setQuantity(dto.getQuantityAsDecimal());
             line.setProvisioningStatus(provisioningStatusDas.find(dto.getProvisioningStatusId()));
             line.setProvisioningRequestId(dto.getProvisioningRequestId());
-            line.setUseItem(dto.getUseItem());
 
             if (line.getItem().getAssetManagementEnabled() == 1) {
                 if (line.getDeleted() == 1) {
@@ -4503,11 +4461,9 @@ public class OrderBL extends ResultList implements OrderSQL {
      * Returns the current one-time order for this user for the given date.
      */
     public OrderDTO getCurrentOrder(Integer userId, Date date) {
-        CurrentOrder co = new CurrentOrder(userId, date, null);
-        set(orderDas.findNow(co.getCurrent()));
+        set(getOrCreateCurrentOrder(userId, date, null, null, true));
         return order;
     }
-
     public void addRelationships(Integer userId, Integer periodId, Integer currencyId) {
         if (periodId != null) {
             OrderPeriodDTO period = orderPeriodDAS.find(periodId);
@@ -4676,16 +4632,14 @@ public class OrderBL extends ResultList implements OrderSQL {
 
         OrderHelper.synchronizeOrderLines(order);
         String pricingFieldsFromMethod = pricingFields;
-        Integer orderId = order.getId();
         for (OrderLineDTO line : order.getLines()) {
             logger.debug("Processing line {}", line);
             String pricingFieldsFromOrderLine = null;
-            if (line.getUseItem() && 0 == line.getDeleted()) {
-                if(null != orderId && orderId > 0) {
+            if (line.getUseItem()) {
+                if(null != order.getId() && order.getId() > 0) {
                     MediationService mediationService = Context.getBean(MediationService.BEAN_NAME);
                     List<Filter> filters = new ArrayList<>();
                     filters.add(Filter.integer("orderLineId", FilterConstraint.EQ, line.getId()));
-                    filters.add(Filter.integer("orderId", FilterConstraint.EQ, orderId));
                     // get only the first jmr record, sorted by eventDate
                     List<JbillingMediationRecord> events = mediationService.findMediationRecordsByFilters(0, 1, filters);
                     for(JbillingMediationRecord event : events) {
@@ -5261,5 +5215,34 @@ public class OrderBL extends ResultList implements OrderSQL {
      */
     public OrderDTO findOrderByUserAndAssetIdentifier(Integer userId, String assetIdentifier) {
         return orderDas.findOrderByUserAndAssetIdentifier(userId, assetIdentifier);
+    }
+
+    /**
+     * Method to fetch subscription order based on userId, assetIdentifier and event date
+     * @param userId
+     * @param assetIdentifier
+     * @param eventDate
+     * @return
+     */
+    public OrderDTO findOrderByUserAssetIdentifierAndEventDate(Integer userId, String assetIdentifier, Date eventDate) {
+        return orderDas.findOrderByUserAssetIdentifierEffectiveDate(userId, assetIdentifier, eventDate);
+    }
+
+    /**
+     * Segregation of plan and asset : Method to fetch active plan id for active order based on subscription order line id
+     * @param orderLineId
+     * @return planId
+     */
+    public Integer getPlanIdFromActiveOrder(Integer orderLineId){
+        OrderDTO orderDTO =  orderDas.getActiveOrderByAssetOrderLineId(orderLineId);
+        for(OrderLineDTO orderLine : orderDTO.getLines()) {
+            if(orderLine.getDeleted() == 0 && orderLine.hasItem()) {
+                ItemDTO item = orderLine.getItem();
+                if(item.hasPlans()) {
+                    return item.firstPlan().getId();
+                }
+            }
+        }
+        return null;
     }
 }

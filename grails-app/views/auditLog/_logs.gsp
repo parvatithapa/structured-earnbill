@@ -49,7 +49,9 @@
 
                     <td class="small">
                         <g:remoteLink class="cell" action="show" id="${log.id}" before="register(this);" onSuccess="render(data, next);">
-                            <span><g:formatDate date="${log.createDatetime}" formatName="date.timeSecs.format"/></span>
+                            <span>
+                                <g:formatDate date="${log.createDatetime}" formatName="date.time.24Hr.format" timeZone="${session['company_timezone']}"/>
+                            </span>
                         </g:remoteLink>
                     </td>
                     <td class="small">
@@ -64,7 +66,7 @@
                     </td>
                     <td class="medium">
                         <g:remoteLink class="cell" action="show" id="${log.id}" before="register(this);" onSuccess="render(data, next);">
-                            <span>${StringEscapeUtils.escapeHtml(log?.eventLogMessage?.getDescription(session['language_id']))}</span>
+                            <span data-cy="listDescription">${StringEscapeUtils.escapeHtml(log?.eventLogMessage?.getDescription(session['language_id']))}</span>
                         </g:remoteLink>
                     </td>
                     <td class="small">
@@ -85,7 +87,7 @@
     <div class="row left">
         <g:render template="/layouts/includes/pagerShowResults" model="[steps: [10, 20, 50], update: 'column1']"/>
     </div>
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="auditLog" action="list" params="${sortableParams(params: [partial: true])}" total="${logs?.totalCount ?: 0}" update="column1"/>
     </div>
 </div>

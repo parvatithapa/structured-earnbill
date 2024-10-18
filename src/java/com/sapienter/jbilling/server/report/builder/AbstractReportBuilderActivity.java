@@ -1,16 +1,5 @@
 package com.sapienter.jbilling.server.report.builder;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-
 import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.item.db.ItemTypeDTO;
 import com.sapienter.jbilling.server.item.db.PlanDAS;
@@ -25,12 +14,20 @@ import com.sapienter.jbilling.server.order.db.OrderPeriodDTO;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
 import com.sapienter.jbilling.server.report.util.EnrollmentScope;
 import com.sapienter.jbilling.server.spa.SpaConstants;
-import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
 import com.sapienter.jbilling.server.user.db.CompanyDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Util;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
+import org.apache.commons.lang.StringUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AbstractReportBuilderActivity class.
@@ -64,15 +61,14 @@ abstract public class AbstractReportBuilderActivity {
     private static final String REPORT_GROUP = "Report Group";
 
     protected List<RowActivityReport> rows;
-    protected Integer entityId;
-
+    
     AbstractReportBuilderActivity(Integer entityId, List<Integer> childEntities, Map<String, Object> parameters) {
         super();
         String type = (String) parameters.get("type");
         Date startDate = (Date) parameters.get("start_date");
         Date endDate = (Date) parameters.get("end_date");
         fillRows(entityId, childEntities, startDate, endDate, type);
-        this.entityId = entityId;
+
         CompanyDTO company = new CompanyDAS().find(entityId);
         parameters.put("currency_symbol", Util.formatSymbolMoney(company.getCurrency().getSymbol(), false));
     }
@@ -89,25 +85,11 @@ abstract public class AbstractReportBuilderActivity {
     private void fillRows(Integer entityId, List<Integer> childEntities, Date startDate, Date endDate, String type) {
         //The end date should include all day
         LocalDateTime endLocalDate = DateConvertUtils.asLocalDateTime(endDate);
-        LocalDateTime startLocalDate = DateConvertUtils.asLocalDateTime(startDate);
-        LocalDateTime actualEndLocalDate = endLocalDate.plusDays(1).minusSeconds(1);
-        endLocalDate = endLocalDate.plusDays(2).minusSeconds(1);
+        endLocalDate = endLocalDate.plusDays(1).minusSeconds(1);
         List<OrderDTO> orders = new OrderDAS().getEnrollmentOrdersByDate(entityId, childEntities, startDate, DateConvertUtils.asUtilDate(endLocalDate), OrderDAS.OrderDate.CREATION_DATE);
-
-        List<OrderDTO> exactOrders = new ArrayList<>();
-        for (OrderDTO orderDTO: orders) {
-            LocalDateTime  convertedCreatedDate = TimezoneHelper.convertToTimezone(LocalDateTime.ofInstant(orderDTO.getCreateDate().toInstant(), ZoneId.systemDefault()),
-                    TimezoneHelper.getCompanyLevelTimeZone(entityId));
-            if ((convertedCreatedDate.isAfter(startLocalDate) || (convertedCreatedDate.isEqual(startLocalDate)))
-                    && (convertedCreatedDate.isBefore(actualEndLocalDate) || convertedCreatedDate
-                            .isEqual(actualEndLocalDate))) {
-              exactOrders.add(orderDTO);
-          }
-        }
-
         rows = new ArrayList<>();
 
-        for (OrderDTO order : exactOrders) {
+        for (OrderDTO order : orders) {
             String staffName = getMetafieldValue(order.getMetaFields(), SpaConstants.MF_STAFF_IDENTIFIER);
             String enrollmentType = getMetafieldValue(order.getMetaFields(), SpaConstants.MF_ENROLLMENT_TYPE);
 

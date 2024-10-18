@@ -88,7 +88,7 @@
             </g:select>
 
         </div>
-        <div class="row">
+        <div class="row-center">
             <jB:remotePaginate action="edit"
                                  params="${sortableParams(params: [partial: true, _eventId: 'plans', max: maxProductsShown, typeId: params.typeId ?: "", filterBy: params.filterBy ?: ""])}"
                                  total="${plans.totalCount ?: 0}"

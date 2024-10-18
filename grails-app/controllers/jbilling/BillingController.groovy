@@ -16,9 +16,15 @@
 
 package jbilling
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Collections;
+
 import com.sapienter.jbilling.server.security.Validator
+import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.util.PreferenceBL
 import com.sapienter.jbilling.server.util.SecurityValidator
+
 import grails.converters.JSON
 import grails.plugin.springsecurity.annotation.Secured
 
@@ -27,6 +33,7 @@ import com.sapienter.jbilling.server.user.db.CompanyDTO;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDAS
 import com.sapienter.jbilling.client.util.SortableCriteria
+import com.sapienter.jbilling.server.util.CalendarUtils;
 import com.sapienter.jbilling.server.util.Constants
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
 import com.sapienter.jbilling.server.util.Util
@@ -34,10 +41,14 @@ import com.sapienter.jbilling.server.process.db.BillingProcessConfigurationDTO
 import com.sapienter.jbilling.server.payment.db.PaymentDAS
 import com.sapienter.jbilling.server.process.BillingProcessInfoBL
 import com.sapienter.jbilling.server.process.BillingProcessBL;
+import com.sapienter.jbilling.batch.BatchConstants;
 import com.sapienter.jbilling.batch.billing.BillingBatchJobService
 import com.sapienter.jbilling.server.process.BillingProcessFailedUserBL
 
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
+import com.sapienter.jbilling.batch.email.EmailBatchService
+
+import com.sapienter.jbilling.batch.email.EmailBatchJobService
 
 /**
 * BillingController
@@ -59,6 +70,8 @@ class BillingController {
 
     IWebServicesSessionBean webServicesSession
     BillingBatchJobService  billingBatchJobService
+    EmailBatchJobService emailBatchJobService
+    EmailBatchService emailBatchService
     BillingProcessInfoBL    billingProcessInfoBL
     def recentItemService
     def breadcrumbService
@@ -207,12 +220,42 @@ class BillingController {
 
         BillingProcessBL processBL =  new BillingProcessBL()
         def orderProcessCount = processBL.getOrderProcessCount(processId)
-        def invoiceProcessCount = processBL.getInvoiceProcessCount(processId)
+        def invoiceProcessCount = processBL.getInvoiceProcessCount(processId)        
+        
+        List emailProcessInfo = Collections.emptyList();
+        def cutOfBillingProcess = 0
+        
+        if( process?.isReview == 0) {
+            emailProcessInfo = processBL.getAllInvoiceEmailProcessInfo(processId)
+            if(null != emailProcessInfo && emailProcessInfo.size == 0) {
+                def cutOfBillingProcessStr = new MetaFieldDAS().getComapanyLevelMetaFieldValue(Constants.CUT_OFF_BILLING_PROCESS_ID, session['company_id']);
+                cutOfBillingProcess = cutOfBillingProcessStr? Integer.valueOf(cutOfBillingProcessStr) : 0
+            }
 
+            if(null !=  emailProcessInfo ) {
+                for (emailProcess in emailProcessInfo) {
+                    emailProcess.setEmailsSent(processBL.getEmailsSentCount(processId, emailProcess.getJobExecutionId()))
+                    emailProcess.setEmailsFailed(processBL.getEmailsFailedCount(processId, emailProcess.getJobExecutionId()))
+                }
+            }
+        }
+            
+        
+        
+        if (params['emailJobTriggerred']?.toBoolean()) {
+            flash.info = 'prompt.email.job.running'
+        }
+        
+        def isBillingRunning = webServicesSession.isBillingRunning(session['company_id']);
+        
+        def isEmailJobRunning = emailBatchService.isEmailJobRunning();
+        
         [ process: process, processRun: processRun, generatedPayments: generatedPayments, invoicePayments: invoicePayments,
           configuration: configuration, invoices: invoices,
           formattedPeriod: getFormattedPeriod(process?.periodUnit.id, process?.periodValue, session['language_id']),
-          jobs: jobs, canRestart: canRestart, orderProcessCount: orderProcessCount, invoiceProcessCount: invoiceProcessCount]
+          jobs: jobs, canRestart: canRestart, orderProcessCount: orderProcessCount, invoiceProcessCount: invoiceProcessCount,
+          emailProcessInfo : emailProcessInfo, cutOfBillingProcess: cutOfBillingProcess, isBillingRunning : isBillingRunning, 
+          isEmailJobRunning : isEmailJobRunning, 'emailJobTriggerred': false]
     }
 
     def failed () {
@@ -272,5 +315,21 @@ class BillingController {
         }
         flash.message = 'billing.review.disapprove.success'
         redirect action: 'list'
+    }
+    
+    @Secured(["BILLING_1920"])
+    def sendInvoiceEmails() {
+        def processId = params.int('id')
+
+        def process = BillingProcessDTO.get(processId)
+
+        securityValidator.validateCompany(process?.entity?.id, Validator.Type.EDIT)
+        try {
+            emailBatchJobService.triggerAsync(processId, session['company_id'])       
+        } catch (Exception e) {
+            log.error e.getMessage()
+            viewUtils.resolveException(flash, session.locale, e);
+        }
+        chain action: 'show', params: ['id': processId, 'emailJobTriggerred': true]
     }
 }

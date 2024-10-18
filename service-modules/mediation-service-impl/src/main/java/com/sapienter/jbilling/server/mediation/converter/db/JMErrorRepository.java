@@ -50,13 +50,13 @@ public interface JMErrorRepository extends
 
     @Modifying
     @Query(value ="UPDATE jbilling_mediation_error_record SET status = 'TO_BE_RECYCLED' WHERE mediation_cfg_id = :mediationCfgId " +
-            "and error_codes not like '%JB-DUPLICATE%'" , nativeQuery = true)
+            "and error_codes not like '%JB-DUPLICATE%' and error_codes not like '%JB-INVALID-CDR-DATA%'" , nativeQuery = true)
     @Transactional(propagation = Propagation.REQUIRED)
     void setErrorRecordsToBeRecycledForMediationCfgId(@Param("mediationCfgId") Integer mediationCfgId);
 
     @Modifying
     @Query(value ="UPDATE jbilling_mediation_error_record SET status = 'TO_BE_RECYCLED' WHERE mediation_cfg_id = :mediationCfgId AND process_id = :processId " +
-            "and error_codes not like '%JB-DUPLICATE%'" , nativeQuery = true)
+            "and error_codes not like '%JB-DUPLICATE%' and error_codes not like '%JB-INVALID-CDR-DATA%'" , nativeQuery = true)
     @Transactional(propagation = Propagation.REQUIRED)
     void setErrorRecordsToBeRecycledForMediationAndProcessId(@Param("mediationCfgId") Integer mediationCfgId, @Param("processId") UUID processId);
 

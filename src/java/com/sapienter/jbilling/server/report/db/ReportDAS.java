@@ -16,10 +16,12 @@
 
 package com.sapienter.jbilling.server.report.db;
 
-import com.sapienter.jbilling.server.util.db.AbstractDAS;
+import java.util.List;
+
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Restrictions;
-import java.util.List;
+
+import com.sapienter.jbilling.server.util.db.AbstractDAS;
 
 /**
  * ReportDAS
@@ -35,5 +37,4 @@ public class ReportDAS extends AbstractDAS<ReportDTO> {
         criteria.add(Restrictions.eq("entity.id", entityID));
         return criteria.list();
     }
-
 }

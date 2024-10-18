@@ -1,32 +1,32 @@
 <%@ page import="org.codehaus.groovy.grails.io.support.FileSystemResource; com.sapienter.jbilling.server.util.ColorConverter"%>
 
-${ColorConverter?.setBaseColor()}
-<g:set var="COLOR_PRIMARY" value="${ColorConverter?.convert(ColorConverter?.DIFF_BASE)}"/>
-<g:set var="COLOR_PRIMARY_DARKER" value="${ColorConverter?.convert(ColorConverter?.DIFF_PRIMARY_DARKER)}"/>
-<g:set var="COLOR_PRIMARY_LIGHTER" value="${ColorConverter?.convert(ColorConverter?.DIFF_PRIMARY_LIGHTER)}"/>
-<g:set var="COLOR_PRIMARY_HOVER_BACKGROUND" value="${ColorConverter?.convert(ColorConverter?.DIFF_PRIMARY_HOVER_BACKGROUND)}"/>
-<g:set var="COLOR_PRIMARY_HOVER_BORDER" value="${ColorConverter?.convert(ColorConverter?.DIFF_PRIMARY_HOVER_BORDER)}"/>
-<g:set var="COLOR_PRIMARY_HOVER_BOX_SHADOW" value="${ColorConverter?.convert(ColorConverter?.DIFF_PRIMARY_HOVER_BOX_SHADOW)}"/>
-<g:set var="COLOR_PRIMARY_SHADOW" value="${ColorConverter?.toRgb(ColorConverter?.DIFF_PRIMARY_SHADOW)}"/>
+${ColorConverter.setBaseColor()}
+<g:set var="COLOR_PRIMARY" value="${ColorConverter.convert(ColorConverter.DIFF_BASE)}"/>
+<g:set var="COLOR_PRIMARY_DARKER" value="${ColorConverter.convert(ColorConverter.DIFF_PRIMARY_DARKER)}"/>
+<g:set var="COLOR_PRIMARY_LIGHTER" value="${ColorConverter.convert(ColorConverter.DIFF_PRIMARY_LIGHTER)}"/>
+<g:set var="COLOR_PRIMARY_HOVER_BACKGROUND" value="${ColorConverter.convert(ColorConverter.DIFF_PRIMARY_HOVER_BACKGROUND)}"/>
+<g:set var="COLOR_PRIMARY_HOVER_BORDER" value="${ColorConverter.convert(ColorConverter.DIFF_PRIMARY_HOVER_BORDER)}"/>
+<g:set var="COLOR_PRIMARY_HOVER_BOX_SHADOW" value="${ColorConverter.convert(ColorConverter.DIFF_PRIMARY_HOVER_BOX_SHADOW)}"/>
+<g:set var="COLOR_PRIMARY_SHADOW" value="${ColorConverter.toRgb(ColorConverter.DIFF_PRIMARY_SHADOW)}"/>
 
-<g:set var="COLOR_SECONDARY_BACKGROUND" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_BACKGROUND)}"/>
-<g:set var="COLOR_SECONDARY_BORDER" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_BORDER)}"/>
-<g:set var="COLOR_SECONDARY_BOX_SHADOW" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_BOX_SHADOW)}"/>
-<g:set var="COLOR_SECONDARY_BOX_SHADOW2" value="${ColorConverter?.toRgb(ColorConverter?.DIFF_SECONDARY_BOX_SHADOW2)}"/>
+<g:set var="COLOR_SECONDARY_BACKGROUND" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_BACKGROUND)}"/>
+<g:set var="COLOR_SECONDARY_BORDER" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_BORDER)}"/>
+<g:set var="COLOR_SECONDARY_BOX_SHADOW" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_BOX_SHADOW)}"/>
+<g:set var="COLOR_SECONDARY_BOX_SHADOW2" value="${ColorConverter.toRgb(ColorConverter.DIFF_SECONDARY_BOX_SHADOW2)}"/>
 
 
-<g:set var="COLOR_SECONDARY_HOVER_BACKGROUND" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_HOVER_BACKGROUND)}"/>
-<g:set var="COLOR_SECONDARY_HOVER_BORDER" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_HOVER_BORDER)}"/>
-<g:set var="COLOR_SECONDARY_HOVER_BOX_SHADOW" value="${ColorConverter?.convert(ColorConverter?.DIFF_SECONDARY_HOVER_BOX_SHADOW)}"/>
+<g:set var="COLOR_SECONDARY_HOVER_BACKGROUND" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_HOVER_BACKGROUND)}"/>
+<g:set var="COLOR_SECONDARY_HOVER_BORDER" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_HOVER_BORDER)}"/>
+<g:set var="COLOR_SECONDARY_HOVER_BOX_SHADOW" value="${ColorConverter.convert(ColorConverter.DIFF_SECONDARY_HOVER_BOX_SHADOW)}"/>
 
-<g:set var="COLOR_TABLE_HOVER_BACKGROUND" value="${ColorConverter?.convert(ColorConverter?.DIFF_TABLE_HOVER_BACKGROUND)}"/>
-<g:set var="COLOR_TABLE_HOVER_BORDER" value="${ColorConverter?.convert(ColorConverter?.DIFF_TABLE_HOVER_BORDER)}"/>
-<g:set var="COLOR_HEADER_SEARCH_HOVER" value="${ColorConverter?.convert(ColorConverter?.DIFF_HEADER_SEARCH_HOVER)}"/>
-<g:set var="COLOR_BOX_EDIT_HOVER" value="${ColorConverter?.convert(ColorConverter?.DIFF_BOX_EDIT_HOVER)}"/>
+<g:set var="COLOR_TABLE_HOVER_BACKGROUND" value="${ColorConverter.convert(ColorConverter.DIFF_TABLE_HOVER_BACKGROUND)}"/>
+<g:set var="COLOR_TABLE_HOVER_BORDER" value="${ColorConverter.convert(ColorConverter.DIFF_TABLE_HOVER_BORDER)}"/>
+<g:set var="COLOR_HEADER_SEARCH_HOVER" value="${ColorConverter.convert(ColorConverter.DIFF_HEADER_SEARCH_HOVER)}"/>
+<g:set var="COLOR_BOX_EDIT_HOVER" value="${ColorConverter.convert(ColorConverter.DIFF_BOX_EDIT_HOVER)}"/>
 
-<g:set var="COLOR_HEADER_BACKGROUND" value="${ColorConverter?.convertIfNotBase(ColorConverter?.DIFF_HEADER_BACKGROUND, '#f5f5f5')}"/>
-<g:set var="COLOR_HEADER_BORDER" value="${ColorConverter?.convertIfNotBase(ColorConverter?.DIFF_HEADER_BORDER, '#cbcbcb')}"/>
-<g:set var="COLOR_HEADER_COLOR" value="${ColorConverter?.ifBase('#9c9c9c', '#343434')}"/>
+<g:set var="COLOR_HEADER_BACKGROUND" value="${ColorConverter.convertIfNotBase(ColorConverter.DIFF_HEADER_BACKGROUND, '#f5f5f5')}"/>
+<g:set var="COLOR_HEADER_BORDER" value="${ColorConverter.convertIfNotBase(ColorConverter.DIFF_HEADER_BORDER, '#cbcbcb')}"/>
+<g:set var="COLOR_HEADER_COLOR" value="${ColorConverter.ifBase('#9c9c9c', '#343434')}"/>
 
 <style type="text/css">
 

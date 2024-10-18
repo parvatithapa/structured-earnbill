@@ -66,8 +66,8 @@ class MediationResource {
             Integer id = webServicesSession.createMediationConfiguration(conf);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(id)).build())
                     .entity(mediationBean.getMediationConfiguration(id)).build()
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -86,8 +86,8 @@ class MediationResource {
         try {
             MediationConfigurationWS[] configs = webServicesSession.getAllMediationConfigurations();
             return Response.ok().entity(configs).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -113,8 +113,8 @@ class MediationResource {
                 confList.add(MediationConfigurationBL.getWS(mediationBean.getMediationConfiguration(id)))
             }
             return Response.ok().entity(confList.toArray(new MediationConfigurationWS[confList.size()])).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -131,8 +131,8 @@ class MediationResource {
         try {
             webServicesSession.deleteMediationConfiguration(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -150,8 +150,8 @@ class MediationResource {
         try {
             webServicesSession.triggerMediation();
             return Response.status(Response.Status.OK).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -171,8 +171,8 @@ class MediationResource {
             UUID uuid = webServicesSession.triggerMediationByConfiguration(id);
             return Response.created(uriInfo.getBaseUriBuilder().path("/api/mediation/process/"+uuid.toString()).build())
                     .build()
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -191,8 +191,8 @@ class MediationResource {
         try {
             MediationProcess[] processes = webServicesSession.getAllMediationProcesses();
             return Response.ok().entity(processes).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -212,8 +212,8 @@ class MediationResource {
         try {
             MediationProcess process = webServicesSession.getMediationProcess(UUID.fromString(id));
             return Response.ok().entity(process).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -230,8 +230,8 @@ class MediationResource {
         try {
             webServicesSession.undoMediation(UUID.fromString(id));
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -259,8 +259,8 @@ class MediationResource {
                     offset, limit, startDate, endDate);
 
             return Response.ok().entity(records).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -280,8 +280,8 @@ class MediationResource {
             JbillingMediationRecord[] records = webServicesSession.getMediationEventsForOrder(orderId);
 
             return Response.ok().entity(records).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -301,8 +301,8 @@ class MediationResource {
             JbillingMediationRecord[] records = webServicesSession.getMediationEventsForInvoice(invoiceId);
 
             return Response.ok().entity(records).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -330,8 +330,8 @@ class MediationResource {
                     startDate, endDate, offset, limit);
 
             return Response.ok().entity(records).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -356,8 +356,8 @@ class MediationResource {
             JbillingMediationRecord[] records = webServicesSession.getMediationEventsForUserDateRange(userId, startDate, endDate, offset, limit);
             JbillingMediationRecordRestWS[] mediationRecords = mediationRestHelperService.convertPricingFields(records);
             return Response.ok().entity(mediationRecords).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -372,15 +372,13 @@ class MediationResource {
         @ApiResponse(code = 500, message = "Failure while retrieving records.")
     ])
     Response getUnBilledMediationEventsByUser( @PathParam("userId")
-            @ApiParam(name="userId", value = "User Id", required = true) Integer userId,
-            @DefaultValue("10000") @QueryParam("limit") @ApiParam(name="limit", required = false) Integer limit,
-            @DefaultValue("0") @QueryParam("offset") @ApiParam(name="offset", required = false) Integer offset) {
+            @ApiParam(name="userId", required = true) Integer userId) {
         try {
-            JbillingMediationRecord[] records = webServicesSession.getUnBilledMediationEventsByUser(userId, offset, limit);
+            JbillingMediationRecord[] records = webServicesSession.getUnBilledMediationEventsByUser(userId);
             JbillingMediationRecordRestWS[] mediationRecords = mediationRestHelperService.convertPricingFields(records);
             return Response.ok().entity(mediationRecords).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

@@ -16,38 +16,44 @@
 
 package com.sapienter.jbilling.server.usagePool;
 
+import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.concurrent.Executor;
+
+import org.apache.commons.lang.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
+import com.sapienter.jbilling.common.IMethodTransactionalWrapper;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.db.PlanDAS;
 import com.sapienter.jbilling.server.item.db.PlanDTO;
-import com.sapienter.jbilling.server.order.OrderStatusFlag;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderPeriodDTO;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDAS;
 import com.sapienter.jbilling.server.process.PeriodOfTime;
-import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDAS;
 import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDTO;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolDAS;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolDTO;
-import com.sapienter.jbilling.server.usagePool.event.CustomerUsagePoolConsumptionEvent;
 import com.sapienter.jbilling.server.user.db.CustomerDAS;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.user.db.MainSubscriptionDTO;
 import com.sapienter.jbilling.server.util.CalendarUtils;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.MapPeriodToCalendar;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 import com.sapienter.jbilling.server.util.time.PeriodUnit;
-
-import java.lang.invoke.MethodHandles;
-import java.math.BigDecimal;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * CustomerUsagePoolBL
@@ -62,14 +68,16 @@ import org.slf4j.LoggerFactory;
 public class CustomerUsagePoolBL {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private CustomerUsagePoolDAS customerUsagePoolDas = null;
-	private CustomerUsagePoolDTO customerUsagePool = null;
+    private static final IUsagePoolEvaluationTask defaultTask = new DefaultUsagePoolEvaluationTask();
+    private CustomerUsagePoolDAS customerUsagePoolDas = null;
+    private CustomerUsagePoolDTO customerUsagePool = null;
+    private boolean prorateForFirstPeriod = true;
 
-	public CustomerUsagePoolBL() {
+    public CustomerUsagePoolBL() {
+        init();
+    }
 
-	}
-
-	public CustomerUsagePoolBL(Integer customerUsagePoolId) {
+    public CustomerUsagePoolBL(Integer customerUsagePoolId) {
         try {
             init();
             set(customerUsagePoolId);
@@ -78,64 +86,64 @@ public class CustomerUsagePoolBL {
         }
     }
 
-	private void init() {
-		customerUsagePoolDas = new CustomerUsagePoolDAS();
-	}
+    private void init() {
+        customerUsagePoolDas = new CustomerUsagePoolDAS();
+    }
 
-	public void set(Integer customerUsagePoolId) {
-		customerUsagePool = customerUsagePoolDas.find(customerUsagePoolId);
-	}
+    public void set(Integer customerUsagePoolId) {
+        customerUsagePool = customerUsagePoolDas.find(customerUsagePoolId);
+    }
 
-	/**
-	 * Parametrized constructor that returns a CustomerUsagePoolWS
-	 * object instance from the CustomerUsagePoolDTO parameter given to it.
-	 * This constructor is useful to return the ws object after converting it from dto.
-	 * @param dto
-	 */
-	public CustomerUsagePoolWS getWS(CustomerUsagePoolDTO dto) {
-    	if (customerUsagePool == null) {
-    		customerUsagePool = dto;
+    /**
+     * Parametrized constructor that returns a CustomerUsagePoolWS
+     * object instance from the CustomerUsagePoolDTO parameter given to it.
+     * This constructor is useful to return the ws object after converting it from dto.
+     * @param dto
+     */
+    public CustomerUsagePoolWS getWS(CustomerUsagePoolDTO dto) {
+        if (customerUsagePool == null) {
+            customerUsagePool = dto;
         }
         return getCustomerUsagePoolWS(dto);
     }
 
-	public static CustomerUsagePoolWS getCustomerUsagePoolWS(CustomerUsagePoolDTO dto) {
+    public static CustomerUsagePoolWS getCustomerUsagePoolWS(CustomerUsagePoolDTO dto) {
 
-    	CustomerUsagePoolWS ws = new CustomerUsagePoolWS();
-    	ws.setId(dto.getId());
-		ws.setQuantity(null != dto.getQuantity() ? dto.getQuantity().toString() : "");
-		if (dto.getCustomer() != null) {
-			ws.setCustomerId(dto.getCustomer().getId());
-			ws.setUserId(dto.getCustomer().getBaseUser().getId());
-		}
-		if (dto.getUsagePool() != null) {
-			ws.setUsagePoolId(dto.getUsagePool().getId());
-		}
-		if (dto.getPlan() != null) {
-			ws.setPlanId(dto.getPlan().getId());
-		}
-		ws.setCycleStartDate(dto.getCycleStartDate());
-		ws.setCycleEndDate(dto.getCycleEndDate());
-		ws.setInitialQuantity(dto.getInitialQuantity());
-		ws.setOrderId(dto.getOrder().getId());
-		ws.setVersionNum(dto.getVersionNum());
+        CustomerUsagePoolWS ws = new CustomerUsagePoolWS();
+        ws.setId(dto.getId());
+        ws.setQuantity(null != dto.getQuantity() ? dto.getQuantity().toString() : "");
+        if (dto.getCustomer() != null) {
+            ws.setCustomerId(dto.getCustomer().getId());
+            ws.setUserId(dto.getCustomer().getBaseUser().getId());
+        }
+        if (dto.getUsagePool() != null) {
+            ws.setUsagePoolId(dto.getUsagePool().getId());
+        }
+        if (dto.getPlan() != null) {
+            ws.setPlanId(dto.getPlan().getId());
+        }
+        ws.setCycleStartDate(dto.getCycleStartDate());
+        ws.setCycleEndDate(dto.getCycleEndDate());
+        ws.setInitialQuantity(dto.getInitialQuantity());
+        ws.setOrderId(dto.getOrder().getId());
+        ws.setVersionNum(dto.getVersionNum());
         ws.setUsagePool(UsagePoolBL.getUsagePoolWS(dto.getUsagePool()));
         ws.setLastRemainingQuantity(dto.getLastRemainingQuantity()!=null ?
-        		dto.getLastRemainingQuantity().toString() : null);
+                dto.getLastRemainingQuantity().toString() : null);
         return ws;
     }
 
-	public CustomerUsagePoolDTO getEntity() {
-		return customerUsagePool;
-	}
+    public CustomerUsagePoolDTO getEntity() {
+        return customerUsagePool;
+    }
 
-	/**
-	 * This method converts this CustomerUsagePoolWS object instance
-	 * into CustomerUsagePoolDTO and returns the same
-	 * @return CustomerUsagePoolDTO
-	 */
-	public static final CustomerUsagePoolDTO getDTO(CustomerUsagePoolWS ws) {
-		CustomerUsagePoolDTO dto = new CustomerUsagePoolDTO();
+    /**
+     * This method converts this CustomerUsagePoolWS object instance
+     * into CustomerUsagePoolDTO and returns the same
+     * @return CustomerUsagePoolDTO
+     */
+    public static final CustomerUsagePoolDTO getDTO(CustomerUsagePoolWS ws) {
+        CustomerUsagePoolDTO dto = new CustomerUsagePoolDTO();
         if (ws.getId() != null) {
             dto.setId(ws.getId());
         }
@@ -148,142 +156,138 @@ public class CustomerUsagePoolBL {
         return dto;
     }
 
-	/**
-	 * Persists the customer usage pool, after getting the dto object that needs to be saved.
+    /**
+     * Persists the customer usage pool, after getting the dto object that needs to be saved.
      * The same method can be used to create a new customer usage pool or update an existing one.
-	 * @param customerUsagePoolDto
-	 * @return customerUsagePoolDto
-	 */
-	public CustomerUsagePoolDTO createOrUpdateCustomerUsagePool(CustomerUsagePoolDTO customerUsagePoolDto) {
+     * @param customerUsagePoolDto
+     * @return customerUsagePoolDto
+     */
+    public CustomerUsagePoolDTO createOrUpdateCustomerUsagePool(CustomerUsagePoolDTO customerUsagePoolDto) {
 
-    	if (customerUsagePoolDto.getId() > 0 ) {
-    		this.customerUsagePool = new CustomerUsagePoolDAS().findForUpdate(customerUsagePoolDto.getId());
-    	} else {
-    		this.customerUsagePool = new CustomerUsagePoolDTO();
-    	}
+        if( customerUsagePoolDto.getCycleStartDate().after(customerUsagePoolDto.getCycleEndDate())) {
+            logger.debug("invalid period dates for customer usage pool: {}", customerUsagePoolDto);
+            return null;
+        }
 
-    	if (null != customerUsagePoolDto.getCustomer()) {
-    		this.customerUsagePool.setCustomer(customerUsagePoolDto.getCustomer());
-    	}
+        if (customerUsagePoolDto.getId() > 0 ) {
+            this.customerUsagePool = new CustomerUsagePoolDAS().findForUpdate(customerUsagePoolDto.getId());
+        } else {
+            this.customerUsagePool = new CustomerUsagePoolDTO();
+        }
 
-    	if (null != customerUsagePoolDto.getUsagePool()) {
-    		this.customerUsagePool.setUsagePool(customerUsagePoolDto.getUsagePool());
-    	}
+        if (null != customerUsagePoolDto.getCustomer()) {
+            this.customerUsagePool.setCustomer(customerUsagePoolDto.getCustomer());
+        }
 
-    	if (null != customerUsagePoolDto.getPlan()) {
-    		this.customerUsagePool.setPlan(customerUsagePoolDto.getPlan());
-    	}
+        if (null != customerUsagePoolDto.getUsagePool()) {
+            this.customerUsagePool.setUsagePool(customerUsagePoolDto.getUsagePool());
+        }
 
-    	if (null != customerUsagePoolDto.getQuantity()) {
-    		this.customerUsagePool.setQuantity(customerUsagePoolDto.getQuantity());
-    	}
+        if (null != customerUsagePoolDto.getPlan()) {
+            this.customerUsagePool.setPlan(customerUsagePoolDto.getPlan());
+        }
 
-    	if (null != customerUsagePoolDto.getQuantity()) {
-    		this.customerUsagePool.setInitialQuantity(customerUsagePoolDto.getInitialQuantity());
-    	}
+        if (null != customerUsagePoolDto.getQuantity()) {
+            this.customerUsagePool.setQuantity(customerUsagePoolDto.getQuantity());
+        }
 
-    	if (null != customerUsagePoolDto.getCycleEndDate()) {
-    		this.customerUsagePool.setCycleEndDate(customerUsagePoolDto.getCycleEndDate());
-    	}
+        if (null != customerUsagePoolDto.getQuantity()) {
+            this.customerUsagePool.setInitialQuantity(customerUsagePoolDto.getInitialQuantity());
+        }
 
-    	if (null != customerUsagePoolDto.getOrder()) {
-    		this.customerUsagePool.setOrder(customerUsagePoolDto.getOrder());
-    	}
+        if (null != customerUsagePoolDto.getCycleEndDate()) {
+            this.customerUsagePool.setCycleEndDate(customerUsagePoolDto.getCycleEndDate());
+        }
+
+        if (null != customerUsagePoolDto.getOrder()) {
+            this.customerUsagePool.setOrder(customerUsagePoolDto.getOrder());
+        }
 
         if (null != customerUsagePoolDto.getCycleStartDate()) {
             this.customerUsagePool.setCycleStartDate(customerUsagePoolDto.getCycleStartDate());
         }
 
-    	this.customerUsagePool.setVersionNum(customerUsagePoolDto.getVersionNum());
+        this.customerUsagePool.setVersionNum(customerUsagePoolDto.getVersionNum());
 
-    	this.customerUsagePool = new CustomerUsagePoolDAS().save(this.customerUsagePool);
+        this.customerUsagePool = save(this.customerUsagePool);
 
-    	return this.customerUsagePool != null ? this.customerUsagePool : null;
+        return this.customerUsagePool != null ? this.customerUsagePool : null;
     }
 
-	/**
-	 * This method returns a list of CustomerUsagePoolDTO based on customer id.
-	 * @return List<CustomerUsagePoolDTO>
-	 */
-	public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerId() {
+    /**
+     * This method returns a list of CustomerUsagePoolDTO based on customer id.
+     * @return List<CustomerUsagePoolDTO>
+     */
+    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerId() {
         return customerUsagePoolDas.findAllCustomerUsagePoolsByCustomerId(customerUsagePool.getCustomer().getId());
     }
 
-	/**
-	 * This method returns a list of CustomerUsagePoolDTO based on
-	 * customer id provided to it as an input parameter.
-	 * @return List<CustomerUsagePoolDTO>
-	 */
-	public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerId(Integer customerId) {
+    /**
+     * This method returns a list of CustomerUsagePoolDTO based on
+     * customer id provided to it as an input parameter.
+     * @return List<CustomerUsagePoolDTO>
+     */
+    public List<CustomerUsagePoolDTO> getCustomerUsagePoolsByCustomerId(Integer customerId) {
         return new CustomerUsagePoolDAS().getCustomerUsagePoolsByCustomerId(customerId);
     }
 
-	/**
-	 * This method calculates the cycle end date for a customer usage pool
-	 * based on cycle period unit and cycle period value specified on the
-	 * system level usage pool. In case the cycle period unit is specified as
-	 * 'Billing Periods', then the order period is added to period start date.
-	 * The cycle end date is calculated from the period start date provided to it.
-	 * @param cyclePeriodUnit
-	 * @param cyclePeriodValue
-	 * @param periodStartDate
-	 * @param orderPeriod
-	 * @return Date - cycleEndDate of CustomerUsagePool
-	 */
-	public Date getCycleEndDateForPeriod(String cyclePeriodUnit, Integer cyclePeriodValue, Date periodStartDate, OrderPeriodDTO orderPeriod, Date activeUntilDate) {
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(periodStartDate);
-		if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_DAYS)) {
-			cal.add(Calendar.DATE, cyclePeriodValue);
-		} else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS)) {
-			cal.add(Calendar.MONTH, cyclePeriodValue);
-		} else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_BILLING_PERIODS) && null != orderPeriod) {
-		    Integer orderPeriodValue = orderPeriod.getValue();
-		    cal.add(MapPeriodToCalendar.map(orderPeriod.getUnitId()), orderPeriodValue);
-		}
+    /**
+     * This method calculates the cycle end date for a customer usage pool
+     * based on cycle period unit and cycle period value specified on the
+     * system level usage pool. In case the cycle period unit is specified as
+     * 'Billing Periods', then the order period is added to period start date.
+     * The cycle end date is calculated from the period start date provided to it.
+     * @param cyclePeriodUnit
+     * @param cyclePeriodValue
+     * @param periodStartDate
+     * @param orderPeriod
+     * @return Date - cycleEndDate of CustomerUsagePool
+     */
+    public Date getCycleEndDateForPeriod(String cyclePeriodUnit, Integer cyclePeriodValue, Date periodStartDate, OrderPeriodDTO orderPeriod, Date activeUntilDate) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(periodStartDate);
+        if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_DAYS)) {
+            cal.add(Calendar.DATE, cyclePeriodValue);
+        } else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS)) {
+            cal.add(Calendar.MONTH, cyclePeriodValue);
+        } else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_BILLING_PERIODS) && null != orderPeriod) {
+            Integer orderPeriodValue = orderPeriod.getValue();
+            cal.add(MapPeriodToCalendar.map(orderPeriod.getUnitId()), orderPeriodValue);
+        }
 
-		// Active until date of order less than calculated cycle end date then set cycle end date as active until date.
-		if (null != activeUntilDate && activeUntilDate.compareTo(cal.getTime()) <= 0) {
-			cal.setTime(activeUntilDate);
-			cal.add(Calendar.DATE, 1);
-		}
+        // Active until date of order less than calculated cycle end date then set cycle end date as active until date.
+        if (null != activeUntilDate && activeUntilDate.compareTo(cal.getTime()) <= 0) {
+            cal.setTime(activeUntilDate);
+            cal.add(Calendar.DATE, 1);
+        }
 
-		cal.add(Calendar.DATE, -1);
-		cal.set(Calendar.MILLISECOND, 999);
-		cal.set(Calendar.SECOND, 59);
-		cal.set(Calendar.MINUTE, 59);
-		cal.set(Calendar.HOUR_OF_DAY,23);
-		return cal.getTime();
-	}
+        cal.add(Calendar.DATE, -1);
+        return setTimeToEndOfDay(cal.getTime());
+    }
 
 
-	private Date calcCycleDateFromMainSubscription(String cyclePeriodUnit, Integer cyclePeriodValue, Date periodStartDate, MainSubscriptionDTO mainSubscription) {
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(periodStartDate);
-		OrderPeriodDTO orderPeriodDTO = mainSubscription.getSubscriptionPeriod();
-		if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_DAYS)) {
-			cal.add(Calendar.DATE, cyclePeriodValue);
-		} else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS)) {
-			cal.add(Calendar.MONTH, cyclePeriodValue);
-		} else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_BILLING_PERIODS) && null != orderPeriodDTO) {
-		    int unit = MapPeriodToCalendar.map(orderPeriodDTO.getUnitId());
-		    cal.add(unit, orderPeriodDTO.getValue());
-		    if(unit == Calendar.MONTH) {
-		        int noOfdays = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
-	            int daysToAdd = noOfdays < mainSubscription.getNextInvoiceDayOfPeriod().intValue() ? noOfdays :
-	                mainSubscription.getNextInvoiceDayOfPeriod();
-	            cal.set(Calendar.DAY_OF_MONTH, daysToAdd);
-		    }
-		}
+    private Date calcCycleDateFromMainSubscription(String cyclePeriodUnit, Integer cyclePeriodValue, Date periodStartDate, MainSubscriptionDTO mainSubscription) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(periodStartDate);
+        OrderPeriodDTO orderPeriodDTO = mainSubscription.getSubscriptionPeriod();
+        if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_DAYS)) {
+            cal.add(Calendar.DATE, cyclePeriodValue);
+        } else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_MONTHS)) {
+            cal.add(Calendar.MONTH, cyclePeriodValue);
+        } else if (cyclePeriodUnit.equals(Constants.USAGE_POOL_CYCLE_PERIOD_BILLING_PERIODS) && null != orderPeriodDTO) {
+            int unit = MapPeriodToCalendar.map(orderPeriodDTO.getUnitId());
+            cal.add(unit, orderPeriodDTO.getValue());
+            if(unit == Calendar.MONTH) {
+                int noOfdays = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+                int daysToAdd = noOfdays < mainSubscription.getNextInvoiceDayOfPeriod().intValue() ? noOfdays :
+                    mainSubscription.getNextInvoiceDayOfPeriod();
+                cal.set(Calendar.DAY_OF_MONTH, daysToAdd);
+            }
+        }
+        return setTimeToEndOfDay(cal.getTime());
+    }
 
-		cal.set(Calendar.MILLISECOND, 999);
-		cal.set(Calendar.SECOND, 59);
-		cal.set(Calendar.MINUTE, 59);
-		cal.set(Calendar.HOUR_OF_DAY,23);
-		return cal.getTime();
-	}
-
-	/**
+    /**
      * When order prorate flag is ON. This method calculates the cycle end date
      * for a customer usage pool based on customer next invoice date and order active until date
      * If active until date date less than next invoice date then set active until date as cycle end date else
@@ -295,8 +299,8 @@ public class CustomerUsagePoolBL {
      * @return
      */
     public Date getCycleEndDateForProratePeriod(Date nextInvoiceDate, Date orderActiveUntilDate, OrderDTO order) {
-        Calendar cal = Calendar.getInstance();
-            cal.setTime(nextInvoiceDate);
+    	Calendar cal = Calendar.getInstance();
+        cal.setTime(nextInvoiceDate);
         if(order.getActiveSince().compareTo(nextInvoiceDate) >= 0) {
             OrderPeriodDTO orderPeriodDTO = order.getUser().getCustomer().getMainSubscription().getSubscriptionPeriod();
             cal.add(MapPeriodToCalendar.map(orderPeriodDTO.getUnitId()), orderPeriodDTO.getValue());
@@ -307,34 +311,30 @@ public class CustomerUsagePoolBL {
         } else {
             cal.setTime(orderActiveUntilDate);
         }
-        cal.set(Calendar.MILLISECOND, 999);
-        cal.set(Calendar.SECOND, 59);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.HOUR_OF_DAY, 23);
-        return cal.getTime();
+        return setTimeToEndOfDay(cal.getTime());
     }
+    
+    /**
+     * get customer usage pool prorate quantity using following parameters
+     * @param nextInvoiceDate
+     * @param startPeriod
+     * @param orderActiveUntilDate
+     * @param quantity
+     * @param mainSubscription
+     * @param cyclePeriodUnit
+     * @param cyclePeriodValue
+     * @return
+     */
+    public BigDecimal getCustomerUsagePoolProrateQuantity(Date nextInvoiceDate, Date startPeriod,
+            Date orderActiveUntilDate, BigDecimal quantity, MainSubscriptionDTO mainSubscription,
+            String cyclePeriodUnit, Integer cyclePeriodValue) {
+        // calculate the days for this cycle
+        Date cycleStarts = calcCycleStartDateFromMainSubscription(startPeriod, mainSubscription);
+        Calendar cal = new GregorianCalendar();
+        cal.setTime(startPeriod);
+        int noOfPeriods = 0;
 
-	/**
-	 * get customer usage pool prorate quantity using following parameters
-	 * @param nextInvoiceDate
-	 * @param startPeriod
-	 * @param orderActiveUntilDate
-	 * @param quantity
-	 * @param mainSubscription
-	 * @param cyclePeriodUnit
-	 * @param cyclePeriodValue
-	 * @return
-	 */
-	public BigDecimal getCustomerUsagePoolProrateQuantity(Date nextInvoiceDate, Date startPeriod,
-			Date orderActiveUntilDate, BigDecimal quantity, MainSubscriptionDTO mainSubscription,
-			String cyclePeriodUnit, Integer cyclePeriodValue) {
-		// calculate the days for this cycle
-		Date cycleStarts = calcCycleStartDateFromMainSubscription(startPeriod, mainSubscription);
-		Calendar cal = new GregorianCalendar();
-		cal.setTime(startPeriod);
-		int noOfPeriods = 0;
-
-		if(cycleStarts.compareTo(nextInvoiceDate) == 0) {
+        if(cycleStarts.compareTo(nextInvoiceDate) == 0) {
             OrderPeriodDTO orderPeriodDTO = mainSubscription.getSubscriptionPeriod();
             int periodUnitId = orderPeriodDTO.getUnitId();
             int dayOfMonth = mainSubscription.getNextInvoiceDayOfPeriod();
@@ -343,40 +343,40 @@ public class CustomerUsagePoolBL {
                     orderPeriodDTO.getValue()));
         }
 
-		Date endOfPeriod;
+        Date endOfPeriod;
         if (null == orderActiveUntilDate || (orderActiveUntilDate.compareTo(nextInvoiceDate) >= 0)) {
             endOfPeriod = nextInvoiceDate;
         } else {
             endOfPeriod = new Date(orderActiveUntilDate.getTime()+(24*60*60*1000));
         }
 
-		// Calculated No of billing period in between Subscription start date and end date
-		while (cal.getTime().compareTo(nextInvoiceDate) < 0) {
-			Date cycleStartDate = calcCycleStartDateFromMainSubscription(cal.getTime(), mainSubscription);
-			Date cycleEndDate = calcCycleDateFromMainSubscription(cyclePeriodUnit, cyclePeriodValue, cycleStartDate, mainSubscription);
+        // Calculated No of billing period in between Subscription start date and end date
+        while (cal.getTime().compareTo(nextInvoiceDate) < 0) {
+            Date cycleStartDate = calcCycleStartDateFromMainSubscription(cal.getTime(), mainSubscription);
+            Date cycleEndDate = calcCycleDateFromMainSubscription(cyclePeriodUnit, cyclePeriodValue, cycleStartDate, mainSubscription);
 
-	        cal.setTime(cycleEndDate);
-	        noOfPeriods++;
-		}
+            cal.setTime(cycleEndDate);
+            noOfPeriods++;
+        }
 
         // now create this period
         PeriodOfTime fullBillingCycle = new PeriodOfTime(cycleStarts, nextInvoiceDate, 0);
         PeriodOfTime period = new PeriodOfTime(startPeriod, endOfPeriod, fullBillingCycle.getDaysInPeriod());
 
         if (noOfPeriods > 1) {
-        	quantity = quantity.multiply(new BigDecimal(noOfPeriods));
+            quantity = quantity.multiply(new BigDecimal(noOfPeriods));
         }
 
         return calculateProrateQuantityForPeriod(quantity, period);
-	}
+    }
 
-	/**
-	 * Calculate prorate quantity using order period
-	 * @param fullFreeQuantity
-	 * @param period
-	 * @return
-	 */
-	private BigDecimal calculateProrateQuantityForPeriod (BigDecimal fullFreeQuantity, PeriodOfTime period) {
+    /**
+     * Calculate prorate quantity using order period
+     * @param fullFreeQuantity
+     * @param period
+     * @return
+     */
+    private BigDecimal calculateProrateQuantityForPeriod (BigDecimal fullFreeQuantity, PeriodOfTime period) {
 
         if (period == null || fullFreeQuantity == null) {
             logger.warn("Called with null parameters");
@@ -400,14 +400,13 @@ public class CustomerUsagePoolBL {
                 Constants.BIGDECIMAL_ROUND);
     }
 
-
-	/**
-	 * Calculated customer billing cycle star date using customer main subscription.
-	 * @param periodStart
-	 * @param mainSubscription
-	 * @return
-	 */
-	public static Date calcCycleStartDateFromMainSubscription (Date periodStart,
+    /**
+     * Calculated customer billing cycle star date using customer main subscription.
+     * @param periodStart
+     * @param mainSubscription
+     * @return
+     */
+    public static Date calcCycleStartDateFromMainSubscription (Date periodStart,
             MainSubscriptionDTO mainSubscription) {
         Date calculatedValue;
         Calendar cal = new GregorianCalendar();
@@ -447,214 +446,140 @@ public class CustomerUsagePoolBL {
         return calculatedValue;
     }
 
+    /**
+     * This method provides the CustomerUsagePoolDTO based on the various input fields given below.
+     * The CustomerUsagePoolDTO returned by this method is to be used for persisting it to the db.
+     * @param usagePoolId
+     * @param customerId
+     * @param subscriptionStartDate
+     * @param orderPeriod
+     * @return CustomerUsagePoolDTO
+     */
+    public CustomerUsagePoolDTO getCreateCustomerUsagePoolDto(Integer usagePoolId, Integer customerId,
+            Date subscriptionStartDate, OrderPeriodDTO orderPeriod, PlanDTO plan, Date orderActiveUntilDate,
+            Date orderCreatedDate, OrderDTO order, Date nextInvoiceDate) {
 
+        Date cycleEndDate;
+        CustomerUsagePoolDTO customerUsagePoolDTO = new CustomerUsagePoolDTO();
+        UsagePoolDTO usagePoolDto = new UsagePoolDAS().find(usagePoolId);
+        CustomerDTO customer = new CustomerDAS().find(customerId);
+        customerUsagePoolDTO.setCustomer(customer);
+        customerUsagePoolDTO.setUsagePool(usagePoolDto);
+        customerUsagePoolDTO.setPlan(plan);
 
-	/**
-	 * This method provides the CustomerUsagePoolDTO based on the various input fields given below.
-	 * The CustomerUsagePoolDTO returned by this method is to be used for persisting it to the db.
-	 * @param usagePoolId
-	 * @param customerId
-	 * @param subscriptionStartDate
-	 * @param orderPeriod
-	 * @return CustomerUsagePoolDTO
-	 */
-	public CustomerUsagePoolDTO getCreateCustomerUsagePoolDto(Integer usagePoolId, Integer customerId,
-			Date subscriptionStartDate, OrderPeriodDTO orderPeriod, PlanDTO plan, Date orderActiveUntilDate,
-			Date orderCreatedDate, OrderDTO order) {
-
-		Date cycleEndDate;
-		CustomerUsagePoolDTO customerUsagePoolDTO = new CustomerUsagePoolDTO();
-		UsagePoolDTO usagePoolDto = new UsagePoolDAS().find(usagePoolId);
-		CustomerDTO customer = new CustomerDAS().find(customerId);
-		customerUsagePoolDTO.setCustomer(customer);
-		customerUsagePoolDTO.setUsagePool(usagePoolDto);
-		customerUsagePoolDTO.setPlan(plan);
-
-        QuantitySupplier quantitySupplier = new QuantitySupplier(usagePoolDto, customer.getNextInvoiceDate(), order.getActiveSince());
+        QuantitySupplier quantitySupplier = new QuantitySupplier(usagePoolDto, nextInvoiceDate, order.getActiveSince());
 
         if (!order.getProrateFlag()) {
-			customerUsagePoolDTO.setQuantity(quantitySupplier.get());
-			customerUsagePoolDTO.setInitialQuantity(quantitySupplier.get());
-			cycleEndDate = getCycleEndDateForPeriod(usagePoolDto.getCyclePeriodUnit(),
-					usagePoolDto.getCyclePeriodValue(), subscriptionStartDate, orderPeriod, orderActiveUntilDate);
-		} else {
-			//If Order prorate flag is ON then prorate customer usage pool quantity and calculate expected cycle end date
-			//for prorate period using customer next invoice date and order active until date.
-			BigDecimal newProrateQuantity = getCustomerUsagePoolProrateQuantity(customer.getNextInvoiceDate(),subscriptionStartDate,
-					orderActiveUntilDate, quantitySupplier.get(), customer.getMainSubscription(),
-					usagePoolDto.getCyclePeriodUnit(), usagePoolDto.getCyclePeriodValue());
+            customerUsagePoolDTO.setQuantity(quantitySupplier.get());
+            customerUsagePoolDTO.setInitialQuantity(quantitySupplier.get());
+            cycleEndDate = getCycleEndDateForPeriod(usagePoolDto.getCyclePeriodUnit(),
+                    usagePoolDto.getCyclePeriodValue(), subscriptionStartDate, orderPeriod, orderActiveUntilDate);
+        } else {
+            //If Order prorate flag is ON then prorate customer usage pool quantity and calculate expected cycle end date
+            //for prorate period using customer next invoice date and order active until date.
+            BigDecimal newProrateQuantity = quantitySupplier.get();
+            if(prorateForFirstPeriod){
+                newProrateQuantity = getCustomerUsagePoolProrateQuantity(nextInvoiceDate,subscriptionStartDate,orderActiveUntilDate, quantitySupplier.get(), customer.getMainSubscription(),
+                        usagePoolDto.getCyclePeriodUnit(), usagePoolDto.getCyclePeriodValue());
+            }
+            customerUsagePoolDTO.setQuantity(newProrateQuantity);
+            customerUsagePoolDTO.setInitialQuantity(newProrateQuantity);
+            cycleEndDate = getCycleEndDateForProratePeriod(nextInvoiceDate, orderActiveUntilDate, order);
+        }
 
-			customerUsagePoolDTO.setQuantity(newProrateQuantity);
-			customerUsagePoolDTO.setInitialQuantity(newProrateQuantity);
-			cycleEndDate = getCycleEndDateForProratePeriod(customer.getNextInvoiceDate(), orderActiveUntilDate, order);
-		}
+        if (!order.getProrateFlag() && cycleEndDate.compareTo(TimezoneHelper.companyCurrentDateByUserId(customer.getBaseUser().getUserId())) < 0) {
+            cycleEndDate = getCycleEndDateForPeriod(usagePoolDto.getCyclePeriodUnit(),
+                    usagePoolDto.getCyclePeriodValue(), orderCreatedDate, orderPeriod, orderActiveUntilDate);
+        }
 
-		if (!order.getProrateFlag() && cycleEndDate.compareTo(TimezoneHelper.companyCurrentDateByUserId(customer.getBaseUser().getUserId())) < 0) {
-			cycleEndDate = getCycleEndDateForPeriod(usagePoolDto.getCyclePeriodUnit(),
-					usagePoolDto.getCyclePeriodValue(), orderCreatedDate, orderPeriod, orderActiveUntilDate);
-		}
+        if (null != orderActiveUntilDate && cycleEndDate.compareTo(orderActiveUntilDate) > 0) {
+            cycleEndDate = setTimeToEndOfDay(orderActiveUntilDate);
+        }
 
-		if (null != orderActiveUntilDate && cycleEndDate.compareTo(orderActiveUntilDate) > 0) {
-				cycleEndDate = orderActiveUntilDate;
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(cycleEndDate);
-				cal.set(Calendar.MILLISECOND, 999);
-				cal.set(Calendar.SECOND, 59);
-				cal.set(Calendar.MINUTE, 59);
-				cal.set(Calendar.HOUR_OF_DAY,23);
-				cycleEndDate = cal.getTime();
-		}
+        customerUsagePoolDTO.setCycleEndDate(cycleEndDate);
+        customerUsagePoolDTO.setOrder(order);
 
-		customerUsagePoolDTO.setCycleEndDate(cycleEndDate);
-		customerUsagePoolDTO.setOrder(order);
-
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(subscriptionStartDate);
-		cal.set(Calendar.MILLISECOND, 000);
-		cal.set(Calendar.SECOND, 00);
-		cal.set(Calendar.MINUTE, 00);
-		cal.set(Calendar.HOUR_OF_DAY,00);
-
-		customerUsagePoolDTO.setCycleStartDate(cal.getTime());
-		customerUsagePoolDTO.setVersionNum(1);
+        customerUsagePoolDTO.setCycleStartDate(removeTime(subscriptionStartDate));
+        customerUsagePoolDTO.setVersionNum(1);
         return customerUsagePoolDTO;
-	}
+    }
 
-	/**
-	 * This is a method that gets called from CustomerUsagePoolEvaluationTask.
-	 * It evaluates and updates the customer usage pools by looking at all customer usage pool records
-	 * that are eligible for update. The update is done for 2 fields: cycle end date and quantity.
-	 */
-	public void triggerCustomerUsagePoolEvaluation(Integer entityId, Date runDate) {
-		List<Integer> customerUsagePools = new CustomerUsagePoolDAS().findCustomerUsagePoolsForEvaluation(entityId, runDate);
+    private static final Integer MAX_RESULTS = 1000;
+    /**
+     * This is a method that gets called from CustomerUsagePoolEvaluationTask.
+     * It evaluates and updates the customer usage pools by looking at all customer usage pool records
+     * that are eligible for update. The update is done for 2 fields: cycle end date and quantity.
+     * @throws PluggableTaskException
+     */
+    public void triggerCustomerUsagePoolEvaluation(Integer entityId, Date runDate) {
+        IUsagePoolEvaluationTask evaluationTask = loadEvaluationTaskForEntity(entityId);
 
-		logger.debug("customerUsagePools:{}", customerUsagePools);
-
-		if (null != customerUsagePools && !customerUsagePools.isEmpty()) {
-
-			CustomerUsagePoolDAS das = new CustomerUsagePoolDAS();
-
-			for (Integer customerUsagePoolId : customerUsagePools) {
-
-				CustomerUsagePoolDTO custUsagePool = das.findForUpdate(customerUsagePoolId);
-				custUsagePool.setLastRemainingQuantity(custUsagePool.getQuantity());
-				if(custUsagePool.getCycleEndDate().before(custUsagePool.getCycleStartDate())) {
-				    logger.warn("Skipping Customer [{}] because customer usage pool [{}]'s end date [{}] is before start date [{}]", custUsagePool.getCustomer().getId(),
-				            customerUsagePoolId, custUsagePool.getCycleEndDate(), custUsagePool.getCycleStartDate());
-				     continue;
-				}
-				if (null != custUsagePool.getOrder() && custUsagePool.getOrder().getId().intValue()!=0 &&
-                        custUsagePool.getOrder().getDeleted() != 1 &&
-						!custUsagePool.getOrder().getOrderStatus().getOrderStatusFlag().equals(OrderStatusFlag.FINISHED)) {
-					logger.debug("customerUsagePool quantity: {}", custUsagePool.getQuantity());
-					String resetValue = custUsagePool.getUsagePool().getUsagePoolResetValue().getResetValue();
-					logger.debug("resetValue: {}", resetValue);
-
-					if (resetValue.equals(UsagePoolResetValueEnum.ZERO.toString())) {
-
-						CustomerUsagePoolConsumptionEvent qtyChangeEvent =
-								new CustomerUsagePoolConsumptionEvent(
-										entityId,
-										custUsagePool.getId(),
-										custUsagePool.getQuantity(),
-										BigDecimal.ZERO);
-
-						custUsagePool.setQuantity(BigDecimal.ZERO);
-
-						EventManager.process(qtyChangeEvent);
-
-					} else  {
-
-						Date cycleEndDate = custUsagePool.getCycleEndDate();
-						Date cycleStartDate = custUsagePool.getCycleStartDate();
-						Calendar cal = Calendar.getInstance();
-
-						cal.setTime(cycleEndDate);
-						cal.add(Calendar.DATE, 1);
-						cal.set(Calendar.HOUR_OF_DAY, 0);
-						cal.set(Calendar.MINUTE, 0);
-						cal.set(Calendar.SECOND, 0);
-						cal.set(Calendar.MILLISECOND, 0);
-
-						cycleEndDate = cal.getTime();
-						Date subscriptionStartDate = cycleEndDate;
-						//Set cycle start date
-						custUsagePool.setCycleStartDate(subscriptionStartDate);
-						String cyclePeriodUnit = custUsagePool.getUsagePool().getCyclePeriodUnit();
-
-						logger.debug("cyclePeriodUnit: {}", cyclePeriodUnit);
-						OrderDTO subScriptionOrder = custUsagePool.getOrder();
-						Date orderActiveUntil = subScriptionOrder.getActiveUntil();
-						Date nextInvoiceDate = custUsagePool.getCustomer().getNextInvoiceDate();
-                        QuantitySupplier quantitySupplier = new QuantitySupplier(custUsagePool.getUsagePool(),nextInvoiceDate, null);
-                        BigDecimal usagePoolQuantity = quantitySupplier.get();
-
-						if (!subScriptionOrder.getProrateFlag()) {
-							custUsagePool.setCycleEndDate(getCycleEndDateForPeriod(cyclePeriodUnit,
-									custUsagePool.getUsagePool().getCyclePeriodValue(), subscriptionStartDate,
-									custUsagePool.getCustomer().getMainSubscription().getSubscriptionPeriod(), orderActiveUntil));
-						} else {
-							BigDecimal prorateQuantity = getCustomerUsagePoolProrateQuantity(nextInvoiceDate,subscriptionStartDate,
-									orderActiveUntil, usagePoolQuantity, custUsagePool.getCustomer().getMainSubscription(),
-									cyclePeriodUnit, custUsagePool.getUsagePool().getCyclePeriodValue());
-
-							usagePoolQuantity = prorateQuantity;
-							logger.debug("prorateQuantity: {}", prorateQuantity);
-							custUsagePool.setInitialQuantity(prorateQuantity);
-							custUsagePool.setCycleEndDate(getCycleEndDateForProratePeriod(nextInvoiceDate, orderActiveUntil, subScriptionOrder));
-						}
-
-                        if (custUsagePool.getCycleStartDate().after(custUsagePool.getCycleEndDate())) {
-                            custUsagePool.setCycleStartDate(cycleStartDate);
+        // Need to set runDate time to the end of day in order to also fetch those CUP's cycle_end_date equals to the runDate
+        List<Integer> customerUsagePoolsAllRecords = customerUsagePoolDas.findCustomerUsagePoolsForEvaluation(
+                entityId, setTimeToEndOfDay(runDate), null, null);
+        List<List<Integer>> subLists = partition(customerUsagePoolsAllRecords, MAX_RESULTS);
+        for(final List<Integer> customerUsagePools : subLists) {
+            Executor executor = Context.getBean("asyncTaskExecutor");
+            IMethodTransactionalWrapper transaction = Context.getBean(IMethodTransactionalWrapper.class);
+            executor.execute(()-> {
+                logger.debug("customerUsagePools:{}", customerUsagePools);
+                for (Integer customerUsagePoolId : customerUsagePools) {
+                    transaction.executeInNewTransaction(()-> {
+                        try {
+                            // process each customer usage pool in new transaction.
+                            evaluationTask.evaluateCustomerUsagePool(new CustomerUsagePoolEvaluationEvent(
+                                    customerUsagePoolId, entityId, runDate));
+                        } catch(Exception ex) {
+                            // roll back transaction in exception.
+                            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                            logger.error("customer usage pool evaluation failed for customer "
+                                    + "usage pool id {}, entity {}, date {}", customerUsagePoolId, entityId, runDate);
                         }
+                    });
+                }
+            });
+        }
+    }
 
-                        logger.debug("CycleEndDate: {}", custUsagePool.getCycleEndDate());
+    /**
+     *
+     * @param list
+     * @param batchSize
+     * @return
+     */
+    private <T> List<List<T>> partition(List<T> list, int batchSize) {
+        List<List<T>> parts = new ArrayList<>();
+        int size = list.size();
+        for (int i = 0; i < size; i += batchSize) {
+            parts.add(new ArrayList<>(list.subList(i, Math.min(size, i + batchSize))));
+        }
+        return parts;
+    }
 
-                        if (resetValue.equals(UsagePoolResetValueEnum.ADD_THE_INITIAL_VALUE.toString())) {
+    private IUsagePoolEvaluationTask loadEvaluationTaskForEntity(Integer entityId) {
+        try {
+            PluggableTaskManager<IUsagePoolEvaluationTask> taskManager = new PluggableTaskManager<>(entityId,
+                    new PluggableTaskTypeCategoryDAS().findByInterfaceName(IUsagePoolEvaluationTask.class.getName()).getId());
+            IUsagePoolEvaluationTask task = taskManager.getNextClass();
+            if(null == task) {
+                logger.debug("No IUsagePoolEvaluationTask configured for entity {}, "
+                        + "so using DefaultUsagePoolEvaluationTask", entityId);
+                return defaultTask;
+            }
+            return task;
+        } catch(PluggableTaskException pluggableTaskException) {
+            throw new SessionInternalError("exception occur during loading plugin for entity "+ entityId, pluggableTaskException);
+        }
+    }
 
-							BigDecimal newPoolQuantity = custUsagePool.getQuantity().add(usagePoolQuantity);
-
-                            CustomerUsagePoolConsumptionEvent qtyChangeEvent =
-                                    new CustomerUsagePoolConsumptionEvent(
-                                            entityId,
-											custUsagePool.getId(),
-											custUsagePool.getQuantity(),
-                                            newPoolQuantity);
-
-							custUsagePool.setQuantity(newPoolQuantity);
-							custUsagePool.setInitialQuantity(newPoolQuantity);
-
-                            EventManager.process(qtyChangeEvent);
-
-                        } else if (resetValue.equals(UsagePoolResetValueEnum.RESET_TO_INITIAL_VALUE.toString()) || resetValue.equals(UsagePoolResetValueEnum.HOURS_PER_CALENDER_MONTH.toString())) {
-
-                            CustomerUsagePoolConsumptionEvent qtyChangeEvent =
-                                    new CustomerUsagePoolConsumptionEvent(
-                                            entityId,
-											custUsagePool.getId(),
-											custUsagePool.getQuantity(),
-                                            usagePoolQuantity);
-
-							custUsagePool.setQuantity(usagePoolQuantity);
-
-                            EventManager.process(qtyChangeEvent);
-                        }
-                    }
-					logger.debug("Quantity: {}", custUsagePool.getQuantity());
-					das.save(custUsagePool);
-				}
-			}
-		}
-	}
-
-	/**
+    /**
      * Calculate expected next invoice date for calculate prorate quantity and cycle end date of customer usage pool.
      * if the customer does not exist
      *
      * @param userDto
      * Commented this test case because it is unused and may be it should use in future.
      */
-	/*private Date getExpectedCustomerNextInvoiceDate (CustomerDTO customer) {
+    /*private Date getExpectedCustomerNextInvoiceDate (CustomerDTO customer) {
 
         MainSubscriptionDTO mainSubscription = customer.getMainSubscription();
         Date createdDate = customer.getBaseUser().getCreateDatetime();
@@ -742,5 +667,40 @@ public class CustomerUsagePoolBL {
     public boolean isAssetSubscribedToCustomerUsagePool(Integer userId, String assetIdentifier) {
         List<CustomerUsagePoolDTO> customerUsagePools = getCustomerUsagePoolsByUserAndAsset(userId, assetIdentifier);
         return customerUsagePools.stream().anyMatch(usagePool -> usagePool.getId() == this.customerUsagePool.getId());
+    }
+
+    public boolean isProrateForFirstPeriod() {
+        return prorateForFirstPeriod;
+    }
+
+    public void setProrateForFirstPeriod(boolean prorateForFirstPeriod) {
+        this.prorateForFirstPeriod = prorateForFirstPeriod;
+    }
+
+    /**
+     * Save method that will check first if the customer usage pool is not a duplicate one
+     *
+     * @param customerUsagePool
+     * @return
+     */
+    public CustomerUsagePoolDTO save(CustomerUsagePoolDTO customerUsagePool) {
+        if( customerUsagePool.getCycleStartDate().after(customerUsagePool.getCycleEndDate())) {
+            logger.debug("invalid period dates for customer usage pool: {}", customerUsagePool);
+            return null;
+        }
+        if (!customerUsagePoolDas.exist(customerUsagePool)) {
+            return customerUsagePoolDas.save(customerUsagePool);
+        } else {
+            logger.error("Customer Usage Pool Map already exist: {}", customerUsagePool);
+            return null;
+        }
+    }
+
+    public Date removeTime(Date date) {
+        return DateUtils.truncate(date, java.util.Calendar.DAY_OF_MONTH);
+    }
+
+    public Date setTimeToEndOfDay(Date date) {
+        return DateUtils.addMilliseconds(DateUtils.ceiling(date, Calendar.DATE), -1);
     }
 }

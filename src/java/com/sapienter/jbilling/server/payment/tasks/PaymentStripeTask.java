@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.sapienter.jbilling.server.payment.tasks;
 
 import java.lang.invoke.MethodHandles;
@@ -10,11 +7,14 @@ import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.owasp.esapi.util.CollectionsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +151,7 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 		SecurePaymentWS securePaymentWS = null;
 		
 		try (CreditCard creditCard = convertCreditCard(paymentInstrument)) {
-				String setupIntentId =   getPaymentInformationMetafieldValue(paymentInstrument.getMetaFields(), META_FIELD_CC_STRIPE_INTENT_ID);
+				String setupIntentId = getPaymentInformationMetafieldValue(paymentInstrument.getMetaFields(), META_FIELD_CC_STRIPE_INTENT_ID);
 				
 				if(!StripeHelper.isObjectEmpty(setupIntentId)){
 					securePaymentWS = verifySetupIntentStatus(paymentInstrument, setupIntentId);
@@ -212,8 +212,15 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 	}
 
 	private SecurePaymentWS verifySetupIntentStatus(PaymentInformationDTO piDTO, String setupIntentId) throws StripeException, PluggableTaskException, ParseException {
-		SecurePaymentWS securePaymentWS = new SecurePaymentWS();
-		securePaymentWS.setUserId(piDTO.getUser().getId());
+		SecurePaymentWS securePaymentWS = SecurePaymentWS
+    			.builder()
+	    			.userId(piDTO.getUser().getId())
+	    			.billingHubRefId(0)
+	    			.nextAction(null)
+	    			.status(null)
+	    			.error(null)
+    			.build();
+
 		SetupIntent setupIntent =  StripeHelper.getStripeServiceInstance(getStripeApiKey()).retrieveSetupIntent(setupIntentId);
 		securePaymentWS.setStatus(setupIntent.getStatus());
 		
@@ -227,18 +234,39 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 			}
 			securePaymentWS.setNextAction(spNextAction);
 		}else if(setupIntent.getStatus().equals(StripeResult.StripeIntentStatus.SUCCEEDED.toString())){
-			UserDTO userDTO = StripeHelper.getUser(null, piDTO, null, 0);
-			StripeHelper.populatePaymentInfoDtoWithStripeCard(getStripeApiKey() ,piDTO, userDTO, setupIntent.getPaymentMethod(), getStripePaymentMethodId() ,true);
+			
 			securePaymentWS.setStatus(StripeResult.StripeIntentStatus.SUCCEEDED.toString());
+			
+			Map<String, String> metadata =  setupIntent.getMetadata();
+			
+			// Duplicate request, check if setup intent is already processed or not
+			if(!StripeHelper.isObjectEmpty(metadata) && metadata.size()>0){
+				String processed =  metadata.get(StripeHelper.KEY_METADATA_PROCESSED);
+				if(Boolean.parseBoolean(processed)){
+					securePaymentWS.setStatus(StripeResult.StripeIntentStatus.DUPLICATE_REQUEST.toString());
+				}
+			}
+			
+			// Normal request to setup intent
+			if(securePaymentWS.getStatus().equals(StripeResult.StripeIntentStatus.SUCCEEDED.toString())){
+				UserDTO userDTO = StripeHelper.getUser(null, piDTO, null, 0);
+				StripeHelper.populatePaymentInfoDtoWithStripeCard(getStripeApiKey() ,piDTO, userDTO, setupIntent.getPaymentMethod(), getStripePaymentMethodId() ,true);
+			}
 		}
 	
 		return securePaymentWS;
-	}
-	
+	}	
 	
 	private SecurePaymentWS verifyPaymentIntentStatus(PaymentDTOEx paymentDTOEx, String paymentIntentId) throws StripeException, PluggableTaskException, ParseException {
-		SecurePaymentWS securePaymentWS = new SecurePaymentWS();
-		securePaymentWS.setUserId(paymentDTOEx.getUserId());
+		SecurePaymentWS securePaymentWS = SecurePaymentWS
+    			.builder()
+	    			.userId(paymentDTOEx.getUserId())
+	    			.billingHubRefId(0)
+	    			.nextAction(null)
+	    			.status(null)
+	    			.error(null)
+    			.build();
+		
 		PaymentIntent  paymentIntent =  StripeHelper.getStripeServiceInstance(getStripeApiKey()).retrievePaymentIntent(paymentIntentId);
 		securePaymentWS.setStatus(paymentIntent.getStatus());
 		
@@ -272,6 +300,8 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 				tempPiDto.add(StripeHelper.populatePaymentInfoDtoWithStripeCard(getStripeApiKey(),null, userDTO, paymentIntent.getPaymentMethod(), getStripePaymentMethodId() ,true));
 				paymentDTOEx.setPaymentInstruments(tempPiDto);
 			}
+		}else if(paymentIntent.getStatus().equals(StripeResult.StripeIntentStatus.SUCCEEDED.toString())){
+			securePaymentWS.setStatus(StripeResult.StripeIntentStatus.DUPLICATE_REQUEST.toString());
 		}
 	
 		return securePaymentWS;
@@ -303,40 +333,56 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 		// new contact that has not had a credit card created yet
 		if (StripeHelper.isObjectEmpty(paymentInstrument)) {
 			logger.warn("No credit card to store externally.");
-			return null;
+			
 		} else {        	
 			UserDTO user = StripeHelper.getUser(contact, paymentInstrument, null, 0);
 
 			if (StripeHelper.isObjectEmpty(user) ) {
 				logger.error("Could not determine user id for external credit card storage");
-				return null;
-			}
-			
-			/*
-			 * Handling rest API call where stripe payment method id is already exist
-			*/
-			String ccGateWaykey =   getPaymentInformationMetafieldValue(paymentInstrument.getMetaFields(), META_FIELD_CC_GATEWAY_KEY);			
-			if(!StripeHelper.isObjectEmpty(ccGateWaykey)){
-				logger.info("Rest api call to add payment instrument/credit card is ignored as stripe payment method id is already created by portal.");
-				return ccGateWaykey;
-			}
-			
-			try {
+			}else {
 				
-				SecurePaymentWS securePaymentWS =  perform3DSecurityCheck(paymentInstrument,null);
+				// checking if gateway key already exist.
+				String ccGateWaykey =   getPaymentInformationMetafieldValue(paymentInstrument.getMetaFields(), META_FIELD_CC_GATEWAY_KEY);
 				
-				if(securePaymentWS.isSucceeded()){
-					return  String.valueOf(piBl.getCharMetaFieldByType(paymentInstrument, MetaFieldType.GATEWAY_KEY));
+				try {
+					/* Handling rest API call where stripe payment method id(gateway key) is already exist */
+					
+					if(!StripeHelper.isObjectEmpty(ccGateWaykey)){
+						logger.info("Rest api call to add payment instrument/credit card is ignored as stripe payment method id is already created by portal.");
+						
+						updateSetupIntentAsProcessed(paymentInstrument);
+						return ccGateWaykey;
+					}
+					
+					SecurePaymentWS securePaymentWS =  perform3DSecurityCheck(paymentInstrument,null);
+					
+					if(securePaymentWS.isSucceeded()){
+						return  String.valueOf(piBl.getCharMetaFieldByType(paymentInstrument, MetaFieldType.GATEWAY_KEY));
+					}
+					logger.error("Could not save credit card due to {}", securePaymentWS );
+				} catch (PluggableTaskException e) {
+					logger.error("Could not save credit card due to", e);
+				}catch (StripeException e) {
+					logger.error("Could not save credit card due to", e);
+					return ccGateWaykey;
 				}
-				logger.error("Could not save credit card due to {}", securePaymentWS );
-				return null;
-
-			} catch (PluggableTaskException e) {
-				logger.error("Could not save credit card due to", e);
-	            return null;
 			}
-
 		}
+		
+		return null;
+	}
+	
+	/*
+	 * Method to add/update metadata for stripe setupintent  
+	 */
+	private void updateSetupIntentAsProcessed(PaymentInformationDTO paymentInstrument) throws StripeException, PluggableTaskException {
+		logger.debug("Updating metadata(processed) for stripe intent id");
+		String setupIntentId = getPaymentInformationMetafieldValue(paymentInstrument.getMetaFields(), META_FIELD_CC_STRIPE_INTENT_ID);
+		
+		if(!StripeHelper.isObjectEmpty(setupIntentId)){
+			StripeHelper.getStripeServiceInstance(getStripeApiKey()).updateMetadataForSetupIntent(setupIntentId);
+		}
+		
 	}
 
 	@Override
@@ -686,9 +732,12 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 			throw new PluggableTaskException("Currency id or code should not be null.");
 		}
 		
-		return new Payment(StripeHelper
-				.convertDollarAmountToCents(paymentDTOEx
-						.getAmount()), currencyDTO.getCode());
+		Payment payment = Payment.builder()
+							.amount( StripeHelper.convertDollarAmountToCents(paymentDTOEx.getAmount()) )
+							.currencyCode(currencyDTO.getCode())
+							.build();	
+		
+		return payment;
 	}
 
 
@@ -697,8 +746,7 @@ public class PaymentStripeTask extends PaymentTaskWithTimeout implements
 				paymentInstrument, MetaFieldType.PAYMENT_CARD_NUMBER);
 		
 		Integer paymentMethodId = StripeHelper.isObjectEmpty(paymentInstrument.getPaymentMethod()) ? paymentInstrument.getPaymentMethodId() : paymentInstrument.getPaymentMethod().getId();
-			
-			
+		
 		return new CreditCard(
 				StripeHelper.convertCreditCardType(paymentMethodId).toCharArray()
 				, Arrays.copyOf(accountNumber,accountNumber.length)

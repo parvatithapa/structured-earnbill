@@ -15,13 +15,25 @@
  */
 package com.sapienter.jbilling.server.item.db;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import com.sapienter.jbilling.server.audit.Auditable;
+import com.sapienter.jbilling.server.metafields.EntityType;
+import com.sapienter.jbilling.server.metafields.MetaContent;
+import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
+import com.sapienter.jbilling.server.metafields.db.CustomizedEntity;
+import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
+import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.provisioning.db.AssetProvisioningCommandDTO;
+import com.sapienter.jbilling.server.provisioning.db.IProvisionable;
+import com.sapienter.jbilling.server.provisioning.db.ProvisioningCommandDTO;
+import com.sapienter.jbilling.server.provisioning.db.ProvisioningStatusDAS;
+import com.sapienter.jbilling.server.provisioning.db.ProvisioningStatusDTO;
+import com.sapienter.jbilling.server.user.db.CompanyDTO;
+import com.sapienter.jbilling.server.util.Constants;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.OptimisticLock;
+import org.hibernate.annotations.Sort;
+import org.hibernate.annotations.SortType;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -41,27 +53,13 @@ import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.OptimisticLock;
-import org.hibernate.annotations.Sort;
-import org.hibernate.annotations.SortType;
-
-import com.sapienter.jbilling.server.audit.Auditable;
-import com.sapienter.jbilling.server.metafields.EntityType;
-import com.sapienter.jbilling.server.metafields.MetaContent;
-import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
-import com.sapienter.jbilling.server.metafields.db.CustomizedEntity;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
-import com.sapienter.jbilling.server.order.db.OrderLineDTO;
-import com.sapienter.jbilling.server.provisioning.db.AssetProvisioningCommandDTO;
-import com.sapienter.jbilling.server.provisioning.db.IProvisionable;
-import com.sapienter.jbilling.server.provisioning.db.ProvisioningCommandDTO;
-import com.sapienter.jbilling.server.provisioning.db.ProvisioningStatusDAS;
-import com.sapienter.jbilling.server.provisioning.db.ProvisioningStatusDTO;
-import com.sapienter.jbilling.server.user.db.CompanyDTO;
-import com.sapienter.jbilling.server.util.Constants;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Assets are linked to a product (ItemDTO). Each asset has an identifier which must be unique per the
@@ -82,35 +80,40 @@ import com.sapienter.jbilling.server.util.Constants;
         valueColumnName = "next_id",
         pkColumnValue = "asset",
         allocationSize = 100
-        )
+)
 @NamedQueries({
-    @NamedQuery(name = "AssetDTO.countForItem",
-            query = "select count(a.id) from AssetDTO a where a.item.id = :item_id " +
-            "and deleted=0"),
-            @NamedQuery(name = "AssetDTO.identifierForIdentifierAndCategory",
-            query = "select a from AssetDTO a " +
-                    "join a.item.itemTypes types " +
-                    "where types.id = :item_type_id " +
-                    "and a.identifier = :identifier " +
-                    "and a.deleted=0"),
-                    @NamedQuery(name = "AssetDTO.idsForItemType",
-                    query = "select a.id from AssetDTO a " +
-                            "join a.item.itemTypes types " +
-                            "where types.id = :item_type_id " +
-                            "and a.deleted=0"),
-                            @NamedQuery(name = "AssetDTO.idsForItem",
-                            query = "select a.id from AssetDTO a " +
-                                    "where a.item.id = :item_id " +
-                                    "and a.deleted=0"),
-                                    @NamedQuery(name = "AssetDTO.getForItemAndIdentifier",
-                                    query = "select a from AssetDTO a " +
-                                            "where a.item.id = :itemId " +
-                                            "and a.identifier = :identifier " +
-                                            "and a.deleted=0"),
-                                            @NamedQuery(name = "AssetDTO.getForIdentifier",
-                                            query = "select a from AssetDTO a " +
-                                                    "where a.identifier = :identifier " +
-                                                    "and a.deleted=0")
+        @NamedQuery(name = "AssetDTO.countForItem",
+                query = "select count(a.id) from AssetDTO a where a.item.id = :item_id " +
+                        "and deleted=0"),
+        @NamedQuery(name = "AssetDTO.identifierForIdentifierAndCategory",
+                 query = "select a from AssetDTO a " +
+                		 "join a.item.itemTypes types " +
+                         "where types.id = :item_type_id " +
+                         "and a.identifier = :identifier " +
+                         "and a.deleted=0"),                
+        @NamedQuery(name = "AssetDTO.idsForItemType",
+                query = "select a.id from AssetDTO a " +
+                        "join a.item.itemTypes types " +
+                        "where types.id = :item_type_id " +
+                        "and a.deleted=0"),
+        @NamedQuery(name = "AssetDTO.idsForItem",
+                query = "select a.id from AssetDTO a " +
+                        "where a.item.id = :item_id " +
+                        "and a.deleted=0"),
+        @NamedQuery(name = "AssetDTO.getForItemAndIdentifier",
+                query = "select a from AssetDTO a " +
+                        "where a.item.id = :itemId " +
+                        "and a.identifier = :identifier " +
+                        "and a.deleted=0"),
+        @NamedQuery(name = "AssetDTO.getForIdentifier",
+        query = "select a from AssetDTO a " +
+                "where a.identifier = :identifier " +
+                "and a.deleted=0"),
+
+        @NamedQuery(name = "AssetDTO.getForSubscriberNumber",
+                query = "select a from AssetDTO a " +
+                        "where a.deleted=0 " +
+                        "and a.subscriberNumber = :subscriberNumber ")
 })
 @Cache(usage = CacheConcurrencyStrategy.NONE)
 public class AssetDTO extends CustomizedEntity implements Serializable, IProvisionable, Auditable {
@@ -123,7 +126,7 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
     private int deleted;
     private ItemDTO item;
     private Set<AssetTransitionDTO> transitions = new HashSet<AssetTransitionDTO>(0);
-    private Set<AssetAssignmentDTO> assignments = new HashSet<AssetAssignmentDTO>(0);
+	private Set<AssetAssignmentDTO> assignments = new HashSet<AssetAssignmentDTO>(0);
     private int versionNum;
     private Date createDatetime;
     private OrderLineDTO orderLine;
@@ -135,7 +138,7 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
 
     private List<AssetProvisioningCommandDTO> provisioningCommands = new ArrayList<AssetProvisioningCommandDTO>(0);
     private ProvisioningStatusDTO provisioningStatus;
-
+    
     //transient properties
     private OrderLineDTO prevOrderLine;
     private boolean unlinkedFromLine = false;
@@ -145,6 +148,18 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
     private List<Integer> childEntityIds = null;
 
     private boolean isReserved = false;
+
+    // ICCID changes
+
+    private String subscriberNumber;
+    private String imsi;
+    private boolean isSuspended;
+    private String pin1;
+    private String pin2;
+    private String puk1;
+    private String puk2;
+    private String discardedIdentifier;
+    private String suspendedBy;
     public AssetDTO() {
     }
 
@@ -161,11 +176,20 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
         this.notes = dto.getNotes();
         this.group = dto.getGroup();
         this.global = dto.isGlobal();
+        this.subscriberNumber = dto.getSubscriberNumber();
+        this.imsi= dto.getImsi();
+        this.isSuspended = dto.isSuspended();
+        this.pin1 = dto.getPin1();
+        this.pin2 = dto.getPin2();
+        this.puk1 = dto.getPuk1();
+        this.puk2 = dto.getPuk2();
+        this.discardedIdentifier= dto.getDiscardedIdentifier();
+        this.suspendedBy=dto.getSuspendedBy();
         setMetaFields(dto.getMetaFields());
         setEntities(dto.getEntities());
         setContainedAssets(dto.getContainedAssets());
-        setTransitions(dto.getTransitions());
-        setAssignments(dto.getAssignments());
+	    setTransitions(dto.getTransitions());
+	    setAssignments(dto.getAssignments());
     }
 
     @Id
@@ -262,17 +286,17 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
     public void setUnlinkedFromLine(boolean unlinkedFromLine) {
         this.unlinkedFromLine = unlinkedFromLine;
     }
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "asset", cascade = javax.persistence.CascadeType.ALL)
-    @Sort(type = SortType.COMPARATOR, comparator = ProvisioningCommandDTO.ProvisioningCommandComparator.class)
-    @Override
-    public List<AssetProvisioningCommandDTO> getProvisioningCommands() {
-        return provisioningCommands;
-    }
-
-    public void setProvisioningCommands(List<AssetProvisioningCommandDTO> provisioningCommands) {
-        this.provisioningCommands = provisioningCommands;
-    }
+    
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "asset", cascade = javax.persistence.CascadeType.ALL)
+	@Sort(type = SortType.COMPARATOR, comparator = ProvisioningCommandDTO.ProvisioningCommandComparator.class)
+	@Override
+	public List<AssetProvisioningCommandDTO> getProvisioningCommands() {
+	    return provisioningCommands;
+	}
+	
+	public void setProvisioningCommands(List<AssetProvisioningCommandDTO> provisioningCommands) {
+	    this.provisioningCommands = provisioningCommands;
+	}
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id")
@@ -312,14 +336,14 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
         this.transitions = transitions;
     }
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "asset")
-    public Set<AssetAssignmentDTO> getAssignments() {
-        return assignments;
-    }
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "asset")
+	public Set<AssetAssignmentDTO> getAssignments() {
+		return assignments;
+	}
 
-    public void setAssignments(Set<AssetAssignmentDTO> assignments) {
-        this.assignments = assignments;
-    }
+	public void setAssignments(Set<AssetAssignmentDTO> assignments) {
+		this.assignments = assignments;
+	}
 
     @Version
     @Column(name="optlock")
@@ -330,14 +354,13 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
         this.versionNum = versionNum;
     }
 
-    @Override
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true )
     //@Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
     @JoinTable(
             name = "asset_meta_field_map",
             joinColumns = @JoinColumn(name = "asset_id"),
             inverseJoinColumns = @JoinColumn(name = "meta_field_value_id")
-            )
+    )
     @Sort(type = SortType.COMPARATOR, comparator = MetaFieldHelper.MetaFieldValuesOrderComparator.class)
     public List<MetaFieldValue> getMetaFields() {
         return getMetaFieldsList();
@@ -372,7 +395,6 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
         }
     }
 
-    @Override
     @Transient
     public EntityType[] getCustomizedEntityType() {
         return new EntityType[] { EntityType.ASSET };
@@ -382,52 +404,129 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
     protected String getTable() {
         return Constants.TABLE_ASSET;
     }
-
+    
     @Column(name = "global", nullable = false, updatable = true)
     public boolean isGlobal() {
-        return global;
-    }
-
+		return global;
+	}
+    
     public void setGlobal(boolean global) {
-        this.global = global;
+		this.global = global;
+	}
+
+    @Column(name = "subscriber_number",  length = 10)
+    public String getSubscriberNumber() {
+        return subscriberNumber;
     }
 
-    @Override
+    public void setSubscriberNumber(String subscriberNumber) {
+        this.subscriberNumber = subscriberNumber;
+    }
+
+    @Column(name = "imsi", nullable = false, length = 25)
+    public String getImsi() {
+        return imsi;
+    }
+
+    public void setImsi(String imsi) {
+        this.imsi = imsi;
+    }
+
+
+    @Column(name = "is_suspended", nullable = false)
+    public boolean isSuspended() {
+        return isSuspended;
+    }
+
+    public void setSuspended(boolean suspended) {
+        isSuspended = suspended;
+    }
+
+    @Column(name = "pin_1")
+    public String getPin1() {
+        return pin1;
+    }
+
+    public void setPin1(String pin1) {
+        this.pin1 = pin1;
+    }
+
+    @Column(name = "pin_2")
+    public String getPin2() {
+        return pin2;
+    }
+
+    public void setPin2(String pin2) {
+        this.pin2 = pin2;
+    }
+
+    @Column(name = "puk_1")
+    public String getPuk1() {
+        return puk1;
+    }
+
+    public void setPuk1(String puk1) {
+        this.puk1 = puk1;
+    }
+
+    @Column(name = "puk_2")
+    public String getPuk2() {
+        return puk2;
+    }
+
+    public void setPuk2(String puk2) {
+        this.puk2 = puk2;
+    }
+
+
+    @Column(name = "discarded_identifier", length = 200)
+    public String getDiscardedIdentifier() {
+        return this.discardedIdentifier;
+    }
+    public void setDiscardedIdentifier(String discardedIdentifier) {
+        this.discardedIdentifier = discardedIdentifier;
+    }
+
+    @Column(name = "suspended_by", length = 512)
+    public String getSuspendedBy() {
+        return this.suspendedBy;
+    }
+    public void setSuspendedBy(String suspendedBy) {
+        this.suspendedBy = suspendedBy;
+    }
     public String getAuditKey(Serializable id) {
         StringBuilder key = new StringBuilder();
         key.append(getEntity().getId())
-        .append("-prd-")
-        .append(getItem().getId())
-        .append("-")
-        .append(id);
+                .append("-prd-")
+                .append(getItem().getId())
+                .append("-")
+                .append(id);
 
         return key.toString();
     }
 
-    /**
+	/**
      * Load all lazy dependencies of entity if needed
      */
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch=FetchType.LAZY )
-    @JoinTable(name = "asset_entity_map", joinColumns = {
-            @JoinColumn(name = "asset_id", updatable = true) }, inverseJoinColumns = {
-            @JoinColumn(name = "entity_id", updatable = true) })
-    public Set<CompanyDTO> getEntities() {
-        return entities;
-    }
-    public void setEntities(Set<CompanyDTO> entities) {
-        this.entities= entities;
-    }
-
-    @Transient
+	@ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch=FetchType.LAZY )
+	@JoinTable(name = "asset_entity_map", joinColumns = { 
+    		@JoinColumn(name = "asset_id", updatable = true) }, inverseJoinColumns = { 
+    		@JoinColumn(name = "entity_id", updatable = true) })
+	public Set<CompanyDTO> getEntities() {
+		return entities;
+	}
+	public void setEntities(Set<CompanyDTO> entities) {
+		this.entities= entities;
+	}
+	
+	@Transient
     public Integer getEntityId() {
         return getEntity() != null ? getEntity().getId() : null;
     }
-
-    public void touch() {
+	
+     public void touch() {
         // touch entity only once
-        if (isTouched) {
-            return;
-        }
+        if (isTouched) return;
         isTouched = true;
 
         getCreateDatetime();
@@ -453,38 +552,43 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
                 ", orderLine=" + (orderLine != null ? orderLine.getId() : null) +
                 ", item=" + (item != null ? item.getId() : null) +
                 ", isReserved='" + isReserved + '\'' +
+                "  subscriberNumber=" + subscriberNumber +
+                ", imsi=" + imsi +
+                ", isSuspended=" + isSuspended +
+                ", pin1=" + pin1 +
+                ", pin2=" + pin2 +
+                ", puk1=" + puk1 +
+                ", puk2=" + puk2 +
+                ", discardedIdentifier=" + discardedIdentifier +
+                ", suspendedBy=" + suspendedBy +
                 '}';
     }
 
-    @Override
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="provisioning_status")
     @OptimisticLock(excluded = true)
     public ProvisioningStatusDTO getProvisioningStatus() {
         return provisioningStatus;
     }
-
+    
     /**
      * @param provisioningStatus the provisioningStatus to set
      */
-    @Override
     public void setProvisioningStatus(ProvisioningStatusDTO provisioningStatus) {
         this.provisioningStatus = provisioningStatus;
     }
-
-    @Override
+    
     @Transient
     public Integer getProvisioningStatusId() {
         return getProvisioningStatus() == null ? null :
-            getProvisioningStatus().getId();
+                getProvisioningStatus().getId();
     }
-
+    
     public void setProvisioningStatusId(Integer provisioningStatusId) {
         ProvisioningStatusDAS das = new ProvisioningStatusDAS();
         setProvisioningStatus(das.find(provisioningStatusId));
     }
-
-    @Override
+    
     @Transient
     public void updateMetaFieldsWithValidation(Integer languageId, Integer entitId, Integer accountTypeId, MetaContent dto) {
         MetaFieldHelper.updateMetaFieldsWithValidation(languageId, entitId, accountTypeId, this, dto);
@@ -494,7 +598,7 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
         if (this.childEntityIds == null) {
             this.childEntityIds = new ArrayList<Integer>();
             for(CompanyDTO dto : this.entities) {
-                this.childEntityIds.add(dto.getId());
+            	this.childEntityIds.add(dto.getId());
             }
 
         }
@@ -508,10 +612,5 @@ public class AssetDTO extends CustomizedEntity implements Serializable, IProvisi
 
     public void setReserved(boolean isReserved) {
         this.isReserved = isReserved;
-    }
-
-    @Transient
-    public boolean belongsToItem(int itemId) {
-        return getItem().getId() == itemId;
     }
 }

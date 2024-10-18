@@ -18,11 +18,13 @@ import com.sapienter.jbilling.license.exception.LicenseExpiredException
 import com.sapienter.jbilling.license.exception.LicenseInvalidException
 import com.sapienter.jbilling.license.exception.LicenseMissingException
 import com.sapienter.jbilling.saml.SamlUtil
+import com.sapienter.jbilling.server.user.UserBL
+import com.sapienter.jbilling.server.user.db.CompanyDTO
+import com.sapienter.jbilling.server.user.db.UserDTO
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.server.util.PreferenceBL
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityUtils
-import jbilling.ControllerUtil
 import org.springframework.security.authentication.AccountExpiredException
 import org.springframework.security.authentication.CredentialsExpiredException
 import org.springframework.security.authentication.DisabledException
@@ -32,7 +34,6 @@ import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.saml.SAMLEntryPoint
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import com.sapienter.jbilling.server.user.db.CompanyDTO
 
 class LoginController {
 
@@ -66,28 +67,33 @@ class LoginController {
 	def auth () {
 
 		def config = SpringSecurityUtils.securityConfig
+
 		if (springSecurityService.isLoggedIn()) {
 			redirect uri: config.successHandler.defaultTargetUrl
 			return
 		}
-		def errorMsg = chainModel?.errorMsg
-		def companyId = params.companyId
-		// If there is a companyId in the url as a parameter
-		if (companyId) {
-			// Check if the companyId is integer
-			companyId = params.int('companyId')
-			if (companyId) {
-				companyId = CompanyDTO.get(companyId)?.id
-				// Check if company with that id exists
-				if (companyId) {
-					session['COMPANY_ID'] = companyId
-				} else {
-					flash.error = message(code: 'login.company.id.error')
-				}
-			} else {
-				flash.error = message(code: 'login.company.id.type.error')
-			}
-		}
+        def errorMsg = chainModel?.errorMsg
+        def companyId = params.companyId
+
+        // If there is a companyId in the url as a parameter
+        if(companyId){
+            // Check if the companyId is integer
+            companyId = params.int('companyId')
+            if(companyId){
+                companyId = CompanyDTO.get(companyId)?.id
+                // Check if company with that id exists
+                if(companyId){
+                    session['COMPANY_ID'] = companyId
+                }
+                else{
+                    flash.error = message(code: 'login.company.id.error')
+                }
+            }
+            else {
+                flash.error = message(code: 'login.company.id.type.error')
+            }
+        }
+
         if(errorMsg){
             flash.error = errorMsg
         }
@@ -198,11 +204,7 @@ class LoginController {
 			} else if (exception instanceof InstantiationException) {
 				msg = g.message(code: "springSecurity.errors.login.justInTime.creation")
 			} else {
-				if (grailsApplication.config.useUniqueLoginName) {
-					msg = g.message(code: "uniqueName.errors.login.fail")
-				} else {
-					msg = g.message(code: "springSecurity.errors.login.fail")
-				}
+                msg = g.message(code: "springSecurity.errors.login.fail")
 			}
 		}
 
@@ -243,12 +245,5 @@ class LoginController {
 	 */
 	def ajaxDenied () {
 		render([error: 'access denied'] as JSON)
-	}
-
-	def getCompanyId () {
-		def enteredUsername = params.userName
-		def companyId = ControllerUtil.fetchCompanyIdFromUserName(enteredUsername)
-		session['COMPANY_ID'] = companyId
-		render(companyId)
 	}
 }

@@ -67,8 +67,8 @@ class RestController {
 			PaymentInformationBL bl = new PaymentInformationBL()
 			CompanyDTO company = new CompanyDAS().find(session['company_id'])
 			
-			if(xml.user.creditCard.number.size() == 1)
-			String cardNumber = xml.user?.creditCard?.number.text()
+			if(xml.user.creditCard.getSubscriberNumber.size() == 1)
+			String cardNumber = xml.user?.creditCard?.getSubscriberNumber.text()
 
                PaymentInformationDTO cc = bl.getCreditCardObject(cardNumber, company);
                bl.updateStringMetaField(cc, cardNumber, MetaFieldType.PAYMENT_CARD_NUMBER)

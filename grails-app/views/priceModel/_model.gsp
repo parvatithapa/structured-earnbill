@@ -164,7 +164,7 @@
                 <g:render template="/priceModel/strategy/${templateName}_help"/>
             </div>
             <hr/>
-            <div class="left row tooltipElement" style="padding-left: 5em">
+            <div id="custom-div5" class="left row tooltipElement">
                 <a class="plus-icon" onclick="removeChainModel(this, ${modelIndex});" title="${message(code: 'price.strategy.COMMON.pricing.remove.chain.tooltip.message')}">
                     &#xe000;
                 </a>

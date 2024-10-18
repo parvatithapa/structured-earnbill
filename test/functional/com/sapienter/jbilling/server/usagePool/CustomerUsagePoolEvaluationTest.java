@@ -19,7 +19,6 @@ package com.sapienter.jbilling.server.usagePool;
 import static com.sapienter.jbilling.test.Asserts.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
-import static org.testng.AssertJUnit.fail;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Hashtable;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -46,7 +44,6 @@ import com.sapienter.jbilling.server.order.OrderChangeStatusWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderPeriodWS;
 import com.sapienter.jbilling.server.order.OrderWS;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
@@ -89,8 +86,6 @@ public class CustomerUsagePoolEvaluationTest {
     protected static final BigDecimal ORDER_LINE_PRICE = new BigDecimal(0.50);
     final int LINES = 1;
 	private JbillingAPI api;
-	public static final int CUSTMER_USAGE_POOL_EVALUATION_TASK_ID = 118;
-	private static Integer customerUsagePoolEvalutionPluginId = 0;
     private static Integer DYNAMIC_BALANCE_MANAGER_PLUGIN_ID;
 
 
@@ -152,8 +147,6 @@ public class CustomerUsagePoolEvaluationTest {
             ORDER_PERIOD_MONTHLY = null;
         }
 
-        api.deletePlugin(customerUsagePoolEvalutionPluginId);
-
         BillingProcessConfigurationWS bpcw = api.getBillingProcessConfiguration();
         bpcw.setProratingType(ProratingType.PRORATING_AUTO_ON.getProratingType());
         api.createUpdateBillingProcessConfiguration(bpcw);
@@ -168,7 +161,7 @@ public class CustomerUsagePoolEvaluationTest {
     }
 
 	@Test
-	public void test001CustomerUsagePoolEvaluationWithCron() throws Exception {
+	public void test001CustomerUsagePoolEvaluation() throws Exception {
 
 		PriceModelWS flatPrice = new PriceModelWS(PriceModelStrategy.FLAT.name(), new BigDecimal(1), Constants.PRIMARY_CURRENCY_ID);
 
@@ -272,20 +265,19 @@ public class CustomerUsagePoolEvaluationTest {
 		user = api.getUserWS(userId);
 		logger.debug("### user next Invoice date :::::{}", user.getNextInvoiceDate());
 
-    	updatePluginSetCronExpression(api,CUSTMER_USAGE_POOL_EVALUATION_TASK_ID);
+        api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
     	logger.debug("## customerId: {}", customerId);
-    	Thread.sleep(120000);
+    	Thread.sleep(3000);
     	customerUsagePools = Arrays.asList(api.getCustomerUsagePoolsByCustomerId(customerId));
     	logger.debug("## customerUsagePools: {}", customerUsagePools);
     	assertEquals("Expected Customer Usage Pool Quantity: ", new BigDecimal("100"), customerUsagePools.get(0).getQuantityAsDecimal());
 
     	api.deleteOrder(planOrderId);
 		api.deletePlan(planId);
-        //api.deleteUsagePool(usagePoolsId[0]);
 	}
 
     @Test
-    public void test002CustomerReservedUsagePoolEvaluationWithCron() throws Exception {
+    public void test002CustomerReservedUsagePoolEvaluation() throws Exception {
 
         PriceModelWS flatPrice = new PriceModelWS(PriceModelStrategy.FLAT.name(), new BigDecimal(1), Constants.PRIMARY_CURRENCY_ID);
 
@@ -386,9 +378,9 @@ public class CustomerUsagePoolEvaluationTest {
         user = api.getUserWS(userId);
         logger.debug("### user next Invoice date :::::{}", user.getNextInvoiceDate());
 
-        updatePluginSetCronExpression(api,CUSTMER_USAGE_POOL_EVALUATION_TASK_ID);
+        api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
         logger.debug("## customerId: {}", customerId);
-        Thread.sleep(120000);
+        Thread.sleep(3000);
         customerUsagePools = Arrays.asList(api.getCustomerUsagePoolsByCustomerId(customerId));
         logger.debug("## customerUsagePools: {}", customerUsagePools);
         Calendar updatedQuantityMonth = Calendar.getInstance();
@@ -399,7 +391,6 @@ public class CustomerUsagePoolEvaluationTest {
 
         api.deleteOrder(planOrderId);
         api.deletePlan(planId);
-        //api.deleteUsagePool(usagePoolsId[0]);
     }
 
     private void equalCheck(String message, Object expected, Object actual) {
@@ -553,69 +544,29 @@ public class CustomerUsagePoolEvaluationTest {
         return orderId;
 	}
 
-	private OrderWS getUserSubscriptionToPlan(Date since, Integer userId,
-			Integer billingType, Integer orderPeriodID,
-			Integer plansItemId, Integer planQuantity) {
-			logger.debug("since :::::::::"+ since);
-			OrderWS order = new OrderWS();
-			order.setUserId(userId);
-			order.setBillingTypeId(billingType);
-			order.setPeriod(orderPeriodID);
-			order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
-			order.setActiveSince(since);
-			order.setProrateFlag(Boolean.TRUE);
+    private OrderWS getUserSubscriptionToPlan(Date since, Integer userId,
+                                              Integer billingType, Integer orderPeriodID,
+                                              Integer plansItemId, Integer planQuantity) {
+        logger.debug("since :::::::::" + since);
+        OrderWS order = new OrderWS();
+        order.setUserId(userId);
+        order.setBillingTypeId(billingType);
+        order.setPeriod(orderPeriodID);
+        order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
+        order.setActiveSince(since);
+        order.setProrateFlag(Boolean.TRUE);
 
-			OrderLineWS line = new OrderLineWS();
-			line.setTypeId(Constants.ORDER_LINE_TYPE_ITEM);
-			line.setQuantity(planQuantity);
-			line.setDescription("Order line for plan subscription");
-			line.setItemId(plansItemId);
-			line.setUseItem(true);
-			line.setPrice(BigDecimal.ZERO);
+        OrderLineWS line = new OrderLineWS();
+        line.setTypeId(Constants.ORDER_LINE_TYPE_ITEM);
+        line.setQuantity(planQuantity);
+        line.setDescription("Order line for plan subscription");
+        line.setItemId(plansItemId);
+        line.setUseItem(true);
+        line.setPrice(BigDecimal.ZERO);
 
-			order.setOrderLines(new OrderLineWS[]{line});
+        order.setOrderLines(new OrderLineWS[]{line});
 
-			return order;
-		}
-
-    private UsagePoolWS createUsagePoolWithMultipleNames() {
-        try {
-            JbillingAPI api = JbillingAPIFactory.getAPI();
-
-            UsagePoolWS newUsagePool= new UsagePoolWS();
-
-            List<InternationalDescriptionWS> names = new java.util.ArrayList<InternationalDescriptionWS>();
-            InternationalDescriptionWS enName = new InternationalDescriptionWS(1, "104 National Calls"+today);
-            InternationalDescriptionWS frName = new InternationalDescriptionWS(2, "104 National calls Fr");
-            names.add(enName);
-            names.add(frName);
-
-            newUsagePool.setEntityId(new Integer(1));
-            newUsagePool.setNames(names);
-            newUsagePool.setQuantity(BigDecimal.TEN.toString());
-            newUsagePool.setPrecedence(new Integer(1));
-            newUsagePool.setCyclePeriodUnit("Months");
-            newUsagePool.setCyclePeriodValue(new Integer(1));
-            newUsagePool.setUsagePoolResetValue("Zero");
-            Integer itemTypes[] = new Integer[1];
-            itemTypes[0] = new Integer(1);
-            newUsagePool.setItemTypes(itemTypes);
-            Integer items[] = new Integer[1];
-            items[0] = new Integer(1);
-            newUsagePool.setItems(items);
-
-            logger.debug("Creating Usage Pools ...{}", newUsagePool);
-            Integer ret = api.createUsagePool(newUsagePool);
-            assertNotNull("The usage pool was not created", ret);
-            logger.debug("Done!");
-            newUsagePool = api.getUsagePoolWS(ret);
-
-            return newUsagePool;
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("Exception caught:" + e);
-            return null;
-        }
+        return order;
     }
 
 	private String getName(List<InternationalDescriptionWS> names,int langId) {
@@ -694,24 +645,6 @@ public class CustomerUsagePoolEvaluationTest {
         monthly.setDescriptions(Arrays.asList(new InternationalDescriptionWS(Constants.LANGUAGE_ENGLISH_ID, "INV:MONTHLY")));
         return api.createOrderPeriod(monthly);
     }
-
-    private void updatePluginSetCronExpression(JbillingAPI api, Integer pluginId) {
-        if(customerUsagePoolEvalutionPluginId.equals(0)) {
-            PluggableTaskWS customerUsagePoolEvaluationTask = new PluggableTaskWS();
-            customerUsagePoolEvaluationTask.setProcessingOrder(523);
-            PluggableTaskTypeWS customerUsagePoolEvaluationTaskType =
-                    api.getPluginTypeWSByClassName("com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationTask");
-            customerUsagePoolEvaluationTask.setTypeId(customerUsagePoolEvaluationTaskType.getId());
-
-            customerUsagePoolEvaluationTask.setParameters(new Hashtable<String, String>(customerUsagePoolEvaluationTask.getParameters()));
-            Hashtable<String, String> parameters = new Hashtable<String, String>();
-            // Set cron expression to trigger every minute
-            parameters.put("cron_exp", "0 0/1 * 1/1 * ? *");
-            customerUsagePoolEvaluationTask.setParameters(parameters);
-
-            customerUsagePoolEvalutionPluginId = api.createPlugin(customerUsagePoolEvaluationTask);
-        }
-	}
 
     private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
         UserWS user = api.getUserWS(userId);

@@ -60,10 +60,10 @@
 </g:if>
 
 <r:require module="jquery-ui"/>
-<r:external file="/js/jquery-ui/i18n/jquery.ui.datepicker-${session.locale?.language}.js"/>
+<r:external file="/js/jquery-ui/i18n/jquery.ui.datepicker-${session.locale.language}.js"/>
 
 <r:require module="jquery-validate"/>
-<r:external file="/js/jquery-validate/i18n/messages_${session.locale?.language}.js"/>
+<r:external file="/js/jquery-validate/i18n/messages_${session.locale.language}.js"/>
 
 <r:script disposition='head'>
     $(document).ready(function() {

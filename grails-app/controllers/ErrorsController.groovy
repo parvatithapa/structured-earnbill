@@ -1,5 +1,4 @@
 import com.sapienter.jbilling.common.SessionInternalError
-import grails.converters.JSON
 
 /*
  * JBILLING CONFIDENTIAL
@@ -56,17 +55,8 @@ class ErrorsController {
 
     def forbidden() {
         response.status = response.SC_FORBIDDEN
-        if(request.forwardURI.contains("/api/")) {
-            def errorDetails = [
-                    "errorCode": response.SC_FORBIDDEN,
-                    "errorMessages": "Access Denied - Sorry, you're not authorized to access the api",
-                    "params": "",
-                    "uuid": ""
-            ]
-            render(status:response.SC_FORBIDDEN,text:(errorDetails as JSON).toString(),contentType: 'application/json')
-        } else {
-            render view: '/login/denied'
-        }
+
+        render view: '/login/denied'
     }
 
     def pageNotFound() {

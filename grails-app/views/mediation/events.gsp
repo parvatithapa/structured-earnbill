@@ -186,23 +186,13 @@
                 <tr>
                     <td class="left-pad">
                         ${recordLine.recordKey} -
-                        <g:if test="${session['company_timezone'].equals('Australia/Sydney')}">
-                            <g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format" timeZone="${session['company_timezone']}"/>
-                        </g:if>
-                        <g:else>
-                            <g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format"/>
-                        </g:else>
+                      	<g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format"/>
                     </td>
                     <td>
                         ${recordLine.recordKey}
                     </td>
                     <td>
-                        <g:if test="${session['company_timezone'].equals('Australia/Sydney')}">
-                            <g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format" timeZone="${session['company_timezone']}"/>
-                        </g:if>
-                        <g:else>
-                            <g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format"/>
-                        </g:else>
+                        <g:formatDate date="${recordLine.eventDate}" formatName="date.timeSecsAMPM.format"/>
                     </td>
                     <td>
                         ${recordLine.description}

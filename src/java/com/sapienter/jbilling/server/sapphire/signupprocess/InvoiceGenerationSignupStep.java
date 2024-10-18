@@ -1,12 +1,6 @@
 package com.sapienter.jbilling.server.sapphire.signupprocess;
 
-import com.sapienter.jbilling.server.user.db.UserDAS;
-import com.sapienter.jbilling.server.user.db.UserDTO;
-import grails.plugin.springsecurity.SpringSecurityUtils;
-
 import java.lang.invoke.MethodHandles;
-
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -29,10 +23,6 @@ public class InvoiceGenerationSignupStep extends AbstractSapphireSignupStep {
     public void doExecute(SignupPlaceHolder holder) {
         try {
             Integer userId = holder.getSignUpResponse().getUserId();
-            Integer entityId = holder.getEntityId();
-            UserDTO user = new UserDAS().findByUserId(userId, entityId);
-            SpringSecurityUtils.reauthenticate(user.getUserName()+";"+entityId, null);
-
             logger.debug("Generating invoice for user {}", userId);
             Integer[] invoices = getService().createInvoice(userId, false);
             if(ArrayUtils.isNotEmpty(invoices)) {
@@ -42,9 +32,6 @@ public class InvoiceGenerationSignupStep extends AbstractSapphireSignupStep {
             logger.error("Error in Invoice Generation", ex);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return ;
-        }finally {
-            // logout user once api calls are done.
-            SecurityContextHolder.getContext().setAuthentication(null);
         }
     }
 

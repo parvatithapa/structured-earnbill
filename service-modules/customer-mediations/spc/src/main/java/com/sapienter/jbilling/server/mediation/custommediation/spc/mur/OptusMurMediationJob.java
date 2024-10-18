@@ -17,4 +17,9 @@ class OptusMurMediationJob extends DefaultMediationJob {
         return Context.getBean("defaultValidator");
     }
 
+    @Override
+    public boolean needsInputDirectory() {
+        return true;
+    }
+
 }

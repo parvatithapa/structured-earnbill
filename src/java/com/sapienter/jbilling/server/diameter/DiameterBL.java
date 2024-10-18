@@ -25,13 +25,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import com.sapienter.jbilling.server.mediation.CallDataRecord;
-import com.sapienter.jbilling.server.item.PricingField;
-import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
-import com.sapienter.jbilling.server.mediation.MediationService;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.util.Context;
-import com.sapienter.jbilling.server.pricing.strategy.RateCardPricingStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError;
@@ -41,17 +36,22 @@ import com.sapienter.jbilling.server.diameter.db.ReservedAmountDAS;
 import com.sapienter.jbilling.server.diameter.db.ReservedAmountDTO;
 import com.sapienter.jbilling.server.diameter.event.ReservationCreatedEvent;
 import com.sapienter.jbilling.server.diameter.event.ReservationReleasedEvent;
+import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
+import com.sapienter.jbilling.server.mediation.CallDataRecord;
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
+import com.sapienter.jbilling.server.mediation.MediationService;
 import com.sapienter.jbilling.server.order.OrderBL;
 import com.sapienter.jbilling.server.order.OrderLineBL;
+import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.pricing.strategy.RateCardPricingStrategy;
 import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
+import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.PreferenceBL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DiameterBL {
 
@@ -74,7 +74,7 @@ public class DiameterBL {
     private int sessionExpiration = 0;
 
     public DiameterBL (DiameterUserLocator userLocator, DiameterItemLocator itemLocator,
-                       Integer entityId) {
+            Integer entityId) {
 
         this.userLocator = userLocator;
         this.itemLocator = itemLocator;
@@ -94,12 +94,12 @@ public class DiameterBL {
     }
 
     public DiameterResultWS createSession (String sessionId, Date timestamp, BigDecimal units,
-                                           List<PricingField> pricingFields) {
+            List<PricingField> pricingFields) {
         return createSession(sessionId, timestamp, units, pricingFields, true);
     }
 
     private DiameterResultWS createSession (String sessionId, Date timestamp, BigDecimal units,
-                                            List<PricingField> priceFields, boolean binarySearch) {
+            List<PricingField> priceFields, boolean binarySearch) {
 
         try {
             logger.debug("Parameters received: sessionId - {}, timestamp - {}, units - {}, binarySearch - {}", sessionId, timestamp, units, binarySearch);
@@ -113,7 +113,7 @@ public class DiameterBL {
             fieldsHelper.addIfNotBlank(ATTRIBUTE_CALLED_NUMBER, SipNumberExtractor.extract(
                     (String) fieldsHelper.getValue(ATTRIBUTE_CALLED_URI)));
 
-            // Validate that the realm passed as parameter to the function equals the realm 
+            // Validate that the realm passed as parameter to the function equals the realm
             // configured as preference into jBilling. If not, return error code 3003.
             if (realm == null || !realm.equals(diameterRealm)) {
                 logger.error("Received a request for unknown realm [{}], expected [{}]",
@@ -169,7 +169,7 @@ public class DiameterBL {
 
             // Validate if rated amount is lower than user balance
             if (BigDecimal.ZERO.compareTo(grantedTime) == 0) {
-                logger.info("User [{}] has insufficient funds to cover requested units [{}], credit limit reached", 
+                logger.info("User [{}] has insufficient funds to cover requested units [{}], credit limit reached",
                         user.getId(), units.toPlainString());
                 return new DiameterResultWS(DiameterResultWS.DIAMETER_CREDIT_LIMIT_REACHED);
             }
@@ -183,7 +183,7 @@ public class DiameterBL {
             // Create a new ChargeSessionDTO for the user and persist it in the database.
             chargeSessionDTO = chargeSessionDAS.save(chargeSessionDTO);
 
-            // Create a new ReservedAmountDTO object with the session as parameter and 
+            // Create a new ReservedAmountDTO object with the session as parameter and
             // the returned rated price as amount and persist it to database.
             ReservedAmountDTO reservedAmountDTO = new ReservedAmountDTO(
                     chargeSessionDTO, user.getCurrency(), bsu.getRatedTotalPrice(),
@@ -195,7 +195,7 @@ public class DiameterBL {
 
             boolean terminateWhenConsumed = grantedTime.compareTo(units) < 0 ? true : false;
 
-            // Return a 2001 record passing as quotaThreshold the value of the preference 
+            // Return a 2001 record passing as quotaThreshold the value of the preference
             // created earlier.
 
             return new DiameterResultWS(DiameterResultWS.DIAMETER_SUCCESS, grantedTime,
@@ -210,8 +210,8 @@ public class DiameterBL {
     }
 
     public DiameterResultWS updateSession (String sessionId, Date timestamp, BigDecimal usedUnits,
-                                           BigDecimal reqUnits, List<PricingField> priceFields)
-            throws SessionInternalError {
+            BigDecimal reqUnits, List<PricingField> priceFields)
+                    throws SessionInternalError {
         try {
             logger.debug("Parameters received: sessionId - {}, timestamp - {}, usedUnits - {}, reqUnits - {}", sessionId, timestamp, usedUnits, reqUnits);
             for(PricingField pricingField : priceFields) {
@@ -282,7 +282,7 @@ public class DiameterBL {
 
                 // Validate if rated amount is lower than user balance
                 if (BigDecimal.ZERO.compareTo(grantedTime) == 0) {
-                    logger.info("User [{}] has insufficient funds to cover requested units [{}], credit limit reached", 
+                    logger.info("User [{}] has insufficient funds to cover requested units [{}], credit limit reached",
                             user, reqUnits.toPlainString());
                     return new DiameterResultWS(DiameterResultWS.DIAMETER_CREDIT_LIMIT_REACHED);
                 }
@@ -335,7 +335,7 @@ public class DiameterBL {
     }
 
     public DiameterResultWS extendSession (String sessionId, Date timestamp,
-                                           BigDecimal usedUnits, BigDecimal reqUnits) throws SessionInternalError {
+            BigDecimal usedUnits, BigDecimal reqUnits) throws SessionInternalError {
         try {
             logger.debug("Parameters received: sessionId - {}, timestamp - {}, usedUnits - {}, reqUnits - {}", sessionId, timestamp, usedUnits, reqUnits);
 
@@ -343,7 +343,7 @@ public class DiameterBL {
 
             ChargeSessionDTO chargeSession = chargeSessionDAS.findByToken(sessionId);
 
-            // Validate that a session with the session ID passed as parameter exists. 
+            // Validate that a session with the session ID passed as parameter exists.
             // If there is no session with the ID in the database, return error code 5012.
             if (!checkSessionValid(chargeSession)) {
                 logger.error("Session with id=[{}] not found", sessionId);
@@ -390,7 +390,7 @@ public class DiameterBL {
                 return new DiameterResultWS(DiameterResultWS.DIAMETER_CREDIT_LIMIT_REACHED);
             }
 
-            // Create a new ReservedAmountDTO object with the session as parameter 
+            // Create a new ReservedAmountDTO object with the session as parameter
             // and the returned rated price as amount and persist it to database.
             ReservedAmountDTO reservedAmountDTO = new ReservedAmountDTO(chargeSession,
                     user.getCurrency(), bsu.getRatedTotalPrice(), reqUnits, item, fieldsHelper.getFieldsAsArray());
@@ -405,7 +405,7 @@ public class DiameterBL {
 
             boolean terminateWhenConsumed = grantedTime.compareTo(reqUnits) < 0 ? true : false;
 
-            //Return a 2001 record passing as quotaThreshold the value of the 
+            //Return a 2001 record passing as quotaThreshold the value of the
             // preference created earlier.
             return new DiameterResultWS(DiameterResultWS.DIAMETER_SUCCESS, grantedTime,
                     terminateWhenConsumed, preferenceQuotaThreshold.getInt().intValue());
@@ -420,7 +420,7 @@ public class DiameterBL {
 
     public DiameterResultWS
     endSession (String sessionId, Date timestamp, BigDecimal usedUnits,
-                                        int causeCode) throws SessionInternalError {
+            int causeCode) throws SessionInternalError {
         try {
             logger.debug("Parameters received: sessionId - {}, timestamp - {}, usedUnits - {}, causeCode - {}", sessionId, timestamp, usedUnits, causeCode);
 
@@ -451,8 +451,8 @@ public class DiameterBL {
             PricingFieldsHelper fieldsHelper = new PricingFieldsHelper(reservedAmount.getDataAsFields());
 
             //Update currentOrder
-	        SettleReservationResult result = settleReservation(
-			        chargeSession, item.getId(), usedUnits, user, entityId, fieldsHelper, true);
+            SettleReservationResult result = settleReservation(
+                    chargeSession, item.getId(), usedUnits, user, entityId, fieldsHelper, true);
 
             //Save mediation record
             saveMediationRecord(sessionId, user, item.getId(), Arrays.asList(reservedAmount.getDataAsFields()), result);
@@ -486,12 +486,12 @@ public class DiameterBL {
     }
 
     public DiameterResultWS reserveUnits (String sessionId, Date timestamp, int units,
-                                          List<PricingField> pricingFields) throws SessionInternalError {
+            List<PricingField> pricingFields) throws SessionInternalError {
         return createSession(sessionId, timestamp, BigDecimal.valueOf(units), pricingFields, false);
     }
 
     public DiameterResultWS consumeReservedUnits (String sessionId, Date timestamp,
-                                                  int usedUnits, int causeCode) throws SessionInternalError {
+            int usedUnits, int causeCode) throws SessionInternalError {
         return endSession(sessionId, timestamp, BigDecimal.valueOf(usedUnits), causeCode);
     }
 
@@ -506,13 +506,13 @@ public class DiameterBL {
     private DiameterItemLocator getDiameterItemLocator () {
         return itemLocator;
     }
-    
+
     private CdrKeyResolver getCdrKeyResolver (){
         return new BasicCdrKeyResolver();
     }
 
     private SettleReservationResult settleReservation(ChargeSessionDTO chargeSession, Integer itemId, BigDecimal quantity, UserDTO user, Integer entityId,
-                                   PricingFieldsHelper fieldsHelper, boolean roundQuantity) {
+            PricingFieldsHelper fieldsHelper, boolean roundQuantity) {
 
         //BigDecimal.divide throws ArithmeticException (Bugs #4660)
         BigDecimal start = chargeSession.getCarriedUnits().setScale(0, RoundingMode.CEILING);
@@ -556,17 +556,17 @@ public class DiameterBL {
         fields.remove(fromSettleReservation);
         fieldsHelper.setFields(records.get(0).getFields());
 
-	    SettleReservationResult result = new SettleReservationResult(
+        SettleReservationResult result = new SettleReservationResult(
                 chargeSession.getCarriedUnits(), orderBL.getDTO());
         return result;
     }
-    
+
     private void saveMediationRecord(String sessionId, UserDTO user, Integer itemId,
-		                            List<PricingField> fields, SettleReservationResult settleResult) {
+            List<PricingField> fields, SettleReservationResult settleResult) {
         MediationService mediationService = Context.getBean(MediationService.BEAN_NAME);
 
-	    OrderDTO currentOrder = settleResult.getCurrentOrder();
-	    BigDecimal usedUnits = settleResult.getCarriedUnits();
+        OrderDTO currentOrder = settleResult.getCurrentOrder();
+        BigDecimal usedUnits = settleResult.getCarriedUnits();
         //todo: fill description
         String description = "";
         //On HBase we need to save the reserved unit during the
@@ -576,33 +576,33 @@ public class DiameterBL {
         BigDecimal quantityAfterReservation = lineToSave.getQuantity();
         BigDecimal amountAfterReservation = lineToSave.getAmount();
 
-        JbillingMediationRecord diameterEvent = new JbillingMediationRecord(JbillingMediationRecord.STATUS.PROCESSED,
+        JbillingMediationRecord diameterEvent = new JbillingMediationRecord(null, JbillingMediationRecord.STATUS.PROCESSED,
                 JbillingMediationRecord.TYPE.DIAMETER, user.getEntity().getId(), 0,
                 getCdrKeyResolver().resolve(sessionId, fields), user.getId(), TimezoneHelper.serverCurrentDate(), usedUnits, description,
                 user.getEntity().getCurrencyId(), itemId, currentOrder.getId(), lineToSave.getId(),
                 PricingField.setPricingFieldsValue(fields), lineToSave.getAmount().divide(quantityAfterReservation).multiply(usedUnits),
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
 
         mediationService.saveDiameterEventAsJMR(diameterEvent);
         lineToSave.setQuantity(quantityAfterReservation);
         lineToSave.setAmount(amountAfterReservation);
     }
 
-	private static class SettleReservationResult {
-		private BigDecimal carriedUnits;
-		private OrderDTO currentOrder;
+    private static class SettleReservationResult {
+        private BigDecimal carriedUnits;
+        private OrderDTO currentOrder;
 
-		private SettleReservationResult(BigDecimal carriedUnits, OrderDTO currentOrder) {
-			this.carriedUnits = carriedUnits;
-			this.currentOrder = currentOrder;
-		}
+        private SettleReservationResult(BigDecimal carriedUnits, OrderDTO currentOrder) {
+            this.carriedUnits = carriedUnits;
+            this.currentOrder = currentOrder;
+        }
 
-		public BigDecimal getCarriedUnits() {
-			return carriedUnits;
-		}
+        public BigDecimal getCarriedUnits() {
+            return carriedUnits;
+        }
 
-		public OrderDTO getCurrentOrder() {
-			return currentOrder;
-		}
-	}
+        public OrderDTO getCurrentOrder() {
+            return currentOrder;
+        }
+    }
 }

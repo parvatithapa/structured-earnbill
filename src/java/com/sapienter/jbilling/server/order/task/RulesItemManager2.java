@@ -16,13 +16,14 @@
 
 package com.sapienter.jbilling.server.order.task;
 
+import org.apache.log4j.Logger;
+
 import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
 import com.sapienter.jbilling.server.item.tasks.IItemPurchaseManager;
-import com.sapienter.jbilling.server.mediation.CallDataRecord;
-import com.sapienter.jbilling.server.item.PricingField;
+import com.sapienter.jbilling.server.item.tasks.ItemPurchaseManagerContext;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.pluggableTask.TaskException;
 import com.sapienter.jbilling.server.rule.RulesBaseTask;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
@@ -32,12 +33,6 @@ import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.util.DTOFactory;
 import com.sapienter.jbilling.server.util.db.CurrencyDAS;
 
-import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import org.apache.log4j.Logger;
-
 /**
  * This plug-in does item management rules that are compatible with the
  * It does call the basic item manager, which in turn runs pricing rules.
@@ -46,19 +41,18 @@ import org.apache.log4j.Logger;
 @Deprecated
 public class RulesItemManager2 extends RulesBaseTask implements IItemPurchaseManager {
 
+    @Override
     protected FormatLogger getLog() {
         return new FormatLogger(Logger.getLogger(RulesItemManager2.class));
     }
 
-    public void addItem(Integer itemID, BigDecimal quantity, Integer language,
-            Integer userId, Integer entityId, Integer currencyId,
-            OrderDTO order, List<CallDataRecord> records,
-            List<OrderLineDTO> lines, boolean singlePurchase, String sipUri, Date eventDate) throws TaskException {
+    @Override
+    public void addItem(ItemPurchaseManagerContext context) throws TaskException {
 
         // start by calling the standard plug-in
         BasicItemManager manager = new BasicItemManager();
-        manager.addItem(itemID, quantity, language, userId, entityId, currencyId, order, records, lines, false, null, eventDate);
-        processRules(order, userId);
+        manager.addItem(context);
+        processRules(context.getOrder(), context.getUserId());
     }
 
     protected void processRules(OrderDTO order, Integer userId) throws TaskException {

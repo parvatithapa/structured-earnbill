@@ -8,7 +8,7 @@
     <td>${obj.minimum}</td>
     <td>${obj.maximum?:''}</td>
     <td>
-        <a href="#" class="plus-icon" onclick="removeDependency('${trId}', '${obj.dependentId}', '${obj.dependentDescription}'); return false;" style="float: right; padding-right: 5px;">
+        <a id="custom-a" href="#" class="plus-icon" onclick="removeDependency('${trId}', '${obj.dependentId}', '${obj.dependentDescription}'); return false;">
             &#xe000;
         </a>
     </td>

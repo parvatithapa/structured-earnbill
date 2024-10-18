@@ -77,10 +77,4 @@ public class DataTableQueryDAS extends AbstractDAS<DataTableQueryDTO> {
         query.setMaxResults(1);
         return  (String)query.uniqueResult();
     }
-
-    public String getColumnValueBySacCode(String tableName, String sacCode, String columnName){
-        SQLQuery query = getSession().createSQLQuery("SELECT "+columnName+" FROM "+tableName+" WHERE sac_code ='"+sacCode+"'");
-        query.setMaxResults(1);
-        return (String)query.uniqueResult();
-    }
 }

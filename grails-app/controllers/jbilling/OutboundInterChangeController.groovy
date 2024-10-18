@@ -1,5 +1,10 @@
 package jbilling
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
 import com.sapienter.jbilling.client.util.Constants
 import com.sapienter.jbilling.client.util.SortableCriteria
 import com.sapienter.jbilling.common.SessionInternalError
@@ -7,7 +12,9 @@ import com.sapienter.jbilling.server.integration.db.OutBoundInterchange
 import com.sapienter.jbilling.server.user.UserHelperDisplayerFactory
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.server.util.PreferenceBL
+
 import grails.plugin.springsecurity.annotation.Secured
+
 import org.apache.commons.lang.StringUtils
 import org.hibernate.criterion.MatchMode
 import org.hibernate.criterion.Restrictions
@@ -141,9 +148,25 @@ class OutboundInterChangeController {
             redirect(action: 'list')
             return
         }
+		if(outboundInterChange?.request?.trim()) {
+			def jsonString = convertStringToJsonFormat(outboundInterChange?.request);
+			outboundInterChange.request = jsonString;
+		}
         recentItemService.addRecentItem(params.int('id'), RecentItemType.OUTBOUNDINTERCHANGE)
         breadcrumbService.addBreadcrumb(controllerName, 'list', params.template ?: null, params.int('id'))
         render template: 'show', model: [selected: outboundInterChange, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+    }
+
+	/**
+	 * 
+     * @param request: Json request in string format
+     * @return: String into Json format
+     */
+	private String convertStringToJsonFormat(String request) {
+        JsonParser parser = new JsonParser();
+        Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+        JsonElement el = parser.parse(request);
+        return gson.toJson(el)
     }
 
     /**

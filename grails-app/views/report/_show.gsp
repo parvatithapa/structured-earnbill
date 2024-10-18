@@ -52,34 +52,34 @@
               <table class="dataTable" cellspacing="0" cellpadding="0">
                   <tbody>
                   <tr>
-                      <td><g:message code="report.label.id"/></td>
-                      <td class="value">${selected.id}</td>
+                      <td data-cy="labelReportId"><g:message code="report.label.id"/></td>
+                      <td class="value" data-cy="valueReportId">${selected.id}</td>
                   </tr>
                   <tr>
-                      <td><g:message code="report.label.type"/></td>
+                      <td data-cy="labelReportType"><g:message code="report.label.type"/></td>
                       <td class="value">${selected.type.getDescription(session['language_id'])}</td>
                   </tr>
                   <tr>
-                      <td><g:message code="report.label.design"/></td>
+                      <td data-cy="labelReportDesignFile"><g:message code="report.label.design"/></td>
                       <td class="value">
                           <em>${selected.fileName}</em>
                       </td>
                   </tr>
                   </tbody>
               </table>
-
+  
               <!-- report description -->
               <p class="description">
                   ${selected.getDescription(session['language_id'])}
               </p>
-
+  
               <hr/>
-
+  
               <g:hiddenField id="valid" name="valid" value="" />
               <!-- report parameters -->
               <g:render template="/report/${selected.type.name}/${selected.name}" model="[childEntities:childEntities, company: company]"/>
-
-  			  <g:if test="${childEntities?.size() > 0 && company?.parent == null && (selected?.name != 'monthly_termination_costs' && selected?.name != "platform_net_revenue")}">
+  			  
+  			  <g:if test="${childEntities?.size() > 0 && company?.parent == null && selected?.name != 'monthly_termination_costs' }">
   			  <hr/>
   			  <div class="form-columns">
                  <g:applyLayout name="form/select_multiple">
@@ -111,9 +111,7 @@
             <a class="submit edit button-primary" onclick="submitForm()">
                 <span><g:message code="button.run.report"/></span>
             </a>
-            <g:if test="${selected?.name == 'gstr1_json'}">
-            </g:if>
-            <g:else>
+
             <span>
                 <g:applyLayout name="form/select_holder">
                     <content tag="label.for">format</content>
@@ -125,7 +123,6 @@
                           valueMessagePrefix="report.format"/>
                 </g:applyLayout>
             </span>
-            </g:else>
             </div>
             </g:else>
 
@@ -166,7 +163,7 @@
 
     function checkData() {
         var valid = true;
-        if(selectedReportName != 'gstr1_json'){
+
         jQuery.ajax({
             type: 'POST',
             async: false,
@@ -188,44 +185,6 @@
         if (valid) {
             $('#run-report-form').submit();
         }
-       }else {
-              jQuery.ajax({
-                  type: 'POST',
-                  async: false,
-                  url: '${createLink(action: 'run')}',
-                  data: $('#run-report-form').serialize()+"&id="+${selected.id},
-                  success: function(response) {
-                    if (String(response).indexOf("error") !== -1){
-                     var jsonData = JSON.parse(response);
-                       if(jsonData.error){
-                          $("#error-messages ul").html(jsonData.error);
-                          $("#error-messages").show();
-                          $("#error-messages ul").show();
-
-                       }
-                     }else{
-                        var fileName = "returns_" + $("#start_date").val() + "-" + $("#end_date").val() + "_GST-R1_offline_report.json"
-                        var jsonString = JSON.stringify(response, null, 2);
-                        var blob = new Blob([jsonString], { type: 'application/json' });
-
-                               // Create a link element
-                               var a = document.createElement('a');
-                               a.href = window.URL.createObjectURL(blob);
-                               a.download = fileName;
-
-                               // Append the link to the body and trigger a click event to start the download
-                               document.body.appendChild(a);
-                               a.click();
-
-                               // Remove the link element from the body
-                               document.body.removeChild(a);
-
-                     }// else close
-                  }
-           });
-
-
-       }
     }
 
 	function showMessage() {

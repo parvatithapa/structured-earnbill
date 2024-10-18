@@ -20,6 +20,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
@@ -34,9 +37,6 @@ import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDTO;
 import com.sapienter.jbilling.server.usagePool.event.CustomerPlanUnsubscriptionEvent;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Util;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * CustomerPlanUnsubscriptionProcessingTask
@@ -110,7 +110,8 @@ public class CustomerPlanUnsubscriptionProcessingTask extends PluggableTask impl
             for (OrderLineDTO line : subscriptionOrder.getLines()) {
                 if (null != line.getItem() && line.getItem().hasPlans()
                         && line.getPurchaseOrder().getUser().getCustomer().equals(customerUsagePool.getCustomer())
-                        && (isPlanRemove || !isPrePaid || Constants.CUSTOMER_PLAN_UNSUBSCRIBE_ORDER_FINISHED.equals(action))) {
+                        && (isPlanRemove || (!isPrePaid && Constants.CUSTOMER_PLAN_UNSUBSCRIBE_ORDER_FINISHED.equals(action)))
+                        && !customerPlanUnsubribeEvent.isPlanSwap()) {
                     // this line contains a plan
                     customerUsagePool.setCycleStartDate(cycleStartDate);
                     customerUsagePool.setCycleEndDate(cycleEndDate);
@@ -127,8 +128,8 @@ public class CustomerPlanUnsubscriptionProcessingTask extends PluggableTask impl
 
     }
 
-	@Override
-	public boolean isSingleton() {
-		return true;
-	}
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
 }

@@ -16,6 +16,14 @@
 
 package com.sapienter.jbilling.server.user.tasks;
 
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.csv.export.event.ReportExportNotificationEvent;
@@ -30,6 +38,8 @@ import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.process.event.CustomEmailTokenEvent;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
+import com.sapienter.jbilling.server.spc.SpcNotificationTask;
 import com.sapienter.jbilling.server.system.event.Event;
 import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.system.event.task.IInternalEventsTask;
@@ -44,13 +54,6 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.user.event.NewContactEvent;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Context;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Event custom notification task.
@@ -80,6 +83,8 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
     private static final String CUSTOM_NOTIFICATION_DOES_NOT_EXIST_FOR_USER = "Custom notification id: {} does not exist for the user id {} ";
     private static final String NOTIFY_USER_FOR_NEW_CONTACT = "Notifying user: {} for a new contact event";
 
+    SpcHelperService spcHelperService = Context.getBean(SpcHelperService.class);
+
     //initializer for pluggable params
     // add as many event - notification parameters
     {
@@ -104,7 +109,6 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
 
     @Override
     public void process(Event event) throws PluggableTaskException {
-    	
         INotificationSessionBean notificationSession = Context.getBean(Context.Name.NOTIFICATION_SESSION);
         if (event instanceof NewCustomerEvent) {
             fireNewCustomerEventNotification((NewCustomerEvent) event, notificationSession);
@@ -131,7 +135,7 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
         return events;
     }
 
-    private boolean fireNewCustomerEventNotification(NewCustomerEvent newCustomerEvent, INotificationSessionBean notificationSession) {
+    public boolean fireNewCustomerEventNotification(NewCustomerEvent newCustomerEvent, INotificationSessionBean notificationSession) {
         if (parameters.get(PARAMETER_NEW_CUSTOMER_NOTIFICATION_ID.getName()) == null || newCustomerEvent.getUser() == null) {
             return false;
         }
@@ -159,12 +163,16 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
         }
 
         logger.debug("Notifying user: {} for a new customer event", userId);
-        notificationSession.notify(userId, message);
+        if(StringUtils.isNotBlank(parameters.get(SpcNotificationTask.PARAMETER_EXTERNAL_API_URL.getName()))) {
+            spcHelperService.notify(notificationMessageTypeId, userId, null, parameters);
+        } else{
+            notificationSession.notify(userId, message);
+        }
         return true;
     }
 
 
-    private boolean fireNewOrderEventNotification(NewOrderEvent newOrderEvent, INotificationSessionBean notificationSession) {
+    public boolean fireNewOrderEventNotification(NewOrderEvent newOrderEvent, INotificationSessionBean notificationSession) {
         if (parameters.get(PARAMETER_NEW_ORDER_CUSTOM_NOTIFICATION_ID.getName()) == null || newOrderEvent.getOrder() == null) {
             return false;
         }
@@ -182,7 +190,6 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
                     newOrderEvent.getEntityId(),
                     userId,
                     userBL.getLanguage());
-
         } catch (NotificationNotFoundException e) {
             logger.debug(CUSTOM_NOTIFICATION_DOES_NOT_EXIST_FOR_USER, notificationMessageTypeId, userId);
         }
@@ -192,12 +199,16 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
         }
 
         logger.debug(NOTIFY_USER_FOR_NEW_CONTACT, userId);
-        notificationSession.notify(userId, message);
+        if(StringUtils.isNotBlank(parameters.get(SpcNotificationTask.PARAMETER_EXTERNAL_API_URL.getName()))) {
+            spcHelperService.notify(notificationMessageTypeId, userId, null, parameters);
+        } else{
+            notificationSession.notify(userId, message);
+        }
         return true;
 
     }
 
-    private boolean fireNewContactEventNotification(NewContactEvent newContactEvent,
+    public boolean fireNewContactEventNotification(NewContactEvent newContactEvent,
                                                     INotificationSessionBean notificationSession) {
         if (parameters.get(PARAMETER_NEW_CONTACT_CUSTOM_NOTIFICATION_ID.getName()) == null || newContactEvent.getContactDto()  == null) {
             return false;
@@ -225,11 +236,15 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
         }
 
         logger.debug(NOTIFY_USER_FOR_NEW_CONTACT, userId);
-        notificationSession.notify(userId, message);
+        if(StringUtils.isNotBlank(parameters.get(SpcNotificationTask.PARAMETER_EXTERNAL_API_URL.getName()))) {
+            spcHelperService.notify(notificationMessageTypeId, userId, null, parameters);
+        } else{
+            notificationSession.notify(userId, message);
+        }
         return true;
     }
     
-    private boolean fireCustomerUsagePoolConsumptionNotification(UsagePoolConsumptionNotificationEvent usagePoolConsumptionNotificationEvent,
+    public boolean fireCustomerUsagePoolConsumptionNotification(UsagePoolConsumptionNotificationEvent usagePoolConsumptionNotificationEvent,
             									INotificationSessionBean notificationSession) {
         UsagePoolConsumptionActionDTO action = usagePoolConsumptionNotificationEvent.getAction();
         Integer notificationMessageTypeId = action.getNotificationId();
@@ -282,11 +297,11 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
 		message.addParameter("usagePoolQuantity", customerUsagePool.getInitialQuantity().setScale(Constants.BIGDECIMAL_SCALE_STR,Constants.BIGDECIMAL_ROUND));
 		
 		logger.debug("Notifying user: {} for a consumption notification event", userId);
-		notificationSession.notify(userId, message);
+        notificationSession.notify(userId, message);
 		return true;
 	}
 
-    private boolean fireAutoRenewalEventNotification(AutoRenewalEvent autoRenewalEvent) {
+    public boolean fireAutoRenewalEventNotification(AutoRenewalEvent autoRenewalEvent) {
         Map<String, Object> messageParameters = new HashMap<>();
         String notificationIdParameterName;
 
@@ -302,7 +317,7 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
                 autoRenewalEvent.getCustomer().getBaseUser().getId(), autoRenewalEvent.getName(), messageParameters);
     }
     
-    private boolean fireReportExportNotification(ReportExportNotificationEvent csvEvent,
+    public boolean fireReportExportNotification(ReportExportNotificationEvent csvEvent,
 			INotificationSessionBean notificationSession) {
 
 		Integer notificationMessageTypeId = null;
@@ -341,12 +356,15 @@ public class EventBasedCustomNotificationTask extends PluggableTask implements I
              return false;
          }
          logger.debug(NOTIFY_USER_FOR_NEW_CONTACT, userId);
-         notificationSession.notify(userId, message);
+         if(StringUtils.isNotBlank(parameters.get(SpcNotificationTask.PARAMETER_EXTERNAL_API_URL.getName()))) {
+             spcHelperService.notify(notificationMessageTypeId, userId, null, parameters);
+         } else{
+             notificationSession.notify(userId, message);
+         }
          return true;
 	}
 
-
-    private boolean sendNotification(Integer notificationMessageTypeId, Integer entityId, Integer userId, String eventName, Map messageParameters) {
+    public boolean sendNotification(Integer notificationMessageTypeId, Integer entityId, Integer userId, String eventName, Map messageParameters) {
         try {
             UserDTO user = new UserDAS().findNow(userId);
             MessageDTO message = new NotificationBL().getCustomNotificationMessage(notificationMessageTypeId, entityId, userId, user.getLanguageIdField());

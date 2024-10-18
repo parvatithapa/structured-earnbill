@@ -12,10 +12,10 @@ import static com.sapienter.jbilling.common.SystemProperties.isBrandingJBilling;
 import static com.sapienter.jbilling.common.Util.getSysProp;
 
 public enum LogoType {
-    FAVICON("fav-entity-%d.*", "EarnBill.png", "favicon.ico", "favicon.logo.format.error",
+    FAVICON("fav-entity-%d.*", "jBilling-dark-small.png", "favicon.ico", "favicon.logo.format.error",
             "entity.favicon.config.size.error", "entity.favicon.config.successful"),
     INVOICE("entity-%d.*", "", "", "invoiceDetail.logo.format.error", "entity.logo.config.size.error", "entity.logo.config.successful"),
-    NAVIGATION("nav-entity-%d.*", "EarnBill.png", "logo_mark-small.png", "navigation.logo.format.error",
+    NAVIGATION("nav-entity-%d.*", "jBilling-light-small.png", "logo_mark-small.png", "navigation.logo.format.error",
                "entity.navigation.config.size.error", "entity.navigation.config.successful");
 
     private static final List<String> EXTENSIONS = new ArrayList<>();

@@ -2,8 +2,11 @@ package com.sapienter.jbilling.server.payment.tasks.stripe.dto;
 
 import java.util.Date;
 
+import lombok.Getter;
+
 import com.sapienter.jbilling.server.util.Util;
 
+@Getter
 public class CreditCard implements AutoCloseable{
     private final char[] type;
     private final char[] account;
@@ -15,23 +18,7 @@ public class CreditCard implements AutoCloseable{
         this.account = account;
         this.expirationDate = date;
         this.cvv2 = cvv2;
-    }
-
-    public char[] getType() {
-        return type;
-    }
-
-    public char[] getAccount() {
-        return account;
-    }
-
-    public Date getExpirationDate() {
-        return expirationDate;
-    }
-
-    public char[] getCvv2() {
-        return cvv2;
-    }
+    }    
 
     @Override
     public void close() throws Exception {

@@ -1,29 +1,42 @@
 package jbilling
 
-import com.sapienter.jbilling.common.CommonConstants
-import com.sapienter.jbilling.common.LastPasswordOverrideError
+import com.sapienter.jbilling.common.LastPasswordOverrideError;
 import com.sapienter.jbilling.common.SessionInternalError
-import com.sapienter.jbilling.common.Util
 import com.sapienter.jbilling.csrf.RequiresValidFormToken
 import com.sapienter.jbilling.saml.SamlUtil
 import com.sapienter.jbilling.server.metafields.MetaFieldType
-import com.sapienter.jbilling.server.security.JBCrypto
 import com.sapienter.jbilling.server.timezone.TimezoneHelper
-import com.sapienter.jbilling.server.user.*
-import com.sapienter.jbilling.server.user.db.*
+import com.sapienter.jbilling.server.user.RoleBL
 import com.sapienter.jbilling.server.user.permisson.db.RoleDTO
+
+
+
+import com.sapienter.jbilling.server.util.PreferenceBL
+import com.sapienter.jbilling.common.CommonConstants
+import com.sapienter.jbilling.common.Util
+import com.sapienter.jbilling.server.security.JBCrypto
+import com.sapienter.jbilling.server.user.IUserSessionBean
+import com.sapienter.jbilling.server.user.UserBL
+import com.sapienter.jbilling.server.user.UserDTOEx
+import com.sapienter.jbilling.server.user.UserWS
+import com.sapienter.jbilling.server.user.db.ResetPasswordCodeDAS
+import com.sapienter.jbilling.server.user.db.ResetPasswordCodeDTO
+import com.sapienter.jbilling.server.user.db.UserDAS
+import com.sapienter.jbilling.server.user.db.UserDTO
+import com.sapienter.jbilling.server.user.db.UserPasswordDAS
+import com.sapienter.jbilling.server.user.db.UserPasswordDTO
 import com.sapienter.jbilling.server.util.Constants
 import com.sapienter.jbilling.server.util.Context
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
-import com.sapienter.jbilling.server.util.PreferenceBL
+
+import javax.validation.ConstraintViolationException
+
 import org.hibernate.ObjectNotFoundException
 import org.joda.time.DateTime
 import org.joda.time.Duration
 import org.springframework.security.saml.SAMLEntryPoint
-import org.springframework.web.context.request.RequestAttributes
 import org.springframework.web.context.request.RequestContextHolder
-import org.apache.commons.lang.StringUtils;
-import javax.validation.ConstraintViolationException
+import org.springframework.web.context.request.RequestAttributes
 
 import com.megatome.grails.RecaptchaService
 class ResetPasswordController {
@@ -39,65 +52,41 @@ class ResetPasswordController {
             def list = CompanyDTO.list();
             params.company = null != list && list.size() > 0 ? list.get(0).getId() : null;
         }*/
-        def errorMsg = chainModel?.errorMsg
-        def companyId = params.companyId
 
-            // Check if the companyId is integer when fetched from params
-            if(companyId) {
-                companyId = params.int('companyId')
-                if(!companyId) {
-                    flash.error = message(code: 'login.company.id.type.error')
-                }
-            }
-        if(errorMsg){
-            flash.error = errorMsg
-        }
         [captchaEnabled: Boolean.parseBoolean(Util.getSysProp('forgot.password.captcha')),
-         useEmail: doUseEmail(companyId) , params: params, companyId: companyId
+         useEmail: doUseEmail(params.int('companyId')) , params: params
         ]
     }
 
     @RequiresValidFormToken
     def captcha () {
-        def companyId
         if (recaptchaService.verifyAnswer(session, request.remoteAddr, params)) {
             //find user
             UserDTO user
 			UserBL userBl = new UserBL();
-            def enteredUsername = params.userName
-            if (grailsApplication.config.useUniqueLoginName) {
-                companyId = ControllerUtil.fetchCompanyIdFromUserName(enteredUsername)
-            } else {
-                if (!params.companyId?.isInteger()) {
-                    flash.error = message(code: 'forgotpassword.user.companyid.should.integer')
-                    render view: 'index', model: [email: params.email, userName: params.userName, companyId: companyId]
-                    companyId = null
-                    return
-                }else {
-                    companyId = params.companyId as Integer
-                }
-            }
-            if (companyId == null) {
-                flash.error = message(code: 'forgotpassword.user.companyid.null')
-                render view: 'index', model: [email: params.email, userName: params.userName, companyId: companyId]
-                return
-            }
-            if (StringUtils.isBlank(companyId.toString())) {
+
+			if(!params.companyId?.trim()){
 				flash.error = message(code: 'forgotpassword.user.companyid.not.blank')
-                render view: 'index', model: [email: params.email, userName: params.userName, companyId: companyId]
-                return
+				render view: 'index', model:[email:params.email,userName:params.userName,companyId:params.companyId]
+				return
+			}
+			if(!params.companyId?.isInteger()){
+				flash.error = message(code: 'forgotpassword.user.companyid.should.integer')
+				render view: 'index', model:[email:params.email,userName:params.userName,companyId:params.companyId]
+				params.companyId = null
+				return
 			}
 			if(!params.email?.trim() && !params.userName?.trim()){
 				flash.error = message(code: 'forgotpassword.user.not.blank')
-                render view: 'index', model: [email: params.email, userName: params.userName, companyId: companyId]
-                companyId = null
+				render view: 'index', model:[email:params.email,userName:params.userName,companyId:params.companyId]
+				params.companyId = null
 				return
 			}
 			if(params.email?.trim() && params.userName?.trim()){
-                user = userBl.findUsersByEmailAndUserName(params.email.trim(), params.userName.trim(), companyId)
-                if(!user){
+				user = userBl.findUsersByEmailAndUserName(params.email.trim(),params.userName.trim(), params.int('companyId'))
+				if(!user){
                     //check if the user has email as metaField into the account Type
-                    user = userBl.findUsersByUserName(params.userName.trim(), companyId)
+                    user = userBl.findUsersByUserName(params.userName.trim(), params.int('companyId'))
                     boolean hasEmail = user?.getCustomer()?.getCustomerAccountInfoTypeMetaFields()?.any {
                                             it.metaFieldValue.field.fieldUsage.equals(MetaFieldType.EMAIL) &&
                                             it.metaFieldValue.value.equals(params.email)
@@ -105,31 +94,31 @@ class ResetPasswordController {
 
                     if (!hasEmail) {
                         flash.error = message(code: 'forgotpassword.user.not.found')
-                        render view: 'index', model: [email: params.email, userName: params.userName, companyId: companyId]
-                        companyId = null
+                        render view: 'index', model:[email:params.email,userName:params.userName,companyId:params.companyId]
+                        params.companyId = null
                         return
                     }
 				}
 			}else if(params.userName?.trim()) {
-                user = userBl.findUsersByUserName(params.userName.trim(), companyId)
-                if(null == user){
+				user = userBl.findUsersByUserName(params.userName.trim(), params.int('companyId'))
+				if(null == user){
 					flash.error = message(code: 'forgotpassword.user.not.found')
-                    render view: 'index', model: [userName: params.userName.trim(), companyId: companyId]
-                    companyId = null
+					render view: 'index', model:[userName:params.userName.trim(),companyId:params.companyId.trim()]
+					params.companyId = null
 					return
 				}
 			}else if(params.email?.trim()) {
-                List<UserDTO> users = userBl.findUsersByEmail(params.email.trim(), companyId);
-                if(users?.size() > 1){
+				List<UserDTO> users = userBl.findUsersByEmail(params.email.trim(),params.int('companyId'));
+				if(users?.size() > 1){
 					flash.error = message(code: 'forgotpassword.many.user.found', args:[params.email] )
-                    render view: 'index', model: [email: params.email.trim(), companyId: companyId]
-                    companyId = null
+					render view: 'index', model:[email:params.email.trim(),companyId:params.companyId.trim()]
+					params.companyId = null
 					return
-
+					
 				}else if (!users){
 					flash.error = message(code: 'forgotpassword.user.not.found')
-                    render view: 'index', model: [email: params.email.trim(), companyId: companyId]
-                    companyId = null
+					render view: 'index', model:[email:params.email.trim(),companyId:params.companyId.trim()]
+					params.companyId = null
 					return
 				}else{
 					user = users.get(0);
@@ -137,28 +126,28 @@ class ResetPasswordController {
 			}
             if (!user?.id) {
                 flash.message = message(code: 'forgotPassword.email.sent')
-                companyId = null
+                params.companyId = null
                 forward controller:'login', action: 'auth'
                 return
             }
 
             if (null != user) {
                 boolean isUserSSOEnabled = SamlUtil.getUserSSOEnabledStatus(user.getId())
-                def ssoActive = PreferenceBL.getPreferenceValue(companyId as int, CommonConstants.PREFERENCE_SSO) as int
+                def ssoActive = PreferenceBL.getPreferenceValue(params.int('companyId') as int, CommonConstants.PREFERENCE_SSO) as int
                 if (isUserSSOEnabled && ssoActive) {
-                    def url = SamlUtil.getDefaultResetPasswordUrl(companyId)
+                    def url = SamlUtil.getDefaultResetPasswordUrl(params.int('companyId'))
                     if(null != url && !url.isEmpty()) {
-                        def defaultIdp = SamlUtil.getDefaultIdpUrl(companyId)
+                        def defaultIdp = SamlUtil.getDefaultIdpUrl(params.int('companyId'))
                         if(null != defaultIdp && !defaultIdp.isEmpty()) {
                             url += "?" + SAMLEntryPoint.IDP_PARAMETER + "=" + defaultIdp
                             log.debug("Final redirect url : " + url)
                             redirect(url: url)
                         } else {
-                            log.error("No default Idp is configured for company : " + companyId.toString())
+                            log.error("No default Idp is configured for company : " + params.int('companyId').toString())
                             flash.error = message(code: 'default.idp.error')
                         }
                     } else {
-                        log.error("No default reset password url of Idp is configured for company : " + companyId.toString())
+                        log.error("No default reset password url of Idp is configured for company : " + params.int('companyId').toString())
                         flash.error = message(code: 'default.reset.password.url.idp.error')
                     }
                 } else {
@@ -168,7 +157,7 @@ class ResetPasswordController {
                         recaptchaService.cleanUp(session)
                     } catch (SessionInternalError e) {
                         flash.error = message(code: 'forgotPassword.notification.not.found')
-                        companyId = null
+                        params.companyId = null
                         forward action: 'index'
                         return
                     }
@@ -176,7 +165,7 @@ class ResetPasswordController {
             }
         } else {
             flash.error = message(code: 'forgotPassword.captcha.wrong')
-            companyId = null
+            params.companyId = null
             forward action: 'index'
             return
         }
@@ -244,7 +233,7 @@ class ResetPasswordController {
 		  catch(LastPasswordOverrideError passEx){
 			  flash.error = message(code: 'forgotPassword.user.password.last.six.unique')
 			  forward controller:'resetPassword', action: 'changePassword'
-		  }
+		  } 
 		catch(Exception ex) {
 			log.error("Exception occurred during reset password." + ex)
             flash.error= message(code: 'forgotPassword.failure')
@@ -285,13 +274,13 @@ class ResetPasswordController {
         if (result) {
             //find user
             UserDTO user = new UserDAS().findByUserName(params.username, params.int('company'))
-
+            
 			if(!user) {
 				flash.error = message(code: 'forgotPassword.user.username.not.exist', args: [params?.username] )
 				forward action: 'resetExpiryPassword'
 				return
 			}
-            UserWS userWS = new UserBL(user.id).getUserWS()
+            UserWS userWS = webServicesSession.getUserWS(user.getId())
             Integer methodId = JBCrypto.getPasswordEncoderId(userWS.getMainRoleId());
             if (!user?.id || !JBCrypto.passwordsMatch(methodId, user.password, oldPassword)) {
                 flash.error = message(code: 'forgotPassword.user.username.not.found')
@@ -321,7 +310,7 @@ class ResetPasswordController {
             for(String password: passwords){
                 if(JBCrypto.passwordsMatch(passwordEncoderId, user.getPassword(), newPassword)){
                     flash.error = message(code: 'forgotPassword.user.password.last.six.unique')
-                    forward action: 'resetExpiryPassword'
+                    forward action: 'resetExpiryPassword' 
                     return
                 }
             }

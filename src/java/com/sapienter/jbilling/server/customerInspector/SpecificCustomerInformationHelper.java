@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.server.customerInspector;
 
-import com.jayway.jsonpath.internal.function.numeric.Min;
 import com.sapienter.jbilling.server.item.AssetBL;
 import com.sapienter.jbilling.server.item.AssetWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
@@ -18,7 +17,6 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -49,7 +47,6 @@ public class SpecificCustomerInformationHelper {
     private static final String DATE_OF_BIRTH = "Date of Birth";
     private static final String EMAIL = "EMAIL";
     private static final String PHONE_NUMBER = "Phone Number 1";
-    private static final String SAPP_EMAIL = "SAPP_EMAIL";
     private String name;
     private Integer userId;
 
@@ -85,12 +82,9 @@ public class SpecificCustomerInformationHelper {
             case SAPPHIRE_USERNAME:
                 return getSapphireUserName();
             case DATE_OF_BIRTH:
-                return getSapphireMetafield(SapphireConstants.DATE_OF_BIRTH);
+                return getDateOfBirth();
             case EMAIL:
                 return getDistributelMetafield(SpaConstants.EMAIL_ADDRESS);
-            case SAPP_EMAIL:
-                String email = String.valueOf(getSapphireMetafield(SapphireConstants.EMAIL));
-                return null != email ? email : StringUtils.EMPTY;
             case PHONE_NUMBER:
                 return getDistributelMetafield(SpaConstants.PHONE_NUMBER_1);
         }
@@ -161,19 +155,24 @@ public class SpecificCustomerInformationHelper {
     }
 
     private Object getSapphireAddress() {
-        String cityCAITMF = String.valueOf(getSapphireMetafield(SapphireConstants.CITY));
-        String postalCodeCAITMF = String.valueOf(getSapphireMetafield(SapphireConstants.POSTAL_CODE));
-        String addressNumberCAITMF = String.valueOf(getSapphireMetafield(SapphireConstants.ADDRESS_NUMBER));
-        String streetNameCAITMF = String.valueOf(getSapphireMetafield(SapphireConstants.STREET_NAME));
-        String countryCAITMF = String.valueOf(getSapphireMetafield(SapphireConstants.COUNTRY));
+        UserDTO user = new UserBL(userId).getEntity();
+        AccountInformationTypeDTO contactAddressGroupAIT = new AccountInformationTypeDAS().findByName(SapphireConstants.CONTACT_INFORMATION_AIT, user.getEntity().getId(), user.getCustomer().getAccountType().getId());
+        Integer groupId = contactAddressGroupAIT.getId();
+
+        Date currentDate = user.getCustomer().getCurrentEffectiveDateByGroupId(groupId);
+        CustomerAccountInfoTypeMetaField cityCAITMF = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.CITY, groupId, currentDate);
+        CustomerAccountInfoTypeMetaField postalCodeCAITMF = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.POSTAL_CODE, groupId, currentDate);
+        CustomerAccountInfoTypeMetaField addressNumberCAITMF = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.ADDRESS_NUMBER, groupId, currentDate);
+        CustomerAccountInfoTypeMetaField streetNameCAITMF = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.STREET_NAME, groupId, currentDate);
+        CustomerAccountInfoTypeMetaField countryCAITMF = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.COUNTRY, groupId, currentDate);
 
         return
             String.format(SAPPHIRE_ADDRESS_PATTERN,
-                    null != addressNumberCAITMF ? addressNumberCAITMF : StringUtils.EMPTY,
-                    null != streetNameCAITMF ? comma + streetNameCAITMF : StringUtils.EMPTY,
-                    null != cityCAITMF ? comma + cityCAITMF : StringUtils.EMPTY,
-                    null != countryCAITMF ? comma + countryCAITMF : StringUtils.EMPTY,
-                    null != postalCodeCAITMF ? comma + postalCodeCAITMF : StringUtils.EMPTY);
+                validMetaField(addressNumberCAITMF) ? addressNumberCAITMF.getMetaFieldValue().getValue() : StringUtils.EMPTY,
+                validMetaField(streetNameCAITMF) ? comma + streetNameCAITMF.getMetaFieldValue().getValue() : StringUtils.EMPTY,
+                validMetaField(cityCAITMF) ? comma + cityCAITMF.getMetaFieldValue().getValue() : StringUtils.EMPTY,
+                validMetaField(countryCAITMF) ? comma + countryCAITMF.getMetaFieldValue().getValue() : StringUtils.EMPTY,
+                validMetaField(postalCodeCAITMF) ? comma + postalCodeCAITMF.getMetaFieldValue().getValue() : StringUtils.EMPTY);
     }
 
     private boolean validMetaField(CustomerAccountInfoTypeMetaField metaField) {
@@ -200,22 +199,20 @@ public class SpecificCustomerInformationHelper {
         return user.getUserName();
     }
 
+    private Object getDateOfBirth() {
+        UserDTO user = new UserBL(userId).getEntity();
+        AccountInformationTypeDTO contactAddressGroupAIT = new AccountInformationTypeDAS().findByName(SapphireConstants.CONTACT_INFORMATION_AIT, user.getEntity().getId(), user.getCustomer().getAccountType().getId());
+        Integer groupId = contactAddressGroupAIT.getId();
+        Date currentDate = user.getCustomer().getCurrentEffectiveDateByGroupId(groupId);
+        CustomerAccountInfoTypeMetaField dateOfBirth = user.getCustomer().getCustomerAccountInfoTypeMetaField(SapphireConstants.DATE_OF_BIRTH, groupId, currentDate);
+        return  (dateOfBirth != null && dateOfBirth.getMetaFieldValue() != null && dateOfBirth.getMetaFieldValue().getValue() != null) ? String.valueOf(((char [])dateOfBirth.getMetaFieldValue().getValue())) : StringUtils.EMPTY;
+    }
+
     private Object getDistributelMetafield(String metaField) {
         UserDTO user = new UserBL(userId).getEntity();
         Integer groupId = new AccountInformationTypeDAS().findByName(SpaConstants.CONTACT_INFORMATION_AIT, user.getEntity().getId(), user.getCustomer().getAccountType().getId()).getId();
         Date currentDate = user.getCustomer().getCurrentEffectiveDateByGroupId(groupId);
         CustomerAccountInfoTypeMetaField emailMetaField = user.getCustomer().getCustomerAccountInfoTypeMetaField(metaField, groupId, currentDate);
         return validMetaField(emailMetaField) ? emailMetaField.getMetaFieldValue().getValue() :StringUtils.EMPTY;
-    }
-
-    private Object getSapphireMetafield(String metaField) {
-        UserDTO user = new UserBL(userId).getEntity();
-        Integer groupId = new AccountInformationTypeDAS().getAvailableAccountInformationTypes(user.getEntity().getId())
-                                                         .stream().filter(ait -> ait.getAccountType().getId() == user.getCustomer().getAccountType().getId())
-                                                         .min(Comparator.comparing(AccountInformationTypeDTO :: getDisplayOrder))
-                                                         .get().getId();
-        Date currentDate = user.getCustomer().getCurrentEffectiveDateByGroupId(groupId);
-        CustomerAccountInfoTypeMetaField value = user.getCustomer().getCustomerAccountInfoTypeMetaField(metaField, groupId, currentDate);
-        return validMetaField(value) ? (value.getMetaFieldValue().getValue() instanceof char [] ? String.valueOf(((char [])value.getMetaFieldValue().getValue())) : value.getMetaFieldValue().getValue()) : StringUtils.EMPTY;
     }
 }

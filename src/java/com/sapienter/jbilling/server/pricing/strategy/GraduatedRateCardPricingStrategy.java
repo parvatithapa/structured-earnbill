@@ -31,6 +31,7 @@ import com.sapienter.jbilling.server.pricing.util.AttributeDefinition;
 import com.sapienter.jbilling.server.pricing.util.AttributeUtils;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.db.UserDTO;
+
 import org.apache.log4j.Logger;
 
 import java.math.BigDecimal;
@@ -55,12 +56,14 @@ public class GraduatedRateCardPricingStrategy extends GraduatedPricingStrategy {
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(GraduatedRateCardPricingStrategy.class));
     private static final String ROUTE_RATE_CARD_ID = "route_rate_card_id";
     private static final String RATE_CARD_DURATION_FIELD_NAME = "duration_field_name";
+    protected static final String RATE_CARD_CALL_COST_FIELD_NAME = "cdr_call_charge_field_name";
 
     public GraduatedRateCardPricingStrategy() {
         setAttributeDefinitions(
                 new AttributeDefinition(INCLUDED, DECIMAL, true),
                 new AttributeDefinition(ROUTE_RATE_CARD_ID, INTEGER, true),
-                new AttributeDefinition(RATE_CARD_DURATION_FIELD_NAME, STRING, true)
+                new AttributeDefinition(RATE_CARD_DURATION_FIELD_NAME, STRING, true),
+                new AttributeDefinition(RATE_CARD_CALL_COST_FIELD_NAME, STRING, false)
         );
 
         setChainPositions(
@@ -135,7 +138,8 @@ public class GraduatedRateCardPricingStrategy extends GraduatedPricingStrategy {
             price= rateCardBL.getBeanFactory().getFinderInstance().findRoutePrice(
                     rateCard,
                     fields,
-                    planPrice.getAttributes().get(RATE_CARD_DURATION_FIELD_NAME));
+                    planPrice.getAttributes().get(RATE_CARD_DURATION_FIELD_NAME),
+                    planPrice.getAttributes().get(RATE_CARD_CALL_COST_FIELD_NAME));
 
         } catch (Exception e){
             LOG.debug("Exception at determining price : "+e);

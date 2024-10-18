@@ -29,9 +29,7 @@ public class BrainTreeApi {
 	private String businessId;
 	
 	private String REMOTE_API;
-
-    private static final String API_BRAINTREE_CAPTURE = "/api/braintree/captureTransaction/%s/%s/%s";
-
+	
 	public BrainTreeApi(String businessId, String remoteApi){
 		this.businessId = businessId;
 		this.REMOTE_API = remoteApi;
@@ -250,18 +248,27 @@ public class BrainTreeApi {
 		
 		return result;
 	}
-
-    public BrainTreeResult capture(Integer timeout, String amount, String transactionId) throws PluggableTaskException {
-        try {
-            String url = String.format(REMOTE_API + API_BRAINTREE_CAPTURE, businessId, transactionId, amount);
-            BrainTreeResult result = makeApiCall(url, "", timeout);
-            result.setPaymentType("capture");
-            return result;
-        } catch (Exception e) {
-            throw new PluggableTaskException("Could not handle capture payment request due to error " , e);
-        }
-    }
-
+	
+	public BrainTreeResult capture(Integer timeout, String amount, String transactionId) throws PluggableTaskException {
+		
+		BrainTreeResult result = null;
+		
+		try{
+			
+			String url = REMOTE_API + "/api/braintree/capture/{businessId}/{transctionId}/{amount}";
+			
+			url = url.replace("{businessId}", businessId).replace("transactionId", transactionId).replace("{amount}", amount);
+			
+			result = makeApiCall(url, "", timeout);
+			
+		}catch(Exception e){
+			LOG.error("Could not handle refund request due to error ", e);
+			throw new PluggableTaskException(e);
+		}
+		
+		return result;
+	}
+	
 	public BrainTreeResult updateCreditCardDetails(String transactionId, String amount, Integer timeout) throws PluggableTaskException {
 		BrainTreeResult result = null;
 		

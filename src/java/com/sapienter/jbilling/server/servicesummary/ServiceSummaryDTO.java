@@ -50,6 +50,7 @@ public class ServiceSummaryDTO {
     private String displayIdentifier;
     private boolean isPlan = false;
     private Integer subscriptionOrderId;
+    private Integer creditNoteId;
 
     @Id
     @GeneratedValue(strategy = GenerationType.TABLE, generator = "service_summary_GEN")
@@ -179,7 +180,16 @@ public class ServiceSummaryDTO {
         this.subscriptionOrderId = subscriptionOrderId;
     }
 
-    @Override
+    @Column(name = "credit_note_id", nullable = true)
+    public Integer getCreditNoteId() {
+		return creditNoteId;
+	}
+
+	public void setCreditNoteId(Integer creditNoteId) {
+		this.creditNoteId = creditNoteId;
+	}
+
+	@Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("ServiceSummaryDTO [id=");
@@ -208,6 +218,8 @@ public class ServiceSummaryDTO {
         builder.append(isPlan);
         builder.append(", subscriptionOrderId=");
         builder.append(subscriptionOrderId);
+        builder.append(", creditNoteId=");
+        builder.append(creditNoteId);
         builder.append("]");
         return builder.toString();
     }

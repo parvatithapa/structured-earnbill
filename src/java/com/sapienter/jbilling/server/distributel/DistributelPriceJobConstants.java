@@ -25,12 +25,6 @@ public class DistributelPriceJobConstants {
     public static final String DEFAULT_NOTE_TITLE           = "RATE ADJUSTMENT";
     public static final String PRICE_UPDATE_STEP_NAME       = "priceUpdateStep";
     public static final String USER_NOTE_CREATE_STEP_NAME   = "userNoteCreateStep";
-    
-    public static final String PARAM_PRICE_INCREASE_JOB_NAME               = "distributelPriceIncreaseAndReverseJob";
-    public static final String PRICE_UPDATE_INCREASE_STEP_NAME             = "priceIncreaseStep";
-    public static final String PRICE_UPDATE_REVERSE_STEP_NAME              = "priceReversalStep";
-    public static final String PARAM_PRICE_INCREASE_DATA_TABLE_NAME        = "price_increase_data_table";
-    public static final String PARAM_PRICE_REVERSAL_DATA_TABLE_NAME        = "price_reversal_data_table";
 
 
 }

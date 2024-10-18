@@ -15,7 +15,8 @@
   --}%
 
 <%@ page import="org.apache.commons.lang.StringEscapeUtils; jbilling.FilterType; com.sapienter.jbilling.server.user.db.CompanyDTO; jbilling.FilterSet" %>
-
+<%@ page import="grails.plugin.springsecurity.SpringSecurityUtils;" %>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_VIEW_ADD_FILTERS;" %>
 <%--
   Filter side panel template. Prints all filters contained in the "filters" page variable.
 
@@ -74,23 +75,23 @@
     <!-- filter controls -->
     <div class="btn-hold">
         <!-- apply filters -->
-        <a class="submit-sm apply" onclick="submitApply();">
+        <a class="submit-sm apply" data-cy="applyFilter" onclick="submitApply();">
             <span><g:message code="filters.apply.button"/></span>
         </a>
 
-        <a class="submit-sm apply" onclick="clearFilters();">
+        <a class="submit-sm apply" data-cy="clearFilters" onclick="clearFilters();">
             <span><g:message code="filters.apply.clear"/></span>
         </a>
 
         <!-- add another filter -->
-        <g:if test="${filters.find { !it.visible }}">
+        <g:if test="${filters.find { !it.visible } && !SpringSecurityUtils.ifNotGranted("${PERMISSION_VIEW_ADD_FILTERS}")}">
             <div class="dropdown">
-                <a class="submit-sm add open"><span><g:message code="filters.add.button"/></span></a>
-                <div class="drop">
+                <a class="submit-sm add open" data-cy="btnAddFilter" ><span><g:message code="filters.add.button"/></span></a>
+                <div class="drop" data-cy="filterList">
                     <ul>
                         <g:each var="filter" in="${filters}">
                             <g:if test="${!filter.visible}">
-                                <li>
+                                <li data-cy="filters.${StringEscapeUtils.escapeHtml(filter?.field)}.title">
                                     <g:remoteLink controller="filter" action="add" params="${[name: filter.name] + hiddenFilters}" update="filters">
                                         <g:message code="filters.${StringEscapeUtils.escapeHtml(filter?.field)}.title"/>
                                     </g:remoteLink>
@@ -102,9 +103,9 @@
             </div>
         </g:if>
         <!-- Custom filters -->
-        <g:if test = "${!isCustomFilter}">
+        <g:if test = "${!isCustomFilter && !SpringSecurityUtils.ifNotGranted("${PERMISSION_VIEW_ADD_FILTERS}")}">
             <a class="submit-sm" onclick="$('#filter-custom-dialog').dialog('open');">
-                <span style="padding-left: 0px"><g:message code="filters.custom.button"/></span>
+                <span id="submit-sm-span"><g:message code="filters.custom.button"/></span>
             </a>
         </g:if>
         <g:else>

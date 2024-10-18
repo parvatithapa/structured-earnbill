@@ -282,15 +282,15 @@ public class RRCPercentagePricingStrategyTest {
 
     private File createRateCardFile() throws Exception {
         File file = File.createTempFile("ratecard", "csv");
-        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,active_dates,zone",
-                "1,Jan,0,0,0,5,01/01/2016-02/01/2016,A",
-                "2,Feb,0,0,0,6,02/01/2016-03/01/2016,A",
-                "3,Mar,0,0,0,5,03/01/2016-04/01/2016,A",
-                "4,Apr,0,0,0,6,04/01/2016-05/01/2016,A",
-                "5,Jan,0,0,0,5,11/01/2015-11/30/2015,B",
-                "6,Feb,0,0,0,6,02/01/2016-02/29/2016,B",
-                "7,Mar,0,0,0,5,03/01/2016-03/31/2016,B",
-                "8,Apr,0,0,0,6,04/01/2016-04/30/2016,B");
+        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,active_dates,zone",
+                "1,Jan,0,0,0,5,0,0,0,0,01/01/2016-02/01/2016,A",
+                "2,Feb,0,0,0,6,0,0,0,0,02/01/2016-03/01/2016,A",
+                "3,Mar,0,0,0,5,0,0,0,0,03/01/2016-04/01/2016,A",
+                "4,Apr,0,0,0,6,0,0,0,0,04/01/2016-05/01/2016,A",
+                "5,Jan,0,0,0,5,0,0,0,0,11/01/2015-11/30/2015,B",
+                "6,Feb,0,0,0,6,0,0,0,0,02/01/2016-02/29/2016,B",
+                "7,Mar,0,0,0,5,0,0,0,0,03/01/2016-03/31/2016,B",
+                "8,Apr,0,0,0,6,0,0,0,0,04/01/2016-04/30/2016,B");
 
         FileUtils.writeLines(file, rows);
         return file;

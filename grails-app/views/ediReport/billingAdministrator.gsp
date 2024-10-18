@@ -22,7 +22,9 @@
         .column{
             width: 50%;
             float: left;
-
+        }
+        html[dir="rtl"] .column{
+            float: right;
         }
     </style>
 </head>
@@ -102,7 +104,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-columns" style="padding-left: 350px">
+                    <div id="report-filters-submit" class="form-columns">
                         <g:submitButton name="filter" class="submit">Filter</g:submitButton>
                     </div>
 

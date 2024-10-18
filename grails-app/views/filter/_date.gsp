@@ -35,7 +35,8 @@
                     <g:textField  class = "date-text ${filter.startDateValue ? 'autoFill' : ''}"
                                    name = "filters.${filter.name}.startDateValue"
                                   value = "${formatDate(date: filter.startDateValue, formatName: 'datepicker.format')}"
-                                 onblur = "validateDate(this)"/>
+                                 onblur = "validateDate(this)"
+                                 data-cy="startDate"/>
                 </div>
                 <label for="filters.${filter.name}.startDateValue"><g:message code="filters.date.from.label"/></label>
             </div>
@@ -46,7 +47,8 @@
                     <g:textField  class = "date-text ${filter.endDateValue ? 'autoFill' : ''}"
                                    name = "filters.${filter.name}.endDateValue"
                                   value = "${formatDate(date:filter.endDateValue, formatName: 'datepicker.format')}"
-                                 onblur = "validateDate(this)"/>
+                                 onblur = "validateDate(this)"
+                                 data-cy="endDate"/>
                 </div>
                 <label for="filters.${filter.name}.endDateValue"><g:message code="filters.date.to.label"/></label>
             </div>

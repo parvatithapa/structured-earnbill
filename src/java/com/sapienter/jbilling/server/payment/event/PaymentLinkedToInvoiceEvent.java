@@ -16,44 +16,47 @@
 
 package com.sapienter.jbilling.server.payment.event;
 
-import java.math.BigDecimal;
-
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.payment.PaymentDTOEx;
 
+import java.math.BigDecimal;
+
 public class PaymentLinkedToInvoiceEvent extends AbstractPaymentEvent {
-	private InvoiceDTO invoice;
-	private BigDecimal totalPaid;
+    InvoiceDTO invoice;
+    BigDecimal totalPaid;
 
-	public PaymentLinkedToInvoiceEvent (Integer entityId, PaymentDTOEx payment, InvoiceDTO invoice, BigDecimal totalPaid) {
-		super(entityId, payment);
-		this.invoice = invoice;
-		this.totalPaid = totalPaid;
-	}
+    public PaymentLinkedToInvoiceEvent (Integer entityId, PaymentDTOEx payment) {
+        super(entityId, payment);
+    }
 
-	@Override
-	public String getName() {
-		return this.getClass().getSimpleName();
-	}
+    public PaymentLinkedToInvoiceEvent (Integer entityId, PaymentDTOEx payment, InvoiceDTO invoice, BigDecimal totalPaid) {
+        this(entityId,payment);
+        this.invoice = invoice;
+        this.totalPaid = totalPaid;
+    }
+    
+    public String getName() {
+        return this.getClass().getSimpleName();
+    }
 
-	public InvoiceDTO getInvoice () {
-		return invoice;
-	}
+    public InvoiceDTO getInvoice () {
+        return invoice;
+    }
 
-	public BigDecimal getTotalPaid () {
-		return totalPaid;
-	}
+    public BigDecimal getTotalPaid () {
+        return totalPaid;
+    }
 
-	@Override
-	public String toString() {
-		Integer paymentId = (getPayment() != null) ? getPayment().getId() : null;
-		Integer invoiceId = (getInvoice() != null) ? getInvoice().getId() : null;
+    @Override
+    public String toString() {
+        Integer paymentId = (getPayment() != null) ? getPayment().getId() : null;
+        Integer invoiceId = (getInvoice() != null) ? getInvoice().getId() : null;
 
-		return "PaymentLinkedToInvoiceEvent{"
-		+ "paymentId=" + paymentId
-		+ ", amount=" + getPayment().getAmount()
-		+ ", invoiceId=" + invoiceId
-		+ "}";
-	}
-
+        return "PaymentLinkedToInvoiceEvent{"
+                + "paymentId=" + paymentId
+                + ", amount=" + getPayment().getAmount()
+                + ", invoiceId=" + invoiceId
+                + "}";
+    }
+    
 }

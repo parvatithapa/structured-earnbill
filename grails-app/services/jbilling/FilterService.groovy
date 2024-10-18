@@ -26,6 +26,7 @@ import com.sapienter.jbilling.server.metafields.db.value.DecimalMetaFieldValue
 import com.sapienter.jbilling.server.metafields.db.value.IntegerMetaFieldValue
 import com.sapienter.jbilling.server.metafields.db.value.JsonMetaFieldValue
 import com.sapienter.jbilling.server.metafields.db.value.StringMetaFieldValue
+import org.hibernate.criterion.MatchMode
 
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -308,9 +309,15 @@ class FilterService implements Serializable {
                 case DataType.SCRIPT:
                 case DataType.STATIC_TEXT:
                 case DataType.LIST:
-                    subCriteria = DetachedCriteria.forClass(StringMetaFieldValue.class, "stringValue")
-                            .setProjection(Projections.property('id'))
-                            .add(Restrictions.like('stringValue.value', ccfValue + '%').ignoreCase())
+                    if(type.getName() == "First Name" ){
+                        subCriteria = DetachedCriteria.forClass(StringMetaFieldValue.class, "stringValue")
+                                .setProjection(Projections.property('id'))
+                                .add(Restrictions.ilike('stringValue.value', ccfValue , MatchMode.ANYWHERE))
+                    } else {
+                        subCriteria = DetachedCriteria.forClass(StringMetaFieldValue.class, "stringValue")
+                                .setProjection(Projections.property('id'))
+                                .add(Restrictions.like('stringValue.value', ccfValue + '%').ignoreCase())
+                    }
 
                     break;
                 case DataType.DECIMAL:

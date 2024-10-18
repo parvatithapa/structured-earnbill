@@ -32,7 +32,7 @@
     <div class="slide">
         <fieldset>
             <div class="input-row">
-                <div class="select-bg full-width" style="float:left;">
+                <div id="custom-div" class="select-bg full-width">
                     <div class="select-holder select-holder_small"><span class="select-value"></span>
                         <g:set var="company" value="${CompanyDTO.get(session['company_id'])}"/>
                         <g:select style="float:left;"

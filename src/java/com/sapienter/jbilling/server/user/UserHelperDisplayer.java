@@ -26,6 +26,7 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
  * Created by igutierrez on 3/31/17.
  */
 public interface UserHelperDisplayer {
-    public String getDisplayName(UserWS user);
-    public String getDisplayName(UserDTO user);
+    String getDisplayName(UserWS user);
+    String getDisplayName(UserDTO user);
+    String getDisplayFirstName(UserDTO user);
 }

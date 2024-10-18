@@ -16,28 +16,15 @@
 
 package com.sapienter.jbilling.server.customer;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.sql.rowset.CachedRowSet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.resources.CustomerMetaFieldValueWS;
 import com.sapienter.jbilling.server.customer.report.ComplianceReportCreator;
 import com.sapienter.jbilling.server.ediTransaction.task.BillingModelModificationTask;
 import com.sapienter.jbilling.server.fileProcessing.FileConstants;
+import com.sapienter.jbilling.server.item.AssetWS;
 import com.sapienter.jbilling.server.item.ItemBL;
+import com.sapienter.jbilling.server.item.db.AssetDAS;
+import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.item.db.ItemDAS;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.item.db.PlanDTO;
@@ -66,13 +53,31 @@ import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.rowset.CachedRowSet;
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Emil
  */
 public final class CustomerBL extends ResultList implements CustomerSQL {
 
+    public static final String PROPERTY_GENERATE_IMAGE_FILE_PATH = "generate.image.file.path";
+    protected static final String UNABLE_TO_SAVE_THE_IMAGE_TO_FOLDER = "Unable to save the image to folder";
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    protected static final String DIRECTORY_DOESNT_EXIST = "Directory doesn't exist";
+    protected static final String PATH_DOESNT_EXIST = "Path doesn't exist";
     private CustomerDTO customer = null;
 
     public CustomerBL() {
@@ -111,8 +116,8 @@ public final class CustomerBL extends ResultList implements CustomerSQL {
     }
 
     public CachedRowSet getList(int entityID, Integer userRole,
-            Integer userId)
-                    throws SQLException, Exception{
+                                Integer userId)
+            throws SQLException, Exception{
 
         if(userRole.equals(Constants.TYPE_ROOT)) {
             prepareStatement(CustomerSQL.listRoot);
@@ -137,8 +142,8 @@ public final class CustomerBL extends ResultList implements CustomerSQL {
     // this is the list for the Customer menu option, where only
     // customers/partners are listed. Meant for the clients customer service
     public CachedRowSet getCustomerList(int entityID, Integer userRole,
-            Integer userId)
-                    throws SQLException, Exception {
+                                        Integer userId)
+            throws SQLException, Exception {
 
         if(userRole.equals(Constants.TYPE_INTERNAL) ||
                 userRole.equals(Constants.TYPE_ROOT) ||
@@ -364,13 +369,12 @@ public final class CustomerBL extends ResultList implements CustomerSQL {
         logger.debug("updating {} on user {}", mFToUpdate, user.getId());
         MetaFieldHelper.fillMetaFieldsFromWS(mFToUpdate, user.getCustomer(), customerMetaFieldValues);
     }
-    
+
     public static CustomerMetaFieldValueWS getCustomerMetaFieldValueWS(Integer userId) {
         UserDTO user = new UserDAS().findNow(userId);
         return new CustomerMetaFieldValueWS(userId, convertCustomerMetafieldsToMap(user.getCustomer()));
     }
 
-    @SuppressWarnings("rawtypes")
     private static Map<String, String> convertCustomerMetafieldsToMap(CustomerDTO customer) {
         List<MetaFieldValue> customerMetaFields = customer.getMetaFields();
         List<MetaFieldValueWS> metaFields = new ArrayList<>();
@@ -382,5 +386,4 @@ public final class CustomerBL extends ResultList implements CustomerSQL {
         }
         return MetaFieldBL.getMetaFieldsMap(metaFields.toArray(new MetaFieldValueWS[0]));
     }
-
 }

@@ -176,33 +176,47 @@ class AssetResource {
             @DefaultValue("10000")@QueryParam("limit") @ApiParam(name="limit") Integer limit,
             @DefaultValue("0")@QueryParam("offset") @ApiParam(name="offset") Integer offset) {
         try {
-            return Response.ok().entity(assetResourceHelperService.getAssetsByItemAndStatus(itemId, assetStatus, limit, offset)).build()
+            return Response.ok().entity(assetResourceHelperService.getAssetsByItemAndStatus(itemId, assetStatus, limit, offset)).build();
         } catch (Exception exception) {
             return RestErrorHandler.mapErrorToHttpResponse(exception)
         }
     }
 
-    @GET
-    @Path("/category/{categoryId}/status/{assetStatus}")
+    @POST
+    @Path("/release/{assetId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Retrieve assets by category and status.")
+    @ApiOperation(value = "Release asset by Asset Id")
     @ApiResponses(value = [
-        @ApiResponse(code = 200, message = "Assets found for Category.", response = AssetRestWS[].class),
-        @ApiResponse(code = 400, message = "Invalid parameters passed."),
-        @ApiResponse(code = 404, message = "Category not found."),
-        @ApiResponse(code = 500, message = "Failure while retrieving assets.")
+    @ApiResponse(code = 200, message = "Asset released.", response = AssetRestWS[].class),
+    @ApiResponse(code = 400, message = "Asset release failed."),
+    @ApiResponse(code = 404, message = "Asset not found."),
+    @ApiResponse(code = 500, message = "Internal problem occurred.")
     ])
-    Response getAssetsByCategoryAndStatus( @PathParam("categoryId")
-            @ApiParam(name="categoryId", value=  "categoryId", required = true) Integer categoryId,
-            @PathParam("assetStatus") @ApiParam(name="assetStatus", required = true) String assetStatus,
-            @DefaultValue("10000")@QueryParam("limit") @ApiParam(name="limit", value = "limit") Integer limit,
-            @DefaultValue("0")@QueryParam("offset") @ApiParam(name="offset", value = "offset") Integer offset) {
+    Response releaseAsset(@PathParam("assetId") @ApiParam(name="assetId", value = "The id of the asset that needs to be released.", required = true) String assetId) {
         try {
-            return Response.ok()
-                           .entity(assetResourceHelperService.getAssetsByCategoryAndStatus(categoryId, assetStatus, limit, offset))
-                           .build()
+             return Response.ok().entity(webServicesSession.removeAssetFromActiveOrder(assetId)).build();
         } catch (Exception exception) {
-            return RestErrorHandler.mapErrorToHttpResponse(exception)
+             return RestErrorHandler.mapErrorToHttpResponse(exception)
+        }
+    }
+
+    @GET
+    @Path("/identifier/{identifier}")
+    @ApiOperation(value = "Get asset by identifier/mobile number.", response = AssetWS.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "Asset found.", response = AssetWS.class),
+            @ApiResponse(code = 404, message = "Asset not found."),
+            @ApiResponse(code = 500, message = "Internal problem occurred.")])
+    Response getAssetByIdentifier(
+            @ApiParam(name = "identifier",
+                    value = "The identifier of the asset that needs to be fetched.",
+                    required = true)
+            @PathParam("identifier") String identifier) {
+
+        try{
+            return Response.ok().entity(webServicesSession.getAssetByIdentifier(identifier)).build();
+        } catch (Exception e){
+            return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
 

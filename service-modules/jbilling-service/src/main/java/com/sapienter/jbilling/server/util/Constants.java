@@ -63,7 +63,6 @@ public final class Constants implements CommonConstants {
     public static final String TABLE_BASE_USER = "base_user";
     public static final String TABLE_CUSTOMER = "customer";
     public static final String TABLE_PERIOD_UNIT = "period_unit";
-
     public static final String TABLE_ORDER_BILLING_TYPE = "order_billing_type";
     public static final String TABLE_ORDER_STATUS = "order_status";
     public static final String TABLE_ORDER_LINE = "order_line";
@@ -80,6 +79,7 @@ public final class Constants implements CommonConstants {
     public static final String TABLE_INVOICE_LINE_TYPE = "invoice_line_type";
     public static final String TABLE_PAYMENT = "payment";
     public static final String TABLE_PAYMENT_INFO_CHEQUE = "payment_info_cheque";
+    public static final String TABLE_PAYMENT_INFORMATION = "payment_information";
     public static final String TABLE_PAYMENT_RESULT = "payment_result";
     public static final String TABLE_PAYMENT_METHOD = "payment_method";
     public static final String TABLE_PAYMENT_INVOICE_MAP = "payment_invoice";
@@ -184,7 +184,7 @@ public final class Constants implements CommonConstants {
     public static final Integer PERIOD_UNIT_DAY = new Integer(3);
     public static final Integer PERIOD_UNIT_YEAR= new Integer(4);
     public static final Integer PERIOD_UNIT_SEMI_MONTHLY= new Integer(5);
-
+    
     // order billing types
     public static final Integer ORDER_BILLING_PRE_PAID = new Integer(1);
     public static final Integer ORDER_BILLING_POST_PAID = new Integer(2);
@@ -220,8 +220,7 @@ public final class Constants implements CommonConstants {
     public static final Integer PLUGGABLE_TASK_MEDIATION_USER_PARTITIONING = new Integer(28);
     public static final Integer PLUGGABLE_TASK_ITEM_QUANTITY_RATING = new Integer(29);
     public static final Integer PLUGGABLE_TASK_UNDO_MEDIATION_TASK_FILTER= new Integer(30);
-
-    public static final Integer PLUGGABLE_TASK_DERIVING_ORDER_CHANGE = new Integer(35);
+    public static final Integer PLUGGABLE_TASK_BILLABLE_USER_FILTER = 34;
 
     // pluggable task types (belongs to a category)
     public static final Integer PLUGGABLE_TASK_T_PAPER_INVOICE = new Integer(12);
@@ -283,7 +282,6 @@ public final class Constants implements CommonConstants {
     public static final Integer NOTIFICATION_TYPE_SSO_ENABLED = 35;
     public static final Integer NOTIFICATION_TYPE_SCHEDULED_JOB_STARTED = 36;
     public static final Integer NOTIFICATION_TYPE_SCHEDULED_JOB_COMPLETED = 37;
-    public static final Integer NOTIFY_PASSWORD_CHANGE = 38;
 
     // contact type
     public static final Integer ENTITY_CONTACT_TYPE = new Integer(1);
@@ -355,15 +353,13 @@ public final class Constants implements CommonConstants {
     // Answer connect mediation configuration
     public static final String PHONE_META_FIELD = "INBOUND_CALLS_IDENTIFIER";
     public static final String CUSTOMER_PRIMARY_ACCOUNT_NUMBER = "primaryAccountNumber";
-
-    public static final String FREE_TRIAL_SUBSCRIPTION_ORDER_ID = "Free Trial Subscription Order ID";
-
     public static final String ACTIVE_RESPONSE_IDENTIFIER = "ACTIVE_RESPONSE_IDENTIFIER";
     public static final String CHAT_IDENTIFIER = "CHAT_IDENTIFIER";
     
     public static final String MEDIATION_HOME = "mediation/";
     public static final String MEDIATION_FILE_NAME_PREFIX = "Daily-CDRs_";
     public static final String MEDIATION_FILE_NAME_SUFFIX = ".csv";
+    public static final String MEDIATION_FILE_RECYCLED_EXTENSION = "- Recycled";
     public static final String INBOUND_CALLS_CFG_NAME = "Inbound Calls";
     public static final String ACTIVE_RESPONSE_CFG_NAME = "Active Response";
     public static final String CHAT_CFG_NAME = "Chat";
@@ -437,7 +433,6 @@ public final class Constants implements CommonConstants {
      */
     public static final String CANCELLATION_REQUEST_ID = "id";
     public static final String CANCELLATION_REQUEST_DATE = "CancellationDate";
-    public static final String CANCELLATION_USER_ENTITY_ID = "entityId";
     
     //Customer Cancellation Status Description
     public static final String CUSTOMER_CANCELLATION_STATUS_DESCRIPTION = "Cancelled on Request";
@@ -497,6 +492,9 @@ public final class Constants implements CommonConstants {
     //used for Swap Asset
     public static final String REPLACEMENT = "REPLACEMENT";
     public static final String ENROLLMENT = "ENROLLMENT";
-    public static final String HSN_SAC_CODE = "HSN/SAC Code";
-    
+    public static final String JMR_PROCESSED_STATUS = "PROCESSED";
+    public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String DATE_FORMAT_YYYY_MM_DD_HH_MM_SS = "yyyy-MM-dd HH:mm";    
+    public static final String SUBSCRIPTION_ORDER_NOT_FOUND="subscription order not found, so can not caluclate event date.";
+    public static final String CUT_OFF_BILLING_PROCESS_ID = "Cut Off Billing Process Id";
 }

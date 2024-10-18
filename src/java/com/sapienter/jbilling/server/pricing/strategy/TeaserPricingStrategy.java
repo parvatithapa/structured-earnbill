@@ -287,7 +287,7 @@ public class TeaserPricingStrategy extends AbstractPricingStrategy implements Cy
                 startDate = TimezoneHelper.serverCurrentDate();
             } else if (orderChangeDTO.getOrder().getProrateFlag()) {
                 startDate = orderChangeDTO.getStartDate();
-                proRateDate = getDateFromMainSubscription(order.getUser().getCustomer().getMainSubscription(), startDate);
+                proRateDate = getDateFromMainSubscription(order.getUser().getCustomer().getMainSubscription(), startDate, order.getUser().getCustomer().getNextInvoiceDate());
             } else {
                 startDate = orderChangeDTO.getStartDate();
             }
@@ -329,12 +329,12 @@ public class TeaserPricingStrategy extends AbstractPricingStrategy implements Cy
         return false;
     }
 
-    private Date getDateFromMainSubscription(MainSubscriptionDTO mainSubscription, Date startDate) {
+    private Date getDateFromMainSubscription(MainSubscriptionDTO mainSubscription, Date startDate, Date nextInvoiceDate) {
         ProRatePeriodCalculator calculator = ProRatePeriodCalculator.valueOfPeriodUnit(mainSubscription.getSubscriptionPeriod()
                                                                                                        .getPeriodUnit()
                                                                                                        .getId());
         LocalDate localStartDate = DateConvertUtils.asLocalDate(startDate);
-        LocalDate localDate = calculator.getDate(localStartDate, mainSubscription);
+        LocalDate localDate = calculator.getDate(localStartDate, nextInvoiceDate, mainSubscription);
 
         while (localDate.isAfter(localStartDate)) {
             localDate = calculator.getNextBeforeDate(localDate, mainSubscription);

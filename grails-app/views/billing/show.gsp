@@ -68,6 +68,13 @@
         <g:if test="${canRestart}">
             <g:link action="restart" id="${process?.id}" class="submit play"><span>Restart</span></g:link>
         </g:if>
+        <sec:ifAllGranted roles="BILLING_1920">
+	        <g:if test="${(!isBillingRunning) && (!isEmailJobRunning) && (process?.isReview == 0) && (processRun?.status.id == 2 || processRun?.status.id == 3) && (emailProcessInfo.size() == 0) && (process?.id.toInteger() > cutOfBillingProcess)}">            
+	            <a onclick="showConfirm('sendInvoiceEmails-'+${process?.id});" class="submit apply button-primary">
+	                    <span><g:message code="billing.details.send.invoice.emails"/></span>
+	            </a>
+	        </g:if>
+        </sec:ifAllGranted>
     </div>
 
     <div class="table-info">
@@ -105,7 +112,7 @@
                     </td>
 
                 </g:if>
-            </tr>
+            </tr>            
             </tbody>
         </table>
 
@@ -129,7 +136,13 @@
                             <%
                                 def invoiced = [:]
                                 invoices.each { invoice ->
-                                    invoiced[invoice.currency] = invoiced.get(invoice.currency, BigDecimal.ZERO).add(invoice.total)
+                                    def invoiceLineTotal = 0.0;
+                                    invoice.invoiceLines.each { line ->
+                                        if (line.deleted == 0) {
+                                            invoiceLineTotal += line.amount;
+                                        }
+                                    }
+                                    invoiced[invoice.currency] = invoiced.get(invoice.currency, BigDecimal.ZERO).add(invoiceLineTotal);
                                 }
                             %>
                             <g:each var="total" in="${invoiced.entrySet()}">
@@ -270,6 +283,61 @@
             </tbody>
         </table>
     </div>
+    
+    <!-- Email Info -->
+    <g:if test="${process?.isReview != 1 && emailProcessInfo}">
+    <div class="table-info">
+        <em><g:message code="label.billing.batch.job.execution.email.header"/></em>
+    </div>
+    <div class="sub-box">
+        <table class="innerTable">
+            <thead class="innerHeader">
+                <tr>
+                    <th class="first"><g:message code="label.billing.batch.job.execution.email.result"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.email.estimated"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.email.sent"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.email.failed"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.email.skipped"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.start.date"/></th>
+                    <th><g:message code="label.billing.batch.job.execution.end.date"/></th>
+                    <th class="last"><g:message code="label.billing.batch.job.execution.email.SentVia"/></th>
+                </tr>
+            </thead>
+            <tbody>
+            	<g:each var="emailProcess" in="${emailProcessInfo}">                               
+					<tr id="job-${emailProcess.id}">
+						<g:if test="${emailProcess?.endDatetime == null}">
+							<td class="left-pad"><g:message code="label.billing.batch.job.execution.email.running"/></td>
+	                    </g:if>
+	                    <g:else>
+							<td class="left-pad"><g:message code="label.billing.batch.job.execution.email.completed"/></td>
+	                    </g:else>
+						<td>${emailProcess.emailsEstimated}</td>
+						<td>${emailProcess.emailsSent}</td>
+						<td>${emailProcess.emailsFailed}</td>
+						<g:if test="${emailProcess?.endDatetime == null}">
+							<td>0</td>
+						</g:if>
+	                    <g:else>
+	                    	<td>${emailProcess.emailsEstimated - emailProcess.emailsSent - emailProcess.emailsFailed}</td>	                    	
+	                    </g:else>
+	                    <td>
+                            <g:formatDate date       = "${emailProcess.startDatetime}"
+                                          formatName = "date.time.format"
+                                          timeZone   = "${session['company_timezone']}"/>
+                        </td>
+                        <td>
+                            <g:formatDate date       = "${emailProcess.endDatetime}"
+                                          formatName = "date.time.format"
+                                          timeZone   = "${session['company_timezone']}"/>
+                        </td>
+						<td>${emailProcess.source}</td>
+					</tr>
+				</g:each>
+            </tbody>
+        </table>
+    </div>
+    </g:if>
 
     <!-- payments made after the billing process by retries -->
     <div class="table-info">
@@ -357,6 +425,12 @@
               model="['message':'billing.details.disapprove.confirm',
                  'controller':'billing',
                  'action':'disapprove',
+                 'id':process.id,
+                ]"/>
+     <g:render template="/confirm"
+              model="['message':'billing.details.send.invoice.confirm',
+                 'controller':'billing',
+                 'action':'sendInvoiceEmails',
                  'id':process.id,
                 ]"/>
 </body>

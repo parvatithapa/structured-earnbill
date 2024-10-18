@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.sapienter.jbilling.server.process.BillingProcessInfoBL;
 import com.sapienter.jbilling.server.process.task.BasicBillingProcessFilterTask;
+import com.sapienter.jbilling.server.process.task.BasicUserFilterTask;
 
 @Configuration
 public class BillingConfiguration {
@@ -17,5 +18,10 @@ public class BillingConfiguration {
     @Bean
     public BasicBillingProcessFilterTask basicBillingProcessFilterTask () {
         return new BasicBillingProcessFilterTask();
+    }
+
+    @Bean
+    public BasicUserFilterTask basicUserFilterTask() {
+        return new BasicUserFilterTask();
     }
 }

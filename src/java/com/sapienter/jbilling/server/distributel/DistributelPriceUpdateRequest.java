@@ -18,7 +18,6 @@ public class DistributelPriceUpdateRequest {
 
     private int id;
     private String scheduledDateForAdjustment;
-    private String scheduledDateForReversal;
     private Integer orderId;
     private Integer customerId;
     private Integer productId;
@@ -28,10 +27,11 @@ public class DistributelPriceUpdateRequest {
 
 
     public DistributelPriceUpdateRequest validate() {
-        if((StringUtils.isEmpty(scheduledDateForAdjustment) && StringUtils.isEmpty(scheduledDateForReversal))
-                || null == orderId || null == customerId || null == productId || null == newOrderLinePrice) {
+        if(StringUtils.isEmpty(scheduledDateForAdjustment) || null == orderId
+                || null == customerId || null == productId || null == newOrderLinePrice) {
             throw new IllegalArgumentException("Price update Record has invalid data!");
         }
         return this;
     }
+
 }

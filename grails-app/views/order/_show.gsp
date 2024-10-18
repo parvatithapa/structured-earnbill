@@ -244,30 +244,6 @@
                         </g:else>
                     </td>
                 </tr>
-
-                <g:if test="${order?.isMediated}">
-                    <tr>
-                        <td><g:message code="order.label.free.call.counter"/>:</td>
-                        <td class="value">
-                            <g:formatNumber number="${order.getAllFreeCallCount()}" type="number"/>
-                        </td>
-                    </tr>
-                </g:if>
-
-                <g:if test="${order?.isFreeTrial}">
-                    <tr>
-                        <td><g:message code="order.label.free.trial.status"/>:</td>
-                        <td class="value">
-                            <g:if test="${order?.isDiscountOrderFinished}">
-                                <g:message code="order.label.free.plan.expired"/>
-                            </g:if>
-                            <g:else>
-                                <g:message code="order.label.free.plan.active"/>
-                            </g:else>
-                        </td>
-                    </tr>
-                </g:if>
-
                 <g:if test="${order?.metaFields}">
                     <!-- empty spacer row -->
                     <tr>
@@ -375,25 +351,17 @@
                                     <g:formatNumber number="${line.amountAsDecimal ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}" maxFractionDigits="4"/>
                                 </td>
                              </tr>
-
-                                 <%-- Display the meta fields in the next tr --%>
-                                 <g:if test="${line.callIdentifier != null}" >
-                                   <tr lineMetaField>
-                                       <td colspan="5">
-                                           <table style="width: 100%;" class="dataTable narrow" >
-                                              <tr style="width: 100%;">
-									            <td style="width: 40%;">
-									                <g:message code="${product.description}"/> <g:message code="identifier"/>
-									            </td>
-									            <td style="width: 60%;" class="value">
-									                ${line.callIdentifier}
-									            </td>
-								              </tr>
-                                           </table>
-                                       </td>
-                                   </tr>
-                                  </g:if>
-
+							  <g:if test="${order.isMediated}">
+								   <tr lineMetaField>
+										<td colspan="5">
+											<table style="width: 100%;" class="dataTable narrow">
+												<tr>
+												    <g:render template="/order/lineDetails" model="[line: line]" />
+												</tr>
+											</table>
+										</td>
+									</tr>
+							 </g:if>
 
                                  %{--Display the taxes linked to this line--}%
                                  <g:each var="taxLine" in="${line.childLines.sort{ it.description } }" status="taxIdx">
@@ -471,7 +439,7 @@
                                     <td class="innerContent">
                                          ${usagePool.getDescription(session['language_id'], 'name')}
                                     </td>
-                                    <td class="innerContent" style="padding-right: 20px;">
+                                    <td id="inner-content-td" class="innerContent">
                                     	<g:formatNumber number="${orderLineUsagePool.quantity}" formatName="decimal.format"/>
                                     </td>
 								</tr>
@@ -569,6 +537,42 @@
             </div>
         </div>
     </g:if>
+
+    <!-- OrderLineItemizedUsage sections -->
+    <g:if test="${itemizedUsages}">
+            <div class="box-cards box-cards-no-margin">
+                <div class="box-cards-title">
+                    <a class="btn-open" href="#"><span><g:message code="order.label.itemizedUsage" /></span></a>
+                </div>
+                <div class="box-card-hold">
+                    <table style="width: 100%;" cellpadding="0" cellspacing="0" class="innerTable">
+                        <thead style="width: 100%;" class="innerHeader">
+                            <tr>
+                                <th class="first" style="width: 30%; text-align: center;"><g:message code="itemized.usage.orderLineId" />
+                                <th style="width: 33%; text-align: center;"><g:message code="itemized.usage.separator" />
+                                <th id="box-card-hold-th"><g:message code="itemized.usage.amount" />
+                                <th class="last" style="width: 7%;" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <g:each var="itemizedUsage" in="${itemizedUsages}" status="idx">
+                                <tr>
+                                    <td class="innerContent" style="text-align: center;">
+                                        ${itemizedUsage?.orderLineId}
+                                    </td>
+                                    <td class="innerContent" style="text-align: center;">
+                                        ${itemizedUsage?.separator}
+                                    </td>
+                                    <td id="inner-content-td2" class="innerContent"><g:formatNumber number="${itemizedUsage?.getAmountAsDecimal() ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}" maxFractionDigits="4" />
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </g:each>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </g:if>
 
 <%-- Order line Tiers linked to order lines --%>
     <g:if test="${order?.hasOrderLineTiers()}">
@@ -989,9 +993,9 @@
         }
     }
 </script>
-<table id="dependencyDialog" style="margin: 3px 0 0 10px">
+<table id="dependencyDialog">
     <tbody><tr>
-        <td class="col2" style="padding-left: 7px">
+        <td class="col2">
 
             <p id="confirm-dialog-${name }-msg">
                 <g:message code="order.prompt.dependency.label"/>

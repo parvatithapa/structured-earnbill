@@ -45,7 +45,7 @@
         <cacheEventListenerFactory
                 class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
                 properties="replicateAsynchronously=false,
-                  replicatePuts=true,
+                  replicatePuts=false,
                   replicateUpdates=true,
                   replicateUpdatesViaCopy=false,
                   replicateRemovals=true"
@@ -71,7 +71,7 @@
             ><cacheEventListenerFactory
             class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
             properties="replicateAsynchronously=false,
-                  replicatePuts=true,
+                  replicatePuts=false,
                   replicateUpdates=true,
                   replicateUpdatesViaCopy=false,
                   replicateRemovals=true"
@@ -88,7 +88,7 @@
             ><cacheEventListenerFactory
             class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
             properties="replicateAsynchronously=false,
-                  replicatePuts=true,
+                  replicatePuts=false,
                   replicateUpdates=true,
                   replicateUpdatesViaCopy=false,
                   replicateRemovals=true"
@@ -105,7 +105,7 @@
             ><cacheEventListenerFactory
             class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
             properties="replicateAsynchronously=false,
-                  replicatePuts=true,
+                  replicatePuts=false,
                   replicateUpdates=true,
                   replicateUpdatesViaCopy=false,
                   replicateRemovals=true"
@@ -122,7 +122,7 @@
             ><cacheEventListenerFactory
             class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
             properties="replicateAsynchronously=false,
-                  replicatePuts=true,
+                  replicatePuts=false,
                   replicateUpdates=true,
                   replicateUpdatesViaCopy=false,
                   replicateRemovals=true"

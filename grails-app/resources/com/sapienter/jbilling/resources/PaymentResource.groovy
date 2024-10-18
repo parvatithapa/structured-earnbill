@@ -1,10 +1,16 @@
 package com.sapienter.jbilling.resources
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.http.HttpStatus;
+
 import com.sapienter.jbilling.common.ErrorDetails
 import com.sapienter.jbilling.server.payment.PaymentAuthorizationDTOEx;
+import com.sapienter.jbilling.server.payment.PaymentResourceWS
 import com.sapienter.jbilling.server.payment.PaymentWS
-import com.sapienter.jbilling.server.payment.SecurePaymentWS;
+import com.sapienter.jbilling.server.timezone.TimezoneHelper;
+import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
+import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 import com.sapienter.jbilling.utils.RestErrorHandler
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
@@ -12,6 +18,17 @@ import com.wordnik.swagger.annotations.ApiResponses
 import com.wordnik.swagger.annotations.ApiResponse
 import com.wordnik.swagger.annotations.ApiParam
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.ZoneId;
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.TimeZone;
+
+import javassist.bytecode.stackmap.BasicBlock.Catch;
+
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.Path
 import javax.ws.rs.GET
 import javax.ws.rs.POST
@@ -30,6 +47,8 @@ import grails.plugin.springsecurity.annotation.Secured
 import javax.ws.rs.core.UriInfo
 
 import paypal.payflow.Invoice;
+
+import com.sapienter.jbilling.server.payment.SecurePaymentWS;
 
 @Path('/api/payments')
 @Api(value = "/api/payments", description = "Payments.")
@@ -58,6 +77,40 @@ class PaymentResource {
             }
             return Response.ok().entity(payment).build();
         } catch (Exception e){
+            return RestErrorHandler.mapErrorToHttpResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/payments/{startDate}/{endDate}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Gets the payments by the date range.")
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "Payments with the provided period found.", response = PaymentResourceWS[].class),
+            @ApiResponse(code = 204, message = "Payments with the provided period not found."),
+            @ApiResponse(code = 500, message = "Fetching the payments failed."),
+            @ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class)
+    ])
+    Response getPaymentsByDateRange(
+        @ApiParam(name = "startDate",value = "The start date to fetch Payments, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("startDate") String startDate,
+        @ApiParam(name = "endDate",value = "The end date to fetch Payments, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("endDate") String endDate,
+        @ApiParam(name="limit", value = "Limit") @DefaultValue("50") @QueryParam("limit") Integer limit,
+        @ApiParam(name="offset", value = "Offset") @DefaultValue("0") @QueryParam("offset") Integer offset) {
+
+        try {
+            PaymentResourceWS[] payments = webServicesSession.getPaymentsByDateRange(
+                                DateConvertUtils.getZonedDateTime(startDate + " 00:00", Constants.DATE_FORMAT_YYYY_MM_DD_HH_MM_SS,
+                                    TimezoneHelper.getCompanyLevelTimeZone(webServicesSession.getCallerCompanyId()), Constants.DEFAULT_TIMEZONE),
+                                DateConvertUtils.getZonedDateTime(endDate + " 00:00", Constants.DATE_FORMAT_YYYY_MM_DD_HH_MM_SS,
+                                    TimezoneHelper.getCompanyLevelTimeZone(webServicesSession.getCallerCompanyId()), Constants.DEFAULT_TIMEZONE),
+                                offset, limit)
+            if(ArrayUtils.isEmpty(payments)) {
+                return Response.noContent().build();
+            }
+            return Response.ok()
+                    .entity(payments)
+                    .build()
+        } catch (Exception e) {
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
@@ -145,8 +198,8 @@ class PaymentResource {
         try {
             webServicesSession.deletePayment(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (Exception sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
     }
 }

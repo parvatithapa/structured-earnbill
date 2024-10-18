@@ -127,7 +127,7 @@
 				</textElement>
 				<text><![CDATA[Report Date]]></text>
 			</staticText>
-			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="490" y="10" width="76" height="20" uuid="a3c3cd18-b2a1-4395-9b1d-d49fdca8180a"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>

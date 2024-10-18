@@ -21,14 +21,16 @@ import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Typ
 
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
@@ -46,8 +48,10 @@ import com.sapienter.jbilling.server.item.tasks.PricingResult;
 import com.sapienter.jbilling.server.order.Usage;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.order.db.OrderLineInfo;
 import com.sapienter.jbilling.server.pricing.RouteBL;
 import com.sapienter.jbilling.server.pricing.RouteBasedRateCardBL;
+import com.sapienter.jbilling.server.pricing.RouteRateCardPriceResult;
 import com.sapienter.jbilling.server.pricing.RouteRecord;
 import com.sapienter.jbilling.server.pricing.cache.RouteFinder;
 import com.sapienter.jbilling.server.pricing.db.ChainPosition;
@@ -74,6 +78,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
 
     public static final String PARAM_ROUTE_RATE_CARD_ID = "route_rate_card_id";
     protected static final String PARAM_DURATION_FIELD_NAME = "cdr_duration_field_name";
+    protected static final String PARAM_CALL_COST_FIELD_NAME = "cdr_call_charge_field_name";
     private static final String PARAM_PRICING_FIELD_PREFIX = "pf_";
 
     protected static enum FupKey {NEW_QTY, FREE_QTY};
@@ -81,7 +86,8 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
     public RouteBasedRateCardPricingStrategy() {
         setAttributeDefinitions(
                 new AttributeDefinition(PARAM_ROUTE_RATE_CARD_ID, INTEGER, true),
-                new AttributeDefinition(PARAM_DURATION_FIELD_NAME, STRING, false)
+                new AttributeDefinition(PARAM_DURATION_FIELD_NAME, STRING, false),
+                new AttributeDefinition(PARAM_CALL_COST_FIELD_NAME, STRING, false)
                 );
 
         setChainPositions(
@@ -110,13 +116,23 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
     public void applyTo(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields, PriceModelDTO planPrice,
             BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
 
-        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(pricingOrder, result, quantity);
+        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(orderLineDTO, result, quantity);
 
         BigDecimal chargeableQuantity = fupResult.get(FupKey.NEW_QTY);
         BigDecimal price = calculatePrice(pricingOrder, result, fields, planPrice, chargeableQuantity);
-
-        calculateUnitPrice(result, chargeableQuantity, fupResult.get(FupKey.FREE_QTY), price);
+        BigDecimal totalQuantity;
+        if(null!= orderLineDTO) {
+            if(orderLineDTO.isMediated()) {
+                totalQuantity = orderLineDTO.getMediatedQuantity();
+            } else {
+                totalQuantity = orderLineDTO.getQuantity();
+            }
+        } else {
+            totalQuantity = quantity;
+        }
+        calculateUnitPrice(result, totalQuantity, fupResult.get(FupKey.FREE_QTY), price);
     }
+
 
     /**
      * Calculate the unit price based on the total value.
@@ -131,7 +147,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
             result.setPrice(BigDecimal.ZERO);
         } else {
             if(quantity != null && quantity.compareTo(BigDecimal.ZERO) > 0) {
-                result.setPrice(price.divide(quantity, Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND));
+                result.setPrice(price.divide(quantity, Constants.BIGDECIMAL_PRECISION_DECIMAL128, RoundingMode.HALF_EVEN));
             } else {
                 result.setPrice(BigDecimal.ZERO);
             }
@@ -140,29 +156,36 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
 
     /**
      * Calculate the qty of the total {@code quantity} which is seen as free usage.
-     *
-     * @param pricingOrder
+     * @param mediatedLine
      * @param result
-     * @param quantity
      * @return
      */
-    public Map<FupKey, BigDecimal> calculateFreeUsageQty(OrderDTO pricingOrder, PricingResult result, BigDecimal quantity) {
-        Map<FupKey, BigDecimal> fupResult = new HashMap<>(4);
-
+    public Map<FupKey, BigDecimal> calculateFreeUsageQty(OrderLineDTO mediatedLine, PricingResult result, BigDecimal lineQuantity) {
+        Map<FupKey, BigDecimal> fupResult = new EnumMap<>(FupKey.class);
         BigDecimal freeUsageQuantityOfItem = BigDecimal.ZERO;
-        if (null != pricingOrder) {
-            for (OrderLineDTO orderLine: pricingOrder.getLines()) {
-                if (orderLine.hasOrderLineUsagePools() && orderLine.getItemId().intValue() == result.getItemId().intValue()) {
-                    freeUsageQuantityOfItem = freeUsageQuantityOfItem.add(orderLine.getFreeUsagePoolQuantity());
-                }
+        if(null!= mediatedLine && mediatedLine.getItem().getId() == result.getItemId()) {
+            OrderLineInfo oldLineInfo = mediatedLine.getOldOrderLineInfo();
+            if(null!= oldLineInfo) {
+                freeUsageQuantityOfItem = oldLineInfo.getFreeUsageQuantity();
+            }
+            if(0 == BigDecimal.ZERO.compareTo(freeUsageQuantityOfItem)) {
+                freeUsageQuantityOfItem = mediatedLine.getFreeUsagePoolQuantity();
+            } else {
+                freeUsageQuantityOfItem = mediatedLine.getFreeUsagePoolQuantity().subtract(freeUsageQuantityOfItem);
             }
         }
-        if (freeUsageQuantityOfItem.compareTo(quantity) < 0)  {
-            quantity = quantity.subtract(freeUsageQuantityOfItem);
+        BigDecimal quantity = null;
+        if(null!= mediatedLine) {
+            if(mediatedLine.isMediated()) {
+                quantity = mediatedLine.getMediatedQuantity();
+            } else {
+                quantity = mediatedLine.getQuantity();
+            }
+        } else {
+            quantity = lineQuantity;
         }
-
         fupResult.put(FupKey.FREE_QTY, freeUsageQuantityOfItem);
-        fupResult.put(FupKey.NEW_QTY, quantity);
+        fupResult.put(FupKey.NEW_QTY, quantity.subtract(freeUsageQuantityOfItem));
         return fupResult;
     }
 
@@ -176,8 +199,8 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
      * @param quantity
      * @return
      */
-    public BigDecimal calculatePrice(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields, PriceModelDTO planPrice,
-            BigDecimal quantity) {
+    public BigDecimal calculatePrice(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields,
+            PriceModelDTO planPrice, BigDecimal quantity) {
 
         List<PricingField> additionalFields = new ArrayList<>();
 
@@ -252,7 +275,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
         logger.debug("Route Rate Card ID Used {} for Customer price determination. ", routeRateCardId);
         boolean isMediated = pricingOrder!=null ? pricingOrder.getIsMediated() : Boolean.FALSE;
         // and do the pricing lookup
-        BigDecimal price= determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated);
+        BigDecimal price = determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated, result);
         logger.debug("Customer Rate Card Price {}", price);
         //account type rate card
         if ( null == price && null != user && user.getCustomer() != null ) {
@@ -264,7 +287,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
                     routeRateCardId = AttributeUtils.getInteger(priceModel.getAttributes(), routeRateCardAttrName);
                     rateCard= rateCardDAS.find(routeRateCardId);
                     logger.debug("Route Rate Card ID Used {} for Accnt Type price determination. ", routeRateCardId);
-                    price= determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated);
+                    price= determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated, result);
                 }
             }
         }
@@ -272,7 +295,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
         if ( null == price ) {
             //plan item price
             List<PlanDTO> plans= new PlanDAS().findByAffectedItem(result.getItemId());
-            if ( null != plans && plans.size() > 0 ) {
+            if ( CollectionUtils.isNotEmpty(plans) ) {
                 PlanDTO plan= plans.get(0);
                 //find plan item
                 PriceModelDTO priceModel= plan.getPlanItems().get(0).getPrice( eventDate ); //pricing date
@@ -280,7 +303,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
                     routeRateCardId = AttributeUtils.getInteger(priceModel.getAttributes(), routeRateCardAttrName);
                     rateCard= rateCardDAS.find(routeRateCardId);
                     logger.debug("Route Rate Card ID Used {} for Plan Item price determination. ", routeRateCardId);
-                    price= determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated);
+                    price= determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated, result);
                 }
             }
         }
@@ -295,7 +318,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
                             planPrice.getAttributes(), routeRateCardAttrName);
                     rateCard = rateCardDAS.find(routeRateCardId);
                     logger.debug("Route Rate Card ID Used {} for default product price determination. ", routeRateCardId);
-                    price = determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated);
+                    price = determineRateCardPrice(rateCard, fields, planPrice, quantity, isMediated, result);
                 }
             }
         }
@@ -335,7 +358,7 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
     }
 
     private BigDecimal determineRateCardPrice(RouteRateCardDTO rateCard, List<PricingField> fields,
-            PriceModelDTO planPrice, BigDecimal quantity, boolean isMediated) {
+            PriceModelDTO planPrice, BigDecimal quantity, boolean isMediated, PricingResult result) {
 
         //use RouteBasedRateCardFinder to resolve the price
         //include route information
@@ -343,13 +366,17 @@ public class RouteBasedRateCardPricingStrategy extends AbstractPricingStrategy {
             RouteBasedRateCardBL rateCardBL= new RouteBasedRateCardBL(rateCard);
 
             String durationFieldName= planPrice.getAttributes().get(PARAM_DURATION_FIELD_NAME);
+            String callCostFieldName= planPrice.getAttributes().get(PARAM_CALL_COST_FIELD_NAME);
+            callCostFieldName = (!StringUtils.isEmpty(callCostFieldName)) ? callCostFieldName : Constants.CALL_CHARGE;
 
-            BigDecimal price= rateCardBL.getBeanFactory().getFinderInstance().findRoutePrice(
-                    rateCard, fields, durationFieldName, quantity, isMediated);
-
-            LOG.debug("Price resolved " + price);
-
-            return price;
+            RouteRateCardPriceResult priceResult= rateCardBL.getBeanFactory().getFinderInstance().findRoutePrice(
+                    rateCard, fields, durationFieldName, callCostFieldName, quantity, isMediated);
+            if(null!= priceResult) {
+                LOG.debug("Price resolved " + priceResult.getPrice());
+                result.setRouteRateCardRecord(priceResult.getUsedRouteRateCardRecord());
+                return priceResult.getPrice();
+            }
+            return null;
         } catch (Exception e) {
 
             LOG.debug("Exception occured while resolving price for a rate card.",  e);

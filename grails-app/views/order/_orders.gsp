@@ -162,7 +162,7 @@
         
         <g:set var="CSV_Condition" value="${PreferenceBL.getPreferenceValueAsIntegerOrZero(session['company_id'], Constants.PREFERENCE_BACKGROUND_CSV_EXPORT) != 0}"/>
   		<g:if test="${CSV_Condition}">
-        <div class="pager-button" id="generateCsv" style="text-align : right;">
+        <div class="pager-button" id="generateCsv">
             <a onclick = "generateCSV(); showMessage()"><g:message code="generate.csv.link"/></a>
         </div>
        	</g:if>

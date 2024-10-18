@@ -25,7 +25,10 @@ import com.sapienter.jbilling.server.mediation.converter.common.FormatField;
 import org.apache.commons.lang.NotImplementedException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 
 /**
@@ -36,6 +39,7 @@ import java.math.BigDecimal;
  */
 public class BasicMediationRecordLineConverter implements MediationRecordLineConverter {
 
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	// Commented as Date Format for AC is configured in resources.xml
 	// private DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
 	private DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyyMMdd-HHmmss");
@@ -120,6 +124,7 @@ public class BasicMediationRecordLineConverter implements MediationRecordLineCon
                     }
                 }
             } catch (RuntimeException e) {
+                logger.error("Exception occurred while converting line to record.", e);
                 record.getErrors().add(e.getMessage());
             }
 

@@ -16,6 +16,10 @@
 
 package com.sapienter.jbilling.server.process.task;
 
+import java.time.LocalDate;
+import java.util.Date;
+import java.util.List;
+
 import com.sapienter.jbilling.server.order.db.OrderChangeDTO;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
@@ -23,10 +27,6 @@ import com.sapienter.jbilling.server.order.db.OrderProcessDAS;
 import com.sapienter.jbilling.server.user.db.MainSubscriptionDTO;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 import com.sapienter.jbilling.server.util.time.ProRatePeriodCalculator;
-
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
 
 public class ProRateOrderPeriodUtil {
 
@@ -64,11 +64,13 @@ public class ProRateOrderPeriodUtil {
             }
         }
 
-        retValue = calculator.getDate(retValue, mainSubscription);
+        retValue = calculator.getDate(retValue, order.getUser().getCustomer().getNextInvoiceDate(),mainSubscription);
         while (retValue.isAfter(startDate)) {
             retValue = calculator.getNextBeforeDate(retValue, mainSubscription);
         }
 
         return DateConvertUtils.asUtilDate(retValue);
     }
+
+    
 }

@@ -144,9 +144,11 @@ public class CurrentOrder {
         }
         Map<Integer, Map<String,Date>> activeSinceDateMapByUser = new HashMap<>();
         do {
+
             Date activeSinceDate = getActiveSinceDate(activeSinceDateMapByUser);
             Date newOrderDate = calculateDate(futurePeriods, mainSubscription);
-            logger.debug("Calculated one time date: {}, for future periods: {}", newOrderDate, futurePeriods);
+            logger.debug("Calculated one timer date: " + newOrderDate + ", for future periods: " + futurePeriods);
+
             if (null != activeSinceDate && eventDate.compareTo(activeSinceDate) >= 0
                     && activeSinceDate.after(newOrderDate)) {
                 newOrderDate = activeSinceDate;
@@ -231,6 +233,7 @@ public class CurrentOrder {
      * Assumes that main subscription already exists for the customer
      * @param futurePeriods date for N periods into the future
      * @param mainSubscription Customer main subscription
+     * @param includeMediatedLinesToCurrentMonth 
      * @return calculated period date for N future periods
      */
     private Date calculateDate(int futurePeriods, MainSubscriptionDTO mainSubscription) {
@@ -241,7 +244,7 @@ public class CurrentOrder {
 
         // calculate the event date with the added future periods
         // default cal to actual event date
-        Date actualEventDate = eventDate;
+        Date actualEventDate = getActualEventDate();
         cal.setTime(actualEventDate);
         
         for (int f = 0; f < futurePeriods; f++) {
@@ -266,6 +269,10 @@ public class CurrentOrder {
         logger.debug("After period adjustment, the date arrived for current order is %s", cal.getTime());
 
         return cal.getTime();
+    }
+
+    protected Date getActualEventDate() {
+        return eventDate;
     }
 
     private boolean isMainSubscriptionUsed(Integer entityId) {

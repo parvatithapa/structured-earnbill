@@ -1,0 +1,278 @@
+= Build environment for jBilling
+:author Igor E. Poteryaev
+:email:  igor.poteryaev@appdirect.com
+:revnumber: v1.0
+:revdate:   2019.10.30
+:revremark: Initial documentation release
+:sectnums:
+:toc: left
+:toclevels: 4
+:toc-title: Setup, usage and maintenance
+:experimental:
+:description: User documentation
+:keywords: jBilling, sdkman, JDK
+
+== Requirements
+
+To build jBilling application you'll need *Java 8 SDK*, *grails 2.4.3* and *maven* installed.
+Additionally *ant* is required to run test suite.
+*PostgreSQL RDBMS server* is required for database and *PostgreSQL client* is required for database structure maintenance.
+*Tomcat 8.5* need to be installed at tools box to be able to test applications deployment.
+
+=== Software versions
+
+[source,bash]
+----
+~ $ java -version
+openjdk version "1.8.0_222"
+OpenJDK Runtime Environment (build 1.8.0_222-8u222-b10-1ubuntu1~16.04.1-b10)
+OpenJDK 64-Bit Server VM (build 25.222-b10, mixed mode)
+
+~ $ grails -version
+Grails version: 2.4.3
+
+~ $ mvn -version
+Apache Maven 3.6.2 (40f52333136460af0dc0d7232c0dc0bcf0d9e117; 2019-08-27T15:06:16Z)
+Maven home: /opt/apps/sdkman/candidates/maven/current
+Java version: 1.8.0_222, vendor: Private Build, runtime: /usr/lib/jvm/java-8-openjdk-amd64/jre
+Default locale: en_US, platform encoding: UTF-8
+OS name: "linux", version: "4.4.0-1050-aws", arch: "amd64", family: "unix"
+
+~ $ ant -version
+Apache Ant(TM) version 1.10.1 compiled on February 2 2017
+
+~ $ sudo dpkg --list | grep postgresql
+hi  postgresql                       9.5+173ubuntu0.2                           all          object-relational SQL database (supported version)
+hi  postgresql-9.5                   9.5.19-0ubuntu0.16.04.1                    amd64        object-relational SQL database, version 9.5 server
+hi  postgresql-client-9.5            9.5.19-0ubuntu0.16.04.1                    amd64        front-end programs for PostgreSQL 9.5
+ii  postgresql-client-common         173ubuntu0.2                               all          manager for multiple PostgreSQL client versions
+ii  postgresql-common                173ubuntu0.2                               all          PostgreSQL database-cluster manager
+hi  postgresql-contrib-9.5           9.5.19-0ubuntu0.16.04.1                    amd64        additional facilities for PostgreSQL
+
+~ $ git --version
+git version 2.7.4
+----
+
+We recommend to use sdkman tool for Grails, Maven and Ant installation. https://sdkman.io/usage
+
+=== prepare build environment
+
+* install sdkman.
+Follow instructions at https://sdkman.io/install
+[source,bash]
+----
+~ $ 
+~ $ curl -s "https://get.sdkman.io" | bash
+~ $ source "$HOME/.sdkman/bin/sdkman-init.sh"
+~ $ sdk version
+----
+
+* install build tools
+[source,bash]
+----
+~ $ sdk install ant    1.10.1
+~ $ sdk install maven  3.6.2
+~ $ sdk install grails 2.4.3
+----
+
+=== prepare PostgreSQL
+
+* Create postgresql user
+[source,bash]
+----
+~ $ su - postgres
+~ $ psql
+psql (9.5.19)
+Type "help" for help.
+
+postgres=# create user jbilling;
+postgres=#  alter user jbilling createdb;
+postgres=#  alter user jbilling password '';
+----
+
+* Set access permissions for postgresql user in /etc/postgresql/9.5/main/pg_hba.conf
+For example, if PostgreSQL server runs at the same host, you may have to add this line:
+[source,bash]
+----
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+...
+host    all             jbilling        127.0.0.1/32            md5
+----
+* Reload postgresql service to apply changes from pg_hba.conf
+[source,bash]
+----
+~ $ sudo service postgresql reload
+----
+
+=== build jBilling webapp.
+
+* pull jBilling sources from github
+Assuming that user account has correct credentials. Contact igor.poteryaev@appdirect.com if needed.
+[source,bash]
+----
+~/ $ mkdir build-jbilling
+~/ $ cd build-jbilling
+~/build-jbilling $ git pull git@github.com:emilc/jbilling-local-edition.git .
+----
+
+* checkout jBilling branch to build
+[source,bash]
+----
+~/build-jbilling $ git fetch && git fetch --tags
+~/build-jbilling $ git checkout release-saas-4.34
+----
+
+* Configure your license key at src/java/jbilling.properties file as follow:
+
+[source,bash]
+----
+licensee=company-name
+license_key=licence-key
+----
+
+* You can also configure default SMTP server filling up related parameters as follow:
+[source,bash]
+----
+# email server parameters for emails
+# sent to the entities and as a default
+smtp_server=smtp.gmail.com
+smtp_port=587
+smtp_ssl_auth=false
+smtp_tls=true
+smtp_username=test@yourcompany.com
+smtp_password=password
+email_from=test@yourcompany.com
+email_from_name=YourCompany
+email_reply_to=test@yourcompany.com
+email_bcc_to=
+email_html=
+----
+
+* You should also configure the system admin email addresses before spinning up the application, those will be used at company signup to send system admin credentials
+[source,bash]
+----
+copyCompany.admin.0=system admin,admin@yourcompany.com
+copyCompany.admin.1=system admin1,admin@yourcompany.com
+copyCompany.admin.2=system admin2,admin@yourcompany.com
+copyCompany.admin.3=system admin3,admin@yourcompany.com 
+----
+
+* Key value is composed by the system admin username and its email address separated by a comma 
+
+* build modules
+
+[source,bash]
+----
+~/build-jbilling $
+pushd service-modules
+mvn clean install
+popd
+----
+
+Check that modules were built successfully.
+Last lines in maven console output should be:
+
+[source,bash]
+----
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+----
+
+* build webapp
+
+[source,bash]
+----
+~/build-jbilling $
+grails clean
+grails war
+----
+
+* build api.jar
+Note: This step is needed only when api is changed. For example, when switching to a newer release version.
+[source,bash]
+----
+~/build-jbilling $
+grails api
+----
+
+=== Environment variables.
+You may find convenient to set environment variables used by jBilling.
+Next environment variables allow customization of database connection. If not set, default values will be used as follow:
+[source]
+----
+JBILLING_DB_USER ?: "jbilling"
+JBILLING_DB_NAME ?: "jbilling_test"
+JBILLING_DB_HOST ?: "localhost"
+JBILLING_DB_PORT ?: "5432"
+JBILLING_DB_PARAMS ?: ""
+JBILLING_DB_PASSWORD ?: ""
+----
+
+=== Prepare test environment.
+
+* Create/Recreate test database and apply liquibase migrations
+
+[source,bash]
+----
+~/build-jbilling $
+grails prepare-test --hard --offline
+----
+Parameters
+
+*hard* - drop and create an existing database
+
+*offline* - use only dependencies jars already downloaded and cached under ~.m2/ local maven cache folder.
+
+* Upgrade database structure.
+
+This is required when switching to a new release.
+[source,bash]
+----
+grails upgrade-db
+----
+
+
+* Create/Recreate grails-ant.properties (used by tests)
+
+[source,bash]
+----
+~/build-jbilling $
+ant build-grails-ant-properties
+----
+
+* Start jBilling application.
+
+It is required before running functional tests.
+Open a new linux shell and
+[source,bash]
+----
+~/ $ cd build-jbilling
+~/build-jbilling $ ./run-app.sh
+----
+
+Wait until application starts. 
+Line in linux shell output should be:
+[source]
+----
+| Server running. Browse to http://localhost:8080/jbilling
+----
+
+=== Run test suite.
+
+* Unit tests
+
+[source,bash]
+----
+~/build-jbilling $
+ant test-unit
+----
+
+* Full functional test suite
+
+Runs ALL test suites and test cases.
+[source,bash]
+----
+~/build-jbilling $
+ant test
+----

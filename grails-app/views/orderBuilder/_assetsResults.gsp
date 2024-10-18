@@ -91,7 +91,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate action="edit"
                              params="${sortableParams(params: [partial: true, _eventId: 'assets', max: maxAssetsShown, statusId: params.statusId ?: "", filterBy: params.filterBy ?: ""])}"
                              total="${assets.totalCount ?: 0}"

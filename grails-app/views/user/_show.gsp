@@ -43,11 +43,11 @@
                 <tbody>
                 <tr>
                     <td><g:message code="customer.detail.user.user.id"/></td>
-                    <td class="value">${selected.id}</td>
+                    <td class="value" data-cy="userId">${selected.id}</td>
                 </tr>
                 <tr>
                     <td><g:message code="customer.detail.user.username"/></td>
-                    <td class="value">
+                    <td class="value" data-cy="userLoginName">
                         ${selected.userName}
                     </td>
                 </tr>
@@ -177,12 +177,12 @@
                     <g:link url="${resource(file: editLink)+'/'+selected.id}" class="submit edit"><span><g:message code="button.edit"/></span></g:link>
                 </g:if>
                 <g:else>
-                    <g:link action="edit" id="${selected.id}" class="submit edit"><span><g:message code="button.edit"/></span></g:link>
+                    <g:link action="edit" id="${selected.id}" class="submit edit" data-cy="editUser"><span><g:message code="button.edit"/></span></g:link>
                 </g:else>
             </g:if>
             <sec:ifAllGranted roles="MENU_99">
                 <g:if test="${currentUser.id != selected.id}">
-                    <a onclick="showConfirm('delete-${selected.id}');" class="submit delete"><span><g:message code="button.delete"/></span></a>
+                    <a onclick="showConfirm('delete-${selected.id}');" class="submit delete" data-cy="deleteUser"><span><g:message code="button.delete"/></span></a>
                 </g:if>
             </sec:ifAllGranted>
             <sec:ifAllGranted roles="USER_142">

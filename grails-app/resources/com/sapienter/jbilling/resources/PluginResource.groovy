@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -49,8 +48,8 @@ class PluginResource {
         PluggableTaskWS pluginWS;
         try {
             pluginWS = webServicesSession.getPluginWS(id);
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(pluginWS).build();
     }
@@ -71,8 +70,8 @@ class PluginResource {
             Integer pluginId = webServicesSession.createPlugin(pluginWS);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(pluginId)).build())
                     .entity(webServicesSession.getPluginWS(pluginId)).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -97,8 +96,8 @@ class PluginResource {
             pluginWS.setId(id);
             webServicesSession.updatePlugin(pluginWS);
             return Response.ok().entity(webServicesSession.getPluginWS(id)).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -119,8 +118,8 @@ class PluginResource {
             }
             webServicesSession.deletePlugin(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

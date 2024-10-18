@@ -351,15 +351,12 @@ public class SpaImportBL {
         return false;
     }
 
-    @SuppressWarnings("rawtypes")
-	public void addCustomerAddress(UserDTO userDTO, Date effectiveDate, String aitName, AddressType addressType) {
-    	AccountInformationTypeDTO ait = new AccountInformationTypeDAS().findByName(aitName, entityId, accountTypeId);
-    	if(ait != null) {
+    public void addCustomerAddress(UserDTO userDTO, Date effectiveDate, String aitName, AddressType addressType) {
+        AccountInformationTypeDTO ait = new AccountInformationTypeDAS().findByName(aitName, entityId, accountTypeId);
         SpaAddressWS spaAddress = spaImportWS.getAddress(addressType);
-        CustomerDTO customer = userDTO.getCustomer();
-        Integer groupId = ait.getId();
         if (spaAddress != null) {
-        	setAdditionalAddressesAITMetaFields(customer,groupId);
+            CustomerDTO customer = userDTO.getCustomer();
+            Integer groupId = ait.getId();
             customer.setAitMetaField(entityId, groupId, SpaConstants.POSTAL_CODE, spaAddress.getPostalCode());
             customer.setAitMetaField(entityId, groupId, SpaConstants.STREET_NUMBER_SUFFIX, spaAddress.getStreetNumberSufix());
             customer.setAitMetaField(entityId, groupId, SpaConstants.STREET_NUMBER, spaAddress.getStreetNumber());
@@ -369,7 +366,7 @@ public class SpaImportBL {
             customer.setAitMetaField(entityId, groupId, SpaConstants.MF_APT_SUITE, spaAddress.getStreetAptSuite());
             customer.setAitMetaField(entityId, groupId, SpaConstants.PROVINCE, spaAddress.getProvince());
             customer.setAitMetaField(entityId, groupId, SpaConstants.CITY, spaAddress.getCity());
-  
+
             if (AddressType.EMERGENCY.equals(addressType)) {
                 customer.setAitMetaField(entityId, groupId, SpaConstants.MF_PROVIDED, true);
                 customer.setAitMetaField(entityId, groupId, SpaConstants.MF_REQUIRED, true);
@@ -392,24 +389,7 @@ public class SpaImportBL {
                 }
             }
             customerDAS.save(customer);
-		} else {
-			if (!AddressType.EMERGENCY.equals(addressType)) {
-				setAdditionalAddressesAITMetaFields(customer, groupId);
-				for (Map.Entry<Integer, List<MetaFieldValue>> entry : customer.getAitMetaFieldMap().entrySet()) {
-					if (groupId.equals(entry.getKey())) {
-						for (MetaFieldValue value : entry.getValue()) {
-							if (value.getFieldName().equals(SpaConstants.SAME_AS_CUSTOMER_INFORMATION)) {
-								customer.addCustomerAccountInfoTypeMetaField(value, ait, effectiveDate);
-							}
-						}
-					}
-				}
-				customerDAS.save(customer);
-			}
-		}
-    	} else {
-    	   log.debug("AccountInformationType is not found for address type %s ", aitName);
-       }
+        }
     }
 
 
@@ -1388,26 +1368,5 @@ public class SpaImportBL {
         assetItentifier.append(" - " + System.currentTimeMillis());
         return assetItentifier.toString();
     }
-    
-	private void setAdditionalAddressesAITMetaFields(CustomerDTO customer, Integer groupId) {
-	    SpaAddressWS address;
 
-	    AccountInformationTypeDTO shippingAddressAIT = new AccountInformationTypeDAS().findByName(SpaConstants.SHIPPING_ADDRESS_AIT, entityId, accountTypeId);
-	    if (shippingAddressAIT != null && groupId == shippingAddressAIT.getId()) {
-	        address = spaImportWS.getAddress(AddressType.SHIPPING);
-	        customer.setAitMetaField(entityId, shippingAddressAIT.getId(), SpaConstants.SAME_AS_CUSTOMER_INFORMATION, address == null ? true : false);
-	    }
-
-	    AccountInformationTypeDTO serviceAddressAIT = new AccountInformationTypeDAS().findByName(SpaConstants.SERVICE_ADDRESS_AIT, entityId, accountTypeId);
-	    if (serviceAddressAIT != null && groupId == serviceAddressAIT.getId()) {
-	        address = spaImportWS.getAddress(AddressType.SERVICE);
-	        customer.setAitMetaField(entityId, serviceAddressAIT.getId(), SpaConstants.SAME_AS_CUSTOMER_INFORMATION, address == null ? true : false);       
-	    }
-	    
-	    AccountInformationTypeDTO portingAddressAIT = new AccountInformationTypeDAS().findByName(SpaConstants.PORTING_ADDRESS_AIT, entityId, accountTypeId);
-	    if (portingAddressAIT != null && groupId == portingAddressAIT.getId()) {
-	        address = spaImportWS.getAddress(AddressType.PORTING);
-	        customer.setAitMetaField(entityId, portingAddressAIT.getId(), SpaConstants.SAME_AS_CUSTOMER_INFORMATION, address == null ? true : false);
-	    }
-	}
 }

@@ -18,19 +18,17 @@
 	<queryString>
 		<![CDATA[-- select credit invoice lines of current invoice
 select
-concat(split_part(il.description,',',1),' on',' ',TO_CHAR((select create_datetime from purchase_order where id = il.order_id),'DD Mon YYYY'),split_part(il.description,',',2))
- AS description, COALESCE(-1*il.amount,0) as amount,(select create_datetime from purchase_order where id = il.order_id) AS swap_date
+    il.description, COALESCE(-1*il.amount,0) as amount
 from invoice_line il
 where il.invoice_id = $P{invoiceId}
 and il.deleted = 0
 and il.type_id in (select id from invoice_line_type where description = 'adjustment')
 
-
 union all
 
 -- select credit of type payments in between 2 invoices
 select
-         'Credit' as description, p.amount as amount,null  AS swap_date
+         'Credit' as description, p.amount as amount
 from payment p
 where p.user_id = $P{core.param.userId}
 -- payment of type credit
@@ -44,18 +42,17 @@ and p.payment_date < $P{core.param.invoice_date}
 union all
 -- select credit notes in between 2 invoices
 select
-    cnl.description, cnl.amount as amount,null  AS swap_date
+    cnl.description, cnl.amount as amount
 from credit_note cn
 inner join invoice i on i.id = cn.creation_invoice_id and i.user_id = $P{core.param.userId}
 inner join credit_note_line cnl on cnl.credit_note_id = cn.id
 where cn.deleted = 0
 and cn.create_datetime >= $P{core.param.last_invoice_date}
 and cn.create_datetime < $P{core.param.invoice_date}
-order by swap_date desc,amount desc;]]>
+order by amount desc;]]>
 	</queryString>
 	<field name="description" class="java.lang.String"/>
 	<field name="amount" class="java.math.BigDecimal"/>
-	<field name="swap_date" class="java.sql.Timestamp"/>
 	<variable name="adjustment_total" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
 	</variable>

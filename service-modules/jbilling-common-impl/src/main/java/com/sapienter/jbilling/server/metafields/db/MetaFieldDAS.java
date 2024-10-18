@@ -894,4 +894,24 @@ public class MetaFieldDAS extends AbstractDAS<MetaField> {
         result.close();
     	return resultMap;
     }
+    
+    
+    @SuppressWarnings("unchecked")
+    public List<MetaField> getAvailableMetaFields(Integer entityId, EntityType entityType, String metaFieldName, Boolean primary) {
+    	
+        DetachedCriteria query = DetachedCriteria.forClass(MetaField.class);
+        query.add(Restrictions.eq("entityId", entityId));
+        query.add(Restrictions.eq("entityType", entityType));
+        query.add(Restrictions.eq("name", metaFieldName));
+        if (null != primary) {
+            query.add(Restrictions.eq("primary", primary.booleanValue()));
+        }
+        List<MetaField> result = null;
+        try {
+            result = (List<MetaField>) getHibernateTemplate().findByCriteria(query);
+        } catch (Exception e) {
+            LOG.error("Exception occurred while getting available metafield against the entity type ",e);
+        }
+        return result;
+    }
 }

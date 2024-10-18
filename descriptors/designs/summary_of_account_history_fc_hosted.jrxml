@@ -177,7 +177,7 @@
 					<font fontName="Open Sans"/>
 				</textElement>
 				<textFieldExpression><![CDATA[null != $P{core.param.taxes_and_fees} ? ($P{core.param.taxes_and_fees} >= 0 ? $P{core.param.currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($P{core.param.taxes_and_fees})):
-"-"+$P{core.param.currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($P{core.param.taxes_and_fees}.negate()))): $P{core.param.currency_symbol}+new BigDecimal("0.00")]]></textFieldExpression>
+"-"+$P{core.param.currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($P{core.param.taxes_and_fees}).negate())): $P{core.param.currency_symbol}+new BigDecimal("0.00")]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="420" y="75" width="125" height="14" forecolor="#505861" uuid="61a3125e-72b9-48ac-832e-d41fb1d28c3e"/>

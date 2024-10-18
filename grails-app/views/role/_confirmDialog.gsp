@@ -1,12 +1,12 @@
 <div id="confirm-dialog-save-permissions" class="bg-lightbox" title="<g:message code="popup.confirm.title"/>" style="display:none;">
     <!-- confirm dialog content body -->
-    <table style="margin: 3px 0 0 10px">
+    <table>
         <tbody>
             <tr>
                 <td valign="top">
                     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
                 </td>
-                <td class="col2" style="padding-left: 7px">
+                <td class="col2">
                     <p id="confirm-dialog-save-permissions-msg">
                         <g:message code="role.popup.confirmation" />
                     </p>

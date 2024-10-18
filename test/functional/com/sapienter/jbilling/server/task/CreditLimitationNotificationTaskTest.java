@@ -35,7 +35,7 @@ import static org.testng.AssertJUnit.*;
  * @author Maeis Gharibjanian
  * @since 03-09-2013
  */
-@Test(groups = { "integration", "task" }, testName = "CreditLimitationNotificationTaskTest", priority = 12)
+@Test(groups = { "integration", "task" }, testName = "CreditLimitationNotificationTaskTest")
 public class CreditLimitationNotificationTaskTest extends ApiTestCase {
 
 	private static final Logger logger = LoggerFactory.getLogger(CreditLimitationNotificationTaskTest.class);

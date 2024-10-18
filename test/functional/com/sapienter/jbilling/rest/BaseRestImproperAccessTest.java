@@ -52,12 +52,11 @@ public abstract class BaseRestImproperAccessTest implements TestCrudOperation {
     public static final String UNAUTHORIZED_ACCESS_TO_ID = "Unauthorized access to user ID %d";
     public static final String UNAUTHORIZED_ACCESS_TO_ENTITY = "Unauthorized access to entity ID %d";
     public static final String UNAUTHORIZED_ACCESS_TO_PAYMENT_INSTRUMENT = "Unauthorized access to payment instrument of user ID %d";
+    public static final String UNAUTHORIZED_INVALID_USER_ID = "Please enter a valid user id";
     
     public static final String INVALID_ERROR_MESSAGE = "Invalid error message!";
     protected static final String CROSS_CUSTOMER_ERROR_MSG = "Unauthorized access to entity %d for customer %d data by caller '%s'";
     protected static final String CROSS_COMPANY_ERROR_MSG = "Unauthorized access to entity %d by caller '%s'";
-    protected static final String INVALID_USER_ERROR_MSG = "Please enter a valid user id";
-    protected static final String INVALID_REFUND_AMOUNT = "PaymentWS,paymentId,validation.error.apply.without.payment.or.different.linked.payment.amount";
     
     protected static final String LOGIN_USER_COMPANY1_CUSTOMER2_FRENCH_SPEAKER = "french-speaker;1";
     protected static final String LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS = "pendunsus1;1";

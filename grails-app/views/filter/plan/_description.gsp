@@ -28,7 +28,7 @@
     <div class="slide">
         <fieldset>
             <div class="input-row">
-                <div class="input-bg" style="float:left;">
+                <div id="custom-div" class="input-bg">
                     <g:textField  name = "filters.${filter.name}.stringValue"
                                  value = "${filter.stringValue}"
                                  class = "{validate:{ maxlength: 50 }} ${filter.value ? 'autoFill' : ''}"/>

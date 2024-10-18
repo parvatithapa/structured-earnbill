@@ -1,7 +1,6 @@
 package jbilling
 
-import au.com.bytecode.opencsv.CSVWriter
-
+import com.opencsv.CSVWriter
 import com.sapienter.jbilling.client.ViewUtils
 import com.sapienter.jbilling.client.util.DownloadHelper
 import com.sapienter.jbilling.common.Constants
@@ -162,7 +161,7 @@ class RouteBasedRateCardController {
 
         // outfile
         def file = File.createTempFile(routeRateCard.tableName, '.csv')
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',' as char)
+        CSVWriter writer = new CSVWriter(new FileWriter(file))
 
         // write csv header
         def columns = routeRateCardService.getRouteTableColumnNames(routeRateCard.tableName)
@@ -357,8 +356,8 @@ class RouteBasedRateCardController {
 		RouteRateCardDTO routeRateCardDTO= routeBasedRateCardBL.getEntity()
         securityValidator.validateCompany(routeRateCardDTO?.company?.id, Validator.Type.VIEW)
         Map matchingFieldMap = params?.test as Map
-        
-        def price = null 
+
+        def price = null
 		try {
 			List<PricingField> fields= new ArrayList<PricingField>();
 
@@ -375,7 +374,7 @@ class RouteBasedRateCardController {
 				}
 			}
 			RouteBasedRateCardFinder routeBasedRateCardFinder = routeBasedRateCardBL.getBeanFactory().getFinderInstance()
-			
+
 			price= routeBasedRateCardFinder.findRoutePrice(routeRateCardDTO, fields)
 		} catch (MissingRequiredFieldError e) {
 			viewUtils.resolveException(flash, session.locale, e)
@@ -720,7 +719,7 @@ class RouteBasedRateCardController {
 
         // outfile
         def file = File.createTempFile(routeRateCardDTO.tableName, '.csv')
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',' as char)
+        CSVWriter writer = new CSVWriter(new FileWriter(file))
 
         // write csv header
         writer.writeNext(columns.toArray(new String[columns.size()]))

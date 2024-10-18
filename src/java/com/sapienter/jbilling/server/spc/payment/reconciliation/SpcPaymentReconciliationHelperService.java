@@ -2,9 +2,10 @@ package com.sapienter.jbilling.server.spc.payment.reconciliation;
 
 import static com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationRecord.SETTLEMENT_DATE_FORMAT;
 import static com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationRecord.TRANSACTION_DATE_TIME_FORMAT;
-import static com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationScheduledTask.PARAM_SETTLEMENT_DATE;
-import static com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationScheduledTask.PARAM_TRANSACTION_DATE_TIME;
-import static com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationScheduledTask.PARAM_UNALLOCATED_PAYMENT_ACCOUNT;
+import static com.sapienter.jbilling.server.spc.payment.reconciliation.PaymentReconciliationScheduledTask.PARAM_SETTLEMENT_DATE;
+import static com.sapienter.jbilling.server.spc.payment.reconciliation.PaymentReconciliationScheduledTask.PARAM_TRANSACTION_DATE_TIME;
+import static com.sapienter.jbilling.server.spc.payment.reconciliation.PaymentReconciliationScheduledTask.SPC_PARAM_UNALLOCATED_PAYMENT_ACCOUNT;
+import static com.sapienter.jbilling.server.spc.payment.reconciliation.PaymentReconciliationScheduledTask.AGL_PARAM_UNALLOCATED_PAYMENT_ACCOUNT;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -20,10 +21,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
+import com.opencsv.CSVWriter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -32,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
@@ -56,19 +61,23 @@ import com.sapienter.jbilling.server.payment.db.PaymentDTO;
 import com.sapienter.jbilling.server.payment.db.PaymentInformationDTO;
 import com.sapienter.jbilling.server.payment.db.PaymentMethodDAS;
 import com.sapienter.jbilling.server.payment.event.PaymentSuccessfulEvent;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
 import com.sapienter.jbilling.server.system.event.EventManager;
+import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
 import com.sapienter.jbilling.server.user.db.CompanyDTO;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
-
-import au.com.bytecode.opencsv.CSVWriter;
 
 @Transactional
 @Component
 public class SpcPaymentReconciliationHelperService {
+
+    private static final String SPC_PAYMENT_PROCESSOR_BPAY = "Payment-Reconciliation";
+    private static final String AGL_PAYMENT_PROCESSOR_BPAY = "BPAY-AGL";
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -86,8 +95,8 @@ public class SpcPaymentReconciliationHelperService {
      * @param record
      */
     @Async("asyncTaskExecutor")
-    public void reconcilePayment(SpcPaymentReconciliationRecord record, Map<String, String> parameters) {
-    	String errorPath = parameters.get(SpcPaymentReconciliationScheduledTask.ERROR_PATH);
+    public Future<Boolean> reconcilePayment(SpcPaymentReconciliationRecord record, Map<String, String> parameters, boolean isAGLFile) {
+        String errorPath = parameters.get(PaymentReconciliationScheduledTask.ERROR_PATH);
         try {
             validateRequriedPaymentLevelMfForEntity(record.getEntityId(), parameters);
             CompanyDTO entity = new CompanyDAS().findNow(record.getEntityId());
@@ -98,19 +107,25 @@ public class SpcPaymentReconciliationHelperService {
             logger.debug("date time format {} for entity {} with locale {}", dateTimeFormat, entity.getId(), entityLocale);
             Date txDate = convertDate(record.getTransactionDateTime(), TRANSACTION_DATE_TIME_FORMAT, dateTimeFormat);
             logger.debug("Payment Create Date {}", txDate);
-            
+
             if(record.isBPay()) {
             	String refNumber = record.getPaymentFieldByName("BPAY Ref");
                 logger.debug("processing bpay record for ref number {} ", refNumber);
                 Optional<Integer> userId = findUserIdByBpayRefNumber(record);
+                String paramName = null;
+                if(isAGLFile) {
+                    paramName = AGL_PARAM_UNALLOCATED_PAYMENT_ACCOUNT.getName();
+                } else {
+                    paramName =  SPC_PARAM_UNALLOCATED_PAYMENT_ACCOUNT.getName();
+                }
+                Integer unAllocatedBPayUserId = null;
                 if(!userId.isPresent()) {
-                    String paramName = PARAM_UNALLOCATED_PAYMENT_ACCOUNT.getName();
                     if(!parameters.containsKey(paramName)) {
                         logger.debug("skipping record since {} not configured for entity {}", paramName, record.getEntityId());
                         writeErrorLog(record.getPaymentFieldByName("BPAY Ref"), record.getTransactionId(), String.format("skipping record since {%s} not configured for entity {%d}", paramName, record.getEntityId()), errorPath);
-                        return;
+                        return new AsyncResult<Boolean> (Boolean.FALSE);
                     }
-                    Integer unAllocatedBPayUserId = Integer.parseInt(parameters.get(paramName));
+                    unAllocatedBPayUserId = Integer.parseInt(parameters.get(paramName));
                     logger.debug("adding record {} on unallocated bpay payment account {}", record, unAllocatedBPayUserId);
                     userId = Optional.of(unAllocatedBPayUserId);
                 }
@@ -119,23 +134,34 @@ public class SpcPaymentReconciliationHelperService {
                 if(payment.isPresent()) {
                     logger.debug("skipping bpay record {} since payment {} found for transaction id {}", record, payment.get(), txId);
                     writeErrorLog(record.getPaymentFieldByName("BPAY Ref"), record.getTransactionId(), String.format("skipping bpay record since payment {%d} found for transaction id/receipt number: {%s}", payment.get(), txId), errorPath);
-                    return;
+                    return new AsyncResult<Boolean> (Boolean.FALSE);
                 }
                 // lock user to avoid any concurrency issue.
                 UserDTO user = new UserDAS().findForUpdate(userId.get());
                 record.setUserId(userId.get());
                 PaymentInformationDTO bpayInstrument = null;
-                for(PaymentInformationDTO instrument : user.getPaymentInstruments()) {
-                    if(instrument.getPaymentMethodType().getPaymentMethodTemplate().getTemplateName().equals("BPAY")) {
-                        bpayInstrument = instrument;
-                        break;
+
+                if(!userId.get().equals(unAllocatedBPayUserId)) {
+                    for(PaymentInformationDTO instrument : user.getPaymentInstruments()) {
+                        if(instrument.getPaymentMethodType().getPaymentMethodTemplate().getTemplateName().equals("BPAY") &&
+                           (refNumber.equals(new PaymentInformationBL().getStringMetaFieldByType(instrument, MetaFieldType.BPAY_REF)))) {
+                           bpayInstrument = instrument;
+                           break;
+                       }
+                    }
+                } else if(Objects.nonNull(unAllocatedBPayUserId) && unAllocatedBPayUserId.equals(userId.get())) {
+                	for(PaymentInformationDTO instrument : user.getPaymentInstruments()) {
+                         if(instrument.getPaymentMethodType().getPaymentMethodTemplate().getTemplateName().equals("BPAY")) {
+                            bpayInstrument = instrument;
+                            break;
+                        }
                     }
                 }
 
                 if(null == bpayInstrument) {
                     logger.debug("skipping record {} since no bpay instrument found on user {}", record, userId);
-                    writeErrorLog(record.getPaymentFieldByName("BPAY Ref"), record.getTransactionId(), String.format("skipping record since no bpay instrument found on user: %d", userId), errorPath);
-                    return;
+                    writeErrorLog(record.getPaymentFieldByName("BPAY Ref"), record.getTransactionId(), String.format("skipping record since no bpay instrument found on user: %d", userId.get()), errorPath);
+                    return new AsyncResult<Boolean> (Boolean.FALSE);
                 }
                 BigDecimal amount = new BigDecimal(record.getPaymentFieldByName("Amount"));
                 PaymentDTOEx bpayPaymentRecord = createPaymentRecord(amount, bpayInstrument, user, null, Constants.RESULT_ENTERED, txDate);
@@ -146,7 +172,7 @@ public class SpcPaymentReconciliationHelperService {
                 logger.debug("transactionDate {}", transactionDate);
                 setMetaFieldsOnPayment(paymentId, record.getEntityId(), transactionDate, settlementDate, parameters);
                 logger.debug("bpay payment {} created for record {} for user {}", paymentId, record, userId);
-                PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(record);
+                PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(record, resolveProcessorNameFromInstrument(userId.get()));
                 logger.debug("bpay paymentAuthorization {} build for payment {}", paymentAuthorization, paymentId);
                 new PaymentAuthorizationBL().create(paymentAuthorization, paymentId);
                 logger.debug("bpay paymentAuthorization {} added on payment {}", paymentAuthorization, paymentId);
@@ -154,16 +180,16 @@ public class SpcPaymentReconciliationHelperService {
                 logger.debug("processing direct debit payment {}", record);
                 if(!record.isDeclined()) {
                     logger.debug("skipping direct debit record {} for entity {} since only processing Declined payment", record, record.getEntityId());
-                    return;
+                    return new AsyncResult<Boolean> (Boolean.FALSE);
                 }
                 Optional<Integer> paymentId = findPaymentByTransactionId(record);
                 if(!paymentId.isPresent()) {
-                    return;
+                    return new AsyncResult<Boolean> (Boolean.FALSE);
                 }
                 Optional<Integer> refundId = findAvailableRefundForPayment(paymentId.get());
                 if(refundId.isPresent()) {
                     logger.debug("refund payment {} found payment {}", refundId.get(), paymentId.get());
-                    return;
+                    return new AsyncResult<Boolean> (Boolean.FALSE);
                 }
                 PaymentDTO payment = new PaymentDAS().findNow(paymentId.get());
                 List<Integer> linkedInvoiceIds = payment.getAllLinkdInvoices();
@@ -183,6 +209,7 @@ public class SpcPaymentReconciliationHelperService {
                 PaymentBL paymentBL = new PaymentBL();
                 // creating reversal payment.
                 paymentBL.create(reversalPayment, payment.getBaseUser().getId());
+                payment.setBalance(payment.getBalance().subtract(reversalPayment.getAmount()));
                 Integer reversalPaymentId = paymentBL.getDTO().getId();
                 String settlementDate = convertDateToString(record.getSettlementDate(), SETTLEMENT_DATE_FORMAT, datePrettyFormat);
                 String transactionDate = convertDateToString(record.getTransactionDateTime(), TRANSACTION_DATE_TIME_FORMAT, dateTimeFormat);
@@ -200,6 +227,7 @@ public class SpcPaymentReconciliationHelperService {
             writeErrorLog(record.getPaymentFieldByName("BPAY Ref"), record.getTransactionId(), String.format("payment Reconciliation failed for receipt number: {%s} and reason is: {%s}", record.getTransactionId(), ex.toString()), errorPath);
             TransactionInterceptor.currentTransactionStatus().setRollbackOnly();
         }
+        return new AsyncResult<Boolean> (Boolean.TRUE);
     }
 
     /**
@@ -209,7 +237,7 @@ public class SpcPaymentReconciliationHelperService {
      * @param reason
      * @param errorPath
      */
-	private void writeErrorLog(String referenceNo, String receiptNo, String reason, String errorPath) {
+	public void writeErrorLog(String referenceNo, String receiptNo, String reason, String errorPath) {
 		DateFormat currentTimeFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		String currentTime = currentTimeFormat.format(new Date());
 		File errorLogFile = new File(errorPath);
@@ -363,9 +391,9 @@ public class SpcPaymentReconciliationHelperService {
      * @param record
      * @return
      */
-    private PaymentAuthorizationDTO buildPaymentAuthorization(SpcPaymentReconciliationRecord record) {
+    private PaymentAuthorizationDTO buildPaymentAuthorization(SpcPaymentReconciliationRecord record, String processorName) {
         PaymentAuthorizationDTO paymentAuthDTO = new PaymentAuthorizationDTO();
-        paymentAuthDTO.setProcessor("Payment-Reconciliation");
+        paymentAuthDTO.setProcessor(processorName);
 
         String txID = record.getPaymentFieldByName("ReceiptNumber");
         paymentAuthDTO.setTransactionId(txID);
@@ -382,6 +410,18 @@ public class SpcPaymentReconciliationHelperService {
         }
         paymentAuthDTO.setCode3(record.getPaymentFieldByName("Status"));
         return paymentAuthDTO;
+    }
+
+    private String resolveProcessorNameFromInstrument(Integer userId) {
+        return isAGL(userId) ? AGL_PAYMENT_PROCESSOR_BPAY: SPC_PAYMENT_PROCESSOR_BPAY;
+    }
+
+    private String getInvoiceDesignFromUserObject(UserDTO user) {
+        return Objects.isNull(user.getCustomer()) ? null : Objects.toString(user.getCustomer().getInvoiceDesign(),"");
+    }
+
+    private boolean isAGL(Integer userId) {
+        return Context.getBean(SpcHelperService.class).isAGL(userId, getInvoiceDesignFromUserObject(UserBL.getUserEntity(userId)));
     }
 
     /**

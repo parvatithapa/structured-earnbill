@@ -57,7 +57,10 @@ public class InvoiceSummaryDTO extends AbstractDescription implements Exportable
 	private Date invoiceDate;
 	private Date lastInvoiceDate;
 	private Date createDatetime;
+	private Integer lastInvoiceId;
 	
+	
+
 	public InvoiceSummaryDTO() {
 	}
 
@@ -222,6 +225,14 @@ public class InvoiceSummaryDTO extends AbstractDescription implements Exportable
 		this.createDatetime = createDatetime;
 	}
 
+	@Column(name = "last_invoice_id", nullable = true)
+	public Integer getLastInvoiceId() {
+		return lastInvoiceId;
+	}
+
+	public void setLastInvoiceId(Integer lastInvoiceId) {
+		this.lastInvoiceId = lastInvoiceId;
+	}
 	
     @Override
 	public String toString() {
@@ -236,7 +247,8 @@ public class InvoiceSummaryDTO extends AbstractDescription implements Exportable
 				+ ", totalDue=" + totalDue
 				+ ", invoiceDate=" + invoiceDate
 				+ ", lastInvoiceDate=" + lastInvoiceDate
-				+ ", createDatetime=" + createDatetime + "]";
+				+ ", createDatetime=" + createDatetime 
+				+ ", lastInvoiceId=" + lastInvoiceId + "]";
 	}
 
 	@Transient
@@ -256,6 +268,7 @@ public class InvoiceSummaryDTO extends AbstractDescription implements Exportable
                 "totalDue",
                 "invoiceDate",
                 "createDatetime",
+                "lastInvoiceId"
         };
     }
 

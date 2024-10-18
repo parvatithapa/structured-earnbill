@@ -42,8 +42,8 @@ public class SpaPrivateNotes implements Serializable{
     private String[] totalAllottedSpace;
     private String[] totalUsedSpace;
     private String[] emailStatus;
-    private String[] emailPortalUserID;
-    private String[] emailPortalPassword;
+    private String emailPortalUserID;
+    private String emailPortalPassword;
     private String[] equalAccess;
     private String[] serviceNumberType;
     private String[] eCareAccountUserName;
@@ -441,22 +441,22 @@ public class SpaPrivateNotes implements Serializable{
     }
 
     @JsonProperty("EmailPortalUserID")
-    public String[] getEmailPortalUserID() {
+    public String getEmailPortalUserID() {
         return emailPortalUserID;
     }
 
     @JsonProperty("EmailPortalUserID")
-    public void setEmailPortalUserID(String[] emailPortalUserID) {
+    public void setEmailPortalUserID(String emailPortalUserID) {
         this.emailPortalUserID = emailPortalUserID;
     }
 
     @JsonProperty("EmailPortalPassword")
-    public String[] getEmailPortalPassword() {
+    public String getEmailPortalPassword() {
         return emailPortalPassword;
     }
 
     @JsonProperty("EmailPortalPassword")
-    public void setEmailPortalPassword(String[] emailPortalPassword) {
+    public void setEmailPortalPassword(String emailPortalPassword) {
         this.emailPortalPassword = emailPortalPassword;
     }
 
@@ -496,8 +496,8 @@ public class SpaPrivateNotes implements Serializable{
                 + Arrays.toString(totalAllottedSpace) + ", totalUsedSpace="
                 + Arrays.toString(totalUsedSpace) + ", emailStatus="
                 + Arrays.toString(emailStatus) + ", emailPortalUserID="
-                + Arrays.toString(emailPortalUserID) + ", emailPortalPassword="
-                + Arrays.toString(emailPortalPassword) + ", equalAccess="
+                + emailPortalUserID + ", emailPortalPassword="
+                + emailPortalPassword + ", equalAccess="
                 + Arrays.toString(equalAccess) + ", serviceNumberType="
                 + Arrays.toString(serviceNumberType) + ", eCareAccountUserName="
                 + Arrays.toString(eCareAccountUserName) + ", webspaceUsername="

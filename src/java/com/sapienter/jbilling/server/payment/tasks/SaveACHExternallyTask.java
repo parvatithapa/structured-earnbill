@@ -18,10 +18,16 @@ package com.sapienter.jbilling.server.payment.tasks;
 
 import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.BOOLEAN;
 import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.INT;
+import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.STR;
 
-import org.apache.log4j.Logger;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-import com.sapienter.jbilling.common.FormatLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
+
 import com.sapienter.jbilling.server.metafields.MetaFieldType;
 import com.sapienter.jbilling.server.payment.IExternalCreditCardStorage;
 import com.sapienter.jbilling.server.payment.IExternalACHStorage;
@@ -42,10 +48,10 @@ import com.sapienter.jbilling.server.user.event.AchUpdateEvent;
  * @since 14-09-2010
  */
 public class SaveACHExternallyTask extends PluggableTask implements IInternalEventsTask {
-    private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(SaveACHExternallyTask.class));
+    private static final Logger logger = LoggerFactory.getLogger(SaveACHExternallyTask.class);
 
     private static final ParameterDescription PARAM_CONTACT_TYPE = new ParameterDescription("contactType", false, INT);
-    private static final ParameterDescription PARAM_EXTERNAL_SAVING_PLUGIN_ID = new ParameterDescription("externalSavingPluginId", true, INT);
+    private static final ParameterDescription PARAM_EXTERNAL_SAVING_PLUGIN_ID = new ParameterDescription("externalSavingPluginId", true, STR);
     private static final ParameterDescription PARAM_OBSCURE_ON_FAIL = new ParameterDescription("obscureOnFail", false, BOOLEAN);
 
     private static final boolean DEFAULT_OBSCURE_ON_FAIL = false;
@@ -58,10 +64,10 @@ public class SaveACHExternallyTask extends PluggableTask implements IInternalEve
     }
 
     private Integer contactType;
-    private Integer externalSavingPluginId;
+    private Integer[] externalSavingPluginIds;
 
     @SuppressWarnings("unchecked")
-    private static final Class<Event> events[] = new Class[] {            
+    private static final Class<Event> events[] = new Class[] {
             AchUpdateEvent.class,
             AchDeleteEvent.class
     };
@@ -89,23 +95,26 @@ public class SaveACHExternallyTask extends PluggableTask implements IInternalEve
         return contactType;
     }
 
+
     /**
-     * Returns the configured external saving event plugin id ({@link com.sapienter.jbilling.server.payment.IExternalCreditCardStorage})
-     * as an integer.
+     * Returns the configured external saving event plugin ids ({@link IExternalCreditCardStorage})
+     * as comma separated integer values.
      *
-     * @return plugin id of the configured external saving event plugin
+     * @return plugin ids of the configured external saving event plugin
      * @throws PluggableTaskException if id cannot be converted to an integer
      */
-    public Integer getExternalSavingPluginId() throws PluggableTaskException {
-        if (externalSavingPluginId == null) {
-            try {
-                externalSavingPluginId = Integer.parseInt(parameters.get(PARAM_EXTERNAL_SAVING_PLUGIN_ID.getName()));
-            } catch (NumberFormatException e) {
-                throw new PluggableTaskException("Configured externalSavingPluginId must be an integer!", e);
+    public Integer[] getExternalSavingPluginIds() throws PluggableTaskException {
+        String externalSavingPlugins = parameters.get(PARAM_EXTERNAL_SAVING_PLUGIN_ID.getName());
+        if(StringUtils.isNotBlank(externalSavingPlugins)) {
+            if(externalSavingPlugins.contains(",")) {
+                externalSavingPluginIds = Arrays.stream(externalSavingPlugins.split(",")).map(x -> Integer.parseInt(x.trim())).collect(Collectors.toList()).toArray(new Integer[0]);
+            } else {
+                externalSavingPluginIds = new Integer[]{Integer.parseInt(externalSavingPlugins.trim())};
             }
         }
-        return externalSavingPluginId;
+        return externalSavingPluginIds;
     }
+
 
     /**
      * @see IInternalEventsTask#process(com.sapienter.jbilling.server.system.event.Event)
@@ -114,21 +123,33 @@ public class SaveACHExternallyTask extends PluggableTask implements IInternalEve
      * @throws PluggableTaskException
      */
     public void process(Event event) throws PluggableTaskException {
-        PluggableTaskBL<IExternalACHStorage> ptbl = new PluggableTaskBL<IExternalACHStorage>(getExternalSavingPluginId());
-        IExternalACHStorage externalCCStorage = ptbl.instantiateTask();
-
-        if (event instanceof AchUpdateEvent) {
-            LOG.debug("Processing AchUpdateEvent ...");
-            AchUpdateEvent ev = (AchUpdateEvent) event;
-            String gateWayKey = externalCCStorage.storeACH(null, ev.getAch(), false);
-            updateAch(ev.getAch(), gateWayKey);
-        } else if (event instanceof AchDeleteEvent) {
-            LOG.debug("Processing AchDeleteEvent ...");
-            AchDeleteEvent ev = (AchDeleteEvent) event;
-            String gateWayKey = externalCCStorage.deleteACH(null, ev.getAch());
-            deleteAch(ev.getAch(), (gateWayKey==null)?null:gateWayKey.toCharArray());
-        } else {
-            throw new PluggableTaskException("Cant not process event " + event);
+        Integer[] extSavingPluginIds = getExternalSavingPluginIds();
+        int count = 0;
+        boolean isGatewayKeyGenerated = false;
+        boolean areAllPluginsProcessed = false;
+        for(Integer extSavingPluginId : extSavingPluginIds) {
+            if(isGatewayKeyGenerated) {
+                logger.debug("Gateway key is already generated hence skipping the plugin id : {}",extSavingPluginId);
+                return;
+            }
+            ++count;
+            areAllPluginsProcessed = Objects.equals(count, extSavingPluginIds.length);
+            logger.debug("Processing plugin id : {}",extSavingPluginId);
+            PluggableTaskBL<IExternalACHStorage> ptbl = new PluggableTaskBL<IExternalACHStorage>(extSavingPluginId);
+            IExternalACHStorage externalCCStorage = ptbl.instantiateTask();
+            if (event instanceof AchUpdateEvent) {
+                logger.debug("Processing AchUpdateEvent ...");
+                AchUpdateEvent ev = (AchUpdateEvent) event;
+                String gateWayKey = externalCCStorage.storeACH(null, ev.getAch(), false);
+                isGatewayKeyGenerated = updateAch(ev.getAch(), gateWayKey, areAllPluginsProcessed);
+            } else if (event instanceof AchDeleteEvent) {
+                logger.debug("Processing AchDeleteEvent ...");
+                AchDeleteEvent ev = (AchDeleteEvent) event;
+                String gateWayKey = externalCCStorage.deleteACH(null, ev.getAch());
+                deleteAch(ev.getAch(), (gateWayKey==null)?null:gateWayKey.toCharArray());
+            } else {
+                throw new PluggableTaskException("Cant not process event " + event);
+            }
         }
     }
 
@@ -138,22 +159,26 @@ public class SaveACHExternallyTask extends PluggableTask implements IInternalEve
      * @param ach - ACH object to update
      * @param gatewayKey gateway key from external storage, null if storage failed.
      */
-    private void updateAch(PaymentInformationDTO ach, String gatewayKey) {
-    	PaymentInformationBL piBl = new PaymentInformationBL();
-    	if (gatewayKey != null) {
-            LOG.debug("Storing ach gateway key: " + gatewayKey);
+    private boolean updateAch(PaymentInformationDTO ach, String gatewayKey, boolean areAllPluginsProcessed) {
+        PaymentInformationBL piBl = new PaymentInformationBL();
+        if (gatewayKey != null) {
+            logger.debug("Storing ach gateway key: " + gatewayKey);
             piBl.updateCharMetaField(ach, gatewayKey.toCharArray(), MetaFieldType.GATEWAY_KEY);
             piBl.obscureBankAccountNumber(ach);
             new PaymentInformationDAS().makePersistent(ach);
+            return true;
         } else {
-            if (getParameter(PARAM_OBSCURE_ON_FAIL.getName(), DEFAULT_OBSCURE_ON_FAIL)) {
-            	piBl.obscureBankAccountNumber(ach);
-                new PaymentInformationDAS().makePersistent(ach);
-                LOG.warn("gateway key returned from external store is null, obscuring ach with no key");
-            } else {
-                LOG.warn("gateway key returned from external store is null, ach will not be obscured!");
+            if(areAllPluginsProcessed){
+                if (getParameter(PARAM_OBSCURE_ON_FAIL.getName(), DEFAULT_OBSCURE_ON_FAIL)) {
+                    piBl.obscureBankAccountNumber(ach);
+                    new PaymentInformationDAS().makePersistent(ach);
+                    logger.warn("gateway key returned from external store is null, obscuring ach with no key");
+                } else {
+                    logger.warn("gateway key returned from external store is null, ach will not be obscured!");
+                }
             }
         }
+        return false;
     }
 
     /**
@@ -163,7 +188,7 @@ public class SaveACHExternallyTask extends PluggableTask implements IInternalEve
      */
     private void deleteAch(PaymentInformationDTO ach, char[] gatewayKey) {
         if (gatewayKey == null || gatewayKey.length == 0) {
-            LOG.debug("Failed to delete the ACH Record - gateway key returned null." );
+            logger.debug("Failed to delete the ACH Record - gateway key returned null." );
         }
     }
 }

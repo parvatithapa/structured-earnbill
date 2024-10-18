@@ -2,6 +2,8 @@ package com.sapienter.jbilling.server.sapphire;
 
 import java.io.Serializable;
 
+import javax.validation.constraints.NotNull;
+
 import lombok.ToString;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -12,8 +14,11 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
 @ToString
 public class ChangeOfPlanRequestWS implements Serializable {
 
+    @NotNull(message = "validation.error.notnull")
     private final Integer orderId;
+    @NotNull(message = "validation.error.notnull")
     private final String existingPlanCode;
+    @NotNull(message = "validation.error.notnull")
     private final String newPlanCode;
 
     @JsonCreator

@@ -43,10 +43,7 @@ import com.sapienter.jbilling.server.order.db.OrderDAS;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderPeriodDAS;
 import com.sapienter.jbilling.server.order.db.OrderPeriodDTO;
-import com.sapienter.jbilling.server.process.ConfigurationBL;
-import com.sapienter.jbilling.server.process.db.BillingProcessConfigurationDTO;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
-import com.sapienter.jbilling.server.process.db.ProratingType;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.MainSubscriptionWS;
 import com.sapienter.jbilling.server.user.UserBL;
@@ -226,27 +223,19 @@ public class MoviusTaskUtils {
 		});
 	}
 
-    public static OrderWS getOrderWS(UserWS user, Integer itemId, String quantity, String itemDescription, String price) {
-        OrderLineWS[] orderLineWS = new OrderLineWS[1];
-        orderLineWS[0] = buildOrderLine(itemId, quantity, itemDescription, price);
-        OrderWS orderWS = new OrderWS();
-        orderWS.setActiveSince(new Date());
-        orderWS.setOrderLines(orderLineWS);
-        orderWS.setBillingTypeId(Constants.ORDER_BILLING_POST_PAID);
-        Integer monthlyOrderPeriodId = getMonthlyOrderPeriod(user.getEntityId());
-        orderWS.setPeriod(monthlyOrderPeriodId);
-        orderWS.setCurrencyId(user.getCurrencyId());
-        orderWS.setUserId(user.getId());
-        BillingProcessConfigurationDTO billingConfiguration = new ConfigurationBL(user.getEntityId()).getDTO();
-        ProratingType companyLevelProratingType = billingConfiguration.getProratingType();
-        boolean prorateFlag = user.getMainSubscription().getPeriodId().intValue() == monthlyOrderPeriodId.intValue();
-        if (companyLevelProratingType.isProratingAutoOff()) {
-            orderWS.setProrateFlag(false);
-        } else {
-            orderWS.setProrateFlag(prorateFlag);
-        }
-        return orderWS;
-    }
+	public static OrderWS getOrderWS(UserWS user, Integer itemId, String quantity, String itemDescription, String price){
+		OrderLineWS []orderLineWS = new OrderLineWS[1];
+		orderLineWS[0] = buildOrderLine(itemId, quantity, itemDescription, price);
+		OrderWS orderWS = new OrderWS();
+		orderWS.setActiveSince(new Date());
+		orderWS.setOrderLines(orderLineWS);
+		orderWS.setBillingTypeId(Constants.ORDER_BILLING_POST_PAID);
+		orderWS.setPeriod(getMonthlyOrderPeriod(user.getEntityId()));
+		orderWS.setCurrencyId(user.getCurrencyId());
+		orderWS.setUserId(user.getId());
+		orderWS.setProrateFlag(true);
+		return orderWS;
+	}
 
 	public static OrderLineWS buildOrderLine(Integer itemId, String quantity, String description, String price) {
 		OrderLineWS line = new OrderLineWS();

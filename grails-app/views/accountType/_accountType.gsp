@@ -54,7 +54,6 @@
                     	<td class="value">${pmt.methodName}</td>
                     </g:each>
                 </tr>
-                
                 </tbody>
             </table>
         </div>
@@ -110,7 +109,7 @@
             </div>
 
         </div>
-        <div style="text-align: right">
+        <div id="custom-div7">
             <g:link controller="accountType" action="listAIT" params="[accountTypeId: selected.id]">
                 <span><g:message code="button.show.all"/></span>
             </g:link>

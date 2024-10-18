@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.server.creditnote.db.CreditNoteDAS;
 import com.sapienter.jbilling.server.creditnote.db.CreditNoteDTO;
@@ -41,6 +42,7 @@ import com.sapienter.jbilling.server.payment.db.PaymentDTO;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.PreferenceBL;
 
 /**
  * @author Ashok Kale
@@ -81,14 +83,47 @@ public class InvoiceSummaryBL {
 
 
     public Integer create(InvoiceDTO invoiceDTO) {
-        InvoiceDTO lastInvoice = getLastInvoice(invoiceDTO.getUserId(), invoiceDTO.getId());
+    	InvoiceDTO lastInvoice = null;
+        if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+                CommonConstants.PREFERENCE_USE_ANNIVERSARY_INVOICE_FOR_OPENING_BALANCE_IN_INVOICE_SUMMARY) == 1) {
+        	lastInvoice = getLastAnniversaryInvoice(invoiceDTO.getUserId(), invoiceDTO.getId());    
+        } 
+        if (null == lastInvoice) {
+        	lastInvoice = getLastInvoice(invoiceDTO.getUserId(), invoiceDTO.getId());
+        }
         Date lastInvoiceDate = null != lastInvoice ? lastInvoice.getCreateDatetime() : null;
         InvoiceSummaryDTO invoiceSummary = new InvoiceSummaryDTO();
         BigDecimal monthlyCharges = getTotalCharges(invoiceDTO.getInvoiceLines(), Constants.INVOICE_LINE_TYPE_ITEM_RECURRING);
         BigDecimal usageCharges = getTotalCharges(invoiceDTO.getInvoiceLines(), Constants.INVOICE_LINE_TYPE_ITEM_ONETIME);
         BigDecimal fees = getTotalCharges(invoiceDTO.getInvoiceLines(), Constants.INVOICE_LINE_TYPE_PENALTY);
         BigDecimal taxes = getTotalCharges(invoiceDTO.getInvoiceLines(), Constants.INVOICE_LINE_TYPE_TAX);
-        BigDecimal totalAdjustmentAmount = getTotalAdjustmentCharges(invoiceDTO.getUserId(), invoiceDTO.getInvoiceLines(), lastInvoiceDate, invoiceDTO.getCreateDatetime());
+        
+        BigDecimal totalAdjustmentAmount = BigDecimal.ZERO;
+
+        if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+        		CommonConstants.PREFERENCE_SWITCH_BETWEEN_PAYMENT_OR_CR_NOTE_DATE_AND_CREATION_DATE_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY) == 1) {
+        	invoiceSummary.setPaymentReceived(getTotalPaymentsReceived(invoiceDTO.getUserId(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.INVOICE_DATE, invoiceDTO.getBaseUser().getEntity().getId()).negate());
+
+        	totalAdjustmentAmount = getTotalAdjustmentCharges(invoiceDTO.getUserId(), invoiceDTO.getInvoiceLines(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.INVOICE_DATE, invoiceDTO.getBaseUser().getEntity().getId());    
+
+        } else if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+        		CommonConstants.PREFERENCE_SWITCH_BETWEEN_PAYMENT_DATE_OR_CR_NOTE_DATE_AND_CREATE_TIMESTAMP_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY) == 1) {
+        	lastInvoiceDate = null != lastInvoice ? lastInvoice.getCreateTimestamp() : null;
+        	invoiceSummary.setPaymentReceived(getTotalPaymentsReceived(invoiceDTO.getUserId(), lastInvoiceDate, invoiceDTO.getCreateTimestamp(),
+        			CommonConstants.INVOICE_TIMESTAMP, invoiceDTO.getBaseUser().getEntity().getId()).negate());
+        	totalAdjustmentAmount = getTotalAdjustmentCharges(invoiceDTO.getUserId(), invoiceDTO.getInvoiceLines(), lastInvoiceDate, invoiceDTO.getCreateTimestamp(),
+        			CommonConstants.INVOICE_TIMESTAMP, invoiceDTO.getBaseUser().getEntity().getId());
+
+        } else {
+        	invoiceSummary.setPaymentReceived(getTotalPaymentsReceived(invoiceDTO.getUserId(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.PAYMENT_DATE, invoiceDTO.getBaseUser().getEntity().getId()).negate());
+
+        	totalAdjustmentAmount = getTotalAdjustmentCharges(invoiceDTO.getUserId(), invoiceDTO.getInvoiceLines(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.CREDIT_NOTE_DATE, invoiceDTO.getBaseUser().getEntity().getId());
+        }
+        
         BigDecimal newCharges = getTotalNewCharges(invoiceDTO.getInvoiceLines(),
                 Constants.INVOICE_LINE_TYPE_DUE_INVOICE, Constants.INVOICE_LINE_TYPE_ADJUSTMENT).add(totalAdjustmentAmount);
         BigDecimal amountOfLastStatement = null != lastInvoice ? invoiceSummaryDas.getAmountOfLastStatement(lastInvoice.getId()) : BigDecimal.ZERO;
@@ -103,11 +138,11 @@ public class InvoiceSummaryBL {
         invoiceSummary.setTotalDue(totalDue);
         invoiceSummary.setAmountOfLastStatement(amountOfLastStatement);
         invoiceSummary.setAdjustmentCharges(totalAdjustmentAmount);
-        invoiceSummary.setPaymentReceived(getTotalPaymentsReceived(invoiceDTO.getUserId(), lastInvoiceDate, invoiceDTO.getCreateDatetime()).negate());
         invoiceSummary.setInvoiceDate(invoiceDTO.getCreateDatetime());
         invoiceSummary.setLastInvoiceDate(lastInvoiceDate);
         invoiceSummary.setCreateDatetime(TimezoneHelper.serverCurrentDate());
-
+        Integer lastInvoiceId = null != lastInvoice ? lastInvoice.getId() : null;
+        invoiceSummary.setLastInvoiceId(lastInvoiceId);
         invoiceSummary = save(invoiceSummary);
 
         BigDecimal calculatedNewCharges = monthlyCharges.add(usageCharges).add(fees).add(taxes);
@@ -217,8 +252,9 @@ public class InvoiceSummaryBL {
                     line.getDescription(), line.getAmount(), line.getPrice(), line.getQuantity(),
                     line.getDeleted(), line.getItem() == null ? null : line.getItem().getId(),
                             line.getSourceUserId(), line.getIsPercentage(), line.getCallIdentifier(),
-                            line.getUsagePlanId(), line.getCallCounter(), line.getTaxRate(), line.getTaxAmount(),
-                            line.getGrossAmount());
+                            line.getUsagePlanId(), line.getCallCounter(), String.valueOf(line.getTaxRate()),
+                            String.valueOf(line.getTaxAmount()),
+                            String.valueOf(line.getGrossAmount()));
         }
         return invoiceLines;
 
@@ -277,12 +313,13 @@ public class InvoiceSummaryBL {
      * @param currentInvoiceDate
      * @return
      */
-    public BigDecimal getTotalAdjustmentCharges(Integer userId, Collection<InvoiceLineDTO> invoiceLines, Date lastInvoiceDate, Date currentInvoiceDate) {
+    public BigDecimal getTotalAdjustmentCharges(Integer userId, Collection<InvoiceLineDTO> invoiceLines, Date lastInvoiceDate, Date currentInvoiceDate,
+    		String useDatePreference, Integer entityId) {
         BigDecimal totalAdjustmentCharges;
         List<PaymentDTO> creditPayments = new PaymentDAS().
                 findCreditPaymentsBetweenLastAndCurrentInvoiceDates(userId, lastInvoiceDate, currentInvoiceDate);
         List<CreditNoteDTO> creditNotes = new CreditNoteDAS().
-                findCreditNotesBetweenLastAndCurrentInvoiceDates(userId, lastInvoiceDate, currentInvoiceDate);
+                findCreditNotesBetweenLastAndCurrentInvoiceDates(userId, lastInvoiceDate, currentInvoiceDate, useDatePreference, entityId);
         totalAdjustmentCharges = creditPayments.stream().map(PaymentDTO::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         totalAdjustmentCharges = totalAdjustmentCharges.add(creditNotes.stream().map(CreditNoteDTO::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         BigDecimal creditInvoiceLineCharges = getTotalCharges(invoiceLines, Constants.INVOICE_LINE_TYPE_ADJUSTMENT);
@@ -295,10 +332,11 @@ public class InvoiceSummaryBL {
      * @param userId
      * @param lastInvoiceDate
      * @param currentInvoiceDate
+     * @param useCreateDate
      * @return
      */
-    public BigDecimal getTotalPaymentsReceived(Integer userId, Date lastInvoiceDate, Date currentInvoiceDate) {
-        return new PaymentDAS().findTotalRevenueByUserInBetweenTwoInvoices(userId, lastInvoiceDate, currentInvoiceDate);
+    public BigDecimal getTotalPaymentsReceived(Integer userId, Date lastInvoiceDate, Date currentInvoiceDate, String useDatePreference,  Integer entityId) {
+        return new PaymentDAS().findTotalRevenueByUserInBetweenTwoInvoices(userId, lastInvoiceDate, currentInvoiceDate, useDatePreference, entityId);
     }
 
     private static CreditAdjustmentWS getCreditPaymentAdjustmentWS(PaymentDTO payment) {
@@ -404,8 +442,18 @@ public class InvoiceSummaryBL {
      * @param userId
      * @return InvoiceDTO
      */
-    private static InvoiceDTO getLastInvoice(Integer userId, Integer invoiceId) {
+    public InvoiceDTO getLastInvoice(Integer userId, Integer invoiceId) {
         Integer secondLastInvoiceId = new InvoiceDAS().getLastInvoiceId(userId, invoiceId);
+        return new InvoiceDAS().find(secondLastInvoiceId);
+    }
+
+    /**
+     * Get Second Last Invoice Id by user id and invoice id and billing process Id not null except credit invoice
+     * @param userId
+     * @return InvoiceDTO
+     */
+    public InvoiceDTO  getLastAnniversaryInvoice(Integer userId, Integer invoiceId) {
+        Integer secondLastInvoiceId = new InvoiceDAS().getLastAnniversaryInvoiceId(userId, invoiceId);
         return new InvoiceDAS().find(secondLastInvoiceId);
     }
 

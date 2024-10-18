@@ -28,6 +28,11 @@
         position: absolute; z-index: 99; margin-left: -19px; margin-top: -4px;
     }
 
+    html[dir="rtl"] .row > .inp-bg > .remove {
+        margin-right: -19px;
+        margin-left: auto;
+    }
+
 </style>
 
 <g:if test="${fieldValue}">

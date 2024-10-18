@@ -126,14 +126,10 @@ target(upgradeDb: "Upgrades database to the latest version") {
         println "Running jbilling upgrade file ${upgrade}"
         ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: upgrade, contexts: context))
     }
-    if (argsMap.indiaclient) {
-        upgrade = "descriptors/database/india-client-upgrade.xml"
-        println "Running jbilling upgrade file ${upgrade}"
-        ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: upgrade, contexts: context))
-    }
-    if (argsMap.usaclient) {
-        upgrade = "descriptors/database/usa-client-upgrade.xml"
-        println "Running jbilling upgrade file ${upgrade}"
+
+    if (argsMap.adennet) {
+        upgrade = "descriptors/database/adennet-client-upgrade.xml"
+        println "Running adennet specific configuration upgrade file ${upgrade}"
         ant.updateDatabase(liquibaseTaskAttrs(changeLogFile: upgrade, contexts: context))
     }
 }

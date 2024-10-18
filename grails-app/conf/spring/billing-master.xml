@@ -21,8 +21,8 @@
             <batch:partition partitioner = "generateInvoicesPartitioner" handler = "partitionGenerateInvoicesHandler"/>
             <batch:next on = "COMPLETED_REVIEW" to = "stepDecider"/>
             <batch:next on = "FAILED_REVIEW"    to = "stepDecider"/>
-            <batch:next on = "COMPLETED"        to = "emailAndPayment"/>
-            <batch:next on = "FAILED"           to = "emailAndPayment"/>
+            <batch:next on = "COMPLETED"        to = "emailStepDecider"/>
+            <batch:next on = "FAILED"           to = "emailStepDecider"/>
             <batch:listeners>
                 <batch:listener ref = "generateInvoicesListener"/>
             </batch:listeners>
@@ -36,6 +36,11 @@
             <batch:next on = "COMPLETED"        to = "billingSuccess"/>
             <batch:next on = "FAILED"           to = "billingFailure"/>
         </batch:decision>
+        
+        <batch:decision id = "emailStepDecider" decider = "skipEmailsCheckDecider">
+            <batch:next on = "RUN"         to = "emailAndPayment"/>
+            <batch:next on = "SKIP"        to = "emailSkip"/>            
+        </batch:decision>
 
         <batch:step id = "billingSuccess">
             <batch:tasklet ref = "billingProcessSucceededTasklet"/>
@@ -44,6 +49,11 @@
         <batch:step id = "billingFailure">
             <batch:tasklet ref = "billingProcessFailedTasklet"/>
         </batch:step>
+        
+        <batch:step id = "emailSkip" next = "stepDecider">
+            <batch:tasklet ref = "billingProcessEmailsSkipTasklet"/>
+        </batch:step>
+                
     </batch:job>
 
     <bean   id = "partitionGenerateInvoicesHandler"
@@ -99,5 +109,15 @@
 
     <bean  id = "generateInvoicesListener"
         class = "com.sapienter.jbilling.batch.billing.GenerateInvoicesStepListener"
+        scope = "job"/>
+        
+    <!--    spring batch listener to set custom exit status of step -->
+    <bean  id = "skipEmailsCheckDecider"
+        class = "com.sapienter.jbilling.batch.billing.SkipEmailsCheckDecider"
+        scope = "job"/>
+        
+    <!--    spring batch tasklet containing code that will run if no emails to sent -->
+    <bean  id = "billingProcessEmailsSkipTasklet"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessEmailsSkipTasklet"
         scope = "job"/>
 </beans>

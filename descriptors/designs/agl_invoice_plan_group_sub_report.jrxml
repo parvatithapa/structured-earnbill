@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_plan_group_sub_report" language="groovy" pageWidth="377" pageHeight="842" columnWidth="377" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="plan_id" class="java.lang.Integer"/>
+	<parameter name="subscription_order_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+(
+ SELECT content
+ FROM international_description int_des
+ INNER JOIN item i ON i.id = int_des.foreign_id
+ INNER JOIN jbilling_table jt ON jt.id = int_des.table_id
+ INNER JOIN plan p ON p.item_id = i.id
+ WHERE jt.name = 'item'
+ AND p.id = ss.plan_id
+) AS plan,
+ss.display_identifier,
+ss.service_id,
+TO_CHAR(ss.start_date, 'dd Mon yy') AS start_date,
+TO_CHAR(ss.end_date, 'dd Mon yy') AS end_date,
+ss.plan_description,
+CASE WHEN
+il.item_id IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{product_category_id_of_internet_usage_items}
+)
+THEN
+'Usage'
+ELSE
+(CASE
+    WHEN il.item_id IN
+           (SELECT imfm.item_id
+            FROM item_meta_field_map imfm
+            INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+            INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+            WHERE mfn.name = 'Tax Scheme'
+              AND mfn.data_type = 'ENUMERATION'
+              AND mfn.entity_type = 'PRODUCT'
+              AND mfv.string_value = 'Tax Exempt' ) THEN CONCAT(ss.service_description, '*')
+    ELSE ss.service_description
+END
+)
+END AS service_description,
+CASE WHEN
+(
+ SELECT ru.increment_unit_name
+ FROM item_rating_configuration_map ircm
+ INNER JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+ INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
+ WHERE ircm.item_id = il.item_id
+ AND ru.entity_id = bu.entity_id
+ AND ircm.start_date =
+ (
+  SELECT MAX(ircm_inner.start_date)
+  FROM item_rating_configuration_map ircm_inner
+  WHERE ircm_inner.item_id = il.item_id
+  AND ircm_inner.start_date <= DATE(i.create_datetime)
+ )
+) IS NOT NULL
+THEN
+(
+ SELECT
+ CASE WHEN ru.increment_unit_name = 'MB'
+ THEN CONCAT(ROUND(il.quantity/1024,3)::text,' GB')
+ ELSE CONCAT(ROUND(il.quantity,3)::text,' ',ru.increment_unit_name)
+ END
+ FROM item_rating_configuration_map ircm
+ INNER JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+ INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
+ WHERE ircm.item_id = il.item_id
+ AND ru.entity_id = bu.entity_id
+ AND ircm.start_date =
+ (
+  SELECT MAX(ircm_inner.start_date)
+  FROM item_rating_configuration_map ircm_inner
+  WHERE ircm_inner.item_id = il.item_id
+  AND ircm_inner.start_date <= DATE(i.create_datetime)
+ )
+)
+ELSE
+(CASE WHEN (SELECT po.is_mediated FROM purchase_order po where po.id = il.order_id) = 't'
+THEN il.call_counter::int::text
+ELSE COALESCE(il.quantity,1)::int::text
+END)
+END AS quantity,
+CASE WHEN
+ ss.credit_note_id IS NULL
+THEN
+ COALESCE(il.amount,0)
+ELSE
+(
+ SELECT -1 * COALESCE(cnl.amount,0)
+ FROM credit_note cn
+ INNER JOIN credit_note_line cnl ON cnl.credit_note_id = cn.id
+ WHERE cn.id = ss.credit_note_id
+ AND cn.deleted = 0
+)
+END
+AS amount
+FROM service_summary ss
+INNER JOIN invoice i ON i.id = ss.invoice_id
+LEFT OUTER JOIN invoice_line il ON il.invoice_id = i.id AND il.id = ss.invoice_line_id
+INNER JOIN base_user bu ON bu.id = i.user_id
+LEFT OUTER JOIN rollup_codes rc2 ON rc2.item_type_description = CASE WHEN ss.service_description IS NULL THEN il.description ELSE ss.service_description END
+WHERE i.id = $P{invoice_id}
+AND ss.plan_id IS NOT NULL
+AND ss.plan_id = $P{plan_id}
+AND ss.subscription_order_id = $P{subscription_order_id}
+AND ss.service_description != 'Yearly Plan Fee'
+AND ss.service_description != 'Yearly Plan Fee'
+-- JBSPC-1062 If ad hoc credit note id is present then check for quanity not equal to zero to avoid plan fee zero line
+-- If ad hoc credit note id is present then quantity will be 1, because quantity not present in credit note
+AND CASE WHEN ss.credit_note_id IS NULL THEN (SELECT quantity != 0) ELSE true END
+ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
+	</queryString>
+	<field name="plan" class="java.lang.String"/>
+	<field name="display_identifier" class="java.lang.String"/>
+	<field name="service_id" class="java.lang.String"/>
+	<field name="start_date" class="java.lang.String"/>
+	<field name="end_date" class="java.lang.String"/>
+	<field name="plan_description" class="java.lang.String"/>
+	<field name="service_description" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="PlanGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="final_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<group name="PlanGroup">
+		<groupExpression><![CDATA[$F{plan}]]></groupExpression>
+		<groupFooter>
+			<band height="2"/>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="154" y="0" width="80" height="15" uuid="f1f12499-1acf-4ae4-9872-43d36372cf8e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="234" y="0" width="60" height="15" uuid="b42930b8-2256-4b15-99ef-8cef1a0dce97"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="294" y="0" width="65" height="15" uuid="0f4fdd66-b176-4c23-ae3c-2d212be9e4d9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					<paragraph rightIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+($F{amount} < 0 ? (($F{amount}).negate().setScale(2, BigDecimal.ROUND_HALF_UP)+'cr') : $F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP))]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="1" y="0" width="113" height="15" uuid="505a3bed-bc2c-416b-b0aa-b592f4cd11ea"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+					<paragraph leftIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $F{start_date} && null == $F{end_date} ? $F{start_date} :
+(null != $F{start_date} && null != $F{end_date} ? ($F{start_date} +' - '+ $F{end_date}) : '')]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

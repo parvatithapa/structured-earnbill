@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_payment_instruments" language="groovy" pageWidth="560" pageHeight="230" columnWidth="560" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6fc0adf1-3561-48b7-9c26-b8b33ad64fc2">
+	<property name="ireport.zoom" value="1.6105100000000039"/>
+	<property name="ireport.x" value="42"/>
+	<property name="ireport.y" value="66"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/logos/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="core.param.total_due" class="java.lang.String"/>
+	<parameter name="barcode" class="java.lang.String"/>
+	<parameter name="refNumber" class="java.lang.String"/>
+	<parameter name="billerCode" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Westpac Credit Cards%'
+) AS cc_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%BPAY%'
+) AS bpay_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Bank Debit%'
+) AS bank_debit_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Australia Post%'
+) AS australia_post_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Cheque%'
+) AS cheque_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Token%'
+) AS token_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Credit Adjustment%'
+) AS credit_adjustment_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Order Withdrawn%'
+) AS order_withdrawn_count
+FROM base_user bu
+WHERE bu.id = $P{invoice_user_id}
+AND bu.deleted = 0;]]>
+	</queryString>
+	<field name="cc_count" class="java.lang.Long"/>
+	<field name="bpay_count" class="java.lang.Long"/>
+	<field name="bank_debit_count" class="java.lang.Long"/>
+	<field name="australia_post_count" class="java.lang.Long"/>
+	<field name="cheque_count" class="java.lang.Long"/>
+	<field name="token_count" class="java.lang.Long"/>
+	<field name="credit_adjustment_count" class="java.lang.Long"/>
+	<field name="order_withdrawn_count" class="java.lang.Long"/>
+	<title>
+		<band height="229">
+			<rectangle radius="2">
+				<reportElement x="0" y="0" width="547" height="228" backcolor="#CEC8BF" uuid="cd61a725-885d-4720-9f53-9c5a3fbd5d05"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="11" y="4" width="78" height="15" forecolor="#000000" uuid="49caf57f-4e7b-46ca-a293-ee4574222b0d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="BrauerNeue-Regular" size="12" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[How to Pay]]></text>
+			</staticText>
+			<rectangle radius="1">
+				<reportElement x="1" y="28" width="545" height="199" backcolor="#FFFFFF" uuid="70e710f1-0c20-489b-b1b2-dc3a3fb7cb70"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#FFFFFF"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="17" y="218" width="427" height="8" uuid="89349271-1cf9-4497-ae8a-465f5fc0c810"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="6" isBold="false" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[^ A 0.17% fee (incl. GST) may apply if we incur a fee due to your payment method, including if you pay by credit or debit card. AGL does not accept AMEX and Diners.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="162" width="137" height="25" uuid="c762fe89-ddfb-4b6c-8b86-6c129ad69365"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[AGL Telecommunications,
+6 Page St, Moruya NSW 2537]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="138" width="209" height="24" uuid="682aba44-9168-4f2c-b758-c5fcb93837e4"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" isBold="false" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Send your cheque or money order along with this
+section of the bill to:]]></text>
+			</staticText>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="26" y="48" width="26" height="24" uuid="acc79661-ce5c-44ba-adf5-12ca3c2225d1"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/direct_debit.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="57" y="56" width="148" height="13" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="d0f912a2-87b2-4123-b73a-e905a912cae9"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="10" isBold="false" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Pay your bill by Direct Debit]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="12" y="32" width="475" height="13" uuid="8aaf971c-b642-40bd-9360-9ab9e6d1f98f"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[If payment for this bill is not received by the due date a late payment fee of $10.00 (not subject to GST) will apply.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="44" width="63" height="13" forecolor="#000000" uuid="3fbb29cd-60f1-40f8-91a9-9f7046d6e37c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Direct Debit^]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="86" width="94" height="13" forecolor="#000000" uuid="0ebb16c8-5372-4028-93f2-3ee9d78aa83a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Visa or Mastercard^]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="126" width="61" height="13" forecolor="#000000" uuid="6c05bbb0-9424-437a-a62f-29e6eee33c45"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[By Mail]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="57" y="98" width="30" height="13" uuid="a1aec773-e8e6-4a49-bbcd-c754256357e3"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Online:]]></text>
+			</staticText>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="28" y="88" width="24" height="15" uuid="8b72964d-6dcc-4e25-9791-1ed831923360"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/credit_card.png"]]></imageExpression>
+			</image>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="24" y="127" width="30" height="24" uuid="94c7a262-ccf1-43e4-9f4c-1a8a47b7e123"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/mail.png"]]></imageExpression>
+			</image>
+			<rectangle radius="0">
+				<reportElement x="331" y="49" width="155" height="30" uuid="5d6c9de5-8fea-4671-9a37-b9e61dbdb941"/>
+				<graphicElement>
+					<pen lineWidth="0.3"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="333" y="64" width="15" height="11" uuid="9fceab13-5c43-46f1-a473-8ee944241cbb"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="9" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Ref:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="333" y="52" width="43" height="11" uuid="a7495bde-0082-4857-bdb0-a57316e2277d"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="9" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Biller Code:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="350" y="64" width="94" height="11" uuid="d7add9ff-33ef-4069-8e71-18ef542fd251"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="9" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[!$P{refNumber}.isEmpty() && $P{refNumber}.length() >= 10 ?
+$P{refNumber}.substring(0, 4) + ' ' +
+$P{refNumber}.substring( 4, $P{refNumber}.length()).substring(0, 4)+ ' ' +
+$P{refNumber}.substring( 8, $P{refNumber}.length()).substring(0, 2): $P{refNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="377" y="52" width="67" height="11" uuid="e3f4dbb2-70b4-4bef-a413-81e0db360421"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="9" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{billerCode}]]></textFieldExpression>
+			</textField>
+			<image hAlign="Left" vAlign="Top">
+				<reportElement x="293" y="49" width="33" height="33" uuid="0e248b44-a58e-422b-9e67-9986bc2ff1f6"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/agl_bpay_logo.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="57" y="110" width="30" height="13" uuid="ff32cc27-6cc5-4e67-a19a-17ce097e5fd3"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Phone:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="87" y="111" width="70" height="13" uuid="798b09a7-8cbb-4a2e-9d35-1fec95b972b9"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[1300 001 037]]></text>
+			</staticText>
+			<textField hyperlinkType="Reference">
+				<reportElement x="87" y="98" width="100" height="13" uuid="fbe496bd-61a5-4c8d-98da-0750610b9492"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA['agl.com.au/paybill']]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA["agl.com.au/paybill"]]></hyperlinkReferenceExpression>
+			</textField>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="57" y="69" width="38" height="13" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="2e1cfe5b-5249-49eb-99ee-c1e0af06eae2"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="10" isBold="false" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[by calling]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="94" y="69" width="72" height="13" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="7d577e57-136e-4bce-97b0-2448613a0f32"/>
+				<textElement textAlignment="Center">
+					<font fontName="FoundrySterling-Book" size="10" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[1300 307 731]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="165" y="69" width="55" height="13" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="679d45c4-0af3-42c2-a5b4-25b1db45191f"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="10" isBold="false" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[to register.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="297" y="85" width="153" height="10" uuid="65f1ebae-0767-43d0-a609-0220af118110"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="8" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Telephone & Internet Banking – BPAY®]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="297" y="95" width="165" height="8" uuid="78aaff08-1e29-4ede-967d-dd9c628bc2da"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="6" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[Contact your bank or financial institution to make this payment]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="297" y="103" width="165" height="8" uuid="bee02b69-7ade-4cda-8988-74e228d867b6"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="6" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[from your cheque, savings, debit, credit card or transaction]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="297" y="111" width="50" height="8" uuid="0d9ad2d5-3cec-4969-a4c4-235f289a9b42"/>
+				<textElement>
+					<font fontName="FoundrySterling-Book" size="6" pdfEncoding="Identity-H"/>
+				</textElement>
+				<text><![CDATA[account. More info:]]></text>
+			</staticText>
+			<textField hyperlinkType="Reference">
+				<reportElement x="348" y="111" width="114" height="8" uuid="a0d5408c-053c-420b-9601-157e37574e72"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="FoundrySterling-Book" size="6" isBold="true" pdfEncoding="Identity-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA['www.bpay.com.au']]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA["www.bpay.com.au"]]></hyperlinkReferenceExpression>
+			</textField>
+			<rectangle radius="2">
+				<reportElement x="0" y="26" width="547" height="2" backcolor="#CEC8BF" uuid="2301361a-f44a-4cc7-a034-b3ff9eb8ea90"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+		</band>
+	</title>
+</jasperReport>

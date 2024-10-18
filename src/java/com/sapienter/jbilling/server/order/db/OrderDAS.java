@@ -41,7 +41,6 @@ import org.hibernate.criterion.Property;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.type.DateType;
 import org.hibernate.type.StringType;
-import org.hibernate.type.IntegerType;
 import org.joda.time.DateMidnight;
 
 import com.sapienter.jbilling.common.Util;
@@ -49,7 +48,6 @@ import com.sapienter.jbilling.server.customerInspector.domain.ListField;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.order.OrderStatusFlag;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
-import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDTO;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
@@ -82,6 +80,29 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
                 .setMaxResults(1);
 
         return findFirst(criteria);
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<OrderDTO> findActiveMediatedOrdersByUserId(Integer userId) {
+        return activeMediatedOrderForUserCriteria(userId)
+                .list();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<OrderDTO> findActiveMediatedOrdersByUserIdByDate(Integer userId, Date toDate) {
+        return activeMediatedOrderForUserCriteria(userId)
+                .add(Restrictions.lt("activeSince", toDate))
+                .list();
+    }
+
+    private Criteria activeMediatedOrderForUserCriteria(Integer userId) {
+        return getSession().createCriteria(OrderDTO.class)
+                .add(Restrictions.eq("isMediated", true))
+                .createAlias("orderStatus", "s")
+                .add(Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.INVOICE))
+                .add(Restrictions.eq("deleted", 0))
+                .createAlias("baseUserByUserId", "u")
+                .add(Restrictions.eq("u.id", userId));
     }
 
     /**
@@ -279,35 +300,6 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
         return criteria.list();
     }
 
-    public List<OrderDTO> findByPlanUserFreeTrialSubscription(Integer userId, Integer planId) {
-        // I need to access an association, so I can't use the parent helper class
-        Criteria criteria = getSession().createCriteria(OrderDTO.class)
-                .add(Restrictions.eq("deleted", 0))
-                .createAlias("baseUserByUserId", "u")
-                .add(Restrictions.eq("u.id", userId))
-                .createAlias("orderPeriod", "p")
-                .add(Restrictions.ne("p.id", Constants.ORDER_PERIOD_ONCE))
-                .createAlias("orderStatus", "s")
-                .createAlias("lines", "line")
-                .createAlias("line.item", "item")
-                .createAlias("item.plans", "plan")
-                .add(Restrictions.eq("plan.freeTrial", true))
-                .add(Restrictions.eq("plan.id", planId));
-
-        Criterion orderActive = Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.INVOICE);
-
-        Criterion orderFinished = Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.FINISHED);
-        Criterion untilFuture = Restrictions.gt("activeUntil", TimezoneHelper.companyCurrentDateByUserId(userId));
-        LogicalExpression finishInFuture= Restrictions.and(orderFinished, untilFuture);
-
-        LogicalExpression orderActiveOrEndsLater= Restrictions.or(orderActive, finishInFuture);
-
-        // Criteria or condition
-        criteria.add(orderActiveOrEndsLater);
-
-        return criteria.list();
-    }
-
     /**
      * Find order of the given user by asset number
      *
@@ -322,11 +314,12 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
                 .add(Restrictions.eq("u.id", userId))
                 .createAlias("lines", "line")
                 .add(Restrictions.eq("line.deleted", 0))
-                .createAlias("line.assets", "asset")
+                .createAlias("line.assetAssignments", "assignment")
+                .createAlias("assignment.asset", "asset")
                 .add(Restrictions.eq("asset.identifier", assetIdentifier));
         return (OrderDTO) criteria.uniqueResult();
     }
-    
+
     /**
      * Finds all active orders for a given user
      * @param userId
@@ -803,7 +796,6 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
             Date billingCycleEnd, OrderStatusFlag... flags) {
         Criteria criteria = getSession().createCriteria(OrderDTO.class)
                 .add(Restrictions.eq("deleted", 0))
-                .add(Restrictions.eq("isMediated", Boolean.TRUE))
                 .createAlias("baseUserByUserId", "u")
                 .add(Restrictions.eq("u.id", userId))
                 .add(Restrictions.ge("activeSince", billingCycleStart))
@@ -835,20 +827,6 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
                 .add(Restrictions.eq("metaField.name", name))
                 .add(Restrictions.eq("company.id", entityId))
                 .add(Restrictions.sqlRestriction("string_value =  ?", value, StringType.INSTANCE));
-
-        return criteria.list();
-    }
-
-    public List<OrderDTO> findDiscountOrderByMetaFieldsValue(Integer entityId, String name, Integer value){
-        Criteria criteria = getSession().createCriteria(OrderDTO.class)
-                .createAlias("metaFields", "metaFieldValue")
-                .createAlias("metaFieldValue.field", "metaField")
-                .createAlias("baseUserByUserId", "user")
-                .createAlias("user.company", "company")
-                .add(Restrictions.eq("deleted", 0))
-                .add(Restrictions.eq("metaField.name", name))
-                .add(Restrictions.eq("company.id", entityId))
-                .add(Restrictions.sqlRestriction("integer_value =  ?", value, IntegerType.INSTANCE));
 
         return criteria.list();
     }
@@ -1205,5 +1183,197 @@ public class OrderDAS extends AbstractDAS<OrderDTO> {
                 .addOrder(Order.desc("id"));
 
         return criteria.list();
+    }
+
+    public OrderDTO getSubscriptionOrderByAsset(Integer userId, Date eventDate, String assetIdentifier) {
+        Criteria criteria = getSession().createCriteria(OrderDTO.class)
+                .add(Restrictions.eq("deleted", 0))
+                .createAlias("lines", "lines")
+                .createAlias("lines.assets", "assets")
+                .add(Restrictions.eq("assets.identifier", assetIdentifier))
+                .createAlias("lines.assetAssignments", "assetAssignment")
+                .add(Restrictions.disjunction(
+                        Restrictions.conjunction(Restrictions.isNotNull("assetAssignment.endDatetime"),
+                                Restrictions.le("assetAssignment.startDatetime", eventDate), Restrictions.ge("assetAssignment.endDatetime", eventDate)),
+                                Restrictions.le("assetAssignment.startDatetime", eventDate)))
+                                .createAlias("baseUserByUserId", "user")
+                                .add(Restrictions.eq("user.id", userId))
+                                .setMaxResults(1);
+        return (OrderDTO) criteria.uniqueResult();
+    }
+
+    private static final String FIND_ORDER_BY_USER_IDENTIFIER_AND_EFFECTIVE_DATE =
+            "SELECT po.id  "
+                    + "FROM purchase_order po "
+                    + "INNER JOIN order_line ol ON ol.order_id = po.id "
+                    + "INNER JOIN base_user bu ON bu.id = po.user_id "
+                    + "INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id "
+                    + "INNER JOIN asset a ON a.id = aa.asset_id "
+                    + "WHERE po.user_id = :userId "
+                    + "AND a.identifier = :assetIdentifier "
+                    + "AND CASE WHEN aa.end_datetime IS NULL THEN (SELECT MAX(start_datetime) FROM asset_assignment WHERE end_datetime IS NULL AND asset_id = a.id) <= :effectiveDate "
+                    + "ELSE (:effectiveDate BETWEEN aa.start_datetime AND aa.end_datetime) END";
+
+    /**
+     * Fetch subscription order on the basis of user, call identifier and effective date.
+     * @param userId
+     * @param assetIdentifier
+     * @param effectiveDate
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+	public OrderDTO findOrderByUserAssetIdentifierEffectiveDate(Integer userId, String assetIdentifier, Date effectiveDate) {
+
+        SQLQuery query = getSession().createSQLQuery(FIND_ORDER_BY_USER_IDENTIFIER_AND_EFFECTIVE_DATE);
+        query.setParameter("userId", userId);
+        query.setParameter("assetIdentifier", assetIdentifier);
+        query.setParameter("effectiveDate", effectiveDate);
+
+        List<Integer> result = query.list();
+        Integer orderId = (result!=null && !result.isEmpty()) ? result.get(0): null;
+
+        return findByIdAndIsDeleted(orderId , false);
+    }
+
+    private static final String FIND_IDENTIFIERS_BY_USER_ORDER_AND_EFFECTIVE_DATE =
+            "SELECT a.identifier "
+                    + "FROM purchase_order po "
+                    + "INNER JOIN order_line ol ON ol.order_id = po.id "
+                    + "INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id "
+                    + "INNER JOIN asset a ON a.id = aa.asset_id "
+                    + "WHERE po.user_id = :userId "
+                    + "AND po.id = :orderId "
+                    + "AND CASE WHEN aa.end_datetime IS NULL THEN (SELECT MAX(start_datetime) FROM asset_assignment WHERE end_datetime IS NULL AND asset_id = a.id) <= :effectiveDate "
+                    + "ELSE (:effectiveDate BETWEEN aa.start_datetime AND aa.end_datetime) END";
+
+    /**
+     * Fetch asset identifiers on the basis of user, order and effective date from asset assignments.
+     * @param userId
+     * @param orderId
+     * @param effectiveDate
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+	public List<String> findAssetIdentifiersByUserOrderEffectiveDate(Integer userId, Integer orderId, Date effectiveDate) {
+
+        SQLQuery query = getSession().createSQLQuery(FIND_IDENTIFIERS_BY_USER_ORDER_AND_EFFECTIVE_DATE);
+        query.setParameter("userId", userId);
+        query.setParameter("orderId", orderId);
+        query.setParameter("effectiveDate", effectiveDate);
+
+        return query.list();
+    }
+
+    /**
+     * Retrieve all pre-paid finished subscription orders those have assets linked to it.
+     * @param userId:
+     * @return
+     */
+    public List<Integer> findAllFinishedSubscriptions() {
+        Criteria criteria = getSession().createCriteria(OrderDTO.class)
+                .add(Restrictions.eq("deleted", 0))
+                .createAlias("orderBillingType", "orderBillingType")
+                .createAlias("lines", "lines")
+                .createAlias("lines.assets", "assets")
+                .add(Restrictions.isNotEmpty("lines.assets"))
+                .createAlias("orderPeriod", "p")
+                .add(Restrictions.ne("p.id", Constants.ORDER_PERIOD_ONCE))
+                .createAlias("orderStatus", "s")
+                .add(Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.FINISHED))
+                .setProjection(Projections.distinct(Projections.id()))
+                .addOrder(Order.desc("id"));
+
+        return criteria.list();
+    }
+
+  public List<OrderDTO> findActiveMediatedOrdersByUserIdAndAssetIdentifier(Integer userId, String assetIdentifier) {
+
+      Criteria criteria = getSession().createCriteria(OrderDTO.class)
+              .add(Restrictions.eq("deleted", 0))
+              .createAlias("orderPeriod", "p")
+              .add(Restrictions.eq("p.id", Constants.ORDER_PERIOD_ONCE))
+              .createAlias("baseUserByUserId", "u")
+              .add(Restrictions.eq("u.id", userId))
+              .add(Restrictions.eq("isMediated", Boolean.TRUE))
+              .createAlias("orderStatus", "s")
+              .add(Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.INVOICE))
+              .createAlias("lines", "line")
+              .add(Restrictions.eq("line.callIdentifier",assetIdentifier ));
+
+      return criteria.list();
+  }
+
+  public List<OrderDTO> findActiveMediatedOrdersByUserIdAndAssetIdentifier(Integer userId, String assetIdentifier,
+          Date nextInvoiceDate, boolean isNewPeriod) {
+
+      Criteria criteria = getSession().createCriteria(OrderDTO.class)
+              .add(Restrictions.eq("deleted", 0))
+              .createAlias("orderPeriod", "p")
+              .add(Restrictions.eq("p.id", Constants.ORDER_PERIOD_ONCE))
+              .createAlias("baseUserByUserId", "u")
+              .add(Restrictions.eq("u.id", userId))
+              .add(Restrictions.eq("isMediated", Boolean.TRUE))
+              .createAlias("orderStatus", "s")
+              .add(Restrictions.eq("s.orderStatusFlag", OrderStatusFlag.INVOICE))
+              .createAlias("lines", "line")
+              .add(Restrictions.eq("line.callIdentifier",assetIdentifier ));
+      if(isNewPeriod) {
+          criteria.add(Restrictions.ge("activeSince", nextInvoiceDate));
+      } else {
+          criteria.add(Restrictions.lt("activeSince", nextInvoiceDate));
+      }
+      criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+      return criteria.list();
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<Integer> findSubscriptionOrderIdsByUserIdentifierAndEffectiveDate(Integer userId, String assetIdentifier, Date effectiveDate) {
+      SQLQuery query = getSession().createSQLQuery(FIND_ORDER_BY_USER_IDENTIFIER_AND_EFFECTIVE_DATE
+              + " AND po.deleted = 0 ");
+      query.setParameter("userId", userId);
+      query.setParameter("assetIdentifier", assetIdentifier);
+      query.setParameter("effectiveDate", effectiveDate);
+      return query.list();
+  }
+    private static final String FIND_LAST_ORDER_BY_USER_ID = "SELECT MAX(id)" +
+        " FROM purchase_order " +
+        " WHERE user_id = :userId " +
+        " AND deleted = 0 " +
+        " AND create_datetime = (SELECT MAX(create_datetime)" +
+        "                       FROM purchase_order " +
+        "                       WHERE user_id = :userId" +
+        "                       AND deleted = 0)";
+
+    public Integer getLastByUser (Integer userId){
+        SQLQuery query = getSession().createSQLQuery(FIND_LAST_ORDER_BY_USER_ID);
+        query.setParameter("userId", userId);
+        return (Integer) query.uniqueResult();
+    }
+
+    private String GET_ACTIVE_ORDER = "SELECT po.id " +
+            " FROM  purchase_order po " +
+            "       JOIN order_meta_field_map omfm " +
+            "         ON po.id = omfm.order_id " +
+            "       JOIN meta_field_value mfv " +
+            "         ON omfm.meta_field_value_id = mfv.id " +
+            " WHERE mfv.integer_value = (SELECT order_id FROM order_line ol WHERE  ol.id = :orderLineId) " +
+            " ORDER BY po.create_datetime DESC LIMIT 1";
+    /**
+     * Segregation of plan and asset : subscription order doesn't contain plan only contain asset product,
+     * this method get the active order for user which contain plan based on orderLineId from asset.
+     *
+     * @param orderLineId
+     * @return planId
+     */
+    public OrderDTO getActiveOrderByAssetOrderLineId(Integer orderLineId) {
+        // Identify active order based on order level meta field.
+        Query query = getSession().createSQLQuery(GET_ACTIVE_ORDER);
+
+        query.setParameter("orderLineId", orderLineId);
+        Integer orderId = (Integer) query.uniqueResult();
+        Criteria criteria = getSession().createCriteria(OrderDTO.class)
+                .add(Restrictions.eq("id", orderId))
+                .setMaxResults(1);
+        return (OrderDTO) criteria.uniqueResult();
     }
 }

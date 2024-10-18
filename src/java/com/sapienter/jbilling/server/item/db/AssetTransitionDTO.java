@@ -43,7 +43,7 @@ import java.util.Date;
         @NamedQuery(name = "AssetTransitionDTO.findForAsset",
                 query = "select at from AssetTransitionDTO at where at.asset.id= :asset_id order by createDatetime desc, id desc")
 })
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.NONE)
 public class AssetTransitionDTO implements Serializable {
 
     private int id;

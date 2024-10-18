@@ -18,5 +18,4 @@ public interface SapphireMediationHelperService {
     boolean isCountryPresentForItemAndCountry(String itemId, Date eventDate, String countryCode, String countryName);
     boolean isCarrierNamePresentForItemAndCountry(String itemId, Date eventDate, String carrierName, String countryName);
     Optional<String> getRouteRateCardForItem(String itemId, Date eventDate);
-    String getCompanyTimeZone(Integer entityId);
 }

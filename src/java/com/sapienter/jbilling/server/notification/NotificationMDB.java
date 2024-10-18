@@ -2,9 +2,16 @@ package com.sapienter.jbilling.server.notification;
 
 import java.lang.invoke.MethodHandles;
 
+import javax.annotation.Resource;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.ObjectMessage;
+
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
+import com.sapienter.jbilling.server.user.UserBL;
+import com.sapienter.jbilling.server.user.db.CustomerDTO;
+import com.sapienter.jbilling.server.util.Constants;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -16,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sapienter.jbilling.common.SessionInternalError;
 
 /**
- *  Notification async message listener
+ * Notification async message listener
  *
  * @author Panche Isajeski
  * @since 08-Mar-2014
@@ -25,6 +32,9 @@ import com.sapienter.jbilling.common.SessionInternalError;
 public class NotificationMDB implements MessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Resource
+    private SpcHelperService spcHelperService;
 
     @Autowired
     private INotificationSessionBean notificationSessionBean;
@@ -36,11 +46,27 @@ public class NotificationMDB implements MessageListener {
             ObjectMessage objectMessage = (ObjectMessage) message;
             MessageDTO messageDTO = (MessageDTO) objectMessage.getObject();
             Integer userId = objectMessage.getIntProperty("userId");
+
+            Integer messageTypeId = messageDTO.getTypeId();
+            if (messageTypeId.equals(Constants.NOTIFICATION_TYPE_INVOICE_EMAIL) && 
+            		spcHelperService.validateCustomerInvoiceDesign(userId, SPCConstants.AGL_INVOICE)) {
+                logger.error("Error sending AGL invoice for customer id %s, invoice design %s does not match with customer configuration",
+                		userId, messageTypeId);
+                throw new SessionInternalError();
+            }
+
+            if (messageTypeId.equals(SPCConstants.NOTIFICATION_TYPE_AGL_INVOICE_EMAIL) && 
+            		spcHelperService.validateCustomerInvoiceDesign(userId, SPCConstants.SPC_INVOICE)) {
+                logger.error("Error sending SPC invoice for customer id %s, invoice design %s does not match with customer configuration",
+                        userId, messageTypeId);
+                throw new SessionInternalError();
+            }
+
             String fileName = messageDTO.getAttachmentFile();
             Integer invoiceId = messageDTO.getInvoiceId();
-            if(null!= invoiceId && StringUtils.isNotEmpty(fileName)) {
+            if (null != invoiceId && StringUtils.isNotEmpty(fileName)) {
                 logger.debug("attached email file {} found for invoice {} for user{}", fileName, invoiceId, userId);
-                if(!fileName.contains(invoiceId.toString())) {
+                if (!fileName.contains(invoiceId.toString())) {
                     logger.debug("Attachement mismatch found in NotificationMDB. Atached file {} is not for invoice {} for user {}", fileName, invoiceId, userId);
                     messageDTO.setAttachmentFile(null); // message contains wrong attachment.
                 }
@@ -50,6 +76,5 @@ public class NotificationMDB implements MessageListener {
             logger.error("Error in  NotificationMDB!", e);
             throw new SessionInternalError(e);
         }
-
     }
 }

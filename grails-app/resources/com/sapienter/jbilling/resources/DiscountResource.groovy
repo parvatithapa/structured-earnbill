@@ -1,11 +1,11 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.discount.DiscountWS
 import com.sapienter.jbilling.server.order.OrderStatusWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
 import com.wordnik.swagger.annotations.*
+
 import grails.plugin.springsecurity.annotation.Secured
 
 import javax.ws.rs.*
@@ -37,8 +37,8 @@ class DiscountResource {
         DiscountWS discountWS;
         try {
             discountWS = webServicesSession.getDiscountWS(discountId);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return discountWS != null ?
                 Response.ok().entity(discountWS).build():
@@ -61,8 +61,8 @@ class DiscountResource {
         Integer discountId;
         try {
             discountId = webServicesSession.createOrUpdateDiscount(discountWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(discountId)).build())
                 .entity(webServicesSession.getDiscountWS(discountId)).build();
@@ -90,8 +90,8 @@ class DiscountResource {
             }
             discountWS.setId(id);
             webServicesSession.createOrUpdateDiscount(discountWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(webServicesSession.getDiscountWS(id)).build();
     }
@@ -115,8 +115,8 @@ class DiscountResource {
             }
             webServicesSession.deleteDiscount(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

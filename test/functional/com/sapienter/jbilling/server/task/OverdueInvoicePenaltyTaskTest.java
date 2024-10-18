@@ -55,12 +55,12 @@ import com.sapienter.jbilling.test.ApiTestCase;
 
 /**
  * A jUnit test class to test OverdueInvoicePenaltyTask plug-in.
- *
+ * 
  * @author Ashok Kale
  * @since 11-FEB-2011
- *
+ * 
  */
-@Test(groups = { "integration", "task", "penalty", "overdueInvoicePenalty" }, testName = "OverdueInvoicePenaltyTaskTest", priority = 8)
+@Test(groups = { "integration", "task", "penalty", "overdueInvoicePenalty" }, testName = "OverdueInvoicePenaltyTaskTest")
 public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(OverdueInvoicePenaltyTaskTest.class);
@@ -75,7 +75,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
     public static final int ORDER_CHANGE_STATUS_APPLY_ID = 3;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-dd-MM");
     private Integer penaltyPluginId = null;
-
+    
     protected void prepareTestInstance() throws Exception {
 		super.prepareTestInstance();
 		api = JbillingAPIFactory.getAPI();
@@ -83,13 +83,13 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		LANGUAGE_ID = Constants.LANGUAGE_ENGLISH_ID;
 		PRANCING_PONY_ACCOUNT_TYPE = Integer.valueOf(1);
 	}
-
+    
     /**
      * Test that an Overdue Invoice (Unpaid Invoice) causes a new Penalty Order to be created for that user,
      * just prior to the next billing run. The penalty order is created using a Penalty Category Item
      * @throws Exception
      */
-
+    	
     @Test
     public void test001OverdueInvoice() throws Exception {
 	    ItemTypeWS penaltyCategory = buildPenaltyCategory();
@@ -98,7 +98,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 	    logger.debug("Creating the Penalty Item.");
 	    Integer penaltyItemId = createPenaltyItem(penaltyCategory.getId(), PriceModelStrategy.LINE_PERCENTAGE.name(), new BigDecimal("1.50"));
 	    assertNotNull("Late Fee Penalty Item Id  should not be null.", penaltyItemId);
-
+	    
 	    Integer penaltyChargeItemId = createPenaltyItem(penaltyCategory.getId(), PriceModelStrategy.FLAT.name(), new BigDecimal("2.00"));
 	    assertNotNull("Late Fee Penalty Charge Item Id  should not be null.", penaltyChargeItemId);
 
@@ -106,19 +106,19 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
 	    penaltyPluginId = enableOverdueInvoicePenaltyPlugin(penaltyItemId, penaltyChargeItemId);
 	    assertNotNull("Plugin id is not null.", penaltyPluginId);
-
+	    
         // create a user for testing
         Integer userId = api.createUser(createUserWS("invoice-penaly-01-" + System.currentTimeMillis(), Constants.PERIOD_UNIT_MONTH, 1));//due date 1 month or 30 days
         assertNotNull("Test fail at user creation.", userId);
         logger.debug("User Created with Id ::: {}", userId);
-
+        
         UserWS user = api.getUserWS(userId);
         user.setNextInvoiceDate(getDate(1, 1, 2008));
 		api.updateUser(user);
-
+		
 		user = api.getUserWS(userId);
 		logger.debug("User Next Invoice Date :::{}", DATE_FORMAT.format(user.getNextInvoiceDate()));
-
+        
         ItemTypeWS itemCategory = buildItemCategory();
 	    itemCategory.setId(api.createItemCategory(itemCategory));
 	    Integer itemId = createItem(itemCategory.getId());
@@ -129,7 +129,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         OrderWS orderWS = api.getOrder(orderId);
         assertNotNull("order created", orderWS.getId());
         logger.debug("Order Created with Id :::{}", orderId);
-
+        
         // update the billing process
         updateBillingConfig(getDate(1, 1, 2008));
         // now trigger the billing, and the invoice should be made of the above order
@@ -170,21 +170,21 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
      * This is the test that activeUntil Date of such an order should not be null
      * and also equal to the Payment Date
      * @throws Exception
-     */
+     */	
       @Test
       public void test002InvoicePayment() throws Exception {
         // create a user for testing
         Integer userId = api.createUser(createUserWS("invoice-penaly-01-" + System.currentTimeMillis(), Constants.PERIOD_UNIT_MONTH, 1));//due date 1 month or 30 days
         assertNotNull("Test fail at user creation.", userId);
         logger.debug("User Created with Id :::{}", userId);
-
+        
         UserWS user = api.getUserWS(userId);
         user.setNextInvoiceDate(getDate(3, 1, 2008));
 		api.updateUser(user);
-
+		
 		user = api.getUserWS(userId);
 		logger.debug("User Next Invoice Date :::{}", DATE_FORMAT.format(user.getNextInvoiceDate()));
-
+		
         ItemTypeWS itemCategory = buildItemCategory();
 	    itemCategory.setId(api.createItemCategory(itemCategory));
 	    Integer itemId = createItem(itemCategory.getId());
@@ -194,7 +194,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         Integer orderId = createOrderWs(userId, itemId, getDate(02, 01, 2008), PeriodUnitDTO.MONTH);
         OrderWS orderWS = api.getOrder(orderId);
         assertNotNull("order created", orderWS.getId());
-
+        
         // update the billing process
         updateBillingConfig(getDate(3, 1, 2008));
         // now trigger the billing, and the invoice should be made of the above order
@@ -209,6 +209,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         logger.debug("Triggered Billing Process for Date :::{}", getDate(4, 1, 2008));
         logger.debug("Wait 2 Minute for Billing Process to Complete :::");
         api.triggerBilling(getDate(4, 1, 2008));
+        
         // check the order generated
         // get the last 2 first
 	    user = api.getUserWS(userId);
@@ -225,7 +226,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
        // now make a payment for the above invoice, sufficient to pay them all
         PaymentWS payment = createPaymentWS(user.getUserId(), getDate(4, 1, 2008), null);
-
+        
         logger.debug("Created payemnt {}", payment.getId());
         assertNotNull("Didn't get the payment id", payment.getId());
 
@@ -246,21 +247,21 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
    /* @Test
     public void test003PenaltyOnOverdueAmountOnly() throws Exception {
-
+    	
     	System.out.println("## test003PenaltyOnOverdueAmountOnly ##");
         // create a user for testing
         Integer userId = api.createUser(createUserWS("invoice-penaly-01-" + System.currentTimeMillis(), Constants.PERIOD_UNIT_MONTH, 1));//due date 1 month or 30 days
         assertNotNull("Test fail at user creation.", userId);
-
+        
         System.out.println("User Created with Id :::"+ userId);
-
+        
         UserWS user = api.getUserWS(userId);
         user.setNextInvoiceDate(getDate(4, 1, 2012));
 		api.updateUser(user);
-
+		
 		user = api.getUserWS(userId);
 		System.out.println("User Next Invoice Date :::"+ DATE_FORMAT.format(user.getNextInvoiceDate()));
-
+        
         ItemTypeWS itemCategory = buildItemCategory();
 	    itemCategory.setId(api.createItemCategory(itemCategory));
 	    Integer itemId = createItem(itemCategory.getId());
@@ -270,7 +271,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         Integer orderId = createOrderWs(userId, itemId, getDate(03, 01, 2012), PeriodUnitDTO.MONTH);
         OrderWS orderWS = api.getOrder(orderId);
         assertNotNull("order created", orderWS.getId());
-
+        
         // update the billing process
         updateBillingConfig(getDate(4, 1, 2012));
         // now trigger the billing, and the invoice should be made of the above order
@@ -285,13 +286,13 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         System.out.println("Triggered Billing Process for Date :::"+ getDate(5, 1, 2012));
         System.out.println("Wait 2 Minute for Billing Process to Complete :::");
         api.triggerBilling(getDate(5, 1, 2012));
-
+        
         // Updating Penalty order active since date to get picked in latest billing run.
         Integer ids[] =   api.getLastOrders(user.getUserId(),1);
         OrderWS latestOrder = api.getOrder(ids[0]);
         latestOrder.setActiveSince(getDate(5, 1, 2012));
         api.updateOrder(latestOrder, null);
-
+        
         // again trigger the billing, this time we should have a different order
         updateBillingConfig(getDate(6, 1, 2012));
         // trigger the billing on 1st JULY 2012
@@ -311,7 +312,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         assertNotNull(latestOrder);
         assertEquals("Penalty order Total should be 3.02", new BigDecimal("3.02"),latestOrder.getTotalAsDecimal());
     }*/
-
+    
     /**
      * Build User
      * @param userName
@@ -337,7 +338,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
         return newUser;
     }
-
+    
     private MetaFieldValueWS[] createContactMetaFields(String username){
         MetaFieldValueWS metaField1 = new MetaFieldValueWS();
         metaField1.setFieldName("contact.email");
@@ -360,7 +361,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
                 metaField3,
         };
     }
-
+    
     private ItemTypeWS buildPenaltyCategory() {
 		ItemTypeWS type = new ItemTypeWS();
 		type.setDescription("Invoice Penalty Items:" + System.currentTimeMillis());
@@ -370,7 +371,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		type.setOnePerOrder(false);
 		return type;
 	}
-
+    
     private ItemTypeWS buildItemCategory() {
 		ItemTypeWS type = new ItemTypeWS();
 		type.setDescription("Penalty Test Item Cat:" + System.currentTimeMillis());
@@ -380,7 +381,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		type.setOnePerOrder(false);
 		return type;
 	}
-
+    
     private Integer createItem(Integer categoryId) {
 		ItemDTOEx item = new ItemDTOEx();
 		item.setCurrencyId(CURRENCY_USD);
@@ -392,7 +393,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		item.setId(api.createItem(item));
 		return item.getId();
 	}
-
+    
     private Integer createPenaltyItem(Integer categoryId, String priceModelType, BigDecimal rate) {
 		ItemDTOEx item = new ItemDTOEx();
 		item.setCurrencyId(CURRENCY_USD);
@@ -402,14 +403,14 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         linePercentagePrice.setRate(new BigDecimal("1.50"));
         linePercentagePrice.setCurrencyId(CURRENCY_USD);
         item.addDefaultPrice(CommonConstants.EPOCH_DATE, linePercentagePrice);
-
+		
 		item.setDescription("Late Fees");
 		item.setEntityId(TEST_ENTITY_ID);
 		item.setNumber("OIPLF");// Overdue Invoice Penalty Late Fee
 		item.setTypes(new Integer[]{categoryId});
 		return api.createItem(item);
 	}
-
+    
     private Integer createOrderWs(Integer userId, Integer itemId, Date activeSince, Integer periodUnitId) {
 
         OrderWS order = new OrderWS();
@@ -422,7 +423,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         order.setDueDateUnitId(periodUnitId);
         order.setDueDateValue(0);//order due
         order.setProrateFlag(true);
-
+        
         OrderChangeWS orderChanges[] = OrderChangeBL.buildFromOrder(order, ORDER_CHANGE_STATUS_APPLY_ID);
 		for (OrderChangeWS ws : orderChanges) {
                 ws.setStartDate(activeSince);
@@ -431,7 +432,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		assertNotNull("orderId should not be null",orderId);
 		return orderId;
     }
-
+    
     private OrderLineWS createOrderLineWS(Integer itemId) {
         OrderLineWS line = new OrderLineWS();
         line.setTypeId(Constants.ORDER_LINE_TYPE_ITEM);
@@ -451,7 +452,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 		PluggableTaskWS plugin = new PluggableTaskWS();
 		plugin.setTypeId(OVERDUE_INVOICE_PENALTY_TASK_TYPE_ID);
 		plugin.setProcessingOrder(161);
-
+		
 		// plug-in adds the given penalty fee item to the order
 		Hashtable<String, String> parameters = new Hashtable<String, String>();
 		parameters.put(PLUGIN_PARAMETER_ITEM, itemId.toString());
@@ -460,7 +461,7 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
 
 		return api.createPlugin(plugin);
 	}
-
+    
     private void updateBillingConfig(Date runDate) {
         BillingProcessConfigurationWS config = api.getBillingProcessConfiguration();
 
@@ -477,11 +478,11 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         config.setMaximumPeriods(99);
         config.setOnlyRecurring(new Integer(0));
         config.setProratingType(ProratingType.PRORATING_AUTO_ON.toString());
-
+        
         logger.debug("Updating billing run date to : {}", runDate);
         api.createUpdateBillingProcessConfiguration(config);
 	}
-
+    
     private PaymentWS createPaymentWS(Integer userId, Date date, String note) throws Exception{
 		JbillingAPI api = JbillingAPIFactory.getAPI();
 
@@ -517,24 +518,24 @@ public class OverdueInvoicePenaltyTaskTest extends ApiTestCase {
         } catch (InterruptedException e) {
         }
     }
-
+    
     /**
-	 *
+	 * 
 	 * @param day
 	 * @param month
 	 * @param year
 	 * @return
 	 */
 	 public static Date getDate(int month, int day, int year) {
-
+		
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.MONTH, month);
 		cal.set(Calendar.DAY_OF_MONTH,day);
 		cal.set(Calendar.YEAR, year);
-
+		
 		return cal.getTime();
 	}
-
+	 
 	@AfterClass
 	private void cleanUp() {
 		api.deletePlugin(penaltyPluginId);

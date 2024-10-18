@@ -65,6 +65,4 @@ public interface INotificationSessionBean {
     public Boolean sendEmailNotification(List<Integer> absaFailedPayments, List<Integer> standardBankFailedPayments, String clientCode,
                                          Integer entityId, String transmissionDate, Integer fileSequenceNo)
             throws SessionInternalError;
-
-    public Boolean sendPaymentLinkToCustomer(Integer invoiceId) throws SessionInternalError;
 }

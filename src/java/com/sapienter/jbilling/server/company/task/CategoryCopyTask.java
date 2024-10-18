@@ -4,6 +4,7 @@ import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.company.CopyCompanyUtils;
 import com.sapienter.jbilling.server.item.AssetStatusBL;
+import com.sapienter.jbilling.server.item.AssetStatusDTOEx;
 import com.sapienter.jbilling.server.item.ItemTypeBL;
 import com.sapienter.jbilling.server.item.ItemTypeWS;
 import com.sapienter.jbilling.server.item.db.AssetStatusDAS;
@@ -92,7 +93,7 @@ public class CategoryCopyTask extends AbstractCopyTask {
         itemType.setEntityId(targetEntityId);
         itemType.setId(0);
 
-        for (AssetStatusDTO statusDTO : itemTypeDTO.getAssetStatuses()) {
+        for (AssetStatusDTOEx statusDTO : itemType.getAssetStatuses()) {
             statusDTO.setId(0);
         }
 

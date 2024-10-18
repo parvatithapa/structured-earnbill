@@ -248,7 +248,7 @@
                            <div style="font-size: 12px; font-style: normal; font-weight: normal; vertical-align: bottom;" align="center">
 	                            <table style="width: 80%;">
 	                            <tr>
-	                            	<td style="width: 28%;text-align: left;"> <g:message code="usagePool.mode.consumption.percentage"/> </td>
+	                            	<td  id="custom-td6"> <g:message code="usagePool.mode.consumption.percentage"/> </td>
 	                            	<td style="width: 72%;text-align: center;"> <g:message code="usagePool.mode.consumption.action"/> </td>	
 	                           	</tr>
 	                            </table>

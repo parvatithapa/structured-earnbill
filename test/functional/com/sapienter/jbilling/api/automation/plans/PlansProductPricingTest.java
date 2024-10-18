@@ -1614,7 +1614,7 @@ public class PlansProductPricingTest {
             JbillingAPI api = envBuilder.getPrancingPonyApi();
 
             Date expiryDate = new LocalDate().withMonthOfYear(12)
-                    .withYear(2030)
+                    .withYear(Calendar.getInstance().get(Calendar.YEAR) + 1)
                     .toDate(); // expiry date of the credit card
 
             PaymentMethodTypeWS paymentMethodType = new PaymentMethodTypeWS();

@@ -58,8 +58,6 @@ import javax.validation.groups.Default
 import org.apache.commons.lang.StringUtils
 import org.apache.commons.lang.math.NumberUtils
 
-import java.util.regex.Pattern
-
 /**
  * SignupController 
  *
@@ -528,45 +526,8 @@ class SignupController {
 		if (entityId) {
 			UserWS userWS = null
 			try {
-				//For EarnBill-Saas instance
-				if (grailsApplication.config.useUniqueLoginName) {
-					if (StringUtils.isNotBlank(params?.systemAdminLoginName) && Pattern
-							.compile("^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\$")
-							.matcher(params?.systemAdminLoginName).matches()) {
-						userWS = webServicesSession.copyCompanyInSaas(
-								childCompanyTemplateName,
-								entityId,
-								importEntities,
-								isCompanyChild,
-								copyProducts,
-								copyPlans,
-								params.systemAdminEmail,
-								params.systemAdminLoginName
-						)
-
-					} else {
-						map.error = StringUtils.isBlank(params?.systemAdminLoginName) ?
-								message(code: 'user.error.name.blank') :
-								message(code: 'loginName.email.validation')
-						render(status: HttpStatus.SC_OK, text: map as JSON)
-						flash.errorMessages = null
-						return
-					}
-				} else {
-					//For EarnBill instance
-					userWS = webServicesSession.copyCompany(
-							childCompanyTemplateName,
-							entityId,
-							importEntities,
-							isCompanyChild,
-							copyProducts,
-							copyPlans,
-							params.adminEmail
-					)
-				}
-				map.message = g.message(code: 'copy.company.create.label', args:
-						[userWS.userName, userWS.password, CompanyDTO.get(userWS.entityId).description, userWS.entityId])
-
+				userWS = webServicesSession.copyCompany(childCompanyTemplateName, entityId, importEntities, isCompanyChild, copyProducts, copyPlans, params.adminEmail)
+				map.message = g.message(code: 'copy.company.create.label', args: [userWS.userName, userWS.password, CompanyDTO.get(userWS.entityId).description, userWS.entityId])
 			} catch (SessionInternalError e) {
 				viewUtils.resolveException(flash, session?.locale ?: LanguageDTO.DefaultLocale, e)
 				map.error = flash.errorMessages

@@ -45,6 +45,7 @@ import com.sapienter.jbilling.server.order.Usage;
 import com.sapienter.jbilling.server.order.UsageBL;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.order.db.OrderLineInfo;
 import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
 import com.sapienter.jbilling.server.pluggableTask.TaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
@@ -139,25 +140,85 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
         logger.debug("Pricing item {}, quantity {} - for user {}", item.getId(), quantity, userId);
 
         if (userId != null) {
-            PriceModelDTO model = getPriceModel(priceContext, pricingOrder, pricingDate);
-            logger.debug("Price date: {}", pricingDate);
+            // get customer pricing model, use fields as attributes
+            Map<String, String> attributes = getAttributes(priceContext.getFields());
 
+            NavigableMap<Date, PriceModelDTO> models = null;
+
+            // iterate through parents until a price is found.
             UserBL user = new UserBL(userId);
             CustomerDTO customer = user.getEntity() != null ? user.getEntity().getCustomer() : null;
+
+            PriceModelResolutionContext ctx = null;
+
+            if (customer != null && customer.useParentPricing()) {
+                boolean parentModelsFound = false;
+                while (customer.getParent() != null && !parentModelsFound) {
+                    customer = customer.getParent();
+
+                    logger.debug("Looking for price from parent user {}", customer.getBaseUser().getId());
+
+                    ctx = priceModelResolutionContext(
+                            customer.getBaseUser().getId(),
+                            item.getId(),
+                            pricingDate,
+                            attributes,
+                            isMediated(pricingOrder));
+                    NavigableMap<Date, PriceModelDTO> parentModels = getPricesByHierarchy(ctx);
+
+                    if (parentModels != null && !parentModels.isEmpty()) {
+                        parentModelsFound = true;
+                        logger.debug("Found price from parent user: {}", models);
+                        models = parentModels;
+                    }
+                }
+            }
+
+            if (MapUtils.isEmpty(models)) {
+                // price for customer depending on the product pricing hierarchy
+                ctx = priceModelResolutionContext(
+                        userId,
+                        item.getId(),
+                        pricingDate,
+                        attributes,
+                        isMediated(pricingOrder));
+                models = getPricesByHierarchy(ctx);
+            }
+
+            logger.debug("Prices found by hierarchy: {}", models);
+
+            PriceModelDTO model = getPriceModelForDate(models, pricingDate);
+            if (model == null) {
+                // no customer price, the customer has not subscribed to a plan affecting this
+                // item, or does not have a customer specific price set. Use the item default price.
+                long productPriceLoad = System.currentTimeMillis();
+                models = getProductPriceModel(ctx);
+                logger.debug("getProductPriceModel took {} miliseconds for user {}",
+                        (System.currentTimeMillis() - productPriceLoad), ctx.getUserId());
+                if (models != null && !models.isEmpty()) {
+                    logger.debug("fetched product level prices for user {} for item {} for pricing date {}", userId, item.getId(), pricingDate);
+                    model = getPriceModelForDate(models, pricingDate);
+                }
+            }
+
+            logger.debug("Price date: {}", pricingDate);
 
             // apply price model
             if(model != null) {
                 logger.debug("Applying price model {}", model);
 
                 Usage usage = null;
+                long applyPriceModel = System.currentTimeMillis();
                 PricingResult result = new PricingResult(item.getId(), quantity, userId, priceContext.getCurrencyId());
                 for (PriceModelDTO next = model; next != null; next = next.getNext()) {
                     // fetch current usage of the item if the pricing strategy requires it
                     if (next.getStrategy().requiresUsage()) {
                         UsageType type = UsageType.valueOfIgnoreCase(getParameter(USAGE_TYPE.getName(), DEFAULT_USAGE_TYPE));
                         Integer priceUserId = customer != null ? customer.getBaseUser().getId() : userId;
+                        long getUsageLoadTime = System.currentTimeMillis();
                         usage = getUsage(type, item.getId(), userId, priceUserId, pricingOrder);
-
+                        logger.debug("getUsage took {} miliseconds for user {}",
+                                (System.currentTimeMillis() - getUsageLoadTime), userId);
                         logger.debug("Current usage of item {} : {}", item.getId(), usage);
                     } else {
                         logger.debug("Pricing strategy {} does not require usage.", next.getType());
@@ -171,8 +232,10 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
                             usage, singlePurchase, pricingDate);
                     logger.debug("Price discovered: {}", result.getPrice());
                 }
-
-                if (result.isPercentage() ) item.setPercentage(result.getPrice());
+                logger.debug("applyPriceModel took {} for user {}", (System.currentTimeMillis() - applyPriceModel), userId);
+                if (result.isPercentage() ) {
+                    item.setPercentage(result.getPrice());
+                }
                 item.setIsPercentage(result.isPercentage());
 
                 if (needToRecalculate(model, orderLine)) {
@@ -188,130 +251,6 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
 
         logger.debug("No price model found, using default price.");
         return defaultPrice;
-    }
-
-    public BigDecimal getPriceForOverage(
-            PriceContextDTO priceContext,
-            BigDecimal defaultPrice,
-            OrderDTO pricingOrder,
-            OrderLineDTO orderLine,
-            boolean singlePurchase) throws TaskException {
-
-        Date eventDate = priceContext.getEventDate();
-        Date pricingDate = (null == eventDate) ? getPricingDate(pricingOrder) : eventDate;
-        BigDecimal quantity = priceContext.getQuantity();
-        ItemDTO item = priceContext.getItem();
-        Integer userId = priceContext.getUserId();
-        logger.debug("Calling PriceModelPricingTask with pricing order: {}, for date {}", pricingOrder, pricingDate);
-        logger.debug("Pricing item {}, quantity {} - for user {}", item.getId(), quantity, userId);
-
-        if (userId != null) {
-            PriceModelDTO model = getPriceModel(priceContext, pricingOrder, pricingDate);
-            logger.debug("Price date: {}", pricingDate);
-
-            // apply price model
-            if(model != null) {
-                logger.debug("Applying price model {}", model);
-
-                Usage usage = null;
-                PricingResult result = new PricingResult(item.getId(), quantity, userId, priceContext.getCurrencyId());
-                for (PriceModelDTO next = model; next != null; next = next.getNext()) {
-                    // do not get current/existing usage of the item even if the pricing strategy requires it
-                    if (next.getStrategy().requiresUsage()) {
-                        usage = new Usage(userId, item.getId(), null, BigDecimal.ZERO, BigDecimal.ZERO, null, null, null, null);
-                        logger.debug("Current usage of item {} : {}", item.getId(), usage);
-                    } else {
-                        logger.debug("Pricing strategy {} does not require usage.", next.getType());
-                    }
-
-                    if (null != next.getNext()) {
-                        result.setIsChained(true);
-                    }
-                    logger.debug("Call Before apply");
-                    next.applyTo(pricingOrder, orderLine, result.getQuantity(), result, priceContext.getFields(),
-                            usage, singlePurchase, pricingDate);
-                    logger.debug("Price discovered: {}", result.getPrice());
-                }
-
-                if (result.isPercentage() ) item.setPercentage(result.getPrice());
-                item.setIsPercentage(result.isPercentage());
-
-                if (needToRecalculate(model, orderLine)) {
-                    recalculatePrice(orderLine, result, model);
-                }
-
-                return result.getPrice();
-            } else {
-                logger.debug("No price model found, using default price.");
-                return defaultPrice;
-            }
-        }
-
-        logger.debug("No price model found, using default price.");
-        return defaultPrice;
-    }
-
-    private PriceModelDTO getPriceModel(PriceContextDTO priceContext, OrderDTO pricingOrder, Date pricingDate) {
-        // get customer pricing model, use fields as attributes
-        ItemDTO item = priceContext.getItem();
-        Integer userId = priceContext.getUserId();
-        Map<String, String> attributes = getAttributes(priceContext.getFields());
-
-        // iterate through parents until a price is found.
-        UserBL user = new UserBL(userId);
-        CustomerDTO customer = user.getEntity() != null ? user.getEntity().getCustomer() : null;
-
-        PriceModelResolutionContext ctx = null;
-        NavigableMap<Date, PriceModelDTO> models = null;
-
-        if (customer != null && customer.useParentPricing()) {
-            boolean parentModelsFound = false;
-            while (customer.getParent() != null && !parentModelsFound) {
-                customer = customer.getParent();
-
-                logger.debug("Looking for price from parent user {}", customer.getBaseUser().getId());
-
-                ctx = priceModelResolutionContext(
-                        customer.getBaseUser().getId(),
-                        item.getId(),
-                        pricingDate,
-                        attributes,
-                        isMediated(pricingOrder));
-                NavigableMap<Date, PriceModelDTO> parentModels = getPricesByHierarchy(ctx);
-
-                if (parentModels != null && !parentModels.isEmpty()) {
-                    parentModelsFound = true;
-                    logger.debug("Found price from parent user: {}", models);
-                    models = parentModels;
-                }
-            }
-        }
-
-        if (MapUtils.isEmpty(models)) {
-            // price for customer depending on the product pricing hierarchy
-            ctx = priceModelResolutionContext(
-                    userId,
-                    item.getId(),
-                    pricingDate,
-                    attributes,
-                    isMediated(pricingOrder));
-            models = getPricesByHierarchy(ctx);
-        }
-
-        logger.debug("Prices found by hierarchy: {}", models);
-
-        PriceModelDTO model = getPriceModelForDate(models, pricingDate);
-        if (model == null) {
-            // no customer price, the customer has not subscribed to a plan affecting this
-            // item, or does not have a customer specific price set. Use the item default price.
-            models = getProductPriceModel(ctx);
-            if (models != null && !models.isEmpty()) {
-                logger.debug("fetched product level prices for user {} for item {} for pricing date {}", userId, item.getId(), pricingDate);
-                model = getPriceModelForDate(models, pricingDate);
-            }
-        }
-
-        return model;
     }
 
     private PriceModelDTO getPriceModelForDate(NavigableMap<Date, PriceModelDTO> prices, Date pricingDate) {
@@ -434,15 +373,30 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
                 logger.debug("recalculatePrice called, line: {} ", line);
                 BigDecimal freeUsageQuantity = line.getFreeUsagePoolQuantity();
                 logger.debug("recalculatePrice: freeUsageQuantity: {} ", freeUsageQuantity);
-                if (freeUsageQuantity.compareTo(BigDecimal.ZERO) > 0 && !(line.getItem().isPlan())) {
-                    BigDecimal chargeableQuantity = line.getQuantity().subtract(freeUsageQuantity);
-                    BigDecimal lineAmount = chargeableQuantity.multiply(price).setScale(Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND);
-                    BigDecimal recalculatedPrice = lineAmount.divide(line.getQuantity(), MathContext.DECIMAL128);
-                    recalculatedPrice = recalculatedPrice.setScale(Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND);
-                    logger.debug("new calculated price is {} for user {} for order's {}'s line {} for item {}", recalculatedPrice,
-                            result.getUserId(), line.getPurchaseOrder().getId(), line.getId(), result.getItemId());
-                    result.setPrice(recalculatedPrice);
+                BigDecimal recalculatedPrice = price;
+                if( freeUsageQuantity.compareTo(line.getQuantity()) == 0 ) {
+                    recalculatedPrice = BigDecimal.ZERO;
+                    line.setAmount(BigDecimal.ZERO);
+                } else {
+                    if (freeUsageQuantity.compareTo(BigDecimal.ZERO) > 0 && !(line.getItem().isPlan())) {
+                        if(!model.getType().equals(PriceModelStrategy.ROUTE_BASED_RATE_CARD)) {
+                            BigDecimal chargeableQuantity = line.getQuantity().subtract(freeUsageQuantity);
+                            BigDecimal lineAmount = chargeableQuantity.multiply(price).setScale(Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND);
+                            recalculatedPrice = lineAmount.divide(line.getQuantity(), MathContext.DECIMAL128)
+                                    .setScale(Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND);
+                        } else if(model.getType().equals(PriceModelStrategy.ROUTE_BASED_RATE_CARD) && line.isMediated()) {
+                            OrderLineInfo oldLineInfo = line.getOldOrderLineInfo();
+                            BigDecimal oldAmount = null!=oldLineInfo ? oldLineInfo.getAmount() : BigDecimal.ZERO;
+                            BigDecimal newAmount = line.getMediatedQuantity().multiply(price, MathContext.DECIMAL128);
+                            line.setAmount(oldAmount.add(newAmount, MathContext.DECIMAL128));
+                            recalculatedPrice = line.getAmount().divide(line.getQuantity(), MathContext.DECIMAL128)
+                                    .setScale(Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND);
+                        }
+                        logger.debug("new calculated price is {} for user {} for order's {}'s line {} for item {}", recalculatedPrice,
+                                result.getUserId(), line.getPurchaseOrder().getId(), line.getId(), result.getItemId());
+                    }
                 }
+                result.setPrice(recalculatedPrice);
             }
 
         }
@@ -602,15 +556,21 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
 
         // TODO (pai) make the implementation generic - separate the customer pricing from the plan pricing
         // 1. Customer pricing resolution
+        long customerPriceLoad = System.currentTimeMillis();
         NavigableMap<Date, PriceModelDTO> models = getCustomerPriceModel(context);
+        logger.debug("getCustomerPriceModel took {} miliseconds for user {}",
+                (System.currentTimeMillis() - customerPriceLoad), context.getUserId());
         if (models != null && !models.isEmpty()) {
             logger.debug("fetched customer level prices from user {} for item {} for pricing date {}", context.getUserId(),
                     context.getItemId(), context.getPricingDate());
             return models;
         }
 
+        long accountPriceLoad = System.currentTimeMillis();
         // 2. Account Type pricing resolution
         models = getAccountTypePriceModel(context);
+        logger.debug("getAccountTypePriceModel took {} miliseconds for user {}",
+                (System.currentTimeMillis() - accountPriceLoad), context.getUserId());
         if (models != null && !models.isEmpty()) {
             logger.debug("fetched account level prices from user {} for item {} for pricing date {}", context.getUserId(),
                     context.getItemId(), context.getPricingDate());
@@ -624,7 +584,10 @@ public class PriceModelPricingTask extends PluggableTask implements IPricing {
         if(StringUtils.isNumeric(planIdStr)) {
             planId = Integer.valueOf(planIdStr);
         }
+        long customerPlanPriceLoad = System.currentTimeMillis();
         models = getCustomersPlanPriceModel(context, true, planId);
+        logger.debug("getCustomersPlanPriceModel took {} miliseconds for user {}",
+                (System.currentTimeMillis() - customerPlanPriceLoad), context.getUserId());
         if (models != null && !models.isEmpty()) {
             logger.debug("fetched Customers Plan level prices from user {} for item {} for pricing date {}", context.getUserId(),
                     context.getItemId(), context.getPricingDate());
