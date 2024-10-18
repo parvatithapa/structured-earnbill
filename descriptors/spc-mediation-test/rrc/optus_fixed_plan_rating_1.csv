@@ -1,0 +1,25 @@
+id,name,surcharge,initial_increment,subsequent_increment,charge,tariff_code,route_id
+1,Inbound Community Calls,0.39,60,60,1,OP:13COM,INB:000068
+2,Inbound Community Calls,0.39,60,60,1,OP:18COM,INB:000069
+3,Inbound International,0.39,60,60,1,OP:INTINB,INB:000050
+4,Inbound Local to 1300,0.39,60,60,1,OP:13LOC,INB:000048
+5,Inbound Local to 1800,0.39,60,60,1,OP:18LOC,INB:000054
+6,Inbound Mobile to 1300,0.39,60,60,1,OP:13M2F,INB:000047:501
+7,Inbound Mobile to 1300,0.39,60,60,1,OP:13M2M,INB:000047:500
+8,Inbound Mobile to 1800,0.39,60,60,1,OP:18M2F,INB:000055:501
+9,Inbound Mobile to 1800,0.39,60,60,1,OP:18M2M,INB:000055:500
+10,Inbound National to 1300,0.39,60,60,1,OP:13NAT,INB:000046
+11,Inbound National to 1800,0.39,60,60,1,OP:18INAT,INB:000051
+12,Local Calls,0.25,60,60,0,OP:LTC,000343:B1
+13,Long Distance Calls,0.39,60,60,0.25,OP:NATCOM,000000:B1
+14,Long Distance Calls,0.39,60,60,0.25,OP:NATCOM,000401:B1
+15,Long Distance Calls,0.39,60,60,0.25,OP:NATCOM,000001:B1
+16,Long Distance Calls,0.39,60,60,0.25,OP:NATCOM,000002:B1
+17,Long Distance Calls,0.39,60,60,0.25,OP:NATCOM,000012:B1
+18,Local Calls,0.25,60,60,0,OP:LTC,343
+19,Long Distance Calls,0.39,60,60,0.25,OP:NAT,12
+20,Long Distance Calls,0.39,60,60,0.25,OP:NAT,13
+21,Long Distance Calls,0.39,60,60,0.25,OP:NAT,14
+22,Long Distance Calls,0.39,60,60,0.25,OP:NAT,402
+23,Long Distance Calls,0.39,60,60,0.25,OP:NAT,2
+24,Local Calls,0.39,60,60,0.25,OP:NAT,3

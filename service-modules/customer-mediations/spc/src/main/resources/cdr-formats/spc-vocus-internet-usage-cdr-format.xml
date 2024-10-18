@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>USER_NAME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>PROFILE_ID</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_SESSION_ID</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_START_TIME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_STOP_TIME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_SESSION_TIME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_INPUT_OCTETS</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>ACCT_OUTPUT_OCTETS</name>
+        <type>string</type>
+    </field>
+</format>

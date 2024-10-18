@@ -1,0 +1,1422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/spc-client-upgrade.xml">
+
+    <changeSet context = "base" id = "JBSPC-433: Create historical invoices and payments APIs in Rest API Suite" author = "Ashish Srivastava">
+        <comment>New Payment method 'Migration' added</comment>
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "-3" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueNumeric = "-3"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Migration"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-51: CDR Processing 5 (Optus MUR Files)" author = "Krunal Bhavsar">
+        <comment>SPC Mur notification task</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "17"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.OptusMurNotificationTask"/>
+                <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "spc Mur file consumption event notification task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is task notify mur jmr usage to spc clients."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3424-PAYMENT-DATE-CHANGE" author="Dipak Kardel">
+        <comment>Payment date on New Payment page should be populated as per company time zone</comment>
+        <sql>
+            ALTER TABLE payment
+            ALTER payment_date
+            TYPE timestamp without time zone;
+        </sql>
+        <sql>
+            UPDATE payment
+            SET payment_date = payment_subquery.payment_date
+            FROM (SELECT id,
+            payment_date
+            FROM payment) AS "payment_subquery"
+            WHERE payment.id = payment_subquery.id;
+        </sql>
+    </changeSet>
+
+    <changeSet author="Dipak Kardel" context="base" id="#SPC Reconciliation Reports">
+        <insert tableName="report_type">
+            <column name="id" valueComputed="coalesce((select max(t.id) + 1 from report_type t), 1)"/>
+            <column name="name" value="spc-reconciliation"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name = 'report_type')"/>
+            <column name="foreign_id" valueComputed="(select id from report_type where name='spc-reconciliation')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="SPC Reconciliation Reports"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Invoice Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Invoice details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "invoice_report" />
+            <column name  = "file_name" value         = "invoice_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'invoice_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "invoice_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'invoice_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Payment Status Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Payment Status details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "payment_status_report" />
+            <column name  = "file_name" value         = "payment_status_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'payment_status_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "payment_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'payment_status_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Account With Negative Balance Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Account With Negative Balance details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "accounts_with_negative_balance_report" />
+            <column name  = "file_name" value         = "accounts_with_negative_balance_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'accounts_with_negative_balance_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Credit Adjustments Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Credit Adjustments details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "credit_adjustments_report" />
+            <column name  = "file_name" value         = "credit_adjustments_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credit_adjustments_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'credit_adjustments_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Discounts By Account Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Discounts By Account details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "discounts_by_account_report" />
+            <column name  = "file_name" value         = "discounts_by_account_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'discounts_by_account_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "invoice_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'discounts_by_account_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Collections Report Overdue All Days" author = "Dipak Kardel">
+        <comment>New Report to fetch Collections Overdue 1-5 Days details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "collections_report_overdue_all_days" />
+            <column name  = "file_name" value         = "collections_report_overdue_all_days.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'collections_report_overdue_all_days'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Collections Report Day 5" author = "Dipak Kardel">
+        <comment>New Report to fetch Collections Day 5 details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "collections_report_day_5" />
+            <column name  = "file_name" value         = "collections_report_day_5.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'collections_report_day_5'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Collections Report Day 2" author = "Dipak Kardel">
+        <comment>New Report to fetch Collections Day 2 details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "collections_report_day_2" />
+            <column name  = "file_name" value         = "collections_report_day_2.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'collections_report_day_2'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Revenue Report" author = "Dipak Kardel">
+        <comment>New Report to fetch Revenue details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "revenue_report" />
+            <column name  = "file_name" value         = "revenue_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'revenue_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "invoice_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'revenue_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Active Services Report" author = "Mahesh Kalshetty">
+        <comment>New Report to fetch Active Services details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "active_services_report" />
+            <column name  = "file_name" value         = "active_services_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'active_services_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Suspended Services Report" author = "Mahesh Kalshetty">
+        <comment>New Report to fetch Active Services details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "suspended_services" />
+            <column name  = "file_name" value         = "suspended_services.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'suspended_services'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-135 -CR-004 Expired Orders Report" author = "Mahesh Kalshetty">
+        <comment>New Report to fetch Active Services details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "expired_orders_report" />
+            <column name  = "file_name" value         = "expired_orders_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'expired_orders_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'expired_orders_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'expired_orders_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-154: SpcOutBoundInterchangeTask added" author = "Krunal Bhavsar">
+        <comment>SPC SpcOutBoundInterchangeTask to push invoice and payment to crm</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)"/>
+            <column name = "category_id"    valueNumeric  = "17"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.wookie.crm.SpcOutBoundInterchangeTask"/>
+            <column name = "min_parameters" valueNumeric  = "7"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type), 1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc OutBoundInterchange Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type), 1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "task pushes invoices and payments to wookie crm."/>
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "22"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.wookie.crm.SpcOutBoundInterchangeRetryTask"/>
+            <column name = "min_parameters" valueNumeric  = "1"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc OutBoundInterchange Retry Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plug-in will retry failed outboundinterchange request to push on wookie crm."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-185: File extraction Task" author = "Krunal Bhavsar">
+        <comment>SPC Cdr file extraction task</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcFileExtractionScheduledTask"/>
+                <column name = "min_parameters" valueNumeric  = "2"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "spc cdr file extraction task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is task extract file from compressed directory and move to mediation job laucher local input directory."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-201: Payway Direct Debits Reconciliation" author = "Krunal Bhavsar">
+        <insert tableName = "payment_method_template">
+            <column name = "id"            valueComputed ="(SELECT MAX(efs.id)+1 FROM payment_method_template efs)" />
+            <column name = "template_name" value         = "BPAY" />
+            <column name = "optlock"       valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "22"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.payment.reconciliation.SpcPaymentReconciliationScheduledTask"/>
+            <column name = "min_parameters" valueNumeric  = "2"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc PaymentReconciliation Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plug-in will reconcilie payments from file, provided by payway gateway."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-182 Payment Status Report" author = "Dipak Kardel">
+        <comment>Improvements in existing Payment Status details</comment>
+         <update tableName="report_parameter">
+           <column name="name"  value="start_date"/>
+           <where>report_id = (SELECT id FROM report r WHERE r.name = 'payment_status_report') AND name = 'payment_date'</where>
+        </update>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'payment_status_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-182 Invoice Report" author = "Dipak Kardel">
+        <comment>Improvements in existing Invoice Report</comment>
+         <update tableName="report_parameter">
+           <column name="name"  value="start_date"/>
+           <where>report_id = (SELECT id FROM report r WHERE r.name = 'invoice_report') AND name = 'invoice_date'</where>
+        </update>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'invoice_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-182 Credit Adjustment Report" author = "Dipak Kardel">
+        <comment>Improvements in existing Credit Adjustment Report</comment>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credit_adjustments_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id="JB-3495 Change type of payment_date to date" author="Pranay G. Raherkar">
+        <sql>
+            UPDATE payment
+               SET payment_date = payment_date AT TIME ZONE 'UTC' AT TIME ZONE 'Australia/Sydney'
+             WHERE TO_CHAR(payment_date, 'yyyy-MM-dd HH:MI:ss') NOT LIKE '%12:00:00%';
+        </sql>
+        <sql>
+            ALTER TABLE payment
+           ALTER COLUMN payment_date
+                   TYPE date;
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-71:SPCUsageManagerTask-asset-wise-breakup-of-mediated-usage" author="Mahesh Shivarkar">
+		<comment>This is SPC specific Item Usage Manager. Update BasicItemManager task plugin with SPCUsageManagerTask plugin</comment>
+		<insert tableName="pluggable_task_type">
+			<column name="id"
+				valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)" />
+			<column name="category_id" valueNumeric="13" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask" />
+			<column name="min_parameters" valueNumeric="2" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="SPC Usage Management Task" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content"
+				value="This plugin is uses for asset-wise breakup of mediated usage. it also adds items to an order.If the item is already in the order, it only updates the quantity. But it also update asset number into order line 'Call Identifier' column." />
+		</insert>
+         <update tableName="pluggable_task">
+            <column name="type_id" valueComputed="(select p.id from pluggable_task_type p where
+				p.class_name = 'com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask')">
+			</column>
+            <where>type_id in (select p.id from pluggable_task_type p where
+				p.class_name = 'com.sapienter.jbilling.server.item.tasks.BasicItemManager')
+			</where>
+        </update>
+        <sql>
+            <![CDATA[
+			INSERT INTO pluggable_task_parameter (id, task_id, name, str_value, optlock)
+			select (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id) + coalesce((select max(id)+1 from pluggable_task_parameter), 1),
+			(select t.id from pluggable_task t where t.entity_id = e1.id and t.type_id = (select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask')),
+			'VOIP_Usage_Field_Name',
+			'SERVICE_NUMBER',0
+			from entity e1
+			order by e1.id
+		]]>
+        </sql>
+        <sql>
+            <![CDATA[
+			INSERT INTO pluggable_task_parameter (id, task_id, name, str_value, optlock)
+			select (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id) + coalesce((select max(id)+1 from pluggable_task_parameter), 1),
+			(select t.id from pluggable_task t where t.entity_id = e1.id and t.type_id = (select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask')),
+			'Internate_Usage_Field_Name',
+			'USER_NAME',0
+			from entity e1
+			order by e1.id
+		]]>
+        </sql>
+	</changeSet>
+
+	<changeSet context="base" id="JBSPC-237: Rollup codes" author="Mahesh Shivarkar">
+		<createTable tableName="rollup_codes">
+			<column name="rollup_code" type="character varying(25)">
+				<constraints nullable="true"/>
+			</column>
+			<column name="rollup_code_type" type="character varying(25)">
+				<constraints nullable="true"/>
+			</column>
+			<column name="item_type_description" type="character varying(250)">
+				<constraints nullable="true"/>
+			</column>
+			<column name="itemisation_order" type="java.sql.Types.INTEGER">
+				<constraints nullable="true"/>
+			</column>
+		</createTable>
+		<sql>
+			INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',1);
+			INSERT INTO rollup_codes VALUES('S2','super_super','Standalone',2);
+			INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+			INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+			INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+			INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+			INSERT INTO rollup_codes VALUES('E1','super','Other Charges and Credits',5);
+			INSERT INTO rollup_codes VALUES('CL','A1','Local Calls',1);
+			INSERT INTO rollup_codes VALUES('CQ','A1','Calls to 13 Numbers',2);
+			INSERT INTO rollup_codes VALUES('CJ','A1','Calls to 0198 Numbers',3);
+			INSERT INTO rollup_codes VALUES('CA','A1','Directory and Assisted Calls',4);
+			INSERT INTO rollup_codes VALUES('CI','A1','International Calls',5);
+			INSERT INTO rollup_codes VALUES('CN','A1','Long Distance Calls',6);
+			INSERT INTO rollup_codes VALUES('CS','A1','National Calls',7);
+			INSERT INTO rollup_codes VALUES('CM','A1','Calls to Mobiles',8);
+			INSERT INTO rollup_codes VALUES('CP','A1','Faxstream Calls',9);
+			INSERT INTO rollup_codes VALUES('CZ','A1','Other Calls',10);
+			INSERT INTO rollup_codes VALUES('CG','B1','Mobile to International',11);
+			INSERT INTO rollup_codes VALUES('MR','B1','Mobile Roaming Charges (No GST)',12);
+			INSERT INTO rollup_codes VALUES('CB','B1','Roaming',13);
+			INSERT INTO rollup_codes VALUES('CE','B1','Mobile to Voice Calls',14);
+			INSERT INTO rollup_codes VALUES('CF','B1','Mobile to Mobile Calls',15);
+			INSERT INTO rollup_codes VALUES('CR','B1','Mobile Special Calls',16);
+			INSERT INTO rollup_codes VALUES('CK','B1','Mobile Data Calls',17);
+			INSERT INTO rollup_codes VALUES('CH','B1','SMS',18);
+			INSERT INTO rollup_codes VALUES('CC','B1','Voicemail',19);
+			INSERT INTO rollup_codes VALUES('MX','B1','MMS',20);
+			INSERT INTO rollup_codes VALUES('C^','C1','Inbound International',21);
+			INSERT INTO rollup_codes VALUES('C*','C1','Inbound Community Calls',22);
+			INSERT INTO rollup_codes VALUES('C!','C1','Inbound Local to 1300',23);
+			INSERT INTO rollup_codes VALUES('C#','C1','Inbound National to 1300',24);
+			INSERT INTO rollup_codes VALUES('C(','C1','Inbound Mobile to 1300',25);
+			INSERT INTO rollup_codes VALUES('C)','C1','Inbound Local to 1800',26);
+			INSERT INTO rollup_codes VALUES('C{','C1','Inbound National to 1800',27);
+			INSERT INTO rollup_codes VALUES('C}','C1','Inbound Mobile to 1800',28);
+		</sql>
+	</changeSet>
+
+    <changeSet context="base" id="JBSPC-247: Get period from invoice line description" author="Mahesh Shivarkar">
+        <sql>
+            <![CDATA[
+                CREATE OR REPLACE FUNCTION getPeriod(invoiceId int)
+                                   RETURNS text AS $$
+                                    SELECT CASE WHEN TRIM(SUBSTRING(il.description,POSITION('Period from' IN il.description)+11)) IS NOT NULL
+                                                THEN TRIM(SUBSTRING(il.description,POSITION('Period from' IN il.description)+11))
+                                                ELSE ''
+                                                 END AS desc
+                                      FROM invoice_line il
+                                     WHERE il.invoice_id = invoiceId
+                                       AND il.description LIKE '%Period from%'
+                                  ORDER BY description asc
+                                     LIMIT 1;$$
+                                  LANGUAGE sql;
+            ]]>
+        </sql>
+    </changeSet>
+
+	<changeSet context = "base" id="JBSPC-250 Payment not seen on invoice due to incorrect payment date" author="Amol Gadre">
+        <sql>
+                UPDATE payment
+                SET payment_date = DATE(create_datetime AT TIME ZONE 'UTC' AT TIME ZONE 'Australia/Sydney')
+                WHERE result_id = 1
+                AND DATE(create_datetime AT TIME ZONE 'UTC' AT TIME ZONE 'Australia/Sydney')-payment_date = 1;
+        </sql>
+    </changeSet>
+
+	<changeSet context = "base" id = "JBSPC-278 GL Detail" author = "Dipak Kardel">
+        <comment>New Report to fetch SPC specific GL details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "spc_gl_detail" />
+            <column name  = "file_name" value         = "spc_gl_detail.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'spc_gl_detail' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'spc_gl_detail' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'spc_gl_detail' AND r.type_id = (SELECT id
+                                                          FROM report_type rt
+                                                         WHERE rt.name = 'spc-reconciliation')),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-278 GL Summary" author = "Dipak Kardel">
+        <comment>New Report to fetch SPC specific GL Summary</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "spc_gl_summary" />
+            <column name  = "file_name" value         = "spc_gl_summary.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'spc_gl_summary' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'spc_gl_summary' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'spc_gl_summary' AND r.type_id = (SELECT id
+                                                          FROM report_type rt
+                                                         WHERE rt.name = 'spc-reconciliation')),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-231: Credits Report" author="Amol Saware">
+        <comment>New Report to track the credit notes details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "credits_report" />
+            <column name  = "file_name" value         = "credits_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credits_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credits_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'credits_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-363: SPC Refund Report" author="Dipak Kardel">
+        <comment>SPC specific Refund Report</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "spc_refund_payments" />
+            <column name  = "file_name" value         = "spc_refund_payments.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'spc_refund_payments')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="start_date" />
+       </insert>
+
+       <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'spc_refund_payments')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="end_date" />
+       </insert>
+
+       <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'spc_refund_payments')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="payment_method_id" />
+       </insert>
+
+       <sql>
+           INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+           FROM report r
+           WHERE r.name = 'spc_refund_payments'),
+           id
+           FROM entity
+           WHERE deleted = 0
+       </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-363: SPC Ageing Balance Report" author="Dipak Kardel">
+        <comment>SPC specific Ageing Balance Report</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "spc_ageing_balance_detail" />
+            <column name  = "file_name" value         = "spc_ageing_balance_detail.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'spc_ageing_balance_detail'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "as_of" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'spc_ageing_balance_detail'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-240 MISC07-2G Unearned-Unbilled Detail Report - Development" author = "Pranay G. Raherkar">
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "unearned_unbilled_detail_report" />
+            <column name  = "file_name" value         = "unearned_unbilled_detail_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unearned_unbilled_detail_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+             <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+             <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unearned_unbilled_detail_report'),1)" />
+             <column name = "dtype"     value         = "date" />
+             <column name = "name"      value         = "end_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'unearned_unbilled_detail_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-294: SAP Summary Bill Run Report - Development" author="Amol Saware">
+        <comment>It is required to extract billing information for transfer to the accounting system (SAP)</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "sap_summary_billing_report" />
+            <column name  = "file_name" value         = "sap_summary_billing_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'sap_summary_billing_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'sap_summary_billing_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'sap_summary_billing_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-395: Plan grouping changes." author = "Krunal Bhavsar">
+    <validCheckSum>7:f2b250ba064a2775412969182620db4c</validCheckSum>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "17"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.spc.SpcOrderValidationTask"/>
+            <column name = "min_parameters" valueNumeric  = "3"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Spc Order Validation Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plug-in will validates order before saving and updating."/>
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"          valueComputed   = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id" valueNumeric    = "17" />
+            <column name = "class_name"  value           = "com.sapienter.jbilling.server.spc.SpcServiceSummaryGenerationTask" />
+            <column name = "min_parameters" valueNumeric = "2" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "table_id"      valueNumeric  = "24" />
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"  value         = "title" />
+            <column name = "language_id"   valueNumeric  = "1" />
+            <column name = "content"       value         = "Generate Service Summary for Invoice Template" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24" />
+            <column name = "foreign_id"   valueComputed ="(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "This plugin populates service summary fields for invoice template that is generated and emailed during the billing process." />
+        </insert>
+    </changeSet>
+    <changeSet context = "base" id = "JBSPC-257 MISC07-2A Unearned Revenue Summary - Development" author = "Pranay G. Raherkar">
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "unearned_revenue_summary" />
+            <column name  = "file_name" value         = "unearned_revenue_summary.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unearned_revenue_summary'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unearned_revenue_summary'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'unearned_revenue_summary'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-393: BPAY Processing to handle upto 10 digits bpay ref number" author="Amol Saware">
+        <sql>
+            UPDATE meta_field_name
+            SET data_type = 'STRING'
+            WHERE name = 'Reference Number'
+               AND field_usage = 'BPAY_REF';
+            UPDATE meta_field_value
+               SET dtype = 'string', string_value = integer_value, integer_value = NULL
+            WHERE meta_field_name_id
+                IN (SELECT id
+                    FROM meta_field_name
+                    WHERE name = 'Reference Number'
+                       AND field_usage = 'BPAY_REF');
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-368: Rollup codes updated" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',1);
+            INSERT INTO rollup_codes VALUES('S2 ','super_super','Standalone',2);
+            INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+            INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+            INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+            INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+            INSERT INTO rollup_codes VALUES('E1','super ','Other Charges and Credits',5);
+            INSERT INTO rollup_codes VALUES('CL','A1','Local Calls',1);
+            INSERT INTO rollup_codes VALUES('CS','A1','National Calls',2);
+            INSERT INTO rollup_codes VALUES('CN','A1','Long Distance Calls',3);
+            INSERT INTO rollup_codes VALUES('CQ','A1','Calls to 13 Numbers',4);
+            INSERT INTO rollup_codes VALUES('CJ','A1','Calls to 0198 Numbers',5);
+            INSERT INTO rollup_codes VALUES('CA','A1','Directory and Assisted Calls',6);
+            INSERT INTO rollup_codes VALUES('CM','A1','Calls to Mobiles',7);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls',8);
+            INSERT INTO rollup_codes VALUES('CP','A1','Faxstream Calls',9);
+            INSERT INTO rollup_codes VALUES('CZ','A1','Other Calls',10);
+            INSERT INTO rollup_codes VALUES('CC','B1','Voicemail',11);
+            INSERT INTO rollup_codes VALUES('CE','B1','Mobile to Fixed Calls',12);
+            INSERT INTO rollup_codes VALUES('CF','B1','Mobile to Mobile Calls',13);
+            INSERT INTO rollup_codes VALUES('CR','B1','Mobile Special Calls',14);
+            INSERT INTO rollup_codes VALUES('CG','B1','Mobile to International',15);
+            INSERT INTO rollup_codes VALUES('CH','B1','SMS',16);
+            INSERT INTO rollup_codes VALUES('MX','B1','MMS',17);
+            INSERT INTO rollup_codes VALUES('CK','B1','Mobile Data',18);
+            INSERT INTO rollup_codes VALUES('MR','B1','Mobile Roaming Charges (No GST)',19);
+            INSERT INTO rollup_codes VALUES('CB','B1','Roaming',20);
+            INSERT INTO rollup_codes VALUES('C^','C1','Inbound International',21);
+            INSERT INTO rollup_codes VALUES('C*','C1','Inbound Community Calls',22);
+            INSERT INTO rollup_codes VALUES('C!','C1','Inbound Local to 1300',23);
+            INSERT INTO rollup_codes VALUES('C#','C1','Inbound National to 130',24);
+            INSERT INTO rollup_codes VALUES('C(','C1 ','Inbound Mobile to 1300',25);
+            INSERT INTO rollup_codes VALUES('C)','C1','Inbound Local to 1800',26);
+            INSERT INTO rollup_codes VALUES('C{','C1','Inbound National to 1800',27);
+            INSERT INTO rollup_codes VALUES('C}','C1','Inbound Mobile to 1800',28);
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-259 MISC07-2F Unbilled Revenue Summary - Development" author = "Pranay G. Raherkar">
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "unbilled_revenue_summary" />
+            <column name  = "file_name" value         = "unbilled_revenue_summary.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unbilled_revenue_summary'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+             <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+             <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'unbilled_revenue_summary'),1)" />
+             <column name = "dtype"     value         = "date" />
+             <column name = "name"      value         = "end_date" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'unbilled_revenue_summary'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-228: Detailed Billing Report - Development" author = "Amol Saware">
+        <comment>To monitor the revenue, cost and GST for the products billed for a given period of time</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "detailed_billing_report" />
+            <column name  = "file_name" value         = "detailed_billing_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'detailed_billing_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'detailed_billing_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'detailed_billing_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-304: MISC07-2J Installation Fees" author="Dipak Kardel">
+        <comment>New Report to track the Installation Fees</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "installation_fees" />
+            <column name  = "file_name" value         = "installation_fees.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'installation_fees'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'installation_fees'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'installation_fees'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-408-SPC-Paper-Invoice-Notification-Task" author="Mahesh Shivarkar">
+        <comment>Task to populate of invoice template parameters</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="7"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.SPCPaperInvoiceNotificationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.SPCPaperInvoiceNotificationTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="SPC Specific Paper Invoice Notification Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.SPCPaperInvoiceNotificationTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin used to support backward compatibility for old invoice template of SPC."/>
+        </insert>
+     </changeSet>
+    <changeSet context="base" id="JBSPC-368: Global internation calls added in Rollup codes and date type changed in service summary" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',1);
+            INSERT INTO rollup_codes VALUES('S2 ','super_super','Standalone',2);
+            INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+            INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+            INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+            INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+            INSERT INTO rollup_codes VALUES('E1','super ','Other Charges and Credits',5);
+            INSERT INTO rollup_codes VALUES('CL','A1','Local Calls',1);
+            INSERT INTO rollup_codes VALUES('CS','A1','National Calls',2);
+            INSERT INTO rollup_codes VALUES('CN','A1','Long Distance Calls',3);
+            INSERT INTO rollup_codes VALUES('CQ','A1','Calls to 13 Numbers',4);
+            INSERT INTO rollup_codes VALUES('CJ','A1','Calls to 0198 Numbers',5);
+            INSERT INTO rollup_codes VALUES('CA','A1','Directory and Assisted Calls',6);
+            INSERT INTO rollup_codes VALUES('CM','A1','Calls to Mobiles',7);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls',8);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls Global 30',9);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls Global 70',10);
+            INSERT INTO rollup_codes VALUES('CP','A1','Faxstream Calls',11);
+            INSERT INTO rollup_codes VALUES('CZ','A1','Other Calls',12);
+            INSERT INTO rollup_codes VALUES('CC','B1','Voicemail',13);
+            INSERT INTO rollup_codes VALUES('CE','B1','Mobile to Fixed Calls',14);
+            INSERT INTO rollup_codes VALUES('CF','B1','Mobile to Mobile Calls',15);
+            INSERT INTO rollup_codes VALUES('CR','B1','Mobile Special Calls',16);
+            INSERT INTO rollup_codes VALUES('CG','B1','Mobile to International',17);
+            INSERT INTO rollup_codes VALUES('CH','B1','SMS',18);
+            INSERT INTO rollup_codes VALUES('MX','B1','MMS',19);
+            INSERT INTO rollup_codes VALUES('CK','B1','Mobile Data',20);
+            INSERT INTO rollup_codes VALUES('MR','B1','Mobile Roaming Charges (No GST)',21);
+            INSERT INTO rollup_codes VALUES('CB','B1','Roaming',22);
+            INSERT INTO rollup_codes VALUES('C^','C1','Inbound International',23);
+            INSERT INTO rollup_codes VALUES('C*','C1','Inbound Community Calls',24);
+            INSERT INTO rollup_codes VALUES('C!','C1','Inbound Local to 1300',25);
+            INSERT INTO rollup_codes VALUES('C#','C1','Inbound National to 130',26);
+            INSERT INTO rollup_codes VALUES('C(','C1 ','Inbound Mobile to 1300',27);
+            INSERT INTO rollup_codes VALUES('C)','C1','Inbound Local to 1800',28);
+            INSERT INTO rollup_codes VALUES('C{','C1','Inbound National to 1800',29);
+            INSERT INTO rollup_codes VALUES('C}','C1','Inbound Mobile to 1800',30);
+            ALTER TABLE service_summary ALTER start_date TYPE timestamp without time zone;
+            ALTER TABLE service_summary ALTER end_date TYPE timestamp without time zone;
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-368: Plan fee, discount, static ip and fees added in Rollup codes" author="Mahesh Shivarkar">
+        <sql>
+            INSERT INTO rollup_codes VALUES ('DI','X1','Discount',-99);
+            INSERT INTO rollup_codes VALUES ('LPF','X1','Late Payment Fee',-98);
+            INSERT INTO rollup_codes VALUES ('FIRST_50%','X1','Subscription discount for 1st month(50%)',-97);
+            INSERT INTO rollup_codes VALUES ('FOURTH_50%','X1','Subscription discount for 4th month(50%)',-96);
+            INSERT INTO rollup_codes VALUES ('PRM-1STMONTHFREE100','X1','First Month Free - 100 Mbps',-95);
+            INSERT INTO rollup_codes VALUES ('PRM-1STMONTHFREE25','X1','First Month Free - 25 Mbps',-94);
+            INSERT INTO rollup_codes VALUES ('PRM-1STMONTHFREE12','X1','First Month Free - 12 Mbps',-93);
+            INSERT INTO rollup_codes VALUES ('PRM-10OFF3MONTHS','X1','PROMO CREDIT: $10 off for first 3 months',-92);
+            INSERT INTO rollup_codes VALUES ('20Credit','X1','20 Dollars Off',-91);
+            INSERT INTO rollup_codes VALUES ('SI','X1','Static IP',-90);
+            INSERT INTO rollup_codes VALUES ('RTR-NF18ACV','X1','NetComm NF18ACV modem',-89);
+            INSERT INTO rollup_codes VALUES ('RTR-DS224WTV','X1','COMNECT DS224WTV Modem Purchase',-88);
+            INSERT INTO rollup_codes VALUES ('RTR-DS244WTV','X1','COMNECT DS244WTV Modem Purchase',-87);
+            INSERT INTO rollup_codes VALUES ('RTR','X1','NETCOMM NF18ACV Modem Purchase',-86);
+            INSERT INTO rollup_codes VALUES ('Fee-100','X1','Modem Delivery Fee',-85);
+            INSERT INTO rollup_codes VALUES ('SHP','X1','nbn™ Modem Delivery Fee',-84);
+            INSERT INTO rollup_codes VALUES ('MNF-Fee-1','X1','MNF Portability Fee',-83);
+            INSERT INTO rollup_codes VALUES ('Fee-01','X1','Activation Fee',-82);
+            INSERT INTO rollup_codes VALUES ('Fee-02','X1','New Development Fee',-80);
+            INSERT INTO rollup_codes VALUES ('LBN-NDC','X1','LBNCo New Development Charge',-79);
+            INSERT INTO rollup_codes VALUES ('NBN-DVP','X1','nbn™ New Development Fee',-78);
+            INSERT INTO rollup_codes VALUES ('LBN-TECH','X1','Technician Callout Fee',-77);
+            INSERT INTO rollup_codes VALUES ('INC-FEE','X1','nbn™ Incorrect Callout Fee',-76);
+            INSERT INTO rollup_codes VALUES ('DGF','X1','nbn™ Plan Change Fee',-75);
+            INSERT INTO rollup_codes VALUES ('Fee-55','X1','Relocation Fee',-74);
+            INSERT INTO rollup_codes VALUES ('Fee-99','X1','Relocation Fee 99',-73);
+            INSERT INTO rollup_codes VALUES ('Fee-03','X1','No Contract Fee',-72);
+            INSERT INTO rollup_codes VALUES ('WDF','X1','nbn™ Early Cancellation Fee',-71);
+            INSERT INTO rollup_codes VALUES ('CR-NBN','X1','Credit Adjustment',-70);
+            INSERT INTO rollup_codes VALUES ('DR-FLT','X1','Debit Adjustment',-69);
+            INSERT INTO rollup_codes VALUES ('FIN-WU','X1','Write Up',-68);
+            INSERT INTO rollup_codes VALUES ('FIN-BD','X1','Bad Debt',-67);
+            INSERT INTO rollup_codes VALUES ('VN', 'X1', 'Voip Number', 100);
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-301 Summary Cost Report" author = "Dipak Kardel">
+        <comment>New Report to fetch SPC specific GL Summary</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'spc-reconciliation'),1)" />
+            <column name  = "name"      value         = "summary_cost_report" />
+            <column name  = "file_name" value         = "summary_cost_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'summary_cost_report' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'summary_cost_report' AND r.type_id = (SELECT rt.id FROM report_type rt WHERE rt.name = 'spc-reconciliation')),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'summary_cost_report' AND r.type_id = (SELECT id
+                                                          FROM report_type rt
+                                                         WHERE rt.name = 'spc-reconciliation')),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-276: function to check invoice is adjustment" author="Mahesh Shivarkar">
+        <sql splitStatements="false">
+                CREATE OR REPLACE FUNCTION adjustmentInvoices(userId int)
+                RETURNS integer[] AS $$ declare adjustmentInvoices integer[];
+                BEGIN
+
+                  SELECT ARRAY(
+                SELECT CASE WHEN 
+                (
+                SELECT CONCAT(il_inner.invoice_id,'|', count(*))
+                FROM invoice_line il_inner
+                INNER JOIN item ON item.id = il_inner.item_id
+                INNER JOIN item_type_map itm ON itm.item_id = item.id
+                INNER JOIN item_type it ON it.id = itm.type_id
+                INNER JOIN order_line_type olt ON olt.id = it.order_line_type_id
+                INNER JOIN international_description int_des ON int_des.foreign_id = olt.id
+                INNER JOIN jbilling_table jt ON jt.id = int_des.table_id
+                WHERE jt.name = 'order_line_type'
+                AND int_des.language_id = 1
+                AND int_des.content = 'Adjustment'
+                AND il_inner.item_id IS NOT NULL
+                AND il_inner.invoice_id = i_adjustment.id
+                AND item.deleted = 0
+                GROUP BY il_inner.invoice_id, int_des.content
+                )
+                =
+                (
+                SELECT CONCAT(il_inner.invoice_id,'|', count(*))
+                FROM invoice_line il_inner
+                INNER JOIN invoice i_inner ON i_inner.id = il_inner.invoice_id
+                WHERE i_inner.id = i_adjustment.id
+                GROUP BY il_inner.invoice_id
+                )
+                THEN
+                i_adjustment.id
+                ELSE
+                NULL
+                END INTO adjustmentInvoices
+                FROM invoice i_adjustment
+                WHERE i_adjustment.user_id = userId
+                );
+                   RETURN adjustmentInvoices;
+                END; $$ LANGUAGE plpgsql;
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JBSPC-586: Updated rollup codes" author="Mahesh Shivarkar">
+        <delete tableName="rollup_codes"/>
+        <sql>
+            INSERT INTO rollup_codes VALUES('PF','X1','Plan Fee',-100);
+            INSERT INTO rollup_codes VALUES('DI','X1','Discount',-99);
+            INSERT INTO rollup_codes VALUES('MGTF-01','X1','Coles Management Fee',-98);
+            INSERT INTO rollup_codes VALUES('ATA-01','X1','Coles ATA',-97);
+            INSERT INTO rollup_codes VALUES('LPF','X1','Late Payment Fee',-96);
+            INSERT INTO rollup_codes VALUES('FIRST_50%','X1','Subscription discount for 1st month(50%)',-95);
+            INSERT INTO rollup_codes VALUES('FOURTH_50%','X1','Subscription discount for 4th month(50%)',-94);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE100','X1','First Month Free - 100 Mbps',-93);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE25','X1','First Month Free - 25 Mbps',-92);
+            INSERT INTO rollup_codes VALUES('PRM-1STMONTHFREE12','X1','First Month Free - 12 Mbps',-91);
+            INSERT INTO rollup_codes VALUES('PRM-10OFF3MONTHS','X1','PROMO CREDIT: $10 off for first 3 months',-90);
+            INSERT INTO rollup_codes VALUES('20Credit','X1','20 Dollars Off',-89);
+            INSERT INTO rollup_codes VALUES('SI','X1','Static IP',-88);
+            INSERT INTO rollup_codes VALUES('RTR-NF18ACV','X1','NetComm NF18ACV modem',-87);
+            INSERT INTO rollup_codes VALUES('RTR-DS224WTV','X1','COMNECT DS224WTV Modem Purchase',-86);
+            INSERT INTO rollup_codes VALUES('RTR-DS244WTV','X1','COMNECT DS244WTV Modem Purchase',-85);
+            INSERT INTO rollup_codes VALUES('RTR','X1','NETCOMM NF18ACV Modem Purchase',-84);
+            INSERT INTO rollup_codes VALUES('Fee-100','X1','Modem Delivery Fee',-83);
+            INSERT INTO rollup_codes VALUES('SHP','X1','nbn™ Modem Delivery Fee',-82);
+            INSERT INTO rollup_codes VALUES('MNF-Fee-1','X1','MNF Portability Fee',-81);
+            INSERT INTO rollup_codes VALUES('Fee-01','X1','Activation Fee',-80);
+            INSERT INTO rollup_codes VALUES('LBN-ACT','X1','Activation Fee',-79);
+            INSERT INTO rollup_codes VALUES('Fee-02','X1','New Development Fee',-78);
+            INSERT INTO rollup_codes VALUES('LBN-NDC','X1','LBNCo New Development Charge',-77);
+            INSERT INTO rollup_codes VALUES('NBN-DVP','X1','nbn™ New Development Fee',-76);
+            INSERT INTO rollup_codes VALUES('LBN-TECH','X1','Technician Callout Fee',-75);
+            INSERT INTO rollup_codes VALUES('INC-FEE','X1','nbn™ Incorrect Callout Fee',-74);
+            INSERT INTO rollup_codes VALUES('DGF','X1','nbn™ Plan Change Fee',-73);
+            INSERT INTO rollup_codes VALUES('Fee-55','X1','Relocation Fee',-72);
+            INSERT INTO rollup_codes VALUES('Fee-99','X1','Relocation Fee 99',-71);
+            INSERT INTO rollup_codes VALUES('Fee-03','X1','No Contract Fee',-70);
+            INSERT INTO rollup_codes VALUES('WDF','X1','nbn™ Early Cancellation Fee',-69);
+            INSERT INTO rollup_codes VALUES('CR-NBN','X1','Credit Adjustment',-68);
+            INSERT INTO rollup_codes VALUES('DR-FLT','X1','Debit Adjustment',-67);
+            INSERT INTO rollup_codes VALUES('FIN-WU','X1','Write Up',-66);
+            INSERT INTO rollup_codes VALUES('FIN-BD','X1','Bad Debt',-65);
+            INSERT INTO rollup_codes VALUES('A1','super','Voice Services',1);
+            INSERT INTO rollup_codes VALUES('B1','super','Mobile Services',2);
+            INSERT INTO rollup_codes VALUES('C1','super','Inbound Services',3);
+            INSERT INTO rollup_codes VALUES('D1','super','Internet Services',4);
+            INSERT INTO rollup_codes VALUES('E1','super','Other Charges and Credits',5);
+            INSERT INTO rollup_codes VALUES('S1','super_super','Bundle',1);
+            INSERT INTO rollup_codes VALUES('S2','super_super','Standalone',2);
+            INSERT INTO rollup_codes VALUES('CL','A1','Local Calls',1);
+            INSERT INTO rollup_codes VALUES('CS','A1','National Calls',2);
+            INSERT INTO rollup_codes VALUES('CN','A1','Long Distance Calls',3);
+            INSERT INTO rollup_codes VALUES('CQ','A1','Calls to 13 Numbers',4);
+            INSERT INTO rollup_codes VALUES('CJ','A1','Calls to 0198 Numbers',5);
+            INSERT INTO rollup_codes VALUES('CA','A1','Directory and Assisted Calls',6);
+            INSERT INTO rollup_codes VALUES('CM','A1','Calls to Mobiles',7);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls',8);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls Global 30',9);
+            INSERT INTO rollup_codes VALUES('CI','A1','International Calls Global 70',10);
+            INSERT INTO rollup_codes VALUES('CP','A1','Faxstream Calls',11);
+            INSERT INTO rollup_codes VALUES('CZ','A1','Other Calls',12);
+            INSERT INTO rollup_codes VALUES('CC','B1','Voicemail',13);
+            INSERT INTO rollup_codes VALUES('CE','B1','Mobile to Fixed Calls',14);
+            INSERT INTO rollup_codes VALUES('CF','B1','Mobile to Mobile Calls',15);
+            INSERT INTO rollup_codes VALUES('CR','B1','Mobile Special Calls',16);
+            INSERT INTO rollup_codes VALUES('CG','B1','Mobile to International',17);
+            INSERT INTO rollup_codes VALUES('CH','B1','SMS',18);
+            INSERT INTO rollup_codes VALUES('MX','B1','MMS',19);
+            INSERT INTO rollup_codes VALUES('CK','B1','Mobile Data',20);
+            INSERT INTO rollup_codes VALUES('MR','B1','Mobile Roaming Charges (No GST)',21);
+            INSERT INTO rollup_codes VALUES('CB','B1','Roaming',22);
+            INSERT INTO rollup_codes VALUES('C^','C1','Inbound International',23);
+            INSERT INTO rollup_codes VALUES('C*','C1','Inbound Community Calls',24);
+            INSERT INTO rollup_codes VALUES('C!','C1','Inbound Local to 1300',25);
+            INSERT INTO rollup_codes VALUES('C#','C1','Inbound National to 130',26);
+            INSERT INTO rollup_codes VALUES('C(','C1','Inbound Mobile to 1300',27);
+            INSERT INTO rollup_codes VALUES('C)','C1','Inbound Local to 1800',28);
+            INSERT INTO rollup_codes VALUES('C{','C1','Inbound National to 1800',29);
+            INSERT INTO rollup_codes VALUES('C}','C1','Inbound Mobile to 1800',30);
+            INSERT INTO rollup_codes VALUES('VN','X1','Voip Number',100);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

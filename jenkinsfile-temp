@@ -1,0 +1,158 @@
+pipeline {
+    parameters {
+        string(name: 'environment', defaultValue: 'dev', description: 'The environment to run the pipeline in')
+        string(name: 's_port', defaultValue: '9090', description: 'The port to expose')
+    }
+
+
+    environment {
+      // Define a global variable called `ENV`
+      // ENV = "dev"
+      IPv4_CLASS_C = "192.168."
+      IP = "localhost"
+      PORT = 2022
+    }
+    agent {
+        docker {
+            image "ashwinsarathi/earnbill_docker:local_3"
+            //args '-u root -v $HOME/.m2:/root/.m2 -v $HOME/.grails:/root/.grails -p ${params.serverPort}:${params.serverPort} -v /var/run/docker.sock:/var/run/docker.sock --privileged --name earnbill_docker -e JBILLING_DB_HOST=localhost -e JBILLING_DB_HOST_MEDIATION4=localhost -e JBILLING_HOST=localhost -e JBILLING_PORT=${params.serverPort} -e JBILLING_SERVER_URL=http://localhost:${params.serverPort}/jbilling -e JBILLING_DB_PORT_MEDIATION4=5432 -e JBILLING_DB_NAME_MEDIATION4=jbilling_test -e JBILLING_DB_USER_MEDIATION4=jbilling -e JBILLING_DB_PASSWORD_MEDIATION4= -e JBILLING_HOME=${WORKSPACE}/billinghub-jb-local'
+            args '-u root -v $HOME/.m2:/root/.m2 -v $HOME/.grails:/root/.grails -e PORT=${params.s_port} -p ${PORT}:9090 -v /var/run/docker.sock:/var/run/docker.sock --privileged --name earnbill_docker -e JBILLING_DB_HOST=localhost -e JBILLING_DB_HOST_MEDIATION4=localhost -e JBILLING_HOST=localhost -e JBILLING_PORT=8080 -e JBILLING_SERVER_URL=http://localhost:8080/jbilling -e JBILLING_DB_PORT_MEDIATION4=5432 -e JBILLING_DB_NAME_MEDIATION4=jbilling_test -e JBILLING_DB_USER_MEDIATION4=jbilling -e JBILLING_DB_PASSWORD_MEDIATION4= -e JBILLING_HOME=${WORKSPACE}/billinghub-jb-local'
+            //alwaysPull true
+            reuseNode true
+        }
+    }
+    stages {
+        stage("Verify") {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+                sh 'grails -version'
+                sh 'ant -version'
+                sh 'docker --version'
+                sh 'docker compose version'
+                sh 'pwd'
+                sh 'echo $JBILLING_DB_HOST'
+                sh 'echo $JBILLING_PORT'
+                sh 'echo $JBILLING_HOME'
+                sh 'date'
+                sh 'echo ${WORKSPACE}/billinghub-jb-local'
+                sh 'echo "should useIP ${useIP}"'
+
+            }
+        }
+
+        stage('Get Jenkins host IP address') {
+            steps {
+                script {
+                    def valueList = 'ifconfig'.execute().text
+                    // println "ifconfig wlp3s0".execute().text
+                    println valueList
+                    def list = valueList.split("inet "+IPv4_CLASS_C)
+                    def temp2 = list[1].split(" ")
+                    if(params.useIP) {
+                        IP = IPv4_CLASS_C+temp2[0]
+                    }
+                    println IP
+                    println PORT
+                    PORT = params.serverPort
+                    println PORT
+                }
+            }
+        }
+        stage('build') {
+            steps {
+                withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}","JBILLING_HOST=${IP}","JBILLING_SERVER_URL=http://${IP}:${PORT}/jbilling"]) {
+                    sh 'echo "JBILLING_DB_HOST = ${JBILLING_DB_HOST}"'
+                    sh 'echo "JBILLING_DB_HOST_MEDIATION4 = ${JBILLING_DB_HOST_MEDIATION4}"'
+                    sh 'echo "JBILLING_HOST = ${JBILLING_HOST}"'
+                    sh 'echo "JBILLING_SERVER_URL = ${JBILLING_SERVER_URL}"'
+                    sh 'echo "JBILLING_HOME = ${JBILLING_HOME}"'
+                    sh 'echo "The environment is ${params.environment}"'
+                    sh 'echo "The port is ${params.s_port}"'
+
+                }
+            }
+        }
+        stage('test') {
+            steps {
+                sh 'echo "JBILLING_DB_HOST = ${JBILLING_DB_HOST}"'
+                sh 'echo "JBILLING_DB_HOST_MEDIATION4 = ${JBILLING_DB_HOST_MEDIATION4}"'
+                sh 'echo "JBILLING_HOST = ${JBILLING_HOST}"'
+                sh 'echo "JBILLING_SERVER_URL = ${JBILLING_SERVER_URL}"'
+                sh 'echo "JBILLING_HOME = ${JBILLING_HOME}"'
+                sh 'echo "JBILLING_PORT = ${JBILLING_PORT}"'
+            }
+        }
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('set docker compose path') {
+            steps {
+                sh 'export PATH=$PATH:/usr/local/bin/'
+                sh 'echo $PATH'
+            }
+        }
+        stage('start postgresql server') {
+            steps {
+                //sh 'chmod 666 /var/run/docker.sock'
+                dir('billinghub-jb-local/') {
+                    sh 'docker compose up -d'
+                }
+            }
+        }
+        stage('create license file') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    writeFile file: 'license.txt', text: 'licensee=Sarathi Softech Pvt. Ltd.\nlicenseKey=pFN4SsDPdDGSLD8U24qxMdcbzcL/19XzxgA1CEQ77wlJznRd+dDNQ7uZ8WciiSAa3xpUvoAt0wT0iic2lYDCa2i1U3BOhLH9SLvmOyFZ+uToTV5OdqIcilo6RhLwND9bvmu936aOZuLJtxyUbm6XAIdY4D+xcI7p9uwOHxCCqi8='
+                    sh 'ls -l license.txt'
+                }
+            }
+        }
+        stage('check all the env values in the docker') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    // sh 'echo $JBILLING_HOME'
+                    sh 'docker exec earnbill_docker env'
+                    // sh 'echo $JBILLING_HOME'
+                }
+            }
+        }
+        stage('start grails app') {
+            steps {
+                withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}","JBILLING_HOST=${IP}", "JBILLING_PORT=${PORT}","JBILLING_SERVER_URL=http://${IP}:${PORT}/jbilling"]) {
+                    dir('billinghub-jb-local/') {
+                        sh "ant -buildfile cc-build.xml start"
+                    }
+                }
+            }
+        }
+        stage('wait for grails app start') {
+            steps {
+                withEnv(["JBILLING_SERVER_URL=http://${IP}:${PORT}/jbilling"]) {
+                    sh 'curl -s -o /dev/null -I -w "%{http_code}" ${JBILLING_SERVER_URL}/login/auth'
+                }
+            }
+        }
+        stage('stop jbilling app') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "ant -buildfile cc-build.xml stop"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+//            sh 'echo "waiting for ${waitTime} seconds"'
+//            sh 'sleep ${waitTime}'
+            dir('billinghub-jb-local/') {
+//                junit 'target/test-results/functional/xml/junitreports/*.xml'
+                sh 'docker compose stop'
+            }
+        }
+    }
+
+}

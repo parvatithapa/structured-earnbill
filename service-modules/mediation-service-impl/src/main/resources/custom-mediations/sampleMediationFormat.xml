@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <!--Identifies the CDR Record -->
+    <field>
+        <name>id</name>
+        <type>string</type>
+        <isKey/>
+    </field>
+    <!-- The number from the calling party. 10 Digits numbers -->
+    <field>
+        <name>a-number</name>
+        <type>double</type>
+    </field>
+    <!-- The number from the called party. 10 Digits numbers -->
+    <field>
+        <name>b-number</name>
+        <type>double</type>
+    </field>
+    <!-- The start date of the call, Format: yyyy-MM-dd HH:mm:ss -->
+    <field>
+        <name>event-date</name>
+        <type>date</type>
+    </field>
+    <!-- The duration of the call in seconds. Max: 43200. After 12 hours the operations cuts the call -->
+    <field>
+        <name>duration</name>
+        <type>integer</type>
+    </field>
+    <!-- JBilling product ID. Use for production resolution -->
+    <field>
+        <name>item-id</name>
+        <type>string</type>
+    </field>
+    <!-- JBilling username of customer. Use for customer resolution -->
+    <field>
+        <name>username</name>
+        <type>string</type>
+    </field>
+</format>

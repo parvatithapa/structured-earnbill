@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.28.xml">
+
+	<changeSet context="base" id="JBPI-1066 - Invoice-line Tax Support" author="Swapnil Patil">
+        <comment>This preference enables configuration to calculate taxes at invoice line level.</comment>
+        <insert tableName="preference_type">
+            <column name="id"        valueNumeric="95" />
+            <column name="def_value" value       ="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="95" />
+            <column name="psudo_column" value       ="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Enable or disable the taxes at the invoice line" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="95" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Enable Tax Calculation At The Invoice Line Level." />
+        </insert>
+        <addColumn tableName="invoice_line">
+            <column name="tax_rate" type="java.sql.Types.NUMERIC(22,10)" defaultValue="0" ></column>
+            <column name="tax_amount" type="java.sql.Types.NUMERIC(22,10)" defaultValue="0" ></column>
+            <column name="gross_amount" type="java.sql.Types.NUMERIC(22,10)" defaultValue="0" ></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-154 OutBoundInterchange Table" author = "Krunal Bhavsar" >
+        <createTable tableName = "outbound_interchange">
+            <column name = "id" type = "java.sql.Types.INTEGER">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "outbound_interchange_pkey"/>
+            </column>
+            <column name = "request" type = "java.sql.Types.CLOB" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "response" type = "java.sql.Types.CLOB" >
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "create_datetime" type = "java.sql.Types.TIMESTAMP" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "entity_id" type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "retry_count" type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "http_method" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "method_name" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "status" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "optlock" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName = "outbound_interchange"
+                     indexName = "outbound_interchange_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "outbound_interchange_fk_entity"
+                                 baseTableName          = "outbound_interchange"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-182 GL Summary Report" author = "Dipak Kardel">
+        <comment>Improvements in existing GL Summary Report</comment>
+        <update tableName="report_parameter">
+           <column name="name"  value="end_date"/>
+           <where>report_id = (SELECT id FROM report r WHERE r.name = 'gl_summary') AND name = 'date'</where>
+        </update>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'gl_summary'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-182 GL Details Report" author = "Dipak Kardel">
+        <comment>Improvements in existing GL Details Report</comment>
+        <update tableName="report_parameter">
+           <column name="name"  value="end_date"/>
+           <where>report_id = (SELECT id FROM report r WHERE r.name = 'gl_detail') AND name = 'date'</where>
+        </update>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'gl_detail'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-193 - Invoice-line Precision Support" author="Manish Bansod">
+        <comment>This preference enables configuration to apply precision on amount at invoice line level.</comment>
+        <insert tableName="preference_type">
+            <column name="id"        valueNumeric="97" />
+            <column name="def_value" value       ="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="97" />
+            <column name="psudo_column" value       ="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Set Invoice Line Precision Value" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="97" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="If value is 0 or 1 or greater than 10, Invoice composition will use the default precision. And if value is in between 2 to 10, then it will use the value as precision value." />
+        </insert>
+    </changeSet>
+</databaseChangeLog>

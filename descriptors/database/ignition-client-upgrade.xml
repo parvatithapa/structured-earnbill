@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+                   logicalFilePath="descriptors/database/ignition-client-upgrade.xml">
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Scheduling Task" author="Wajeeha Ahmed">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Ignition Scheduling Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Creates Payments for unpaid invoices"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Task" author="Taimoor Choudhary">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Task for Ignition"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is responsible for making payments for Ignition through ABSA and Standard Bank"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Response Manager Scheduling Task updated" author="TaimoorChoudhary">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask"/>
+            <column name="min_parameters" valueNumeric="4"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Ignition Response Manager Scheduling Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Manages payments response files FROM Ignition"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-38: Ingnition Order Update Task" author="Taimoor Choudhary">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.order.task.IgnitionOrderUpdateTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.IgnitionOrderUpdateTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Order Update Task for Ignition"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is responsible for updating orders when failed payments results are receieved"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-40:Customer Account Suspension Task" author="Wajeeha Ahmed">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionCustomerAccountSuspensionTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.IgnitionCustomerAccountSuspensionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Ignition Customer Account Suspension Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Suspends customer account bases on error codes"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-53:Ignition Azure Webhooks Communication Task" author="Taimoor Choudhary">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.company.task.IgnitionWebhooksCommunicationTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.company.task.IgnitionWebhooksCommunicationTask"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Ignition Azure Webhooks Communication Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Sends notification messages to Ignition's Azure Webhooks"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-62: Ingnition Payment Input Files Manager Scheduling Task updated" author="Taimoor Choudhary">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionPaymentInputFilesManagerTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.IgnitionPaymentInputFilesManagerTask"/>
+            <column name="min_parameters" valueNumeric="4"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Ignition Input Files Manager Scheduling Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Manages payments  Input Files files from Ignition"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-18:Ignition Transmission Failure Task" author="Wajeeha Ahmed">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionTransmissionFailureTask';
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.IgnitionTransmissionFailureTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Ignition Transmission Failure Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Unlinks and deletes payment based on error codes"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-2905: Ignition Scheduled Batch Job Task" author = "Wajeeha Ahmed">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name = "category_id"    valueNumeric  = "22"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.payment.tasks.IgnitionScheduledBatchJobTask"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"       valueNumeric  = "24"/>
+            <column name = "foreign_id"     valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"   value         = "title"/>
+            <column name = "language_id"    valueNumeric  = "1"/>
+            <column name = "content"        value         = "Ignition Scheduled Batch Job Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"       valueNumeric  = "24"/>
+            <column name = "foreign_id"     valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column"   value         = "description"/>
+            <column name = "language_id"    valueNumeric  = "1"/>
+            <column name = "content"        value         = "This task trigger Scheduled payments and customer update jobs for ignition"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

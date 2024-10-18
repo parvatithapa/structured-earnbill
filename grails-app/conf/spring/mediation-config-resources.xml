@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!--
+           *************************************************************************
+           *         Mediation Configuration for ExampleMediationTask              *
+           ***************************************************&*********************
+     -->
+
+    <bean id="userLoginResolverStep" class="com.sapienter.jbilling.server.mediation.step.user.UserLoginResolutionStep">
+        <property name="usernameField" value="userfield"/>
+    </bean>
+    <bean id="eventDateResolverStep"
+          class="com.sapienter.jbilling.server.mediation.step.eventDate.EventDateResolutionStep"/>
+    <bean id="currentOrderResolverStep"
+          class="com.sapienter.jbilling.server.mediation.step.CurrentOrderResolutionStep"/>
+
+    <bean id="itemResolverStep" class="com.sapienter.jbilling.server.mediation.step.item.ItemResolutionStep">
+        <property name="itemId" value="2800"/>
+    </bean>
+    <bean id="taxRecalculationStep" class="com.sapienter.jbilling.server.mediation.step.RecalculateTaxMediationStep"/>
+    <bean id="pricingResolverStep" class="com.sapienter.jbilling.server.mediation.step.pricing.PricingResolutionStep"/>
+    <bean id="itemManagementStep" class="com.sapienter.jbilling.server.mediation.step.ItemManagementStep"/>
+    <bean id="oderDiffManagementStep" class="com.sapienter.jbilling.server.mediation.step.OrderDiffManagementStep"/>
+
+    <!-- Mapping between mediation steps used in the example mediation task implementation -->
+    <util:map id="exampleMediationStepConfig" map-class="java.util.LinkedHashMap">
+
+        <entry key="USER_CURRENCY" value-ref="userLoginResolverStep"/>
+        <entry key="EVENT_DATE" value-ref="eventDateResolverStep"/>
+        <entry key="CURRENT_ORDER" value-ref="currentOrderResolverStep"/>
+        <entry key="ORDER_LINE_ITEM" value-ref="itemResolverStep"/>
+        <entry key="PRICING" value-ref="pricingResolverStep"/>
+        <entry key="ITEM_MANAGEMENT" value-ref="itemManagementStep"/>
+        <entry key="DIFF_MANAGEMENT" value-ref="oderDiffManagementStep"/>
+    </util:map>
+</beans>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_plan_group_v2" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.2100000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+DISTINCT il.order_id AS subscription_order_id,
+int_des.content AS plan,
+int_des.content || '|' || il.order_id AS plan_order_grouping,
+ss.plan_id,
+rc.itemisation_order
+FROM service_summary ss
+INNER JOIN plan p ON p.id = ss.plan_id
+INNER JOIN invoice_line il ON il.id = ss.invoice_line_id
+INNER JOIN item i ON i.id = p.item_id
+INNER JOIN international_description int_des ON i.id = int_des.foreign_id
+INNER JOIN jbilling_table jt ON (jt.id = int_des.table_id and jt.name = 'item')
+INNER JOIN item_type_map itm ON itm.item_id = i.id
+INNER JOIN item_type it ON it.id = itm.type_id
+INNER JOIN rollup_codes rc ON rc.item_type_description = it.description
+WHERE ss.invoice_id = $P{invoice_id}
+AND ss.plan_id IS NOT NULL
+AND ss.is_plan = 't'
+ORDER BY rc.itemisation_order ASC;]]>
+	</queryString>
+	<field name="subscription_order_id" class="java.lang.Integer"/>
+	<field name="plan" class="java.lang.String"/>
+	<field name="plan_order_grouping" class="java.lang.String"/>
+	<field name="plan_id" class="java.lang.Integer"/>
+	<field name="itemisation_order" class="java.lang.Integer"/>
+	<group name="PlanGroup">
+		<groupExpression><![CDATA[$F{plan_order_grouping}]]></groupExpression>
+		<groupHeader>
+			<band height="50">
+				<staticText>
+					<reportElement x="483" y="26" width="69" height="20" uuid="7bcbbee4-e4b4-4519-9e28-f3ef2323ef84"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="228" y="26" width="183" height="20" uuid="c1762bb3-c873-4850-ab87-9c13c4807918"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Description]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="412" y="26" width="69" height="20" uuid="eaa6ee98-8859-4b3b-9db8-b79c2ee917a9"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Qty]]></text>
+				</staticText>
+				<rectangle radius="4">
+					<reportElement mode="Opaque" x="1" y="5" width="553" height="20" backcolor="#D6036C" uuid="734dd08f-ff0e-479e-aded-315e6d8f5bef"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<line>
+					<reportElement x="2" y="48" width="550" height="1" uuid="66e30714-1e7a-4295-8f9f-6e84b3de8899"/>
+					<graphicElement>
+						<pen lineWidth="0.5" lineColor="#FFCCCC"/>
+					</graphicElement>
+				</line>
+				<staticText>
+					<reportElement x="110" y="26" width="117" height="20" uuid="d0a9e2b1-daff-45f7-bf81-138637a83f03"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Date]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement mode="Transparent" x="4" y="6" width="545" height="20" forecolor="#FFFFFF" backcolor="#FFFFFF" uuid="5baa1bc0-da79-4948-a9fd-cdfc1564150e"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+						<paragraph leftIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{plan}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="3" y="26" width="106" height="20" uuid="933efe27-da62-45c3-882b-41778783c061"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Service]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="6"/>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<subreport>
+				<reportElement x="-1" y="4" width="551" height="5" uuid="4c038b6d-01dd-4dd2-9fde-ca2334e7ddb6"/>
+				<subreportParameter name="subscription_order_id">
+					<subreportParameterExpression><![CDATA[$F{subscription_order_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id"/>
+				<subreportParameter name="account_charges_product_category_id"/>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="plan_id">
+					<subreportParameterExpression><![CDATA[$F{plan_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_plan_group_sub_report_v2.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+</jasperReport>

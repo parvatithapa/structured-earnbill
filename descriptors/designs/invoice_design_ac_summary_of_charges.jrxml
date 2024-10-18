@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_ac_summary_of_charges" language="groovy" pageWidth="555" pageHeight="802" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="5663e8cf-1921-423c-ab1f-ff02799c4783">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="companyLogo" class="java.io.File"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="customerName" class="java.lang.String"/>
+	<parameter name="serviceNumber" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select date(inv.create_datetime), il.description, COALESCE(il.quantity,0) as quantity, il.amount, i.internal_number
+from invoice_line il, item i, invoice inv
+where il.call_identifier is null
+and il.invoice_id = $P{invoiceId}
+and il.item_id = i.id
+and il.invoice_id = inv.id
+and il.description not like '%Carried%';]]>
+	</queryString>
+	<field name="date" class="java.sql.Date"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="internal_number" class="java.lang.String"/>
+	<variable name="total_quantity" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{quantity}]]></variableExpression>
+	</variable>
+	<variable name="total_amount" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="description" class="java.lang.String"/>
+	<variable name="serviceNumber" class="java.lang.String"/>
+	<variable name="customerName" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="98" splitType="Stretch">
+			<line>
+				<reportElement x="11" y="68" width="534" height="1" uuid="93e1c98e-0fea-4e1d-9704-bf48d40c9fc5"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="10" y="53" width="534" height="14" forecolor="#000000" uuid="5a26f99d-5651-4266-bb97-34d2e77a6ebe"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Summary of Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="80" width="534" height="1" uuid="342081fe-52ed-4be3-95dd-206111db18a2"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="168" y="9" width="170" height="14" uuid="9694ff5a-01d9-45df-89c0-70b0549634bb"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="177" y="-315" width="100" height="14" uuid="553427f2-a57c-467c-a435-fb7fa9b904af"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="340" y="9" width="120" height="14" uuid="be657b13-35f4-4e57-8a34-11d374d9418d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="463" y="9" width="80" height="14" uuid="774e1c46-2da8-4a64-8a24-812aadd17de0"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date]]></text>
+			</staticText>
+			<line>
+				<reportElement x="11" y="43" width="533" height="1" uuid="c7a65516-0102-4f22-a7d3-505946e54f42"/>
+			</line>
+			<staticText>
+				<reportElement x="10" y="81" width="534" height="14" forecolor="#000000" uuid="06f2731b-4c2f-40c0-8df9-c1df68737354"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Details of Other Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="-30" width="534" height="1" uuid="cfde3cfa-65f3-4e95-8d8c-12b3e3a7acfb"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="10" y="95" width="534" height="1" uuid="4a471658-eb11-4151-89c8-2cf995ff0c4e"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="11" y="53" width="534" height="1" uuid="d22d3360-0208-490e-9699-725329e44f20"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<image>
+				<reportElement x="13" y="6" width="153" height="31" uuid="cb06e029-af88-458a-a3ab-778d1412ba45"/>
+				<imageExpression><![CDATA[$P{companyLogo}]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement x="463" y="24" width="80" height="13" uuid="54a05107-b51f-42f8-bb93-84fff5a26b93"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceDate}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="340" y="24" width="120" height="13" uuid="12096f95-04b4-4cbb-8a2f-90388cabb64d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="168" y="23" width="170" height="13" uuid="c3de1bb1-51ab-4201-9ebc-7c2fd28ebb9b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{customerName}.replace( "\n", "" )]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Prevent">
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="2" width="100" height="13" uuid="23badb0e-5782-4020-9d6c-992036e59dcc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="397" y="2" width="100" height="13" uuid="95ed6816-cb80-4447-8f5d-b153996a0b79"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd" isBlankWhenNull="true">
+				<reportElement x="11" y="2" width="82" height="13" uuid="d9ccdfa5-da80-4226-bab2-cc27ac92e0bc"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="93" y="2" width="204" height="13" uuid="59a4090a-dd1f-440f-929c-5f5c941e67bc"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description} + "\n" + $F{internal_number} + "\t" + $F{date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="11" splitType="Prevent">
+			<textField isBlankWhenNull="true">
+				<reportElement x="152" y="1" width="250" height="10" uuid="bf4ad208-ec15-43a3-97a4-8d32b15f682d"/>
+				<textElement textAlignment="Center">
+					<font size="8" isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["For Customer Service, Please call "+$P{serviceNumber}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="30" splitType="Stretch">
+			<staticText>
+				<reportElement x="93" y="3" width="100" height="14" uuid="2320346b-9095-42ee-802b-2d4a60645ada"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Totals]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="397" y="1" width="100" height="20" uuid="55f9dd02-78a6-44d9-89d8-bc81054d090d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("#,##0.00").format($V{total_amount})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="296" y="1" width="100" height="20" uuid="380fb423-09c2-4b52-9f57-318833bfbf64"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{total_quantity}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="13" y="1" width="531" height="1" uuid="3b9875d1-4d58-4fe3-8a10-e9520f00a65d"/>
+			</line>
+			<staticText>
+				<reportElement x="497" y="2" width="45" height="18" uuid="80eeca86-ca12-4a7c-941a-d6223a576343">
+					<printWhenExpression><![CDATA[$V{total_amount} < 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[(Credit)]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>

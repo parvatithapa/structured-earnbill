@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="credit_orders_details.jasper" language="groovy" pageWidth="1000" pageHeight="752" whenNoDataType="AllSectionsNoDetail" columnWidth="1000" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="0e6079ee-2c87-4609-aec6-8c6a2b542575">
+	<property name="ireport.zoom" value="1.3636363636363644"/>
+	<property name="ireport.x" value="123"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<queryString>
+		<![CDATA[SELECT DISTINCT po.user_id,
+                        po.id,
+                        po.create_datetime,
+                        getstaffName(po.id),
+                        ol.amount,
+                        ( SELECT description
+                            FROM item_type
+                           WHERE id  = ( SELECT MAX(it.id)
+                                           FROM item_type it, item_type_map itm
+                                          WHERE it.id = itm.type_id
+                                            AND itm.item_id = ol.item_id))
+                   FROM purchase_order po
+             INNER JOIN order_line ol ON ol.order_id = po.id AND ol.deleted = 0 AND ol.amount < 0
+             INNER JOIN base_user bu ON bu.id = po.user_id  AND bu.deleted = 0
+                  WHERE po.create_datetime::date >= $P{start_date}
+                    AND po.create_datetime::date <= $P{end_date}
+                    AND po.deleted = 0
+                    AND ( bu.entity_id = $P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+                    AND ol.item_id IN (SELECT item_id
+                                         FROM item_type_map
+                                        WHERE type_id IN (SELECT id
+                                                            FROM item_type
+                                                           WHERE order_line_type_id = 7))
+               ORDER BY po.user_id;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="getstaffname" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<title>
+		<band height="100" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="16" width="913" height="20" uuid="fee3f36d-f1dc-43cf-bbf2-8ffb857f3b9a"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit Orders Details Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="772" y="37" width="74" height="20" uuid="4fd922e3-40df-49d1-8a20-c2465a78fb79"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="772" y="57" width="74" height="20" uuid="ebe094ce-3c84-4f4c-bea2-3151be863e6f"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="772" y="77" width="74" height="20" uuid="c5cf2d3e-373d-411c-865b-efb14342586f"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement x="847" y="57" width="66" height="20" uuid="e43f2857-56ce-4dcd-9e85-29958aa88387"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement x="847" y="77" width="66" height="20" uuid="d5594a6a-eded-4fec-8011-e0548c0bcfa2"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement x="847" y="37" width="66" height="20" uuid="b19ec2d1-cda3-4f72-99bb-7f45ed2e1c20"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement x="249" y="0" width="171" height="20" uuid="f60df230-3c54-4a65-a1b8-46d3c2b50697"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Creation Time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="772" y="0" width="141" height="20" uuid="6022969e-1c43-4e1c-83d6-84622ffe7638"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="572" y="0" width="200" height="20" uuid="34260c1f-f773-45eb-9861-d87d823f8e7c"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Category Name]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="21" width="913" height="1" uuid="c3a33f9e-30d3-473c-a4a7-bb4ae4cc15c6"/>
+			</line>
+			<staticText>
+				<reportElement x="420" y="0" width="152" height="20" uuid="7554915d-7a06-4735-b933-dea930f2364c"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Creation CSR Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="150" height="20" uuid="8d389c5d-a7a3-49c4-b28c-120cd3e5e0b7"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="150" y="0" width="99" height="20" uuid="30b7f9b0-4065-4fc5-a09a-b3d0e47c2e7a"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Id]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement x="249" y="2" width="171" height="20" uuid="99027e0c-430f-4071-9e4f-e31a08867a40"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="420" y="2" width="152" height="20" uuid="c79368fe-8b82-4666-bf06-b9a540136220"/>
+				<textFieldExpression><![CDATA[$F{getstaffname}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="772" y="2" width="141" height="20" uuid="8dce2d5e-69f0-42cc-84d7-5713a4eef6a3"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="572" y="2" width="200" height="20" uuid="54dc5e8d-ca15-4a00-8cd8-dcad465a033c"/>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="2" width="150" height="20" uuid="a6b37a6e-4e91-4d01-b587-2a83302796db"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="150" y="2" width="99" height="20" uuid="478ff53c-f3fe-4eed-a35b-de6001646a0c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

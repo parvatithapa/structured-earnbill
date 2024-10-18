@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- CDR to JMR -->
+    <bean id = "DefaultUserLoginResolutionStep" class = "com.sapienter.jbilling.server.mediation.converter.common.steps.JMRUserLoginResolutionStep">
+        <property name = "usernameField"   value ="username"/>
+        <property name = "customerService" ref   ="customerService" />
+    </bean>
+
+    <bean id = "DefaultPricingResolutionStep" class = "com.sapienter.jbilling.server.mediation.converter.common.steps.JMRPricingResolutionStep"/>
+
+    <!-- Default Mediation Beans -->
+    <bean id = "DuplicateRecordValidationStep" class = "com.sapienter.jbilling.server.mediation.converter.common.validation.DuplicateRecordValidationStep"/>
+
+    <bean id = "jmrDefaultWriter" class = "com.sapienter.jbilling.server.mediation.converter.common.job.JMRWriter"/>
+    
+    <bean id = "jmrDefaultLogWriter" class = "com.sapienter.jbilling.server.mediation.converter.common.job.JMRLogWriter"/>
+    
+    <bean id = "defaultJMRProcessorReader" class = "com.sapienter.jbilling.server.mediation.processor.JMRProcessorReader"/>
+    <bean id = "defaultJMRProcessorWriter" class = "com.sapienter.jbilling.server.mediation.processor.JMRProcessorWriterImpl"/>
+
+    <bean id = "mediationJobListener" class = "com.sapienter.jbilling.server.mediation.listener.MediationJobListener"/>
+    <bean id = "recycleMediationJobListener" class = "com.sapienter.jbilling.server.mediation.listener.RecycleMediationJobListener"/>
+
+    <bean id = "defaultValidator" class = "com.sapienter.jbilling.server.validator.mediation.DefaultMediationJobParameterValidatorImpl"/>
+
+    <bean id = "defaultMediationSkipPolicy" class = "com.sapienter.jbilling.server.batch.mediation.DefaultSkipPolicy"/>
+
+    <bean id = "defaultRecycleRowMapper" class = "com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleRecycleRowMapper" />
+
+    <bean id="defaultRecycleReader" class = "org.springframework.batch.item.database.JdbcCursorItemReader" >
+        <property name = "dataSource" ref   = "jBillingMediationDataSource"/>
+        <property name = "sql"        value = "SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+        <property name = "rowMapper"  ref   ="defaultRecycleRowMapper"/>
+    </bean>
+</beans>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.sapienter.jbilling</groupId>
+    <artifactId>jbilling-parent</artifactId>
+    <version>1.0.0</version>
+
+    <modules>
+        <module>audit-service</module>
+        <module>customer-service</module>
+        <module>customer-service-impl</module>
+        <module>order-service</module>
+        <module>saml-service</module>
+        <module>jbilling-common-impl</module>
+        <module>jbilling-service</module>
+        <module>mediation-process-service-impl</module>
+        <module>mediation-process-service</module>
+        <module>mediation-service</module>
+        <module>mediation-service-impl</module>
+        <module>database-configurations</module>
+        <module>item-service</module>
+        <module>event-service</module>
+        <module>filter-service</module>
+        <module>usage-pool-service</module>
+        <module>customer-mediations/full-creative</module>
+        <module>customer-mediations/deutsche-telekom</module>
+        <module>ui-testing-automation</module>
+        <module>customer-mediations/movius</module>
+        <module>metered-usage-service</module>
+        <module>metered-usage-service-impl</module>
+        <module>dt-customer</module>
+        <module>appdirect-client-library</module>
+        <module>quantity-rating</module>
+        <module>dt-reserve-instance</module>
+        <module>customer-mediations/sapphire</module>
+        <module>customer-mediations/spc</module>
+    </modules>
+    <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <hibernate.version>4.3.11.Final</hibernate.version>
+        <hibernate-validator.version>5.1.2.Final</hibernate-validator.version>
+        <validation-api.version>1.1.0.Final</validation-api.version>
+
+        <spring.version>4.3.14.RELEASE</spring.version>
+        <spring.batch.version>3.0.8.RELEASE</spring.batch.version>
+        <spring-integration.version>4.3.14.RELEASE</spring-integration.version>
+        <spring-data-jpa.version>1.10.2.RELEASE</spring-data-jpa.version>
+        <spring-data-jdbc-core.version>1.2.1.RELEASE</spring-data-jdbc-core.version>
+        <spring-data-commons.version>1.12.2.RELEASE</spring-data-commons.version>
+
+        <commons-beanutils.version>1.9.2</commons-beanutils.version>
+        <commons-collections.version>3.2.1</commons-collections.version>
+        <commons-dbcp.version>1.4</commons-dbcp.version>
+        <commons-discovery.version>0.4</commons-discovery.version>
+        <commons-digester.version>2.1</commons-digester.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-validator.version>1.3.1</commons-validator.version>
+        <commons-io.version>2.4</commons-io.version>
+        <httpclient.version>4.5.3</httpclient.version>
+
+        <testng.version>6.9.10</testng.version>
+        <junit.version>4.12</junit.version>
+        <selenium-java.version>2.53.1</selenium-java.version>
+        <json-simple.version>1.1.1</json-simple.version>
+        <aspectj.version>1.8.9</aspectj.version>
+
+        <hsqldb.version>2.3.3</hsqldb.version>
+        <postgresql.version>9.3-1102-jdbc41</postgresql.version>
+        <c3p0.version>0.9.5.2</c3p0.version>
+
+        <joda-time.version>2.9.4</joda-time.version>
+        <slf4j.version>1.7.25</slf4j.version>
+
+        <cxf.version>3.1.10</cxf.version>
+        <axis.version>1.4</axis.version>
+        <jaxrpc-api.version>1.1</jaxrpc-api.version>
+        <wsdl4j.version>1.6.2</wsdl4j.version>
+        <hessian.version>4.0.7</hessian.version>
+
+        <activemq.version>5.14.4</activemq.version>
+        <grails-web.version>2.4.3</grails-web.version>
+
+        <spring-data-hadoop.version>1.0.2.RELEASE</spring-data-hadoop.version>
+        <hbase.version>0.94.2</hbase.version>
+        <apache-httpcore.version>4.4.3</apache-httpcore.version>
+
+        <lombok.version>1.16.14</lombok.version>
+        <jackson.version>2.9.0.pr1</jackson.version>
+        <javax.ws.rs-api.version>2.1-m05</javax.ws.rs-api.version>
+        <commons-lang3.version>3.5</commons-lang3.version>
+        <guava.version>21.0</guava.version>
+        <spring-security-saml2-core.version>1.0.2.RELEASE</spring-security-saml2-core.version>
+        <signpost-core.version>1.2.1.2</signpost-core.version>
+        <spring-security-oauth.version>2.1.0.RELEASE</spring-security-oauth.version>
+        <spring-boot-starter-hateoas.version>1.5.2.RELEASE</spring-boot-starter-hateoas.version>
+        <spring-hateoas.version>0.23.0.RELEASE</spring-hateoas.version>
+        <libphonenumber.version>8.9.12</libphonenumber.version>
+        <geocoder.version>2.101</geocoder.version>
+        <spring-batch-integration.version>3.0.7.RELEASE</spring-batch-integration.version>
+        <carrier.version>1.93</carrier.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <compilerArgs>
+                        <arg>-Xlint:deprecation,unchecked</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

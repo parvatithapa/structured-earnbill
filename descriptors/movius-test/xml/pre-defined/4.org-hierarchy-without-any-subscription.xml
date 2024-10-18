@@ -1,0 +1,26 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Movius-Hierarchy</name>
+		<id>1515</id>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id>
+		<billing-plan-name>Telstra Master Plan</billing-plan-name>
+		<billable>true</billable>
+		<sub-orgs>
+			<org>
+				<name>ABC Org</name>
+				<id>1516</id>
+				<timezone>Europe/London</timezone>
+				<billable>true</billable>
+				<billing-plan-id>10</billing-plan-id>
+				<billing-plan-name>Telstra ABC Plan</billing-plan-name>
+			</org>
+			<org>
+				<name>XYZ Org</name>
+				<id>1517</id>
+				<timezone>Australia/Melbourne</timezone>
+				<billable>false</billable>
+			</org>
+		</sub-orgs>
+	</org>
+</organizations>

@@ -1,0 +1,1872 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="${child.entity.id}|parent-company-account-type.xml">
+
+    <!-- Update Child company Id and 814 EDI type Id -->
+    <!--<property name="child.entity.id" value="30"/>-->
+
+    <changeSet id="setup-new-account-type" author="Aman Goel" context="test">
+        <validCheckSum>any</validCheckSum>
+
+        <insert tableName="account_type">
+            <column name="id" valueComputed="(select COALESCE(max(at.id),0)+1 from account_type at)"/>
+            <column name="credit_limit" valueNumeric="0E-10"/>
+            <column name="invoice_design" value=""/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="date_created" valueDate="2015-09-16 13:23:41.59"/>
+            <column name="credit_notification_limit1"/>
+            <column name="credit_notification_limit2"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(select op.id from order_period op where entity_id=${child.entity.id} limit 1)"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+            <column name="invoice_template_id"/>
+            <column name="notification_ait_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='account_type')"/>
+            <column name="foreign_id" valueComputed="(SELECT max(id) FROM account_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Residential"/>
+        </insert>
+
+        <!--Customer Information Metafield group-->
+        <insert tableName="meta_field_group">
+            <column name="id" valueComputed="(select COALESCE(max(id),0)+1 FROM meta_field_group)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="discriminator" value="ACCOUNT_TYPE"/>
+            <column name="name" value="Customer Information"/>
+            <column name="account_type_id" valueComputed="(SELECT max(id) FROM account_type)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ZIP_CODE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="7"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="POSTAL_CODE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+
+        <insert tableName="enumeration">
+            <column name="id" valueComputed="(select max(e.id)+1 from enumeration e)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="name" value="DIVISION"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="East"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="West"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="North"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="South"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="NAME"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="FIRST_NAME"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS2"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="4"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS2"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="TELEPHONE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="8"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage" value="PHONE_NUMBER"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+        </insert>
+
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[ ()+]*([0-9][ ()+]*){10}$"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invalid phone number. Must have 10 numbers"/>
+        </insert>
+
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <where>name='validation_rule'</where>
+        </update>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS1"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS1"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="CITY"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="5"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="CITY"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="enumeration">
+            <column name="id" valueComputed="(select max(e.id)+1 from enumeration e)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="name" value="STATE"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Alabama"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Alaska"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Arizona"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Arkansas"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="California"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Colorado"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Connecticut"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Delaware"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Florida"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Georgia"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Hawaii"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Idaho"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Illinois"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Indiana"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Iowa"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Kansas"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Kentucky"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Louisiana"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Maine"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Maryland"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Massachusetts"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Michigan"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Minnesota"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Mississippi"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Missouri"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Montana"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Nebraska"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Nevada"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="New Hampshire"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="New Jersey"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="New Mexico"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="New York"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="North Carolina"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="North Dakota"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Ohio"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Oklahoma"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Oregon"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Pennsylvania"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Rhode Island"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="South Carolina"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="South Dakota"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Tennessee"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Texas"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Utah"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Vermont"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Virginia"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Washington"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="West Virginia"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Wisconsin"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <column name="enumeration_id" valueComputed="(select max(e.id) from enumeration e)"/>
+            <column name="value" value="Wyoming"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="STATE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="6"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="STATE_PROVINCE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="DIVISION"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from account_type p)"/>
+            <where>name='account_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_group p)"/>
+            <where>name='meta_field_group'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="setup-new-commercial-account-type-for-parent-company" author="Neeraj bhatt" context="test">
+        <validCheckSum>any</validCheckSum>
+
+        <insert tableName="account_type">
+            <column name="id" valueComputed="(select COALESCE(max(at.id),0)+1 from account_type at)"/>
+            <column name="credit_limit" valueNumeric="0E-10"/>
+            <column name="invoice_design" value=""/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="date_created" valueDate="2015-09-16 13:23:41.59"/>
+            <column name="credit_notification_limit1"/>
+            <column name="credit_notification_limit2"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(select op.id from order_period op where entity_id=${child.entity.id} limit 1)"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+            <column name="invoice_template_id"/>
+            <column name="notification_ait_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='account_type')"/>
+            <column name="foreign_id" valueComputed="(SELECT max(id) FROM account_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Commercial/Industrial"/>
+        </insert>
+
+        <!--Business Information metafield group-->
+        <insert tableName="meta_field_group">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_group)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="discriminator" value="ACCOUNT_TYPE"/>
+            <column name="name" value="Business Information"/>
+            <column name="account_type_id" valueComputed="(SELECT max(id) FROM account_type)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ZIP_CODE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="7"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="POSTAL_CODE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="NAME"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="FIRST_NAME"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS2"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="4"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS2"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="TELEPHONE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="8"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage" value="PHONE_NUMBER"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+        </insert>
+
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[ ()+]*([0-9][ ()+]*){10}$"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invalid phone number. Must have 10 numbers"/>
+        </insert>
+
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <where>name='validation_rule'</where>
+        </update>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS1"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS1"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="CITY"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="5"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="CITY"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="STATE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="6"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="STATE_PROVINCE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="DIVISION"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <!--Contact Information Metafield group-->
+        <insert tableName="meta_field_group">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_group)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="discriminator" value="ACCOUNT_TYPE"/>
+            <column name="name" value="Contact Information"/>
+            <column name="account_type_id" valueComputed="(SELECT max(id) FROM account_type)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ZIP_CODE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="6"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="POSTAL_CODE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="NAME"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="FIRST_NAME"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS2"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS2"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="TELEPHONE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="7"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage" value="PHONE_NUMBER"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+        </insert>
+
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[ ()+]*([0-9][ ()+]*){10}$"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invalid phone number. Must have 10 numbers"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <where>name='validation_rule'</where>
+        </update>
+
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS1"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="ADDRESS1"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="CITY"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="4"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="CITY"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="STATE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="5"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="STATE_PROVINCE"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from account_type p)"/>
+            <where>name='account_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_group p)"/>
+            <where>name='meta_field_group'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(e.id)+1 from enumeration e)"/>
+            <where>name='enumeration'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(ev.id)+1 from enumeration_values ev)"/>
+            <where>name='enumeration_values'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="setup-new-email-metaField" author="Aman Goel" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Email"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="9"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="EMAIL"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT id FROM meta_field_group where name='Customer Information' AND entity_id=${child.entity.id} )"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="account_type">
+            <column name="notification_ait_id" valueComputed="(SELECT id FROM meta_field_group where name='Customer Information' AND entity_id=${child.entity.id})"></column>
+            <where> id = (SELECT account_type_id FROM meta_field_group where name='Customer Information' AND entity_id=${child.entity.id}) </where>
+        </update>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Email"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="9"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id"/>
+            <column name="filename" value=""/>
+            <column name="field_usage" value="EMAIL"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT id FROM meta_field_group where name='Business Information' AND entity_id=${child.entity.id} )"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="account_type">
+            <column name="notification_ait_id" valueComputed="(SELECT id FROM meta_field_group where name='Business Information' AND entity_id=${child.entity.id})"></column>
+            <where> id = (SELECT account_type_id FROM meta_field_group where name='Business Information' AND entity_id=${child.entity.id}) </where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_group p)"/>
+            <where>name='meta_field_group'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="Blacklisted-metafield" author="Neeraj Bhatt" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT COALESCE(max(id),0)+1 FROM meta_field_name)"/>
+            <column name="name" value="Blacklisted"/>
+            <column name="entity_type" value="CUSTOMER"/>
+            <column name="data_type" value="BOOLEAN"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-686 - Remove old Spring Batch entries - ESCO" author="Gerhard Maree" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select max(pt.id)+1 from pluggable_task pt)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="type_id"
+                    valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.pluggableTask.BatchDataCleanupTask')"/>
+            <column name="processing_order" valueComputed="(SELECT coalesce (max(processing_order)+1, 1) FROM pluggable_task WHERE entity_id = ${child.entity.id})"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="notes" value=""/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed="(select max(p.id) from pluggable_task p)"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="50 20 0/1 * * ?"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed="(select max(p.id) from pluggable_task p)"/>
+            <column name="name" value="age_days"/>
+            <column name="int_value"/>
+            <column name="str_value" />
+            <column name="float_value" valueNumeric="0.25"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task p)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task_parameter p)"/>
+            <where>name='pluggable_task_parameter'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="Sure_Address_Task" author="Neeraj Bhatt" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select COALESCE(max(pt.id),0)+1 from pluggable_task pt)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="type_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.process.task.SureAddressTask')"/>
+            <column name="processing_order" valueNumeric="101"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="notes" value=""/>
+        </insert>
+
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed="(select max(p.id) from pluggable_task p)"/>
+            <column name="name" value="Sure Address Request Url"/>
+            <column name="int_value"/>
+            <column name="str_value" value="https://testapi.sureaddress.net/SureAddress.asmx/PostRequest"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed="(select max(p.id) from pluggable_task p)"/>
+            <column name="name" value="Client Number"/>
+            <column name="int_value"/>
+            <column name="str_value" value="000000350"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed="(select max(p.id) from pluggable_task p)"/>
+            <column name="name" value="Validation Key"/>
+            <column name="int_value"/>
+            <column name="str_value" value="6c52a7db-6c95-4e9b-9c93-24679a8e93bf"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task p)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task_parameter p)"/>
+            <where>name='pluggable_task_parameter'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-229 change preference for child sub account" author="Vivek Yadav">
+        <validCheckSum>any</validCheckSum>
+        <delete tableName="account_type">
+            <where>
+                id in
+                (select a.foreign_id
+                from international_description a
+                where a.table_id = (select id from jbilling_table where name='account_type')
+                and a.language_id = 1
+                and a.content = 'Default')
+                AND entity_id = ${child.entity.id}
+            </where>
+        </delete>
+    </changeSet>
+
+    <changeSet id="JBIIE-511-Enrollment Name Validator" author="Oscar Bidabehere" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[. A-Za-z0-9_-]*$"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="The name is allowed to contain only alphanumeric, underscore and hyphen characters"/>
+        </insert>
+
+        <sql>
+            update
+            meta_field_name
+            set
+            validation_rule_id = (select max(t.id) from validation_rule t)
+            where id in (
+            select mfn.id
+            from
+            meta_field_name mfn
+            join metafield_group_meta_field_map mfgm on mfgm.meta_field_value_id = mfn.id
+            join meta_field_group mfg on mfgm.metafield_group_id = mfg.id
+            where
+            mfn.name='NAME'
+            and mfn.entity_type = 'ACCOUNT_TYPE'
+            and mfg.name in ('Customer Information', 'Business Information', 'Contact Information')
+            and mfn.entity_id = ${child.entity.id}
+            )
+        </sql>
+    </changeSet>
+
+    <changeSet id="Bulk-Enrollment-config" author="Cristian Ebbens" context="test">
+        <validCheckSum>any</validCheckSum>
+        <comment>Bulk Enrollment Reader scheduled task</comment>
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="type_id" valueComputed="(select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.customerEnrollment.task.BulkEnrollmentReaderTask')"/>
+            <column name="processing_order" valueComputed="(select coalesce(max(pt.processing_order)+1, 1) from pluggable_task pt where pt.type_id in (select ptt.id from pluggable_task_type ptt where ptt.category_id = 22))"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_parameter)"/>
+            <column name="task_id" valueComputed="(select max(id) from pluggable_task)"/>
+            <column name="name" value="cron_exp"/>
+            <column name="str_value" value="0 0/1 * * * ?"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <comment>Broker Response Manager event listener task</comment>
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="type_id" valueComputed="(select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.customerEnrollment.task.BrokerResponseManagerTask')"/>
+            <column name="processing_order" valueComputed="(select coalesce(max(pt.processing_order)+1, 1) from pluggable_task pt where pt.type_id in (select ptt.id from pluggable_task_type ptt where ptt.category_id = 17))"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <comment>Sequences update</comment>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task p)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task_parameter p)"/>
+            <where>name='pluggable_task_parameter'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-895 - NGES commissions - Commission Reversal - Parent entities" author="Gerhard Maree" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select max(pt.id)+1 from pluggable_task pt)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="type_id"
+                    valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.ediTransaction.task.CommissionReversalTask')"/>
+            <column name="processing_order" valueComputed="(SELECT coalesce (max(processing_order)+1, 1) FROM pluggable_task WHERE entity_id = ${child.entity.id})"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="notes" value=""/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT MAX(id)+1 FROM pluggable_task)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-895 - NGES commissions - Meta Fields - Parent entities" author="Gerhard Maree" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Minimum Month for Commissions"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="DECIMAL"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="filename" value=""/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id)+1, 1) FROM meta_field_name)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-905 - Add DURATION enumeration" author="Cristian Ebbens" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="enumeration">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(id),0)+1 FROM enumeration)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="name" value="DURATION"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(id),0)+1 FROM enumeration_values)"/>
+            <column name="enumeration_id" valueComputed="(SELECT MAX(id) FROM enumeration)"/>
+            <column name="value" value="12"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="enumeration_values">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(id),0)+1 FROM enumeration_values)"/>
+            <column name="enumeration_id" valueComputed="(SELECT MAX(id) from enumeration)"/>
+            <column name="value" value="24"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT MAX(id)+1 FROM enumeration)"/>
+            <where>name='enumeration'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT MAX(id)+1 FROM enumeration_values)"/>
+            <where>name='enumeration_values'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="Set company type" author="Oscar Bidabehere" context="test">
+        <validCheckSum>any</validCheckSum>
+        <update tableName="entity">
+            <column name="type" value="ESCO"/>
+            <where>id=${child.entity.id}</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-1082 Default Tab configuration for parent company" author="Neeraj Bhatt" context="test">
+        <validCheckSum>any</validCheckSum>
+        <sql>
+            insert into permission_role_map (permission_id,role_id)(select 903, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 904, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 910, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 911, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 912, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 920, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 921, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 922, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+        </sql>
+
+    </changeSet>
+
+    <changeSet id="JBIIE-1249-updating parnet company mandatory metafield to non-mandatory" author="Neeraj Bhatt">
+        <validCheckSum>any</validCheckSum>
+        <update tableName="meta_field_name">
+            <column name="is_mandatory" value="false"/>
+            <where>name='Minimum Month for Commissions' and entity_id=${child.entity.id}</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-1286 - Contact Information AIT for Residential account type" author="Cristian Ebbens" context="test">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="meta_field_group">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_group)"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="discriminator" value="ACCOUNT_TYPE"/>
+            <column name="name" value="Contact Information"/>
+            <column name="account_type_id" valueComputed="(SELECT id FROM account_type at INNER JOIN international_description d ON d.table_id = 111 AND d.foreign_id = at.id AND d.content = 'Residential' WHERE at.entity_id = ${child.entity.id})"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="NAME"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="field_usage" value="FIRST_NAME"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS1"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="field_usage" value="ADDRESS1"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ADDRESS2"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="field_usage" value="ADDRESS2"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="CITY"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="4"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="field_usage" value="CITY"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="STATE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="ENUMERATION"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="5"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="field_usage" value="STATE_PROVINCE"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[0-9]{1,9}$"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Zipcode should be number and not more then 9 digit"/>
+        </insert>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="ZIP_CODE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="6"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="field_usage" value="POSTAL_CODE"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="REGEX"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="validation_rule_attributes">
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="attribute_name" value="regularExpression"/>
+            <column name="attribute_value" value="^[ ()+]*([0-9][ ()+]*){10}$"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invalid phone number. Must have 10 numbers"/>
+        </insert>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="TELEPHONE"/>
+            <column name="entity_type" value="ACCOUNT_TYPE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="7"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="is_primary" valueBoolean="false"/>
+            <column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="field_usage" value="PHONE_NUMBER"/>
+        </insert>
+        <insert tableName="metafield_group_meta_field_map">
+            <column name="metafield_group_id" valueComputed="(SELECT max(id) FROM meta_field_group)"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_group p)"/>
+            <where>name='meta_field_group'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <where>name='validation_rule'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-1306 - Rename Account Information Types" author="Hitesh Yadav"
+               context="base">
+        <validCheckSum>any</validCheckSum>
+        <comment>Rename Customer Information to Service Information for Residential account type</comment>
+        <update tableName="meta_field_group">
+            <column name="name" value="Service Information"/>
+            <where>name='Customer Information' AND account_type_id=(select act.id from account_type act,
+                international_description ides where act.id=ides.foreign_id and ides.content='Residential' and
+                entity_id=${child.entity.id})
+            </where>
+        </update>
+        <comment>Rename Contact Information to Billing Information for Residential account type</comment>
+        <update tableName="meta_field_group">
+            <column name="name" value="Billing Information"/>
+            <where>name='Contact Information' AND account_type_id=(select act.id from account_type act,
+                international_description ides where act.id=ides.foreign_id and ides.content='Residential' and
+                entity_id=${child.entity.id})
+            </where>
+        </update>
+        <comment>Rename Business Information to Service Information for Commercial/Industrial account type</comment>
+        <update tableName="meta_field_group">
+            <column name="name" value="Service Information"/>
+            <where>name='Business Information' AND account_type_id=(select act.id from account_type act,
+                international_description ides where act.id=ides.foreign_id and ides.content='Commercial/Industrial' and
+                entity_id=${child.entity.id})
+            </where>
+        </update>
+        <comment>Rename Contact Information to Billing Information for Commercial/Industrial account type</comment>
+        <update tableName="meta_field_group">
+            <column name="name" value="Billing Information"/>
+            <where>name='Contact Information' AND account_type_id=(select act.id from account_type act,
+                international_description ides where act.id=ides.foreign_id and ides.content='Commercial/Industrial' and
+                entity_id=${child.entity.id})
+            </where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Neeraj Bhatt" id="JB-510 - enable NGES permissions for super user in ESCO company" context="test">
+        <validCheckSum>any</validCheckSum>
+        <comment>Adding NGES permission for super user in ESCO company</comment>
+        <sql>
+            insert into permission_role_map (permission_id,role_id)(select 903, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 904, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 910, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 911, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 912, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 920, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 921, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 922, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 1100, id from role where role_type_id=2 and entity_id=${child.entity.id});
+        </sql>
+    </changeSet>
+
+    <changeSet id="JB-539- enabling NGES permission on ESCO company " author="Neeraj Bhatt">
+        <validCheckSum>any</validCheckSum>
+        <sql>
+            insert into permission_role_map (permission_id,role_id)(select 923, id from role where role_type_id=2 and entity_id=${child.entity.id});
+            insert into permission_role_map (permission_id,role_id)(select 923, id from role where role_type_id=-1 and entity_id=${child.entity.id});
+        </sql>
+    </changeSet>
+
+    <changeSet id="JBIIE-1499 set display order" author="Hitesh Yadav" context="base">
+        <validCheckSum>any</validCheckSum>
+        <comment>set display order for AIT</comment>
+        <update tableName="meta_field_group">
+            <column name="display_order" valueComputed="1"/>
+            <where>name='Service Information' and entity_type='ACCOUNT_TYPE' and entity_id=${child.entity.id}</where>
+        </update>
+        <update tableName="meta_field_group">
+            <column name="display_order" valueComputed="2"/>
+            <where>name='Billing Information' and entity_type='ACCOUNT_TYPE' and entity_id=${child.entity.id}</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="company level metafield for EDI Files directory" author="Aman Goel">
+        <validCheckSum>any</validCheckSum>
+        <comment>Define a company level meta-field for specifing the directory for EDI Files</comment>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="EDI Communication Directory"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="10"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${child.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_name p)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+    <changeSet id="JBIIE-1535 add email validation rule in parent" author="Ambuj Aggarwal" context="base">
+        <validCheckSum>any</validCheckSum>
+        <insert tableName="validation_rule">
+            <column name="id" valueComputed="(select max(t.id)+1 from validation_rule t)"/>
+            <column name="rule_type" value="EMAIL"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+            <column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+            <column name="psudo_column" value="errorMessage"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Enter a valid Email address"/>
+        </insert>
+
+        <sql>
+            update
+            meta_field_name
+            set
+            validation_rule_id = (select max(t.id) from validation_rule t)
+            where id in (
+            select mfn.id
+            from
+            meta_field_name mfn
+            join metafield_group_meta_field_map mfgm on mfgm.meta_field_value_id = mfn.id
+            join meta_field_group mfg on mfgm.metafield_group_id = mfg.id
+            where
+            mfn.name='Email'
+            and mfn.entity_type = 'ACCOUNT_TYPE'
+            and mfg.name = 'Service Information'
+            and mfn.entity_id = ${child.entity.id}
+            )
+        </sql>
+    </changeSet>
+
+    <changeSet id="JBIIE-1641 : Updating state value to abbreviated form in parent company" author="Neeraj Bhatt" context="test">
+        <validCheckSum>any</validCheckSum>
+
+        <update tableName="enumeration_values">
+            <column name="value"  value="NY"/>
+            <where>value='New York' and enumeration_id=(select id from enumeration where name='STATE' and entity_id=${child.entity.id})  </where>
+        </update>
+        <update tableName="enumeration_values">
+            <column name="value"  value="TX"/>
+            <where>value='Texas' and enumeration_id=(select id from enumeration where name='STATE' and entity_id=${child.entity.id})  </where>
+        </update>
+
+    </changeSet>
+
+
+</databaseChangeLog>

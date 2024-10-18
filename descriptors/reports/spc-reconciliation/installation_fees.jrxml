@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="installation_fees" language="groovy" pageWidth="2850" pageHeight="842" columnWidth="2810" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b946afdd-b3cb-48eb-949a-bd79c9912de4">
+        <property name="ireport.zoom" value="1.0"/>
+        <property name="ireport.x" value="1768"/>
+        <property name="ireport.y" value="0"/>
+        <parameter name="start_date" class="java.util.Date">
+                <defaultValueExpression><![CDATA[]]></defaultValueExpression>
+        </parameter>
+        <parameter name="end_date" class="java.util.Date">
+                <defaultValueExpression><![CDATA[]]></defaultValueExpression>
+        </parameter>
+        <queryString>
+                <![CDATA[SELECT *,
+                         (SELECT tariff_description
+                            FROM route_70_tariff_description
+                           WHERE tariff_code = dbr.tariff_code) AS tariff_description,
+                         (SELECT gl_description
+                            FROM route_70_gl_description
+                           WHERE gl_code = dbr.revenue_gl_code) AS revenue_gl_description,
+                         (SELECT description
+                            FROM route_70_rollup_description
+                           WHERE code = dbr.rollup_code) AS rollup_description,
+                         (SELECT description
+                            FROM route_70_rollup_description
+                           WHERE code = dbr.super_rollup_code) AS super_rollup_description,
+                         (SELECT description
+                            FROM route_70_rollup_description
+                           WHERE code = dbr.super_super_rollup_code) AS super_super_rollup_description
+                   FROM (SELECT i.create_datetime AS invoice_date,
+                                i.public_number AS invoice_number,
+                                i.user_id AS customer_number,
+                                (SELECT STRING_AGG(string_value, ',')
+                                   FROM meta_field_value mfv
+                                  INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                                                                AND mfn.name IN ('Phone Number','Email')
+                                  INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+                                  INNER JOIN asset a ON a.id = amfm.asset_id
+                                                    AND order_line_id IN (SELECT id
+                                                                            FROM order_line
+                                                                           WHERE order_id = il.order_id)) AS service_number_email,
+                                (SELECT CASE
+                                             WHEN (SELECT COUNT(*) > 0
+                                                     FROM plan
+                                                    WHERE item_id = il.item_id) = 't'
+                                             THEN (SELECT content
+                                                     FROM international_description
+                                                    WHERE foreign_id = il.item_id
+                                                          AND table_id = (SELECT id
+                                                                            FROM jbilling_table
+                                                                           WHERE name = 'item') AND language_id = 1)
+                                             ELSE NULL
+                                         END ) AS plan_name,
+                                (SELECT CASE
+                                             WHEN (SELECT COUNT(*) > 0
+                                                     FROM plan
+                                                    WHERE item_id = il.item_id) = 'f'
+                                             THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Service Type -',''))
+                                                     FROM item_type it
+                                                    INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+                                                    WHERE description LIKE 'Service Type -%')
+                                              ELSE NULL
+                                          END ) AS service_type,
+                                (SELECT CASE
+                                             WHEN (SELECT COUNT(*) > 0
+                                                     FROM plan
+                                                    WHERE item_id = il.item_id) = 'f'
+                                             THEN (SELECT service_description
+                                                     FROM route_70_service_type_description
+                                                    WHERE service_type = (SELECT CASE
+                                                                                       WHEN (SELECT COUNT(*) > 0
+                                                                                               FROM plan
+                                                                                              WHERE item_id = il.item_id) = 'f'
+                                                                                       THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Service Type -',''))
+                                                                                               FROM item_type it
+                                                                                              INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+                                                                                              WHERE description LIKE 'Service Type -%')
+                                                                                       ELSE NULL
+                                                                                   END ))
+                                             ELSE NULL
+                                         END ) AS service_description,
+                                (SELECT tax_code
+                                   FROM route_70_tax_scheme
+                                  WHERE description =((SELECT mfv.string_value
+                                                         FROM item itm
+                                                        INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                                                        INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                                                        INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme'
+                                                                                      AND mfv.meta_field_name_id = mfn.id
+                                                                                      AND itm.id = il.item_id))
+                                        OR description = (( SELECT mfv.string_value
+                                                               FROM meta_field_value mfv
+                                                              INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                                                              INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Tax Scheme'
+                                                              INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id))) AS tax_code,
+                                 (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+                                       THEN ( SELECT mfv.string_value
+                                                FROM meta_field_value mfv
+                                               INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                                               INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                                               INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                                       ELSE itm.gl_code END ) AS revenue_gl_code,
+                                 COALESCE((CASE
+                                                WHEN il.gross_amount = 0
+                                                THEN il.amount
+                                                ELSE il.gross_amount
+                                            END),0) AS sales_ex_gst,
+                                 (CASE
+                                       WHEN il.gross_amount = 0
+                                       THEN (il.amount*0.1)
+                                       ELSE il.tax_amount
+                                   END) AS gst,
+                                 (SELECT rollup_code
+                                    FROM rollup_codes
+                                    WHERE item_type_description = (SELECT content
+                                                                     FROM international_description
+                                                                    WHERE foreign_id = il.item_id
+                                                                          AND table_id = (SELECT id
+                                                                                            FROM jbilling_table
+                                                                                           WHERE name = 'item') AND language_id = 1)) AS rollup_code,
+                                 (SELECT rollup_code_type
+                                    FROM rollup_codes
+                                    WHERE item_type_description = (SELECT content
+                                                                     FROM international_description
+                                                                    WHERE foreign_id = il.item_id
+                                                                          AND table_id = (SELECT id
+                                                                                            FROM jbilling_table
+                                                                                           WHERE name = 'item') AND language_id = 1)) AS super_rollup_code,
+                                 (SELECT rollup_code_type
+                                    FROM rollup_codes
+                                   WHERE rollup_code = (SELECT rollup_code_type
+                                                          FROM rollup_codes
+                                                         WHERE item_type_description = (SELECT content
+                                                                                          FROM international_description
+                                                                                         WHERE foreign_id = il.item_id
+                                                                                               AND table_id = (SELECT id
+                                                                                                                 FROM jbilling_table
+                                                                                                                WHERE name = 'item') AND language_id = 1))) AS super_super_rollup_code,
+                                 (SELECT TRIM(REPLACE(SPLIT_PART(SUBSTRING(jmr.pricing_fields FROM '%TARIFF_CODE:1:string:#"%#"%' FOR '#'),',',1), '%3A', ':'))
+                                    FROM jbilling_mediation_record jmr
+                                   WHERE jmr.order_id = il.order_id
+                                         AND jmr.order_line_id = ol.id
+                                         AND jmr.item_id = il.item_id
+                                   LIMIT 1) AS tariff_code
+                            FROM invoice i
+                           INNER JOIN invoice_line il ON i.id = il.invoice_id
+                           INNER JOIN purchase_order po ON il.order_id = po.id
+                           INNER JOIN order_line ol ON po.id = ol.order_id AND ol.item_id = il.item_id
+                           INNER JOIN item itm ON itm.id = il.item_id
+                           INNER JOIN item_type it ON it.description = 'Installation Fees'
+                           INNER JOIN item_type_map itmtm ON itmtm.item_id = itm.id AND itmtm.type_id = it.id
+                           WHERE itm.deleted = 0
+                                 AND i.deleted = 0
+                                 AND po.deleted = 0
+                                 AND ol.deleted = 0
+                                 AND il.deleted = 0
+                                      AND CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                                               THEN TIMEZONE('AEDT', i.create_datetime::timestamp with time zone) ::DATE = DATE($P{start_date})
+                                               ELSE TIMEZONE('AEDT', i.create_datetime::timestamp with time zone) ::DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                                           END
+                        GROUP BY invoice_date,
+                                 invoice_number,
+                                 customer_number,
+                                 il.order_id,
+                                 il.item_id,
+                                 itm.id,
+                                 il.gross_amount,
+                                 il.amount,
+                                 il.tax_amount,
+                                 ol.id
+                        ORDER BY invoice_date,
+                                 invoice_number ASC ) AS dbr;]]>
+        </queryString>
+        <field name="invoice_date" class="java.sql.Timestamp"/>
+        <field name="invoice_number" class="java.lang.Integer"/>
+        <field name="customer_number" class="java.lang.Integer"/>
+        <field name="service_number_email" class="java.lang.String"/>
+        <field name="plan_name" class="java.lang.String"/>
+        <field name="service_type" class="java.lang.String"/>
+        <field name="service_description" class="java.lang.String"/>
+        <field name="tax_code" class="java.lang.String"/>
+        <field name="revenue_gl_code" class="java.lang.String"/>
+        <field name="sales_ex_gst" class="java.math.BigDecimal"/>
+        <field name="gst" class="java.math.BigDecimal"/>
+        <field name="rollup_code" class="java.lang.String"/>
+        <field name="super_rollup_code" class="java.lang.String"/>
+        <field name="super_super_rollup_code" class="java.lang.String"/>
+        <field name="tariff_code" class="java.lang.String"/>
+        <field name="tariff_description" class="java.lang.String"/>
+        <field name="revenue_gl_description" class="java.lang.String"/>
+        <field name="rollup_description" class="java.lang.String"/>
+        <field name="super_rollup_description" class="java.lang.String"/>
+        <field name="super_super_rollup_description" class="java.lang.String"/>
+        <variable name="sales_ex_gst" class="java.math.BigDecimal" calculation="Sum">
+                <variableExpression><![CDATA[$F{sales_ex_gst}]]></variableExpression>
+                <initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+        </variable>
+        <variable name="gst" class="java.math.BigDecimal" calculation="Sum">
+                <variableExpression><![CDATA[$F{gst}]]></variableExpression>
+                <initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+        </variable>
+        <variable name="sales_incl_gst" class="java.math.BigDecimal" calculation="Sum">
+                <variableExpression><![CDATA[$F{sales_ex_gst} + $F{gst}]]></variableExpression>
+                <initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+        </variable>
+        <group name="installation_total" footerPosition="ForceAtBottom">
+                <groupFooter>
+                        <band height="26">
+                                <textField isBlankWhenNull="false">
+                                        <reportElement positionType="FixRelativeToBottom" x="2429" y="2" width="131" height="20" uuid="57b22ed0-da35-4beb-b412-51ad7485cd24"/>
+                                        <textElement textAlignment="Right">
+                                                <font isBold="true"/>
+                                        </textElement>
+                                        <textFieldExpression><![CDATA[$V{sales_ex_gst}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+                                </textField>
+                                <textField isBlankWhenNull="false">
+                                        <reportElement positionType="FixRelativeToBottom" x="2560" y="2" width="111" height="20" uuid="cad0b2f5-a6bf-4982-85ab-1931bafaca81"/>
+                                        <textElement textAlignment="Right">
+                                                <font isBold="true"/>
+                                        </textElement>
+                                        <textFieldExpression><![CDATA[$V{gst}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+                                </textField>
+                                <textField isBlankWhenNull="false">
+                                        <reportElement positionType="FixRelativeToBottom" x="2671" y="2" width="136" height="20" uuid="3226b131-e603-458a-831b-856ceb6248bb"/>
+                                        <textElement textAlignment="Right">
+                                                <font isBold="true"/>
+                                        </textElement>
+                                        <textFieldExpression><![CDATA[$V{sales_incl_gst}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+                                </textField>
+                                <line>
+                                        <reportElement x="0" y="1" width="2807" height="1" uuid="fc6620d4-0a13-4eda-8052-dc5a0075b412"/>
+                                        <graphicElement>
+                                                <pen lineWidth="2.0"/>
+                                        </graphicElement>
+                                </line>
+                                <staticText>
+                                         <reportElement x="0" y="2" width="80" height="20" uuid="117ab8bc-72d0-44d0-85f1-08eece6e8886"/>
+                                         <textElement>
+                                         <font isBold="true"/>
+                                         </textElement>
+                                         <text><![CDATA[Total]]></text>
+                                </staticText>
+                        </band>
+                </groupFooter>
+        </group>
+        <background>
+                <band splitType="Stretch"/>
+        </background>
+        <title>
+                <band height="69" splitType="Stretch">
+                        <staticText>
+                                <reportElement x="0" y="0" width="160" height="20" uuid="a1a83c93-52f8-40a6-931d-edc41c5f1d8d"/>
+                                <textElement>
+                                        <font size="14" isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Installation Fees]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2560" y="40" width="111" height="20" uuid="86c604d1-5107-485a-94a3-64ae3826ec20"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[End Date :]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2560" y="20" width="111" height="20" uuid="2f281d32-c34a-4d98-83a6-4ac79568e033"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Start Date :]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2560" y="0" width="111" height="20" uuid="0284ed24-8ec9-4849-8333-51860655c1cb"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Report Date :]]></text>
+                        </staticText>
+                        <textField pattern="MMMMM dd, yyyy">
+                                <reportElement x="2671" y="0" width="136" height="20" uuid="7ec44046-693d-47e1-a895-580bfa448b92"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+                        </textField>
+                        <textField pattern="MMMMM dd, yyyy">
+                                <reportElement x="2671" y="20" width="136" height="20" uuid="0b5becbe-b736-41b3-811e-08ba15debd0c"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+                        </textField>
+                        <textField pattern="MMMMM dd, yyyy">
+                                <reportElement x="2671" y="40" width="136" height="20" uuid="5380dd89-c701-48b5-b15d-fcefa5301281"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+                        </textField>
+                </band>
+        </title>
+        <columnHeader>
+                <band height="28" splitType="Stretch">
+                        <staticText>
+                                <reportElement x="0" y="0" width="80" height="20" uuid="4c9e3b63-be8f-42b9-a862-caff8040c626"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Invoice Date]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="87" y="0" width="91" height="20" uuid="99520201-c042-4e80-b730-4fe7bf0a33c9"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Invoice Number]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="184" y="0" width="104" height="20" uuid="ad6a6e68-9a48-4810-80a0-c912c75c7573"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Customer Number]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="293" y="0" width="188" height="20" uuid="7990fbca-1d44-4b90-9f92-6ad9ea27fdc0"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Service Number/email]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2238" y="0" width="191" height="20" uuid="b1cd6024-722a-47f3-83dc-56d4cbd3952f"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Revenue GL Code Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="481" y="0" width="170" height="20" uuid="b41c153d-8584-4524-bd14-5cfc06dca6ea"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Plan Name]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1678" y="0" width="95" height="20" uuid="da340d01-6a60-4d85-a119-dc9216ef16b7"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Tax Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2128" y="0" width="110" height="20" uuid="6bf64ca1-d7de-40b4-91e4-0ea4857fb2e1"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Revenue GL Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2429" y="0" width="131" height="20" uuid="bb5a7082-369c-479d-9c06-93b5a746e16c"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Sales ex GST]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2560" y="0" width="111" height="20" uuid="e6037e45-3ba0-46bf-8d73-5718d0ef71f8"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[GST]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="651" y="0" width="80" height="20" uuid="baf10c35-460f-430d-a49d-9a1c10830128"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Tariff Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="731" y="0" width="109" height="20" uuid="63c532a0-16a9-4ea5-913d-9228f7836bd3"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Tariff Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1773" y="0" width="217" height="20" uuid="7fbc98c5-1311-4696-bffc-69b4b26ed600"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Service Type]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1990" y="0" width="138" height="20" uuid="3a6e0d9c-2ee9-43a2-8559-d1d1b8929478"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Service Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="840" y="0" width="80" height="20" uuid="25863ae6-f106-4f19-ac15-d196191c9353"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Rollup Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1055" y="0" width="123" height="20" uuid="e0539a7e-7e8d-4fbb-b16e-13de96057180"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Super Rollup Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1178" y="0" width="162" height="20" uuid="86cc8f57-8516-40f3-9d51-94a54d74b512"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Super Rollup Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1340" y="0" width="144" height="20" uuid="8cc7652a-fbf3-4720-b1c1-25444294811e"/>
+                                <textElement textAlignment="Center">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Super Super Rollup Code]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="920" y="0" width="135" height="20" uuid="ca36409a-651f-4681-b059-e6fe3ebee069"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Rollup Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="1484" y="0" width="194" height="20" uuid="bb1ec96c-9274-4ed2-836b-315d293e5f55"/>
+                                <textElement>
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Super Super Rollup Description]]></text>
+                        </staticText>
+                        <staticText>
+                                <reportElement x="2671" y="0" width="136" height="20" uuid="eb011fef-6a67-4f46-8318-b75957f3e80c"/>
+                                <textElement textAlignment="Right">
+                                        <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Sales Incl GST]]></text>
+                        </staticText>
+                        <line>
+                                <reportElement x="0" y="22" width="2807" height="1" uuid="e5ca3443-613e-41a4-a5fa-afc3e2cca218"/>
+                                <graphicElement>
+                                        <pen lineWidth="2.0"/>
+                                </graphicElement>
+                        </line>
+                </band>
+        </columnHeader>
+        <detail>
+                <band height="23" splitType="Stretch">
+                        <textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+                                <reportElement x="0" y="0" width="80" height="20" uuid="722cf7e5-1913-471b-9398-fdc098ca29a2"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="87" y="0" width="91" height="20" uuid="16a26dc6-9106-4382-a439-bec81b4fd32a"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="184" y="0" width="104" height="20" uuid="0c6eb170-aa62-4512-b4be-4490162caabc"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{customer_number}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="293" y="0" width="188" height="20" uuid="5dc940b9-db3b-4aa9-adc0-92bb08a4ad4e"/>
+                                <textFieldExpression><![CDATA[$F{service_number_email}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="2238" y="0" width="191" height="20" uuid="65b0646f-1e0f-47c2-8b9b-0a9fe0da4bc4"/>
+                                <textFieldExpression><![CDATA[$F{revenue_gl_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1678" y="0" width="95" height="20" uuid="bf228967-f577-4e20-a0eb-8769db38b644"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{tax_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="2128" y="0" width="110" height="20" uuid="c5e76a98-4db2-4095-ba77-5aed7b4192dc"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{revenue_gl_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="2429" y="0" width="131" height="20" uuid="669427f7-c68c-4a92-9b5d-0581256ca146"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[$F{sales_ex_gst}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="2560" y="0" width="111" height="20" uuid="d807d596-ad3c-402e-8058-225655326af2"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[$F{gst}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="651" y="0" width="80" height="20" uuid="dc5c6299-fa79-4e4b-8940-464950be67ca"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{tariff_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="731" y="0" width="109" height="20" uuid="f5b6c951-566a-47c0-9dd7-4577e0640818"/>
+                                <textFieldExpression><![CDATA[$F{tariff_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1773" y="0" width="217" height="20" uuid="dd4717b0-a5c5-4c79-a836-bbea866efb7c"/>
+                                <textFieldExpression><![CDATA[$F{service_type}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1990" y="0" width="138" height="20" uuid="c67a8bbd-2ce9-4d17-9fa8-afe9f63e5341"/>
+                                <textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="840" y="0" width="80" height="20" uuid="83100991-19e9-4884-b387-6c38f493abcc"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{rollup_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1055" y="0" width="123" height="20" uuid="fe579cf0-56e9-476c-927f-afd0db037afb"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{super_rollup_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1178" y="0" width="162" height="20" uuid="3e4965aa-3cfd-462a-a68a-7c74c3ade007"/>
+                                <textFieldExpression><![CDATA[$F{super_rollup_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1340" y="0" width="144" height="20" uuid="4a7c039e-94bd-4ec0-8440-771982004578"/>
+                                <textElement textAlignment="Center"/>
+                                <textFieldExpression><![CDATA[$F{super_super_rollup_code}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="920" y="0" width="135" height="20" uuid="94437ad9-1df2-4aed-b3de-5600ea2c1145"/>
+                                <textFieldExpression><![CDATA[$F{rollup_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="1484" y="0" width="194" height="20" uuid="ed9e7cfb-1a1f-4719-9d8e-c8857f3c0e46"/>
+                                <textFieldExpression><![CDATA[$F{super_super_rollup_description}]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="2671" y="0" width="136" height="20" uuid="b28c8f84-c288-4899-a90e-36331926caa7"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA[$F{sales_ex_gst}.setScale(2, RoundingMode.HALF_UP) + $F{gst}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+                        </textField>
+                        <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                                <reportElement x="481" y="0" width="170" height="20" uuid="e278341c-e5f9-493c-a6fa-1101606344fe"/>
+                                <textFieldExpression><![CDATA[$F{plan_name}]]></textFieldExpression>
+                        </textField>
+                </band>
+        </detail>
+        <pageFooter>
+                <band height="21">
+                        <textField>
+                                <reportElement x="2671" y="1" width="136" height="20" uuid="7b2375b8-305c-4ac2-b66b-26ea49440aa9"/>
+                                <textElement textAlignment="Right"/>
+                                <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+                        </textField>
+                </band>
+        </pageFooter>
+</jasperReport>

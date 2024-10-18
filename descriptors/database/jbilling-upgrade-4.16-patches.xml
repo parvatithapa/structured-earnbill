@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.16-patches.xml">
+
+	<changeSet context = "test" id = "JBMOV-11: Movius-Rate-Card" author = "Ashwinkumar Patra">
+		<createTable tableName = "rate_movius_call_rates">
+	            <column name = "id"           type = "java.sql.Types.INTEGER"/>
+	            <column name = "match_column" type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "comment"      type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "rate"         type = "java.sql.Types.NUMERIC(20, 10)"/>
+	            <column name = "price_term"   type = "java.sql.Types.VARCHAR(10)"/>
+		</createTable>
+		<createTable tableName = "rate_movius_sms_rates">
+	            <column name = "id"           type = "java.sql.Types.INTEGER"/>
+	            <column name = "match_column" type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "comment"      type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "rate"         type = "java.sql.Types.NUMERIC(20, 10)"/>
+	            <column name = "price_term"   type = "java.sql.Types.VARCHAR(10)"/>
+		</createTable>
+		<createTable tableName = "rate_movius_override_call_rates">
+	            <column name = "id"           type = "java.sql.Types.INTEGER"/>
+	            <column name = "match_column" type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "comment"      type = "java.sql.Types.VARCHAR(255)"/>
+	            <column name = "rate"         type = "java.sql.Types.NUMERIC(20, 10)"/>
+	            <column name = "price_term"   type = "java.sql.Types.VARCHAR(10)"/>
+		</createTable>
+        <insert tableName = "rate_card">
+            <column name = "id"         valueComputed = "COALESCE((SELECT MAX(id)+1 FROM rate_card),1)"/>
+            <column name = "name"       value         = "sms_rates"/>
+            <column name = "table_name" value         = "rate_movius_sms_rates"/>
+            <column name = "entity_id"  valueNumeric  = "1"/>
+            <column name = "global"     valueBoolean  = "true"/>
+        </insert>
+        <insert tableName = "rate_card">
+            <column name = "id"         valueComputed = "COALESCE((SELECT MAX(id)+1 FROM rate_card),1)"/>
+            <column name = "name"       value         = "call_rates"/>
+            <column name = "table_name" value         = "rate_movius_call_rates"/>
+            <column name = "entity_id"  valueNumeric  = "1"/>
+            <column name = "global"     valueBoolean  = "true"/>
+        </insert>
+        <insert tableName = "rate_card">
+            <column name = "id"         valueComputed  = "COALESCE((SELECT MAX(id)+1 FROM rate_card),1)"/>
+            <column name = "name"       value          = "override_call_rates"/>
+            <column name = "table_name" value          = "rate_movius_override_call_rates"/>
+            <column name = "entity_id"  valueNumeric   = "1"/>
+            <column name = "global"     valueBoolean   = "true"/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "1"/>
+            <column name = "match_column" value        = "+1"/>
+            <column name = "comment"      value        = "Canada / U.S.A"/>
+            <column name = "rate"         valueNumeric = "0.0100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "2"/>
+            <column name = "match_column" value        = "+1-403"/>
+            <column name = "comment"      value        = "Canada - alberta"/>
+            <column name = "rate"         valueNumeric = "0.0050000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "3"/>
+            <column name = "match_column" value        = "+1-204"/>
+            <column name = "comment"      value        = "Canada - manitoba"/>
+            <column name = "rate"         valueNumeric = "0.0050000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "4"/>
+            <column name = "match_column" value        = "+1-907"/>
+            <column name = "comment"      value        = "U.S.A - Alaska"/>
+            <column name = "rate"         valueNumeric = "0.0800000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "5"/>
+            <column name = "match_column" value        = "+93"/>
+            <column name = "comment"      value        = "AFGHANISTAN - Other"/>
+            <column name = "rate"         valueNumeric = "0.1650000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "6"/>
+            <column name = "match_column" value        = "+355-36023"/>
+            <column name = "comment"      value        = "ALBANIA - AMC Fixed"/>
+            <column name = "rate"         valueNumeric = "0.1384000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "7"/>
+            <column name = "match_column" value        = "+44-73781"/>
+            <column name = "comment"      value        = "UNITED KINGDOM - H3G Mobile"/>
+            <column name = "rate"         valueNumeric = "0.0079000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "8"/>
+            <column name = "match_column" value        = "+44"/>
+            <column name = "comment"      value        = "UNITED KINGDOM - Other"/>
+            <column name = "rate"         valueNumeric = "0.0100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueNumeric = "9"/>
+            <column name = "match_column" value        = "+44-843"/>
+            <column name = "comment"      value        = "UNITED KINGDOM - Special NTS 845"/>
+            <column name = "rate"         valueNumeric = "0.1200000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "1"/>
+            <column name = "match_column" value        = "+374"/>
+            <column name = "comment"      value        = "Armenia - Zone1"/>
+            <column name = "rate"         valueNumeric = "0.1100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "2"/>
+            <column name = "match_column" value        = "+43"/>
+            <column name = "comment"      value        = "Austria - Zone1"/>
+            <column name = "rate"         valueNumeric = "0.1100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "3"/>
+            <column name = "match_column" value        = "+91"/>
+            <column name = "comment"      value        = "India - Zone6"/>
+            <column name = "rate"         valueNumeric = "0.0800000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "4"/>
+            <column name = "match_column" value        = "+44"/>
+            <column name = "comment"      value        = "United Kingdom of Great Britain and Northern Ireland - Zone1"/>
+            <column name = "rate"         valueNumeric = "0.1100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "5"/>
+            <column name = "match_column" value        = "+65"/>
+            <column name = "comment"      value        = "Singapore - Zone6"/>
+            <column name = "rate"         valueNumeric = "0.0800000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "6"/>
+            <column name = "match_column" value        = "+213"/>
+            <column name = "comment"      value        = "Algeria - Zone3"/>
+            <column name = "rate"         valueNumeric = "0.0900000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "7"/>
+            <column name = "match_column" value        = "+47"/>
+            <column name = "comment"      value        = "Norway - Zone1"/>
+            <column name = "rate"         valueNumeric = "0.1100000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_sms_rates">
+            <column name = "id"           valueNumeric = "8"/>
+            <column name = "match_column" value        = "+0"/>
+            <column name = "comment"      value        = "Rest of World - Zone8"/>
+            <column name = "rate"         valueNumeric = "0.0600000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+        <insert tableName = "rate_movius_override_call_rates">
+            <column name = "id"           valueNumeric = "1"/>
+            <column name = "match_column" value        = "+1"/>
+            <column name = "comment"      value        ="Canada / U.S.A"/>
+            <column name = "rate"         valueNumeric ="0.0200000000"/>
+            <column name = "price_term"   value        =""/>
+        </insert>
+        <insert tableName = "rate_movius_override_call_rates">
+            <column name = "id"           valueNumeric = "2"/>
+            <column name = "match_column" value        = "+1-403"/>
+            <column name = "comment"      value        = "Canada - alberta"/>
+            <column name = "rate"         valueNumeric = "0.0060000000"/>
+            <column name = "price_term"   value        = ""/>
+        </insert>
+	</changeSet>
+
+    <changeSet  context = "base" id = "JBMOV-146 Org Count Position Table " author = "Krunal Bhavsar" >
+        <comment>Tables used to keep Org count info</comment>
+        <createTable tableName = "org_count_position">
+            <column name = "id" type = "java.sql.Types.INTEGER">
+                 <constraints nullable = "false" primaryKey = "true" primaryKeyName = "org_count_position_pkey"/>
+            </column>
+            <column name = "org_id"             type = "java.sql.Types.VARCHAR(300)">
+                 <constraints nullable = "false"/>
+            </column>
+            <column name = "billable_org_id"    type = "java.sql.Types.VARCHAR(300)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "last_updated_date"  type = "java.sql.Types.TIMESTAMP"/>
+            <column name = "count"              type = "java.sql.Types.NUMERIC(22,10)" />
+            <column name = "old_count"          type = "java.sql.Types.NUMERIC(22,10)" />
+            <column name = "order_id"           type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "item_id"            type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "entity_id"          type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "deleted"            type = "java.sql.Types.INTEGER" />
+            <column name = "optlock"            type = "java.sql.Types.INTEGER" />
+        </createTable>
+        <createIndex indexName = "org_count_position_idx_org_id_billable_org_id"
+                     tableName = "org_count_position"
+                     unique    = "false" >
+            <column  name      = "org_id"/>
+            <column  name      = "billable_org_id"/>
+        </createIndex>
+        <createIndex indexName = "org_count_position_idx_org_id_order_id"
+                     tableName = "org_count_position"
+                     unique    = "false" >
+            <column  name      = "org_id"/>
+            <column  name      = "order_id"/>
+        </createIndex>
+	</changeSet>
+
+    <changeSet  context = "test" id = "JBMOV-191 Usage amount in csv not matching with invoice" author = "Krunal Bhavsar" >
+        <insert tableName = "rate_movius_call_rates">
+            <column name = "id"           valueComputed = "COALESCE((SELECT MAX(id)+1 FROM rate_movius_call_rates),1)"/>
+            <column name = "match_column" value         = "+93-70"/>
+            <column name = "comment"      value         = "AFGHANISTAN - AWCC Mobile."/>
+            <column name = "rate"         valueNumeric  = "0.1635"/>
+            <column name = "price_term"   value         = ""/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

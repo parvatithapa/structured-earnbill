@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.21.xml">
+
+    <changeSet context = "base" id = "JBFC-860 JMR CdrType count" author = "Ashwinkumar Patra">
+        <createTable tableName ="mediation_process_cdr_count">
+            <column name = "id"  type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false" primaryKey = "true" primaryKeyName = "mediation_process_cdr_count_pkey"/>
+            </column>
+            <column name = "process_id"    type = "java.sql.Types.BINARY" />
+            <column name = "call_type"     type = "java.sql.Types.VARCHAR(255)"/>
+            <column name = "count"         type = "java.sql.Types.INTEGER"/>
+            <column name = "record_status" type = "java.sql.Types.VARCHAR(255)"/>
+        </createTable>
+
+        <insert tableName = "jbilling_seqs">
+            <column name = "name"    value       = "mediation_process_cdr_count"/>
+            <column name = "next_id" valueNumeric= "1"/>
+        </insert>
+
+        <insert tableName="jbilling_table">
+            <column name = "id"   valueComputed = "(COALESCE((SELECT MAX(T.id)+1 FROM jbilling_table T),1))"/>
+            <column name = "name" value         = "mediation_process_cdr_count"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet context="base" id="JB-2278 ScheduledJobNotificaitonTask" author="Aadil Nazir">
+        <comment>New ScheduledJobNotificationTask for sending notification related to Jobs/Tasks</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.scheduledTask.task.ScheduledJobNotificationTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Scheduled Job Notification Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plug-in provides notifications that needs to be sent for jobs events"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-2278 Add new Notitication Category" author="Aadil Nazir" >
+        <insert tableName="notification_category">
+            <column name="id" valueNumeric="6"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="104"/>
+            <column name="foreign_id" valueNumeric="6"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Scheduled Notifications"/>
+        </insert>
+    </changeSet>
+    <changeSet context="base" id="JB-2278 Notification for Scheduled Task Started" author="Aadil Nazir">
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(nmt.id)+1 FROM notification_message_type nmt),1)" />
+            <column name="category_id" valueNumeric="6" />
+            <column name="optlock" valueNumeric="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52" />
+            <column name="foreign_id" valueComputed="COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Scheduled Task Started" />
+        </insert>
+    </changeSet>
+    <changeSet context="base" id="JB-2278 Notification for Scheduled Task Started in all entities" author="Aadil Nazir">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="t">SELECT (COUNT(*) > 0) AS address FROM entity</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity WHERE id NOT IN (SELECT entity_id FROM notification_message WHERE type_id = (COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)) AND entity_id IN (SELECT entity_id FROM notification_message WHERE type_id = 36)) LOOP
+                            INSERT INTO notification_message (id,type_id,entity_id,language_id,use_flag,optlock) VALUES (COALESCE((SELECT MAX(nm.id)+1 FROM notification_message nm),1),(COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)),t,1,1,0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),1,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Scheduled Task Has Started',0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),2,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Please note that $plugin_name process event for entity id $company_id on $url has started as of $start_time.',0);
+                            INSERT INTO notification_medium_type(notification_id, medium_type) VALUES (COALESCE((SELECT MAX(nm.id) FROM notification_message nm),1), 'EMAIL');
+
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JB-2278 Notification for Scheduled Task Completed" author="Aadil Nazir">
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(nmt.id)+1 FROM notification_message_type nmt),1)" />
+            <column name="category_id" valueNumeric="6" />
+            <column name="optlock" valueNumeric="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52" />
+            <column name="foreign_id" valueComputed="COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Scheduled Task Finished" />
+        </insert>
+    </changeSet>
+    <changeSet context="base" id="JB-2278 Notification for Scheduled Task Finished in all entities" author="Aadil Nazir">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="t">SELECT (COUNT(*) > 0) AS address FROM entity</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity WHERE id NOT IN (SELECT entity_id FROM notification_message WHERE type_id = (COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)) AND entity_id IN (SELECT entity_id FROM notification_message WHERE type_id = 36)) LOOP
+                            INSERT INTO notification_message (id,type_id,entity_id,language_id,use_flag,optlock) VALUES (COALESCE((SELECT MAX(nm.id)+1 FROM notification_message nm),1),(COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)),t,1,1,0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),1,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Scheduled Task Has Been Completed',0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),2,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Please note that $plugin_name process event for entity id $company_id on $url has been completed as of $end_time.',0);
+                            INSERT INTO notification_medium_type(notification_id, medium_type) VALUES (COALESCE((SELECT MAX(nm.id) FROM notification_message nm),1), 'EMAIL');
+
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JB-2278 Update jbilling_seq values for notificaiton related tables" author="Aadil Nazir">
+
+        <update tableName="jbilling_seqs">
+            <column name = "next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM notification_message),1)"/>
+            <where> name = 'notification_message' </where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name = "next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM notification_message_section),1)"/>
+            <where> name = 'notification_message_section' </where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name = "next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM notification_message_line),1)"/>
+            <where> name = 'notification_message_line' </where>
+        </update>
+    </changeSet>
+    <changeSet context = "base" id = "JBDIST-1328 - Add new Column in entity table" author = "Dipak Kardel">
+        <validCheckSum>7:0ed40f74867c9aa896b127ed565fe539</validCheckSum>
+        <comment>Adding new failed email notification column</comment>
+        <addColumn tableName = "entity">
+            <column name = "notification_error_email" type = "varchar(200)"/>
+        </addColumn>
+        <sql>
+            <![CDATA[
+                  UPDATE entity  SET notification_error_email = t1.email
+                  FROM ( SELECT c.email, cm.foreign_id AS etid
+                         FROM contact c
+                         INNER JOIN contact_map cm ON c.id = cm.contact_id
+                         INNER JOIN entity e ON e.id = cm.foreign_id ) AS t1
+                  WHERE t1.etid = id;
+            ]]>
+        </sql>
+    </changeSet>
+    <changeSet context = "base" id = "JBDIST-1332 - Scheduled Process Run History" author = "Pranay G. Raherkar">
+
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "(SELECT MAX(id)+1 FROM report)" />
+            <column name  = "type_id"   valueNumeric  = "(SELECT id FROM report_type rt WHERE rt.name = 'administrative')" />
+            <column name  = "name"      value         = "scheduled_process_run_history" />
+            <column name  = "file_name" value         = "scheduled_process_run_history_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+          INSERT INTO entity_report_map(report_id, entity_id)
+               SELECT (SELECT r.id
+                       FROM report r
+                       WHERE r.name = 'scheduled_process_run_history'),
+                       id
+               FROM entity
+               WHERE deleted = 0
+        </sql>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'scheduled_process_run_history')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'scheduled_process_run_history')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <createTable tableName = "scheduled_process_run_history">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable = "false" primaryKey = "true" primaryKeyName = "scheduler_process_run_history_pkey"/>
+            </column>
+            <column name = "entity_id"     type = "java.sql.Types.INTEGER"/>
+            <column name = "name"          type = "java.sql.Types.VARCHAR(200)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "start_date"    type = "java.sql.Types.TIMESTAMP"/>
+            <column name = "end_date"      type = "java.sql.Types.TIMESTAMP"/>
+            <column name = "status"        type = "java.sql.Types.VARCHAR(10)"/>
+            <column name = "error_message" type = "java.sql.Types.VARCHAR(500)"/>
+        </createTable>
+
+    </changeSet>
+
+     <changeSet context = "base" id = "JB-3151 add boolean parameter to DCR to check for SubReport" author = "Harshad Pathan">
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'data_consistency_checks')"/>
+            <column name = "dtype"     value         = "boolean"/>
+            <column name = "name"      value         = "order_active_until_less_than_orderNBD_and_not_finished"/>
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'data_consistency_checks')"/>
+            <column name = "dtype"     value         = "boolean"/>
+            <column name = "name"      value         = "customer_NID_less_than_today"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBDIST-1363 Development - CR-042 - Account Receivable Report “As of” Date" author="Pablo Galera">
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1) + 1 from report_parameter rp)" />
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'accounts_receivable')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="as_of" />
+        </insert>
+
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1) + 1 from report_parameter rp)" />
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'accounts_receivable_ageing_summary')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="as_of" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBDIST-1381 Customer Packages Report timeout issue due to End Date performance issue" author="Pablo Galera">
+        <addColumn tableName="purchase_order">
+            <column name="finished_date" type="DATE"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context ="base" id ="JBDIST-1381 Indexes for columns foreign_id and table_id in table event_log" author ="Pablo Galera">
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_foreign_id">
+            <column name = "foreign_id"/>
+        </createIndex>
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_table_id">
+            <column name = "table_id"/>
+        </createIndex>        
+    </changeSet>
+
+    <changeSet context="base" id="JBDIST-1393 Development - CR-054 - Ageing Summery Details Report “As of” Date" author="Pablo Galera">
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1) + 1 from report_parameter rp)" />
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'ageing_balance_detail')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="as_of" />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBDIST-1400 Implementation of DistributelPriceUpdateTask." author = "Krunal Bhavsar">
+        <comment>DistributelPriceUpdateTask for updating customer subscription order price.</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.distributel.DistributelPriceUpdateTask"/>
+                <column name = "min_parameters" valueNumeric  = "1"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Distributel Price Update Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin is use for updating customer subscription order line price and order changes on basis of data table."/>
+        </insert>
+    </changeSet>
+
+    <include file = "foreign-keys-indexes-20180905.xml" relativeToChangelogFile = "true"/>
+
+</databaseChangeLog>

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="tax_report" language="groovy" pageWidth="600" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="bdc81827-e1bf-44cf-8ec4-0dbdb0f881ad">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="entityNames" class="java.lang.String"/>
+  <parameter name="format" class="java.lang.String"/>
+  
+	<queryString>
+		<![CDATA[
+          SELECT mfv.string_value AS jurisdiction,  
+       CASE WHEN il.description LIKE 'TVH%' THEN OVERLAY(il.description placing 'HST' from 1 for 3)
+            WHEN il.description LIKE 'TPS%' THEN  OVERLAY(il.description placing 'GST' from 1 for 3)
+            WHEN il.description LIKE 'TVP%' THEN  OVERLAY(il.description placing 'PST' from 1 for 3)
+            WHEN il.description LIKE 'TVD%' THEN  OVERLAY(il.description placing 'RST' from 1 for 3)
+            WHEN il.description LIKE 'TVQ%' THEN  OVERLAY(il.description placing 'QST' from 1 for 3)  
+            ELSE il.description
+             END AS tax_type, 
+                 sum(il.amount) AS charges, 
+                 cu.code AS currency_code
+            FROM invoice_line il
+      INNER JOIN invoice i ON i.id = il.invoice_id
+             AND i.is_review = 0
+             AND date(i.create_datetime) >= $P{start_date}
+             AND date(i.create_datetime) <= $P{end_date}
+      INNER JOIN base_user bu ON bu.id = i.user_id
+      INNER JOIN entity e ON e.id = bu.entity_id
+      INNER JOIN invoice_meta_field_map imfm ON imfm.invoice_id = i.id
+      INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+      INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+             AND mfn.name = 'Tax Province'
+             AND mfn.entity_id = e.id
+      INNER JOIN currency cu ON cu.id = i.currency_id
+           WHERE (e.id=$P{entity_id} OR $X{IN,e.id,child_entities})
+             AND il.type_id = 2 -- Tax line type
+             AND il.deleted = 0
+        GROUP BY mfv.string_value, tax_type, cu.code
+        ORDER BY mfv.string_value ASC;
+    ]]>
+	</queryString>
+	
+  <field name="jurisdiction" class="java.lang.String"/>
+  <field name="tax_type" class="java.lang.String"/>
+  <field name="charges" class="java.math.BigDecimal"/>
+  <field name="currency_code" class="java.lang.String"/>
+
+  <variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="JurisdictionGroup" calculation="Sum">
+    <variableExpression><![CDATA[$F{charges}]]></variableExpression>
+    <initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+  </variable>
+  <variable name="total" class="java.math.BigDecimal" calculation="Sum">
+    <variableExpression><![CDATA[$F{charges}]]></variableExpression>
+    <initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+  </variable>
+  
+  <group name="JurisdictionGroup">
+    <groupExpression><![CDATA[$F{jurisdiction}]]></groupExpression>
+    <groupFooter>
+      <band height="48">
+        <printWhenExpression><![CDATA[!("CSV".equals($P{format}))]]></printWhenExpression>
+        <textField isBlankWhenNull="true">
+          <reportElement x="110" y="8" width="190" height="20" uuid="593279c2-1b4a-4614-a2b0-994157befb8a"/>
+          <textElement textAlignment="Left" verticalAlignment="Middle">
+            <font size="11" isBold="true"/>
+          </textElement>
+          <textFieldExpression><![CDATA[$F{jurisdiction} != null ? $F{jurisdiction} + " Total:" : " Total:"]]></textFieldExpression>
+        </textField>
+        <textField isBlankWhenNull="true">
+          <reportElement x="300" y="8" width="100" height="20"/>
+          <textElement textAlignment="Right" verticalAlignment="Middle">
+            <font size="11" isBold="true"/>
+          </textElement>
+          <textFieldExpression><![CDATA[$F{currency_code}]]></textFieldExpression>
+        </textField>
+        <textField pattern="¤ #,##0.00" isBlankWhenNull="true">
+          <reportElement x="400" y="8" width="140" height="20" uuid="ee13ecb7-63a4-45c3-a4cb-e340080fb6c5"/>
+          <textElement textAlignment="Right" verticalAlignment="Middle">
+            <font size="11" isBold="true"/>
+          </textElement>
+          <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{sub_total} != null ? $V{sub_total} : "0.00")]]></textFieldExpression>
+        </textField>
+        <line>
+          <reportElement x="300" y="5" width="240" height="1" uuid="8337279a-43ac-424d-8b98-698ced9b39cc"/>
+        </line>
+      </band>
+    </groupFooter>
+  </group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="132" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="204" height="26" uuid="0e36a47d-ac70-4866-9bc0-44c1d39b12cc"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales Tax Report]]></text>
+			</staticText>
+      <staticText>
+        <reportElement x="350" y="0" width="100" height="20" uuid="b4633888-885d-4143-aada-b2b62ca42404"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font size="12"/>
+        </textElement>
+        <text><![CDATA[Report Date:]]></text>
+      </staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="455" y="0" width="120" height="20" uuid="02423db8-e0c7-4ca5-a671-ab84933b15a2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="350" y="25" width="100" height="20" uuid="b4633888-885d-4143-aada-b2b62ca42404"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Report Scope:]]></text>
+			</staticText>
+      <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+        <reportElement x="455" y="25" width="120" height="20" uuid="c47dfae0-0298-443b-8b25-ecbe2e12c107"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font size="11"/>
+        </textElement>
+        <textFieldExpression><![CDATA[!$P{entityNames}.isEmpty() ? $P{entityNames} : new com.sapienter.jbilling.server.user.db.CompanyDAS().find($P{entity_id}).getDescription()]]></textFieldExpression>
+      </textField>
+			<staticText>
+				<reportElement x="350" y="50" width="100" height="20" uuid="6b386473-3df3-4052-b48f-dd5f258e368b"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[From:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="455" y="50" width="120" height="20" uuid="664d3410-ed00-4bb8-b171-3ab87df7f60e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="350" y="75" width="100" height="20" uuid="f2f849c3-30ec-4524-80a6-2e9eec2e8cf5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[To:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="455" y="75" width="120" height="20" uuid="cecaad2c-5979-4d29-acbb-6d3cb540e241"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="31" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="110" height="20" uuid="aa247a3d-a8ab-4da8-83c3-4b5b43e87a09"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Jurisdiction]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="110" y="0" width="190" height="20" uuid="be11e86a-b577-479d-9ab0-e83c5598a8ae"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tax Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="0" width="100" height="20" uuid="929653e2-0705-4872-a439-61807e40bce1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Currency]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="400" y="0" width="140" height="20" uuid="929653e2-0705-4872-a439-61807e40bce1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Charged]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="22" width="540" height="1" uuid="47fc24e7-d2ce-4a50-b44a-4554c689eb3d"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+    <band height="21" splitType="Stretch">
+      <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+        <reportElement x="0" y="3" width="110" height="15" uuid="7c879c67-5460-484d-bd5b-a8f2e0b54aa0"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font size="11"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{jurisdiction}]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+        <reportElement x="110" y="3" width="190" height="15" uuid="5a18e3d9-7645-40b3-834e-ec92c475f997"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font size="11"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{tax_type}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="300" y="3" width="100" height="15"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font size="11"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{currency_code}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="400" y="3" width="140" height="15" uuid="932c4487-4824-4b2f-ab27-08b32f5a0f49"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font size="11"/>
+        </textElement>
+        <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{charges})]]></textFieldExpression>
+      </textField>
+    </band>
+	</detail>
+	<summary>
+    <band height="30" splitType="Stretch">
+      <printWhenExpression><![CDATA[!("CSV".equals($P{format}))]]></printWhenExpression>
+      <textField isBlankWhenNull="true">
+        <reportElement x="0" y="2" width="110" height="20" uuid="67c867e9-ae93-449c-b2ab-bede5f2b288e"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font size="11" isBold="true"/>
+        </textElement>
+        <textFieldExpression><![CDATA["Total:"]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="300" y="2" width="100" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font size="11" isBold="true"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{currency_code}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="400" y="2" width="140" height="20" uuid="798ab78e-15b5-4c99-9962-d5b5a0e33611"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font size="11" isBold="true"/>
+        </textElement>
+        <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{total} != null ? $V{total}:"0.00")]]></textFieldExpression>
+      </textField>
+    </band>
+	</summary>
+</jasperReport>

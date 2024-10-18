@@ -1,0 +1,1654 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+                   logicalFilePath="descriptors/database/jbilling-upgrade-4.36.xml">
+
+    <!-- EarnBill SaaS - Free Trial feature on plan  -->
+
+    <changeSet context="base" id="EARNBILL-77" author="angsabay.beybit@sarathisoftech.com">
+        <addColumn tableName="plan">
+            <column name="free_trial_period_value" type="java.sql.Types.INTEGER" />
+            <column name="free_trial_period_unit" type="java.sql.Types.VARCHAR(50)" />
+        </addColumn>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.FreeTrialPlanPeriodHandlerTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Free Trial Order Update Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin calculates the end date and amount of free trial discount order. It also populates the plan subscription order id on the discount order using an order level meta-field."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "EARNBILL-49" author = "Krunal Bhavsar">
+        <comment>Added IEInvoiceProvider Category</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.einvoice.plugin.IEInvoiceProvider" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.einvoice.plugin.IEInvoiceProvider')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.einvoice.plugin.GstZenEInvoiceProviderPlugin" />
+            <column name = "min_parameters" valueNumeric  = "2" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Gstzen esuvidha provider for eInvoice generation on gst portal."/>
+        </insert>
+
+        <sql>
+            CREATE SEQUENCE e_invoice_log_seq;
+        </sql>
+
+        <createTable tableName = "e_invoice_log">
+            <column name = "id" type = "java.sql.Types.BIGINT" defaultValueComputed = "nextval('e_invoice_log_seq')">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "e_invoice_log_pkey" />
+            </column>
+            <column name = "invoice_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "invoice_payload" type = "java.sql.Types.CLOB">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "invoice_response" type = "java.sql.Types.CLOB">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "status" type = "VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "irn" type = "VARCHAR(300)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "create_datetime" type = "java.sql.Types.TIMESTAMP">
+                <constraints nullable = "false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName = "e_invoice_log"
+                     indexName = "e_invoice_log_invoice_idx"
+                     unique    = "true">
+            <column name = "invoice_id" />
+        </createIndex>
+
+        <createIndex tableName = "e_invoice_log"
+                     indexName = "e_invoice_log_irn_idx">
+            <column name = "irn" />
+        </createIndex>
+    </changeSet>
+    <!-- EarnBill Saas - Configuration Menu Permission Role Based-->
+
+    <changeSet context="base" id = "Add Permissions for config menu" author = "PThapa">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2000"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2000"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Account Type"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Account Type') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2001"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2001"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Agent Commision Process"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Agent Commision Process') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2002"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2002"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="API User Detail"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'API User Detail') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2003"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2003"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Billing Process"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Billing Process') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2004"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2004"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Blacklist"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Blacklist') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2005"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2005"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Collections"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Collections') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2006"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2006"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Company"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Company') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2007"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2007"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Currencies"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Currencies') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2008"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2008"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Data Tables"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Data Tables') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2009"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2009"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Email"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Email') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2010"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2010"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Entity Logos"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Entity Logos') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2011"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2011"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Enumerations"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Enumerations') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2012"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2012"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Free Usage Pools"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Free Usage Pools') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2013"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2013"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invoice Display"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Invoice Display') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2014"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2014"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invoice Templates"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Invoice Templates') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2015"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2015"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Job Statistics"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Job Statistics') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2016"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2016"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Languages"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Languages') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2017"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2017"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Mediation"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Mediation') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2018"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2018"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Meta Fields"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Meta Fields') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2019"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2019"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Meta Field groups"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Meta Field groups') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2020"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2020"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Notification"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Notification') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2021"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2021"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Order Change Statuses"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Order Change Statuses') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2022"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2022"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Order Change Types"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Order Change Types') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2023"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2023"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Order Periods"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Order Periods') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2024"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2024"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Order Statuses"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Order Statuses') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2025"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2025"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Method"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Payment Method') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2026"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2026"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Plug-ins"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Plug-ins') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2027"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2027"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Roles"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Roles') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2028"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2028"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Rate Cards"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Rate Cards') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2029"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2029"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Rating Unit"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Rating Unit') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2030"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2030"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Route Rate Card"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Route Rate Card') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2031"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2031"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Route Test"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Route Test') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2032"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2032"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Users"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Users') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2033"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2033"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Usage Rating Schemes"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Usage Rating Schemes') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+    </changeSet>
+    <!-- End BillingHub - Stripe payment gateway, integration  -->
+    <changeSet context = "test" id = "Change Invoice Logo" author = "Akshay Gurav">
+        <update tableName = "invoice_template_version">
+            <column name = "template_json" value = '{"sections":[{"pageBreakBefore":false,"header":{"elements":[{"roundCornerRadius":10,"thickness":1,"font":{"face":"SansSerif","size":10,"bold":false,"italic":false,"color":"#000000"},"padding":10,"expr":"PO Box 8482  Ottawa, Ontario, K1G 3H9  Canada","borderColor":"#000000","bgColor":"#FFFFFF","transparent":false,"name":"Invoice","left":10,"top":70,"width":500,"height":60,"kind":"TextBox"},{"imageUrl":"data:image/jpeg;base64,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","name":"Logo","left":10,"top":10,"width":140,"height":80,"kind":"Image"},{"roundCornerRadius":10,"thickness":0,"font":{"face":"SansSerif","size":10,"bold":false,"italic":false,"color":"#000000"},"padding":10,"expr":"1 (866) 920-4348  jBilling.com","borderColor":"#FFFFFF","bgColor":"#A0A0A0","transparent":true,"name":"Address","left":10,"top":90,"width":500,"height":50,"kind":"TextBox"},{"roundCornerRadius":10,"thickness":1,"font":{"face":"SansSerif","size":16,"bold":false,"italic":false,"color":"#000000"},"padding":10,"expr":"","borderColor":"#FFFFFF","bgColor":"#A0A0A0","transparent":true,"name":"Address1","left":10,"top":180,"width":500,"height":10,"kind":"TextBox"}]},"footer":{"elements":[{"roundCornerRadius":5,"thickness":1,"font":{"face":"SansSerif","size":10,"bold":false,"italic":false,"color":"#000000"},"padding":10,"expr":"Payment Terms: Nullam quis risus eget urna mollis ornare vel eu leo. Maecenas sed diam eget risus varius blandit sit amet non magna.   Nulla vitae elit libero, a pharetra augue.","borderColor":"#808080","bgColor":"#A0A0A0","transparent":true,"name":"New Text Box","left":10,"top":300,"width":500,"height":50,"kind":"TextBox"}]},"content":{"minimalTotal":-1.7976931348623157E308,"font":{"face":"SansSerif","size":14,"bold":false,"italic":false,"color":"#404040"},"headerFont":{"face":"Serif","size":16,"bold":true,"italic":false,"color":"#FFFFFF"},"headerBgColor":"#050580","groupHeaderFont":{"face":"Monospaced","size":14,"bold":true,"italic":false,"color":"#000000"},"groupBgColor":"#000000","recordSeparation":"Line","recordSeparationThickness":2,"recordSeparationColor":"#030340","columns":[],"name":"Main table","left":0,"top":0,"width":0,"height":0,"kind":"InvoiceLines"},"columns":1,"name":"main Section","left":0,"top":0,"width":0,"height":0}],"name":"New Invoice Design","format":"A4","marginLeft":30,"marginRight":30,"marginTop":30,"marginBottom":30,"pageHeader":{"elements":[]},"pageFooter":{"elements":[]},"landscape":false}' />
+            <where>template_id in (select id from invoice_template it where it.entity_id is not null)</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="EB-195 Adding a column for domain name" author="Raushan Kumar Raj">
+        <addColumn tableName="entity">
+            <column name="domain_name" type="java.sql.Types.VARCHAR(255)" defaultValue="NULL">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addUniqueConstraint columnNames="domain_name" tableName="entity" constraintName="uq_domain_name_entity"/>
+    </changeSet>
+    <changeSet context="base" id = "EB-204 - Add Permissions for mobile service API" author = "Akshay Gurav">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="2100"/>
+            <column name="type_id" valueNumeric="12"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="true"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2100"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Mobile Service API Access"/>
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+            SELECT r.id AS role_id,(SELECT foreign_id
+            FROM international_description
+            WHERE table_id IN (SELECT id
+            FROM jbilling_table
+            WHERE name = 'permission')
+            AND language_id = 1
+            AND content = 'Mobile Service API Access') AS permission_id
+            FROM role r
+            WHERE r.role_type_id=-1
+            GROUP BY r.id;
+        </sql>
+    </changeSet>
+    <changeSet context = "base" id = "EARNBILL-65" author = "Krunal Bhavsar">
+        <comment>Added TwoFactor Authentication Category</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.twofactorauth.providers.ITwoFactorAuthenticationProvider" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.twofactorauth.providers.ITwoFactorAuthenticationProvider')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.twofactorauth.providers.TwoFactorInAuthenticationProvider" />
+            <column name = "min_parameters" valueNumeric  = "2" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "2factor.in 2FA provider for sms(otp) based authentication."/>
+        </insert>
+
+        <sql>
+            CREATE SEQUENCE user_2fa_log_seq;
+        </sql>
+
+        <createTable tableName = "user_2fa_log">
+            <column name = "id" type = "java.sql.Types.BIGINT" defaultValueComputed = "nextval('user_2fa_log_seq')">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "user_2fa_log_pkey" />
+            </column>
+            <column name = "session_id" type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "two_af_id" type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "entity_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "otp" type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "timestamp" type = "TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable = "false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint columnNames = "session_id, user_id" constraintName = "user_2fa_log_session_id_user_id_un" tableName = "user_2fa_log"/>
+    </changeSet>
+
+    <changeSet author="Raushan Kumar Raj" context="test" id="EARNBILL-312-test-data">
+        <sql>
+            CREATE TABLE route_1_sac_code (
+            id integer NOT NULL,
+            description character varying(255),
+            sac_code character varying(255)
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-371 :Add changeset to create metafield for two factor verification" author="Parvati Thapa">
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT COALESCE(Max(id),0)+1 FROM meta_field_name)"/>
+            <column name="name" value="Registered Mobile Number"/>
+            <column name="entity_type" value="CUSTOMER"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="field_usage" value="PHONE_NUMBER" />
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueComputed="(SELECT Min(e.id) FROM entity e WHERE e.deleted = 0)"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+        </insert>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT COALESCE(Max(id),0)+1 FROM meta_field_name)"/>
+            <column name="name" value="Registered Mobile Number"/>
+            <column name="entity_type" value="USER"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="field_usage" value="PHONE_NUMBER" />
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueComputed="(SELECT Min(e.id) FROM entity e WHERE e.deleted = 0)"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="COALESCE((SELECT Max(p.id)+1 FROM meta_field_name p),1)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#EARNBILL-270 Notify Password Change" author="Raushan Kumar Raj" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM international_description WHERE table_id =
+                (SELECT id FROM jbilling_table WHERE name = 'notification_message_type') AND foreign_id =
+                (SELECT foreign_id FROM international_description WHERE content ='Notify Password Change');
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="(SELECT MAX(id)+1 FROM notification_message_type)"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'notification_message_type')"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM notification_message_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Notify Password Change"/>
+        </insert>
+
+        <sql>
+            INSERT INTO notification_message (id, entity_id, type_id, language_id, use_flag, optlock)
+            SELECT COALESCE((SELECT MAX(id) FROM notification_message), 0) + ROW_NUMBER() OVER (ORDER BY ent.id) AS id,
+            ent.id, (SELECT MAX(id) FROM notification_message_type), 1, 1, 0
+            FROM entity ent;
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nm.id) FROM notification_message nm)"/>
+            <where>name = 'notification_message'</where>
+        </update>
+
+        <sql>
+            INSERT INTO notification_medium_type (notification_id, medium_type)
+            SELECT nm.id AS notification_id,
+            mt.type AS medium_type
+            FROM notification_message nm
+            CROSS JOIN (SELECT 'EMAIL' AS type UNION SELECT 'SMS' UNION SELECT 'PDF') mt
+            WHERE nm.type_id = 38;
+        </sql>
+
+        <sql>
+            INSERT INTO notification_message_section (id, message_id, section, optlock)
+            SELECT
+            (SELECT MAX(id) FROM notification_message_section) + ROW_NUMBER() OVER(ORDER BY m.id) AS id,
+            m.id,
+            s.section,
+            0 AS optlock
+            FROM
+            notification_message m
+            CROSS JOIN
+            (SELECT 1 AS section UNION SELECT 2 AS section) s
+            WHERE
+            m.type_id = (SELECT foreign_id from international_description where content ='Notify Password Change');
+        </sql>
+
+        <sql>
+            INSERT INTO notification_message_line (id, message_section_id, content, optlock)
+            SELECT
+            (SELECT MAX(id) FROM notification_message_line) + ROW_NUMBER() OVER(ORDER BY ms.id) AS id,
+            ms.id,
+            CASE
+            WHEN ROW_NUMBER() OVER(PARTITION BY message_id ORDER BY ms.id) % 2 = 1 THEN '[EarnBill] Your password was changed'
+            ELSE
+            'The password for your EarnBill account $first_name $last_name was successfully changed.'
+            || CHR(10) || CHR(10) ||
+            'If you did not make this request, please contact support immediately.'
+            || CHR(10) || CHR(10) ||
+            'Thanks,' || CHR(10) ||
+            'The EarnBill Team'
+            END AS content,
+            0 AS optlock
+            FROM
+            notification_message_section ms
+            WHERE
+            message_id IN (SELECT id FROM notification_message WHERE type_id = (SELECT foreign_id FROM international_description WHERE content ='Notify Password Change'));
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nml.id)+1 FROM notification_message_section nml)"/>
+            <where>name = 'notification_message_section'</where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nml.id)+1 FROM notification_message_line nml)"/>
+            <where>name = 'notification_message_line'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-341 : Added Payment Gateway Webhook Handler" author="Ashwinkumar Patra">
+
+        <insert tableName="pluggable_task_type_category">
+            <column name="id" valueNumeric="(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)"/>
+            <column name="interface_name" value="com.sapienter.jbilling.server.payment.IPaymentWebHookHandler"/>
+        </insert>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id"
+                    valueComputed="(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.payment.IPaymentWebHookHandler')"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.PhonePeWebHookHandler"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="PhonePe Payment Gateway webhook event handler."/>
+        </insert>
+
+        <insert tableName="payment_result">
+            <column name="id" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="41"/>
+            <column name="foreign_id" valueNumeric="6"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Pending"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-342: Added Payment URL " author="Ashwinkumar Patra">
+        <sql>
+            CREATE SEQUENCE payment_url_log_seq;
+        </sql>
+
+        <createTable tableName="payment_url_log">
+            <column name="id" type="java.sql.Types.BIGINT" defaultValueComputed="nextval('payment_url_log_seq')">
+                <constraints nullable="false"
+                             primaryKey="true"
+                             primaryKeyName="payment_url_log_pkey"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="invoice_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+            <column name="mobile_request_payload" type="java.sql.Types.CLOB">
+                <constraints nullable="true"/>
+            </column>
+            <column name="payment_url_payload" type="java.sql.Types.CLOB">
+                <constraints nullable="true"/>
+            </column>
+            <column name="payment_url_response" type="java.sql.Types.CLOB">
+                <constraints nullable="true"/>
+            </column>
+            <column name="payment_status_response" type="java.sql.Types.CLOB">
+                <constraints nullable="true"/>
+            </column>
+            <column name="webhook_response" type="java.sql.Types.CLOB">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_url" type="VARCHAR(1000)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="payment_provider" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="create_datetime" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_amount" type="NUMERIC(22,10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="gateway_id" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="payment_url_log"
+                     indexName="payment_url_log_fk_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+
+        <createIndex tableName="payment_url_log"
+                     indexName="payment_url_log_payment_url_idx">
+            <column name="payment_url"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-342: Added Payment URL Generation Plugin " author="Ashwinkumar Patra">
+
+        <comment>Event listener to create payment urls in generated invoices</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name"
+                    value="com.sapienter.jbilling.server.payment.tasks.GeneratePaymentURLTask"/>
+            <column name="min_parameters" valueNumeric="10"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Generate payment url in generated invoices."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content"
+                    value="This plug-in will create payment urls when invoices are generated, and those payment urls can be used for payments."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-372 : Static QR Code/Deriving Order Change Task" author="Akshay Gurav">
+        <insert tableName="pluggable_task_type_category">
+            <column name="id" valueNumeric="(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)"/>
+            <column name="interface_name" value="com.sapienter.jbilling.server.pluggableTask.IOrderChangeTask"/>
+        </insert>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id"
+                    valueComputed="(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.pluggableTask.IOrderChangeTask')"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.DerivingOrderChangeTask"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content"
+                    value="To generate an invoice for a static QR code payment, try to identify the product based on the given amount."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-380: CashFree Payment Gateway Webhook Handler" author="Akshay Gurav">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id"
+                    valueComputed="(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.payment.IPaymentWebHookHandler')"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.CashFreeWebHookHandler"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="CashFree Payment Gateway webhook event handler."/>
+        </insert>
+    </changeSet>
+    <changeSet context="base" id = "EB-533 - Add preference for Payment Url Link " author = "Parvati Thapa">
+        <insert tableName="preference_type">
+            <column name="ID" valueComputed="(SELECT MAX(pt.id) + 1 FROM preference_type pt)" />
+            <column name="DEF_VALUE" value="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueComputed="(SELECT MAX(pt.id) FROM preference_type pt)" />
+            <column name="PSUDO_COLUMN" value="description" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="Display Payment URL Links" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueComputed="(SELECT MAX(pt.id) FROM preference_type pt)" />
+            <column name="PSUDO_COLUMN" value="instruction" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="Displays payment URL Link section on invoice page if payment url log is generated" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-537: Adding paymentUrlType column in payment_url_log table" author="Ashwinkumar Patra">
+        <addColumn tableName="payment_url_log">
+            <column name="type" type="java.sql.Types.VARCHAR(10)" defaultValue="UPI">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="#EARNBILL-535 Notify Payment Url- Email Body" author="Parvati Thapa" context="base">
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="(SELECT MAX(id)+1 FROM notification_message_type)"/>
+            <column name="category_id" valueNumeric="5"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'notification_message_type')"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM notification_message_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Notify Payment Link"/>
+        </insert>
+
+        <sql>
+            INSERT INTO notification_message (id, entity_id, type_id, language_id, use_flag, optlock)
+            SELECT COALESCE((SELECT MAX(id) FROM notification_message), 0) + ROW_NUMBER() OVER (ORDER BY ent.id) AS id,
+            ent.id, (SELECT MAX(id) FROM notification_message_type), 1, 1, 0
+            FROM entity ent;
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nm.id) FROM notification_message nm)"/>
+            <where>name = 'notification_message'</where>
+        </update>
+
+        <sql>
+            INSERT INTO notification_medium_type (notification_id, medium_type)
+            SELECT nm.id AS notification_id,
+            mt.type AS medium_type
+            FROM notification_message nm
+            CROSS JOIN (SELECT 'EMAIL' AS type UNION SELECT 'SMS' UNION SELECT 'PDF') mt
+            WHERE nm.type_id = 39;
+        </sql>
+
+        <sql>
+            INSERT INTO notification_message_section (id, message_id, section, optlock)
+            SELECT
+            (SELECT MAX(id) FROM notification_message_section) + ROW_NUMBER() OVER(ORDER BY m.id) AS id,
+            m.id,
+            s.section,
+            0 AS optlock
+            FROM
+            notification_message m
+            CROSS JOIN
+            (SELECT 1 AS section UNION SELECT 2 AS section) s
+            WHERE
+            m.type_id = (SELECT foreign_id from international_description where content ='Notify Payment Link');
+        </sql>
+
+        <sql>
+            INSERT INTO notification_message_line (id, message_section_id, content, optlock)
+            SELECT
+            (SELECT MAX(id) FROM notification_message_line) + ROW_NUMBER() OVER(ORDER BY ms.id) AS id,
+            ms.id,
+            CASE
+            WHEN ROW_NUMBER() OVER(PARTITION BY message_id ORDER BY ms.id) % 2 = 1 THEN '$company_name is requesting payment of $currency$paymentAmount (via $gateway_name)'
+            ELSE CONCAT(
+            'Dear $username,', CHR(10), CHR(10),
+            '$company_name has sent you a payment link for $currency$paymentAmount', CHR(10), CHR(10),
+            'Payment for : $Reason_for_payment', CHR(10), CHR(10),
+            'Gateway Reference Id : $gateway_id', CHR(10), CHR(10),
+            'Payment Link : $payment_link', CHR(10), CHR(10),
+            'This payment link will expire on : $payment_expiry', CHR(10), CHR(10),
+            'For any product or service related queries, contact ($url)', CHR(10), CHR(10),
+            'Thanks,', CHR(10),
+            'The EarnBill Team'
+            )
+            END AS content,
+            0 AS optlock
+            FROM
+            notification_message_section ms
+            WHERE
+            message_id IN (SELECT id FROM notification_message WHERE type_id = (SELECT foreign_id FROM international_description WHERE content ='Notify Payment Link'));
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nml.id)+1 FROM notification_message_section nml)"/>
+            <where>name = 'notification_message_section'</where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(SELECT MAX(nml.id)+1 FROM notification_message_line nml)"/>
+            <where>name = 'notification_message_line'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-143: license_amc_invoice_design invoice Design" author="Raushan Kumar Raj">
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT MAX(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Swift Code"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueComputed="(SELECT MAX(display_order)+1 FROM meta_field_name)"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueComputed="(SELECT MIN(e.id) FROM entity e WHERE e.deleted = 0)"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+        </insert>
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT MAX(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Invoice for"/>
+            <column name="entity_type" value="ORDER"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueComputed="(SELECT MAX(display_order)+1 FROM meta_field_name)"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueComputed="(SELECT MIN(e.id) FROM entity e WHERE e.deleted = 0)"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM meta_field_name p),1)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

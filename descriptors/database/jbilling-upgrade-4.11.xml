@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.11.xml">
+	
+	<changeSet id="JB-1494 - 'Internal server error' is displayed while selecting 'Type' during plugin creation with following steps." author="Leandro Zoi" context="base">
+        <update tableName="pluggable_task_type">
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.SftpRemoteCopyTask"/>
+            <where>class_name = 'com.sapienter.jbilling.server.process.task.StpRemoteCopyTask'</where>
+        </update>
+	</changeSet>
+    
+</databaseChangeLog>

@@ -1,0 +1,105 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Telstra UAT-Test</name>
+		<id>A2200</id>
+		<billable>false</billable>
+		<sub-orgs>
+			<org>
+				<name>JPMC-UAT-TEST</name>
+				<id>A2210</id>
+				<subscription>20.00</subscription>
+                                <count>160</count>
+                                <timezone>Europe/London</timezone>
+                                <billable>true</billable>
+                                <billing-plan-id>2</billing-plan-id>
+                                <billing-plan-name>Australia Plan</billing-plan-name>
+				<sub-orgs>
+					<org>
+						<name>JPMC UAT EAST</name>
+						<id>A2211</id>
+						<billable>false</billable>
+						<sub-orgs>
+							<org>
+                                                		<name>JPMC UAT EAST MGMNT</name>
+                                                		<id>A2212</id>
+                						<count>20</count>
+                						<billable>false</billable>
+								<sub-orgs>
+									<org>
+                                                				<name>JPMC UAT EAST FINANCE</name>
+                                                				<id>A2213</id>
+                                                				<billable>false</billable>
+                                        				</org>
+                                                                        <org>
+                                                                                <name>JPMC UAT EAST HR</name>
+                                                                                <id>A2214</id>
+                                                                                <billable>false</billable>
+                                                                        </org>
+								</sub-orgs>
+						</org>
+							
+                                                        <org>
+                                                                <name>JPMC UAT EAST ENGG</name>
+                                                                <id>A2215</id>
+                                                                <count>40</count>
+                                                                <billable>false</billable>
+								
+                                                                <sub-orgs>
+                                                                        <org>
+                                                                                <name>JPMC UAT EAST DEV</name>
+                                                                                <id>A2216</id>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                        <org>
+                                                                                <name>JPMC UAT EAST VAV</name>
+                                                                                <id>A2217</id>
+										<count>20</count>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                        <org>
+                                                                                <name>JPMC UAT EAST CLIENT</name>
+                                                                                <id>A2218</id>
+                                                                                <count>20</count>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                </sub-orgs>
+							</org>
+                                                </sub-orgs>
+					
+					</org>
+					<org>
+						<name>JPMC UAT-WEST ENGG</name>
+						<id>A2251</id>
+						<billable>false</billable>
+                                                                <sub-orgs>
+                                                                        <org>
+                                                                                <name>JPMC UAT-WEST DEV</name>
+                                                                                <id>A2252</id>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                        <org>
+                                                                                <name>JPMC UAT-WEST VAV</name>
+                                                                                <id>A2253</id>
+                                                                                <count>40</count>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                        <org>
+                                                                                <name>JPMC UAT-WEST CLIENT</name>
+                                                                                <id>A2254</id>
+                                                                                <count>20</count>
+                                                                                <billable>false</billable>
+                                                                        </org>
+									
+                                                                        <org>
+                                                                                <name>JPMC UAT-WEST CLIENT</name>
+                                                                                <id>A2255</id>
+                                                                                <count>20</count>
+                                                                                <billable>false</billable>
+                                                                        </org>
+                                                                </sub-orgs>
+					</org>
+				</sub-orgs>
+			</org>
+		</sub-orgs>
+	</org>	
+</organizations>

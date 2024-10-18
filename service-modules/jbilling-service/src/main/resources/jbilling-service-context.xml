@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!--
+        Remote method calls are authenticated and must be made using a valid username and password.
+
+        Usernames should be in the format "username;companyId", where the resulting remote bean will be scoped
+        to the given user and company. Using the API for multiple clients requires defining multiple remote beans.
+    -->
+
+    <!-- Hessian remote web-service bean -->
+    <bean id="webServiceSession" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
+        <property name="serviceUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/hessian/ApiService"/>
+        <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
+        <property name="hessian2" value="true"/>
+        <property name="username" value="admin;1"/>
+        <property name="password" value="123qwe"/>
+    </bean>
+
+</beans>

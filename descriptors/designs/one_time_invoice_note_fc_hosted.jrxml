@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="one_time_invoice_note_fc_hosted" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="169ac024-95ae-47cd-92d4-3368e7721ae3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT customer_notes
+FROM invoice
+WHERE id = $P{invoice_id}]]>
+	</queryString>
+	<field name="customer_notes" class="java.lang.String"/>
+	<title>
+		<band height="21">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="Float" x="0" y="1" width="540" height="20" uuid="f2d3acb9-0085-4785-9e06-4394ea0ac4bd"/>
+				<textElement verticalAlignment="Middle" markup="styled">
+					<font fontName="Open Sans"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{customer_notes}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

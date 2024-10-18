@@ -1,0 +1,5 @@
+PLAN,<plan_number>,<plan_description>,<plan_period>,<currency>,<plan_rate>,<availability_start_date>,<availability_end_date>,<plan_category>,<payment_option>,<duration>
+FUP,<plan_name>
+ITEM,<bundle_quantity>,<bundle_period>,<product_code>
+FLAT,<rate>
+TIER,<from>,<rate>

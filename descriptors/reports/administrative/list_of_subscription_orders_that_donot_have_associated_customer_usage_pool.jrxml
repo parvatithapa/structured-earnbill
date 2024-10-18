@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_of_subscription_orders_that_donot_have_associated_customer_usage_pool" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="062b90ea-244d-487a-a3ef-80cf06624e45">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT bu.entity_id, e.description,po.user_id, po.id, po.period_id, po.status_id, po.active_since, po.active_until, ol.description
+FROM purchase_order po
+INNER JOIN base_user bu ON po.user_id = bu.id
+INNER JOIN order_line ol ON po.id = ol.order_id
+INNER JOIN plan p ON ol.item_id = p.item_id
+INNER JOIN entity e ON e.id=bu.entity_id and e.deleted = 0
+INNER JOIN order_status os ON os.id = po.status_id
+INNER JOIN plan_usage_pool_map pupm ON pupm.plan_id = p.id
+WHERE  po.period_id <> 1
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+AND po.deleted = 0
+AND os.order_status_flag = 0
+AND ol.deleted = 0
+AND po.id NOT IN
+(
+ SELECT order_id
+ FROM customer_usage_pool_map cup
+ WHERE DATE(cup.cycle_start_date) > '1970-01-01'
+)
+ORDER BY 1;]]>
+	</queryString>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="period_id" class="java.lang.Integer"/>
+	<field name="status_id" class="java.lang.Integer"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="active_until" class="java.sql.Date"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="100">
+				<line>
+					<reportElement x="1" y="93" width="555" height="1" uuid="9ed8c643-6d68-491b-b8bd-554f7bd8a624"/>
+				</line>
+				<staticText>
+					<reportElement x="0" y="3" width="100" height="20" uuid="ede294be-8549-47dc-8b74-7f92b76b28ea"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="24" width="100" height="20" uuid="703cb9cb-edab-4a2b-a625-b2cc83f80825"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="107" y="3" width="100" height="20" uuid="8067d429-b282-4067-9058-68c5bb698fda"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="107" y="24" width="150" height="20" uuid="7e34d1b2-ad16-47c7-a872-5087bbc8cbd3"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="74" y="56" width="69" height="34" uuid="7157b19d-5b68-4a4a-8358-c882cba51cc4"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="154" y="56" width="69" height="34" uuid="a6182efd-209e-455f-81a0-b2dd31717891"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Status Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="237" y="56" width="80" height="34" uuid="add8da72-342a-4d1f-9f7d-f0c34d2de8c3"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Period Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="1" y="56" width="68" height="34" uuid="08b56c3e-4ce6-400b-a7ff-25da2a952dbb"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order ID]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="332" y="56" width="105" height="34" uuid="9ddacf4d-e26b-4d91-b044-a1996ed4d26f"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Since]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="455" y="56" width="100" height="34" uuid="b5fb1217-006d-4f36-8dfe-54c5afc42246"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Until]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="13">
+				<line>
+					<reportElement x="0" y="5" width="555" height="1" uuid="7d743b28-b815-4000-8ead-a8d7d92c42d4"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="81" y="18" width="356" height="36" uuid="803b5e5d-4abc-419d-94ef-9c9a4fc372d7"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Subscription Orders That Don't Have Associated Customer Usage Pool]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="73" y="0" width="69" height="20" uuid="c41fd088-8c40-4544-8fd4-c84c97e30ee6"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="154" y="0" width="69" height="20" uuid="3c7a0f62-cbaf-486c-ae55-2e1c99f61ec3"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{status_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="237" y="1" width="80" height="20" uuid="5e7d937d-5647-4e15-89dc-d6dcefe42a14"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{period_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="68" height="20" uuid="9b337e4e-2349-4d73-86b1-4002e1b74b75"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="455" y="1" width="100" height="20" uuid="4d7a31fd-5013-4ce2-af7d-8a0a6af6159a"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_until}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="332" y="0" width="105" height="20" uuid="e675cd5f-ea10-4b71-be78-291f01323a66"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="9" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="4" width="555" height="1" uuid="d2f7e9f5-4729-4634-b0b7-13913cc4aec4"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

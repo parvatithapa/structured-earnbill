@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>EVENT_DATE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>USER_NAME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>DOWNLOAD</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>UPLOAD</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>TOTAL</name>
+        <type>string</type>
+    </field>
+</format>

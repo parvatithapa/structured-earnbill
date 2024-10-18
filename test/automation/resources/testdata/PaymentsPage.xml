@@ -1,0 +1,44 @@
+<testdata>
+	<testdataset name="TC20_VerifyPayment" category="vp" testenv="develop|lab3">
+		<chequeHolderName>test</chequeHolderName>
+		<chequeNumber>101010101010</chequeNumber>
+		<chequeDate>9/30/2016</chequeDate>
+		<paymentAmount>5</paymentAmount>
+		<PaymentOrder>5</PaymentOrder>
+	</testdataset>
+
+	<testdataset name="TC102_addPaymentMethod" category="apm" testenv="develop|lab">
+		<paymentTemplate>Payment Card</paymentTemplate>
+		<methodName>Card Pay{RANDOM}</methodName>
+		<allAccountTypes>true</allAccountTypes>
+		<isRecurring>true</isRecurring>
+	</testdataset>
+    <testdataset name="TC156_MakeChequePayment" category="cp" testenv="develop|lab3">
+        <chequeHolderName>HDFC</chequeHolderName>
+        <chequeNumber>234132423233</chequeNumber>
+        <chequeDate>11/30/2016</chequeDate>
+        <paymentOrder>1{RANDOMNUM}</paymentOrder>
+    </testdataset>
+    <testdataset name="TC158_MakeCreditCardPayment" category="ccp" testenv="develop|lab3">
+        <paymentAmount>100</paymentAmount>
+        <chequeHolderName>Test</chequeHolderName>
+        <chequeNumber>4111111111111152</chequeNumber>
+        <chequeDate>02/2020</chequeDate>
+        <paymentOrder>1{RANDOMNUM}</paymentOrder>
+    </testdataset>
+    <testdataset name="TC160_MakeWrongCreditCardPayment" category="ccp" testenv="develop|lab3">
+        <paymentAmount>100</paymentAmount>
+        <chequeHolderName>Test</chequeHolderName>
+        <realTime>true</realTime>
+        <chequeNumber>4111111111111111</chequeNumber>
+        <chequeDate>03/2020</chequeDate>
+        <paymentOrder>1{RANDOMNUM}</paymentOrder>
+    </testdataset>
+    <testdataset name="payInvoice" category="aa" testenv="develop|lab3">
+        <paymentAmount>5.00</paymentAmount>
+        <chequeHolderName>Ashish</chequeHolderName>
+        <chequeNumber>4111111111111152</chequeNumber>
+        <chequeDate>12/2020</chequeDate>
+        <paymentOrder>2{RANDOMNUM}</paymentOrder>
+    </testdataset>
+</testdata>

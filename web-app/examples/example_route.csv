@@ -1,0 +1,8 @@
+name,next_route,product,routeid,dialed,source,countrycode
+Canada Ontario,,,CANON,613,613,ca
+Canada Ontario,,,CANON,613,819,ca
+Canada Ottawa Montreal,,,CANOM,613,514,ca
+Argentina,,,ARG,54,*,
+North America Argentina,,,NAARG,54,1,
+Puerto Rico Argentina,,,PRARG,54,1,pr
+North America Buenos Aires,,,NAARBA,5411,1,

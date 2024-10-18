@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.27.xml">
+
+    <changeSet context = "base" id = "JBSAPP-40" author = "Krunal Bhavsar">
+        <comment>Signup process Category</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.server.process.signup.ISignupProcessTask" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.process.signup.ISignupProcessTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.sapphire.signupprocess.SapphireSignupProcessTask" />
+            <column name = "min_parameters" valueNumeric  = "2" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Signup process task for sapphire."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSAPP-40: Added Saphhire Specific Payment Methods" author = "Krunal Bhavsar">
+        <comment>Added Payment Methods</comment>
+        <sql>
+            DELETE FROM international_description WHERE foreign_id NOT IN (SELECT id FROM payment_method) AND table_id = 35;
+        </sql>
+        <!-- Adding  Visa Credit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Visa Credit"/>
+        </insert>
+
+        <!-- Adding  Visa Debit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Visa Debit"/>
+        </insert>
+
+        <!-- Adding  Mastercard Credit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Mastercard Credit"/>
+        </insert>
+
+        <!-- Adding  Mastercard Debit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Mastercard Debit"/>
+        </insert>
+
+        <!-- Adding  Mastercard Corporate Credit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Mastercard Corporate Credit"/>
+        </insert>
+
+        <!-- Adding  Visa Corporate Credit Payment Method-->
+        <insert tableName = "payment_method">
+            <column name = "id"  valueNumeric = "(SELECT MAX(pm.id)+1 FROM payment_method pm)" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(pm.id) FROM payment_method pm)"/>
+            <column name = "table_id"      valueNumeric  = "35"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Visa Corporate Credit"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSAPP-68: Update Customer Login Name" author="Ashok Kale">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.customer.task.UpdateCustomerLoginNameTask"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.customer.task.UpdateCustomerLoginNameTask')"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Update customer login/user Name on the basis of provide AIT group meta-field value"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Update Customer Login Name Task"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3409-PAYMENT-AUTH-DATE-CHANGE" author="Dipak Kardel">
+        <comment>For payments, authorization date is being populated as per UTC time zone and time stamp is not getting stored.</comment>
+        <sql>
+            ALTER TABLE payment_authorization
+            ALTER create_datetime
+            TYPE timestamp without time zone;
+        </sql>
+        <sql>
+            UPDATE payment_authorization
+            SET create_datetime = payment_subquery.create_datetime
+            FROM (SELECT id,
+                create_datetime
+                FROM payment) AS "payment_subquery"
+            WHERE payment_authorization.payment_id = payment_subquery.id;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

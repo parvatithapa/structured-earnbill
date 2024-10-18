@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="globalSanityPack" verbose="1" thread-count="1">
+    <test name="globalSanityPack" preserve-order="true">
+        <classes>
+            <class name="com.jbilling.test.TestCreateNewCompanyUsingCopyCompany"/>
+            <class name="com.jbilling.test.TestLoginIntoCompany"/>	
+			<class name="com.jbilling.test.TestCreationOfChildCompany"/>
+			<class name="com.jbilling.test.TestAddAccountType"/>  
+			<class name="com.jbilling.test.TestAttachPaymentType"/>			
+			<class name="com.jbilling.test.TestAddInfoToAccountType"/>	
+			<class name="com.jbilling.test.TestConfigurePaymentMethod"/>			
+			<class name="com.jbilling.test.TestConfigureOrderPeriod"/>		
+			<class name="com.jbilling.test.TestConfigureCollection"/>			
+			<class name="com.jbilling.test.TestConfigureCollectionPlugins"/>	
+			<class name="com.jbilling.test.TestConfigureBillingProcess"/>	
+			<class name="com.jbilling.test.TestCreateProductCategory"/>		
+			<class name="com.jbilling.test.TestCreateCategoryWithAssetManagement"/>		
+			<class name="com.jbilling.test.TestAddAndEditProduct"/>			
+			<class name="com.jbilling.test.TestCreateProductWithAsset"/>			
+			<class name="com.jbilling.test.TestAssignAccountToProduct"/>			
+			<class name="com.jbilling.test.TestCreateAndEditPlan"/>	
+			<class name="com.jbilling.test.TestRootCompanyImpersonationOnChildCompany"/>	
+			<class name="com.jbilling.test.TestCreateAndEditCustomer"/>			
+			<class name="com.jbilling.test.TestCreateParentChildRelationInCustomersTab"/>	
+			<class name="com.jbilling.test.TestCreateDiscount"/>
+			<class name="com.jbilling.test.TestChangeOrderFeature"/>
+			<class name="com.jbilling.test.TestCreateOrderWithDifferentTypedandPeriods"/>	
+			<class name="com.jbilling.test.TestCustomerStatusChangeAsCollection"/>			
+			<class name="com.jbilling.test.TestCreateProductWithDependencyOnOther"/>			
+			<class name="com.jbilling.test.TestOrderProductWithDependencyOnOther"/>	
+			<class name="com.jbilling.test.TestAgentsLinkedToCustomer"/>			
+			<class name="com.jbilling.test.TestCreateProductWithCommissions"/>	
+			<class name="com.jbilling.test.TestConfigurePluginPreferencesForCommission"/>	
+			<class name="com.jbilling.test.TestGeneratedCommissionPostInvoiceGeneration"/>
+			<class name="com.jbilling.test.VerifyUserAbleGetMandatoryFieldMessageForAccountType"/>			
+			<class name="com.jbilling.test.VerifyUserAbleToAddPaymentMethod"/>			
+			<class name="com.jbilling.test.VerifyUserAbleToEditCompanyDetails"/>			
+			<class name="com.jbilling.test.VerifyUserAbleToEditDeletePaymentMethod"/>	
+			<class name="com.jbilling.test.VerifyUserAbleToLoginUsingValidCred"/>	
+			<class name="com.jbilling.test.VerifyUserIsAbleToAddlDependenciesOnProduct"/>						
+        </classes>
+    </test>
+</suite> 
+

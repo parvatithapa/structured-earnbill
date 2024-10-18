@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="next_billable_date_mismatch_between_orders_and_order_changes" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="20209579-dbd8-4be9-8885-342cdfae7cb3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT bu.entity_id,
+e.description,
+bu.id AS user_id,
+po.id AS order_id,
+oc.id AS order_change_id,
+po.active_since,
+oc.start_date,
+po.next_billable_day,
+oc.next_billable_date,
+po.active_until,
+oc.end_date
+FROM purchase_order AS po
+INNER JOIN order_change oc ON po.id = oc.order_id
+INNER JOIN base_user bu ON po.user_id = bu.id
+INNER JOIN entity e ON e.id=bu.entity_id
+WHERE
+(
+ (po.next_billable_day IS NULL AND oc.next_billable_date IS NOT NULL)
+OR
+ (po.next_billable_day IS NOT NULL AND oc.next_billable_date IS NULL)
+)
+AND po.deleted = 0
+AND po.active_until IS NULL
+AND e.deleted = 0
+AND EXTRACT(month FROM po.active_since) = EXTRACT(month FROM current_date)
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+ORDER BY bu.entity_id;]]>
+	</queryString>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="order_id" class="java.lang.Integer"/>
+	<field name="order_change_id" class="java.lang.Integer"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="start_date" class="java.sql.Date"/>
+	<field name="next_billable_day" class="java.sql.Date"/>
+	<field name="next_billable_date" class="java.sql.Date"/>
+	<field name="active_until" class="java.sql.Date"/>
+	<field name="end_date" class="java.sql.Date"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="140">
+				<line>
+					<reportElement x="1" y="131" width="555" height="1" uuid="9ed8c643-6d68-491b-b8bd-554f7bd8a624"/>
+				</line>
+				<staticText>
+					<reportElement x="0" y="3" width="100" height="20" uuid="ede294be-8549-47dc-8b74-7f92b76b28ea"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="24" width="100" height="20" uuid="703cb9cb-edab-4a2b-a625-b2cc83f80825"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="3" width="100" height="20" uuid="8067d429-b282-4067-9058-68c5bb698fda"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="24" width="150" height="20" uuid="7e34d1b2-ad16-47c7-a872-5087bbc8cbd3"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="45" y="83" width="46" height="42" uuid="8f60e7af-8720-4cb5-ab75-d468198a6077"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="91" y="83" width="61" height="42" uuid="f4734c27-3c6d-40dd-ad56-529a49beb2ac"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Change Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="152" y="83" width="66" height="42" uuid="b9e08134-6cdd-4ab2-acfa-fc8b53016556"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Since]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="218" y="83" width="64" height="42" uuid="a3febd63-fac7-4750-a7be-523f8a908a8c"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Start Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="282" y="83" width="65" height="42" uuid="6162271f-b071-489b-8369-0e5bf7972839"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Next Billable Day]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="347" y="83" width="66" height="42" uuid="8cc9ac04-f340-4500-9c57-450d45958bd2"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Next Billable Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="413" y="83" width="75" height="42" uuid="414959ae-aa59-4e88-ae4d-b56e93a0ebc4"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Until ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="488" y="83" width="67" height="42" uuid="56f2ee9d-4adc-479a-8a91-b55676d8f3e9"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[End Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="83" width="45" height="42" uuid="538413a6-9489-460a-9e2c-be47aa810696"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="12">
+				<line>
+					<reportElement x="0" y="5" width="555" height="1" uuid="ec912c03-3738-4920-bbf4-c8582b75126d"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="100" y="0" width="261" height="55" uuid="95e10265-0f99-4123-aee6-ac7051b54ad6"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Next Billable Date Mismatch between Orders and Order Changes]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="34" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="45" height="20" uuid="c43e4217-5917-48c1-b560-667d1ce4f260"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="45" y="0" width="46" height="20" uuid="10f75210-7a2b-4a7d-ab73-c1a4651d8c70"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="91" y="0" width="61" height="20" uuid="7829e213-ea9b-4930-970f-8e827276e64c"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_change_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="152" y="0" width="66" height="20" uuid="e28bfb00-6131-4c7c-a1fb-df35b5906740"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="218" y="0" width="64" height="20" uuid="b4349e1d-3325-4ea7-b76a-4e9f7c871be8"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{start_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="282" y="0" width="65" height="20" uuid="2420f945-1ef7-4b2e-b576-9b708cc3ea9f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{next_billable_day}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="347" y="0" width="66" height="20" uuid="a1bdfebd-7035-48bd-9b58-028c08a50176"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{next_billable_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="413" y="0" width="75" height="20" uuid="ae22175b-d17e-445e-bcec-78739bc18118"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_until}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="488" y="0" width="67" height="20" uuid="759dc886-13f0-42ba-b821-54791e3d0297"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{end_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="10" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="4" width="555" height="1" uuid="98560510-067d-45ab-94c0-a729cb672dd8"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="total_invoiced_day" pageWidth="640" pageHeight="802" columnWidth="554" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+  <property name="ireport.zoom" value="1.996500000000001"/>
+  <property name="ireport.x" value="100"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="SUBREPORT_DIR" class="java.lang.String">
+    <defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+  </parameter>
+  <parameter name="week_of_year" class="java.lang.String"/>
+  <parameter name="year" class="java.lang.String"/>
+  <parameter name="currency_id" class="java.lang.Integer"/>
+  <parameter name="entityId" class="java.lang.Integer"/>
+  <parameter name="childEntities" class="java.util.List"/>
+  <parameter name="format" class="java.lang.String"/>
+  <parameter name="startDate" class="java.util.Date"/>
+  <parameter name="endDate" class="java.util.Date"/>
+
+  <queryString>
+    <![CDATA[    SELECT TO_CHAR(p.payment_date, 'WW') AS week_of_year,
+                        TO_CHAR(p.payment_date, 'YYYY') AS year,
+                        pmt.method_name,
+                        c.code AS currency_code,
+                        c.symbol AS currency_symbol,
+                        p.amount AS amount,
+                        u.user_name AS customer,
+                        u.id AS customer_id
+                   FROM payment AS p
+             INNER JOIN base_user u ON p.user_id = u.id
+             INNER JOIN currency c ON p.currency_id = c.id
+             INNER JOIN payment_instrument_info pii ON pii.payment_id = p.id
+             INNER JOIN payment_information pi ON pii.instrument_id = pi.id
+             INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+                  WHERE (u.entity_id = $P{entityId} OR $X{IN, u.entity_id, childEntities})
+                    AND p.deleted = 0
+                    AND p.is_refund = 0
+                    AND p.is_preauth = 0
+                    AND p.result_id IN (1, 4)
+                    AND p.currency_id = $P{currency_id}
+                    AND TO_CHAR(p.payment_date, 'WW') = $P{week_of_year}
+                    AND TO_CHAR(p.payment_date, 'YYYY') = $P{year}
+                    AND DATE_TRUNC('day', p.payment_date) BETWEEN $P{startDate} AND $P{endDate}
+                    AND pi.processing_order > 0
+               ORDER BY pmt.method_name
+        ]]>
+  </queryString>
+  <field name="week_of_year" class="java.lang.String"/>
+  <field name="year" class="java.lang.String"/>
+  <field name="method_name" class="java.lang.String" />
+  <field name="currency_code" class="java.lang.String" />
+  <field name="currency_symbol" class="java.lang.String" />
+  <field name="customer" class="java.lang.String" />
+  <field name="customer_id" class="java.lang.Integer" />
+  <field name="amount" class="java.math.BigDecimal" />
+  <variable name="subtotal" class="java.math.BigDecimal" calculation="Sum" resetType="Group" resetGroup="currency_symbol">
+    <variableExpression><![CDATA[$F{amount}]]></variableExpression>
+    <initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+  </variable>
+  <group name="currency_symbol">
+    <groupExpression><![CDATA[$F{currency_symbol}]]></groupExpression>
+    <groupFooter>
+      <band height="21">
+        <printWhenExpression><![CDATA[!("CSV".equals($P{format}))]]></printWhenExpression>
+        <staticText>
+          <reportElement x="120" y="1" width="80" height="20"/>
+          <textElement textAlignment="Left" verticalAlignment="Middle">
+            <font size="9.5"/>
+          </textElement>
+          <text><![CDATA[Total]]></text>
+        </staticText>
+        <textField>
+          <reportElement x="460" y="1" width="80" height="20"/>
+          <textElement textAlignment="Left" verticalAlignment="Middle">
+            <font size="9.5"/>
+          </textElement>
+          <textFieldExpression class="java.lang.String">
+            <![CDATA[$F{currency_code}]]>
+          </textFieldExpression>
+        </textField>
+        <textField evaluationTime="Group" evaluationGroup="currency_symbol">
+          <reportElement x="540" y="1" width="100" height="20"/>
+          <box rightPadding="8"/>
+          <textElement verticalAlignment="Middle" textAlignment="Right">
+            <font size="9.5"/>
+          </textElement>
+          <textFieldExpression class="java.lang.String">
+            <![CDATA[
+                            new java.text.DecimalFormat("#,##0.00").format($V{subtotal})
+                        ]]>
+          </textFieldExpression>
+        </textField>
+        <line>
+          <reportElement x="120" y="0" width="520" height="1"/>
+          <graphicElement>
+            <pen lineWidth="1.0"/>
+          </graphicElement>
+        </line>
+      </band>
+    </groupFooter>
+  </group>
+  <detail>
+    <band height="20">
+      <textField>
+        <reportElement x="0" y="0" width="40" height="20">
+          <printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+        </reportElement>
+        <box leftPadding="2"/>
+        <textElement verticalAlignment="Middle">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[$F{year}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="40" y="0" width="80" height="20">
+          <printWhenExpression><![CDATA[Boolean.valueOf($V{COLUMN_COUNT} == 1)]]></printWhenExpression>
+        </reportElement>
+        <box leftPadding="2"/>
+        <textElement verticalAlignment="Middle" textAlignment="Center">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[$F{week_of_year}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="120" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.Integer">
+          <![CDATA[$F{customer_id}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="200" y="0" width="160" height="20"/>
+        <textElement verticalAlignment="Middle">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[$F{customer}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="360" y="0" width="100" height="20"/>
+        <textElement verticalAlignment="Middle">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[$F{method_name}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="460" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[$F{currency_code}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="540" y="0" width="100" height="20"/>
+        <box rightPadding="8"/>
+        <textElement verticalAlignment="Middle" textAlignment="Right">
+          <font size="9.5"/>
+        </textElement>
+        <textFieldExpression class="java.lang.String">
+          <![CDATA[
+                        new java.text.DecimalFormat("#,##0.00").format($F{amount})
+                    ]]>
+        </textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+</jasperReport>

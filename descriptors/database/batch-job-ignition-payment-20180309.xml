@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/batch-job-ignition-payment-20180309.xml">
+
+    <changeSet context = "base" id = "spring-batch-ignition-jobs-data" author = "Igor Poteryaev">
+        <comment>Create table for storing intermediary data for ignition spring batch jobs</comment>
+
+        <createTable tableName = "batch_job_data_ignition">
+            <column name = "job_instance_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "payment_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name="partition_num" type="java.sql.Types.INTEGER">
+                <constraints nullable = "true" />
+            </column>
+            <column name="status" type="java.sql.Types.INTEGER">
+                <constraints nullable = "false" />
+            </column>
+            <column name="payment_metafields" type="TEXT">
+                <constraints nullable = "true" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName      = "batch_job_data_ignition"
+                       constraintName = "batch_job_data_ignition_pk"
+                       columnNames    = "job_instance_id, payment_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "batch_job_data_ignition_fk_batch_job_instance"
+                                 baseTableName   = "batch_job_data_ignition" referencedTableName   = "batch_job_instance"
+                                 baseColumnNames = "job_instance_id"         referencedColumnNames = "job_instance_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "batch_job_data_ignition_fk_payment"
+                                 baseTableName   = "batch_job_data_ignition" referencedTableName   = "payment"
+                                 baseColumnNames = "payment_id"              referencedColumnNames = "id"
+        />
+
+        <createIndex tableName = "batch_job_data_ignition"
+                     indexName = "batch_job_data_ignition_fk_payment" unique = "false">
+            <column name = "payment_id"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_data_ignition"
+                     indexName = "batch_job_data_ignition_fk_batch_job_instance" unique = "false">
+            <column name = "job_instance_id"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_data_ignition"
+                     indexName = "batch_job_data_ignition_idx_partition" unique = "false">
+            <column name = "job_instance_id"/>
+            <column name = "partition_num"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_data_ignition"
+                     indexName = "batch_job_data_ignition_idx_status" unique = "false">
+            <column name = "job_instance_id"/>
+            <column name = "status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

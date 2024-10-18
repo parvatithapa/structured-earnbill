@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/integration/jdbc http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd">
+
+    <!--PARTITIONER AND JMS REMOTE CONFIGURATIONS-->
+
+    <int-jdbc:message-store id="integrationMessageStore" data-source="dataSource"/>
+
+    <!-- JMR Processor. queue for outgoing requests to slaves -->
+    <bean id="jmrRequestsQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.jmr.request?consumer.prefetchSize=1&amp;consumer.exclusive=false&amp;consumer.priority=0&amp;consumer.noLocal=false&amp;consumer.dispatchAsync=true"/>
+    </bean>
+
+    <!-- JMR Processor. Aggregator puts aggregated response on this queue  -->
+    <bean id="jmrResponseQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.jmr.response"/>
+    </bean>
+
+    <!-- JMR Processor. Staging queue to aggregate responses from slaves  -->
+    <bean id="jmrStagingQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.jmr.staging"/>
+    </bean>
+
+</beans>

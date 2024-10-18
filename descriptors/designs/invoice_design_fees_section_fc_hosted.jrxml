@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_subreport_fees_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4c394602-0e08-4188-baf0-f1e7c33bd739">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="core.param.feesProductCategoryId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{core.param.feesProductCategoryId}]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select il.description, COALESCE(il.amount,0) as amount
+from invoice_line il
+where il.invoice_id =$P{invoiceId}
+and (il.type_id in (select id from invoice_line_type where description = 'interests')
+or il.item_id in (select item_id from item_type_map where type_id = $P{core.param.feesProductCategoryId}))
+and il.deleted = 0
+order by il.amount desc;]]>
+	</queryString>
+	<field name="description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="total_fees" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[null != $F{amount} && $F{amount} != 0 ? $F{amount}.setScale(2, RoundingMode.HALF_UP) : new BigDecimal("0.00")]]></variableExpression>
+	</variable>
+	<title>
+		<band height="33">
+			<staticText>
+				<reportElement x="13" y="3" width="210" height="17" forecolor="#505861" uuid="870f0387-e52b-4e50-8d10-291ebf1f3ee2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fees]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="2" width="210" height="17" forecolor="#505861" uuid="e44c4736-8f84-473b-87c1-e5eb5bcd4079"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESCRIPTION]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="398" y="2" width="141" height="17" forecolor="#505861" uuid="a1c7f001-469c-48e9-b1c3-b729637794d9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AMOUNT]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="25" width="540" height="1" uuid="bfb69060-ec08-4e92-9602-95abd9609504"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#999C9F"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="23" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="398" y="4" width="141" height="15" forecolor="#505861" uuid="21b1238e-f44c-4576-96f7-557fbabe6955"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+($F{amount} != 0 ? $F{amount}.setScale(2, RoundingMode.HALF_UP):"0.00")]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="13" y="4" width="321" height="15" forecolor="#505861" uuid="c4fea2be-ea4a-4bf2-8d42-577aa46b0791"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="31">
+			<staticText>
+				<reportElement x="13" y="9" width="125" height="20" forecolor="#505861" uuid="50c22285-d579-4f77-a834-2d1fc10a4f43"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[Total Fees]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="398" y="9" width="141" height="20" forecolor="#505861" uuid="2a21dca8-85cd-4a62-aa01-fc63ae299fdd"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+($V{total_fees})]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="10" y="4" width="540" height="1" uuid="a40515a5-ac3f-40ec-a8f2-f83948c19b40"/>
+				<graphicElement>
+					<pen lineWidth="0.1" lineColor="#999C9F"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

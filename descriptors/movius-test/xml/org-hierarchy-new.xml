@@ -1,0 +1,79 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Beeans</name>
+		<id>1000</id>
+		<subscription>5</subscription>
+		<count>1</count>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id>
+		<billing-plan-name>Telstra Master Plan</billing-plan-name>
+		<billable>true</billable>
+		<sub-orgs>
+			<org>
+				<name>ABC Org</name>
+				<id>1001</id>
+				<subscription>2</subscription>
+				<count>1</count>
+				<timezone>Europe/London</timezone>
+				<billable>true</billable>
+				<billing-plan-id>10</billing-plan-id>
+				<billing-plan-name>Telstra ABC Plan</billing-plan-name>
+			</org>
+			<org>
+				<name>XYZ Org</name>
+				<id>1002</id>
+				<timezone>Australia/Melbourne</timezone>
+				<billable>false</billable>
+			</org>
+		</sub-orgs>
+	</org>
+	<org>
+		<name>Telstra Australia</name>
+		<id>2000</id>
+		<subscription>10</subscription>
+		<count>1</count>
+		<timezone>Europe/London</timezone>
+		<billable>true</billable>
+		<billing-plan-id>2</billing-plan-id>
+		<billing-plan-name>Telstra Australia Plan</billing-plan-name>
+		<sub-orgs>
+			<org>
+				<name>Telstra ABC Org</name>
+				<id>2001</id>
+				<billable>false</billable>
+				<sub-orgs>
+					<org>
+						<name>ABC Sales Department</name>
+						<id>2100</id>
+						<billable>false</billable>
+					</org>
+					<org>
+						<name>ABC Customer Department</name>
+						<id>2101</id>
+						<billable>false</billable>
+					</org>
+				</sub-orgs>
+			</org>
+			<org>
+				<name>Telstra XYZ Org</name>
+				<id>2002</id>
+				<billable>false</billable>
+			</org>
+			<org>
+				<name>Third Org</name>
+				<id>2003</id>
+				<billable>true</billable>
+			</org>
+		</sub-orgs>
+	</org>	
+	<org>
+		<name>Movius</name>
+		<id>3000</id>
+		<subscription>2</subscription>
+		<count>1</count>
+		<timezone>US/Eastern</timezone>
+		<billable>true</billable>
+		<billing-plan-id>3</billing-plan-id>
+		<billing-plan-name>Movius neew Plan</billing-plan-name>
+	</org>	
+</organizations>

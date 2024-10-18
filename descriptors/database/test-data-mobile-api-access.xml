@@ -1,0 +1,280 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+                   logicalFilePath="descriptors/database/test-data-mobile-api-access.xml">
+
+    <changeSet author="Akshay Gurav" context="test" id="EARNBILL-144/MobileTestCase - Test Customer With Mobile API Permission">
+        <insert tableName="base_user">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM base_user)"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="password" value="$2a$10$gNwEehQuLk2dw5Sao.uIfeJ06HJSsG0aDvr63fpwKGEm4Di5neE1y"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueComputed="(SELECT current_timestamp::timestamp without time zone AS current_time_without_timezone)"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="mobilePermission-customer"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="encryption_scheme" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM customer)"/>
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'mobilePermission-customer')"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance"/>
+            <column name="credit_limit"/>
+            <column name="auto_recharge"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1" />
+            <column name="account_type_id" />
+            <column name="invoice_design" />
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(SELECT DISTINCT o.id FROM order_period o WHERE 1 = o.entity_id AND o.unit_id = 1 AND o.value = 1)"/>
+        </insert>
+
+        <insert tableName="role">
+            <column name="id" valueComputed="(SELECT Max(r.id) + 1 FROM role r)"/>
+            <column name="role_type_id" valueNumeric="2"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="60"/>
+            <column name="foreign_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="MobileAPI"/>
+        </insert>
+
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="2100"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'mobilePermission-customer')"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Akshay Gurav" context="test" id="EARNBILL-144/MobileTestCase - Test Customer With Web API Permission">
+        <insert tableName="base_user">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM base_user)"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="password" value="$2a$10$gNwEehQuLk2dw5Sao.uIfeJ06HJSsG0aDvr63fpwKGEm4Di5neE1y"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueComputed="(SELECT current_timestamp::timestamp without time zone AS current_time_without_timezone)"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="webPermission-customer"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="encryption_scheme" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM customer)"/>
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'webPermission-customer')"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance"/>
+            <column name="credit_limit"/>
+            <column name="auto_recharge"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1" />
+            <column name="account_type_id" />
+            <column name="invoice_design" />
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(SELECT DISTINCT o.id FROM order_period o WHERE 1 = o.entity_id AND o.unit_id = 1 AND o.value = 1)"/>
+        </insert>
+
+        <insert tableName="role">
+            <column name="id" valueComputed="(SELECT Max(r.id) + 1 FROM role r)"/>
+            <column name="role_type_id" valueNumeric="2"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="60"/>
+            <column name="foreign_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="WebAPI"/>
+        </insert>
+
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="120"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'webPermission-customer')"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Akshay Gurav" context="test" id="EARNBILL-144/MobileTestCase - Customer with Both Api Permissions">
+        <insert tableName="base_user">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM base_user)"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="password" value="$2a$10$gNwEehQuLk2dw5Sao.uIfeJ06HJSsG0aDvr63fpwKGEm4Di5neE1y"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueComputed="(SELECT current_timestamp::timestamp without time zone AS current_time_without_timezone)"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="superCustomer"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="encryption_scheme" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM customer)"/>
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'superCustomer')"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance"/>
+            <column name="credit_limit"/>
+            <column name="auto_recharge"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1" />
+            <column name="account_type_id" />
+            <column name="invoice_design" />
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(SELECT DISTINCT o.id FROM order_period o WHERE 1 = o.entity_id AND o.unit_id = 1 AND o.value = 1)"/>
+        </insert>
+
+        <insert tableName="role">
+            <column name="id" valueComputed="(SELECT Max(r.id) + 1 FROM role r)"/>
+            <column name="role_type_id" valueNumeric="2"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="60"/>
+            <column name="foreign_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="WebAPI"/>
+        </insert>
+
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="120"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="2100"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'superCustomer')"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Akshay Gurav" context="test" id="EARNBILL-144/MobileTestCase - customer with no permission">
+        <insert tableName="base_user">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM base_user)"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="password" value="$2a$10$gNwEehQuLk2dw5Sao.uIfeJ06HJSsG0aDvr63fpwKGEm4Di5neE1y"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueComputed="(SELECT current_timestamp::timestamp without time zone AS current_time_without_timezone)"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="basicCustomer"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="encryption_scheme" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueComputed="(SELECT Max(id) + 1 FROM customer)"/>
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'basicCustomer')"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance"/>
+            <column name="credit_limit"/>
+            <column name="auto_recharge"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1" />
+            <column name="account_type_id" />
+            <column name="invoice_design" />
+            <column name="main_subscript_order_period_id"
+                    valueComputed="(SELECT DISTINCT o.id FROM order_period o WHERE 1 = o.entity_id AND o.unit_id = 1 AND o.value = 1)"/>
+        </insert>
+
+        <insert tableName="role">
+            <column name="id" valueComputed="(SELECT Max(r.id) + 1 FROM role r)"/>
+            <column name="role_type_id" valueNumeric="2"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="60"/>
+            <column name="foreign_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="WebAPI"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueComputed="(SELECT id FROM base_user WHERE user_name = 'basicCustomer')"/>
+            <column name="role_id" valueComputed="(SELECT Max(r.id) FROM role r)"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

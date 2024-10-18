@@ -1,0 +1,42 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <!--  ===================================== Properties ========================================================= -->
+
+    <property name  = "CONSOLE_COLOR_PATTERN"
+              value = '%yellow(%date{ISO8601,UTC}) %highlight(%-5level) %yellow(---) %white([%15.15thread]) %cyan(%-40.40logger{39}) %yellow(:) %green(%msg%n)' />
+    <property name  = "CONSOLE_NOCOLOR_PATTERN"
+              value = '%date{ISO8601,UTC} %-5level --- [%15.15thread] %-40.40logger{39} : %msg%n' />
+
+    <if condition='isDefined("JENKINS_HOME")'>
+    <then>
+        <property name  = "CONSOLE_PATTERN"
+                  value = "${CONSOLE_NOCOLOR_PATTERN}" />
+    </then>
+    <else>
+        <property name  = "CONSOLE_PATTERN"
+                  value = "${CONSOLE_COLOR_PATTERN}" />
+    </else>
+    </if>
+
+    <!--  ===================================== Appenders ========================================================== -->
+
+    <appender name  = "stdout"
+              class = "ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+
+    <!--  ===================================== Loggers ============================================================ -->
+
+    <logger level = "DEBUG" name ="com.sapienter.jbilling.server.process"/>
+    <logger level = "DEBUG" name ="com.sapienter.jbilling" />
+
+
+    <root level = "WARN">
+        <appender-ref ref = "stdout" />
+    </root>
+</configuration>

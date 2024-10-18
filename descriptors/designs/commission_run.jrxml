@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-06-09T14:23:38 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="billing_register_summary" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="NoDataSection" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="098aabb8-c9ab-4dc7-99c1-04442cbb3ecc">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Postgres-jbilling_test"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<parameter name="run_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[130]]></defaultValueExpression>
+	</parameter>
+	<parameter name="run_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(1001)]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select l.id, pc.first_name as partner_first, pc.last_name as partner_last, pu.user_name as partner_user_name, p.broker_id as partner_broker_id, p.id as partner_id,
+rc.first_name as reseller_first, rc.last_name as reseller_last, ru.user_name as reseller_user_name, r.id as reseller_id,
+(coalesce(standard_amount,0) + coalesce(master_amount,0) + coalesce(customer_amount,0) + coalesce(referral_amount,0)) as amount,
+fnval as user_first, lnval as user_last, u.user_name, l.user_id,
+l.invoice_id, ifnval as invoice_first, ilnval as invoice_last, iu.user_name as invoice_user_name
+from partner_commission_line l
+join partner p on p.id=l.partner_id
+join base_user pu on pu.id=p.user_id
+join contact pc on pc.user_id=p.user_id
+left join base_user u on u.id = l.user_id
+left join contact uc on uc.user_id=u.id
+left join customer_account_info_type_timeline cait on cait.customer_id=uc.id
+left join meta_field_value fnval on fnval.id = cait.meta_field_value_id 
+left join meta_field_name fnmf on fnval.meta_field_name_id = fnmf.id and fnmf.field_usage='FIRST_NAME'
+left join customer_account_info_type_timeline cait2 on cait2.customer_id=uc.id
+left join meta_field_value lnval on lnval.id = cait2.meta_field_value_id 
+left join meta_field_name lnmf on lnval.meta_field_name_id = lnmf.id and lnmf.field_usage='LAST_NAME'
+left join partner r on r.id=l.referral_partner_id
+left join base_user ru on ru.id=r.user_id
+left join contact rc on rc.user_id=r.user_id
+left join invoice i on i.id=l.invoice_id
+left join base_user iu on iu.id = i.user_id
+left join contact ic on ic.user_id=u.id
+left join customer_account_info_type_timeline icait on icait.customer_id=ic.id
+left join meta_field_value ifnval on ifnval.id = icait.meta_field_value_id 
+left join meta_field_name ifnmf on ifnval.meta_field_name_id = ifnmf.id and ifnmf.field_usage='FIRST_NAME'
+left join customer_account_info_type_timeline icait2 on icait2.customer_id=ic.id
+left join meta_field_value ilnval on ilnval.id = icait2.meta_field_value_id 
+left join meta_field_name ilnmf on ilnval.meta_field_name_id = ilnmf.id and ilnmf.field_usage='LAST_NAME'
+where l.commission_process_run_id = $P{run_id}
+order by partner_id]]>
+	</queryString>
+	<field name="partner_first" class="java.lang.String"/>
+	<field name="partner_last" class="java.lang.String"/>
+	<field name="partner_user_name" class="java.lang.String"/>
+	<field name="partner_broker_id" class="java.lang.String"/>
+	<field name="partner_id" class="java.lang.Integer"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="reseller_first" class="java.lang.String"/>
+	<field name="reseller_last" class="java.lang.String"/>
+	<field name="reseller_user_name" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="reseller_id" class="java.lang.Integer"/>
+	<field name="user_first" class="java.lang.String"/>
+	<field name="user_last" class="java.lang.String"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="invoice_user_name" class="java.lang.String"/>
+	<field name="invoice_first" class="java.lang.String"/>
+	<field name="invoice_last" class="java.lang.String"/>
+	<field name="invoice_id" class="java.lang.Integer"/>
+	<variable name="agentTotal" class="java.math.BigDecimal" resetType="Group" resetGroup="agentGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+	</variable>
+	<group name="agentGroup" isStartNewPage="true">
+		<groupExpression><![CDATA[$F{partner_id}]]></groupExpression>
+		<groupHeader>
+			<band height="46">
+				<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				<textField>
+					<reportElement mode="Opaque" x="80" y="0" width="490" height="20" backcolor="#DBD7D7" uuid="d622be1a-d9bd-48b1-a5f0-44338df92e56"/>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[($F{user_last} != null ? ($F{user_last} +", " + $F{user_first})   : $F{partner_user_name}) + (($F{partner_broker_id} != null && $F{partner_broker_id}.trim().length() > 0) ? (" (" + $F{partner_broker_id} +")") : "")]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="41" width="570" height="1" forecolor="#030000" uuid="8f35af44-5ea8-4ddc-a67a-999338ee1762">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					</reportElement>
+				</line>
+				<textField>
+					<reportElement mode="Transparent" x="0" y="21" width="80" height="20" backcolor="#DBD7D7" uuid="9d1bfc55-1b72-4d46-972d-54a99fa63aa9">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					</reportElement>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Source"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement mode="Transparent" x="490" y="20" width="80" height="20" backcolor="#DBD7D7" uuid="dadac342-f750-494f-8578-5d56e5a19231">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					</reportElement>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Amount"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement mode="Opaque" x="0" y="0" width="80" height="20" backcolor="#DBD7D7" uuid="8b0c5c56-5b4e-408f-88ac-9a51b83c8f5f">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					</reportElement>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Agent"]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="22">
+				<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				<textField evaluationTime="Group" evaluationGroup="agentGroup" pattern="###0.00" isBlankWhenNull="true">
+					<reportElement mode="Transparent" x="470" y="2" width="100" height="20" backcolor="#DBD7D7" uuid="5fa6369f-da43-4b43-ad13-33efa9a204f2">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					</reportElement>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$V{agentTotal}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement mode="Transparent" x="423" y="2" width="44" height="20" backcolor="#DBD7D7" uuid="61514555-64f4-4518-a7c8-421eecc93d24">
+						<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					</reportElement>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Total"]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="0" width="570" height="1" forecolor="#CCCCCC" uuid="dfb8ea4b-e361-4271-94e3-a6cff24cd00c">
+						<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					</reportElement>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="70" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="200" height="20" uuid="f8fe58d4-952e-4fd1-a207-2cc0c1f4e032"/>
+				<textElement>
+					<font fontName="SansSerif" size="15" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Agent Commissions"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="agentGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="20" width="90" height="15" uuid="66bf7ef5-8c96-4743-b3c0-868cdc71e2b0"/>
+				<textFieldExpression><![CDATA["Run Date"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="agentGroup" pattern="dd-MMM-yyyy    -" isBlankWhenNull="true">
+				<reportElement x="90" y="20" width="90" height="15" uuid="22eaf542-26ab-4dd3-b212-a9ba0eb533a1"/>
+				<textFieldExpression><![CDATA[$P{run_date}]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="agentGroup" pattern="dd-MMM-yyyy" isBlankWhenNull="true">
+				<reportElement x="90" y="35" width="90" height="15" uuid="26aa08a6-9d5f-401d-bfb7-c128da0aa479"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="agentGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="35" width="90" height="15" uuid="64a26cde-473b-4eca-be55-874e930484e7"/>
+				<textFieldExpression><![CDATA["End Date"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<textField>
+				<reportElement x="0" y="0" width="480" height="20" uuid="130d0942-85d3-438c-abda-1586d134b0d3"/>
+				<textFieldExpression><![CDATA[($F{invoice_id} != null ? ($F{invoice_last} == null ? $F{invoice_user_name} : ($F{invoice_last} + ", " + $F{invoice_first})) :
+  ($F{reseller_id} == null ? ($F{user_last} == null ? $F{user_name} : ($F{user_last} + ", " + $F{user_first})) : 
+  	  ($F{reseller_user_name} != null ? $F{reseller_user_name} : ($F{reseller_last} + ", " + $F{reseller_first}))
+  )	
+)]]></textFieldExpression>
+			</textField>
+			<textField pattern="##0.00">
+				<reportElement x="500" y="1" width="70" height="20" uuid="a4f07909-e6f2-4a4f-9788-f22b3edd5dc5"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<textField>
+				<reportElement x="10" y="4" width="80" height="20" uuid="c2a89499-d923-4c1e-ac0c-bb94450ea588"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="90" y="4" width="40" height="20" uuid="cf699ae7-a420-4845-823d-2c904e15129e"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

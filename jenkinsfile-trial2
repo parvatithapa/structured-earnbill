@@ -1,0 +1,201 @@
+pipeline {
+    environment {
+      IP = "localhost"
+      IPv4_CLASS_C = "192.168."
+    }
+    agent {
+        docker {
+            image "ashwinsarathi/earnbill_docker:local_3"
+            args '-u root -v $HOME/.m2:/root/.m2 -v $HOME/.grails:/root/.grails -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock --privileged --name earnbill_docker -e JBILLING_DB_HOST=localhost -e JBILLING_DB_HOST_MEDIATION4=localhost -e JBILLING_HOST=localhost -e JBILLING_PORT=8080 -e JBILLING_SERVER_URL=http://localhost:8080/jbilling -e JBILLING_DB_PORT_MEDIATION4=5432 -e JBILLING_DB_NAME_MEDIATION4=jbilling_test -e JBILLING_DB_USER_MEDIATION4=jbilling -e JBILLING_DB_PASSWORD_MEDIATION4= -e JBILLING_HOME=${WORKSPACE}/billinghub-jb-local'
+            //alwaysPull params.shouldAlwaysPull
+            reuseNode false
+        }
+    }
+    stages {
+
+        stage('Get Jenkins host IP address') {
+            steps {
+                script {
+                    def valueList = 'ifconfig'.execute().text
+                    println valueList
+                    def list = valueList.split("inet "+IPv4_CLASS_C)
+                    def temp2 = list[1].split(" ")
+                    if(params.useIP) {
+                        IP = IPv4_CLASS_C+temp2[0]
+                    }
+                    println IP
+                }
+            }
+        }
+        stage("Verify") {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+                sh 'grails -version'
+                sh 'ant -version'
+                sh 'docker --version'
+                sh 'docker compose version'
+                sh 'pwd'
+                sh 'echo $JBILLING_DB_HOST'
+                sh 'echo $JBILLING_HOME'
+            }
+        }
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('set docker compose path') {
+            steps {
+                sh 'export PATH=$PATH:/usr/local/bin/'
+                sh 'echo $PATH'
+            }
+        }
+        stage('start postgresql server') {
+            steps {
+                //sh 'chmod 666 /var/run/docker.sock'
+                dir('billinghub-jb-local/') {
+                    sh 'docker compose up -d'
+                }
+            }
+        }
+        stage('create license file') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    withCredentials([file(credentialsId: 'jbilling_license', variable: 'license')]) {
+                       sh "cp \$license license.txt"
+                       sh 'ls -l license.txt'
+                    }
+                }
+            }
+        }
+        stage('build-service-module') {
+            steps {
+                dir('billinghub-jb-local/service-modules') {
+                    sh "mvn -U clean install"
+                }
+            }
+        }
+        stage('grails clean compile') {
+            steps {
+                script {
+                    if(params.skipGrailsCleanCompile) {
+                        sh "echo 'skipping this step - grails clean compile is not required for this test'"
+                    } else {
+                        withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}"]) {
+                            dir('billinghub-jb-local/') {
+                                sh "grails clean; grails compile"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+         stage('compile designs') {
+            steps {
+                script {
+                    if(params.skipCompileDesigns) {
+                        sh "echo 'skipping this step - compile designs is not required for this test'"
+                    } else {
+                        dir('billinghub-jb-local/') {
+                            sh "grails copy-resources; grails compile-designs; grails compile-reports;"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Retry - prepare test db') {
+            steps {
+                script {
+                    if(params.skipPrepareTest) {
+                        sh "echo 'skipping this step - using same DB for execution of test cases'"
+                    } else {
+                        withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}"]) {
+                            retry(3) {
+                                dir('billinghub-jb-local/') {
+                                    sh "grails prepare-test; grails upgrade-db;"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('upgrade test db') {
+            steps {
+                script {
+                    if(params.skipPrepareTest) {
+                        withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}"]) {
+                            dir('billinghub-jb-local/') {
+                                sh "grails upgrade-db"
+                            }
+                        }
+                    } else {
+                        sh "echo 'skipping this step - since its executed along with grails prepare test stage'"
+                    }
+                }
+            }
+        }
+        stage('start grails app') {
+            steps {
+                withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}","JBILLING_HOST=${IP}","JBILLING_SERVER_URL=http://${IP}:8080/jbilling"]) {
+                    dir('billinghub-jb-local/') {
+                        sh "ant -buildfile cc-build.xml start"
+                    }
+                }
+            }
+        }
+        stage('wait for grails app start') {
+            steps {
+                withEnv(["JBILLING_SERVER_URL=http://${IP}:8080/jbilling"]) {
+                    sh 'curl -s -o /dev/null -I -w "%{http_code}" ${JBILLING_SERVER_URL}/login/auth'
+                }
+            }
+        }
+        stage('create grails-ant-properties') {
+            steps {
+                withEnv(["JBILLING_HOST=${IP}"]) {
+                    dir('billinghub-jb-local/') {
+                        sh "ant build-grails-ant-properties"
+                        sh "ant jenkins-init"
+                    }
+                }
+            }
+        }
+        stage('ant test unit') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "ant test-unit"
+                }
+            }
+        }
+        stage('Execute ant integration test cases') {
+            steps {
+                withEnv(["JBILLING_DB_HOST_MEDIATION4=${IP}","JBILLING_DB_HOST=${IP}","JBILLING_HOST=${IP}","JBILLING_SERVER_URL=http://${IP}:8080/jbilling"]) {
+                    dir('billinghub-jb-local/') {
+                        sh 'echo "executing ant ${testName}"'
+                        sh "ant ${testName}"
+                    }
+                }
+            }
+        }
+        stage('stop jbilling app') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "ant -buildfile cc-build.xml stop"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+            sh 'echo "waiting for ${waitTime} seconds"'
+            sh 'sleep ${waitTime}'
+            dir('billinghub-jb-local/') {
+                junit 'target/test-results/functional/xml/junitreports/*.xml'
+                sh 'docker compose stop'
+            }
+        }
+    }
+}

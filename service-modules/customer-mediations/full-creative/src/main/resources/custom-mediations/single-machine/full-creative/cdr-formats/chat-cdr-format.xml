@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+    	<name>Connection_ID</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>Caller_ID</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Agent_Login</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Direction</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>DNIS</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Date</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Time</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Queue Time(s)</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Ring Time(s)</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Talk Time(s)</name>
+    	<type>string</type>
+    </field>
+    <field>
+        <name>ACW Time(s)</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Hold Time(s)</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Duration (s)</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Connection Time (s)</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Transfer Time(s)</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Transfer Number</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Parent_Account_Number</name>
+        <type>string</type>
+    </field>
+</format>

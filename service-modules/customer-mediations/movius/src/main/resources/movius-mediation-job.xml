@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+           
+        <!-- CDR Mediation Reader -->
+	<bean id="moviusMediationReader" class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusMediationReader" scope="step">
+            <property name="recordSeparatorPolicy" ref="moviusRecordSeparatorPolicy"/>
+            <property name="lineMapper" ref="moviusMediationConverter"/>
+            <property name="linesToSkip" value="0"/>
+            <property name="strict" value="false"/>
+    </bean>
+    
+    <bean id="fieldSeparator" class="java.lang.String">
+       <constructor-arg value="[|]"/>
+    </bean>
+
+	<bean id = "moviusMediationConverter" class = "com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusMediationRecordLineConverter">
+         <constructor-arg name = "crdRecordFormat">
+            <map>
+                <entry key = "outgoing-call"         value-ref = "outGoingCallRecordFormatContainer" />
+                <entry key = "outgoing-sms"          value-ref = "outGoingSMSRecordFormatContainer" />
+                <entry key = "incoming-call"         value-ref = "inComingCallRecordFormatContainer" />
+                <entry key = "incoming-sms-details"  value-ref = "inComingSMSDetailsRecordFormatContainer" />
+            </map>
+        </constructor-arg>
+        <constructor-arg name = "fieldSeparator" ref = "fieldSeparator"/>
+    </bean>
+
+	<bean id="outGoingCallRecordFormatContainer"
+		class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordFormatContainer">
+		<constructor-arg name="format">
+			<bean id="outGoingCallMediationFormatFactory"
+				class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+				<property name="formatFilename" value="/cdr-formats/outgoing-call-cdr-format.xml" />
+				<property name="tokenizer" ref="moviusMediationTokenizer" />
+			</bean>
+		</constructor-arg>
+		<constructor-arg name = "datePattern" value = "yyyy-MM-dd hh:mm:ss"/>
+	</bean>
+	
+	<bean id="outGoingSMSRecordFormatContainer"
+		class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordFormatContainer">
+		
+		<constructor-arg name="format">
+			<bean id="outGoingSMSMediationFormatFactory"
+				class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+				<property name="formatFilename" value="/cdr-formats/outgoing-sms-cdr-format.xml" />
+				<property name="tokenizer" ref="moviusMediationTokenizer" />
+			</bean>
+		</constructor-arg>
+		
+		<constructor-arg name="datePattern"  value="yyyy-MM-dd hh:mm:ss"/>
+		
+	</bean>
+	
+	<bean id="vmDepositedByRecordFormatContainer"
+		class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordFormatContainer">
+		
+		<constructor-arg name="format">
+			<bean id="vmDepositedByFormatFactory"
+				class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+				<property name="formatFilename" value="/cdr-formats/vm-deposited-by-cdr-format.xml" />
+				<property name="tokenizer" ref="moviusMediationTokenizer" />
+			</bean>
+		</constructor-arg>
+		
+		<constructor-arg name="datePattern"  value="yyyy-MM-dd hh:mm:ss"/>
+		
+	</bean>
+	
+    <bean id="inComingCallRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordFormatContainer">
+    
+            <constructor-arg name="format">
+                <bean id="inComingCallMediationFormatFactory"
+                    class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                    <property name="formatFilename" value="/cdr-formats/incoming-call-cdr-format.xml" />
+                    <property name="tokenizer" ref="moviusMediationTokenizer" />
+                </bean>
+            </constructor-arg>
+    
+            <constructor-arg name="datePattern"  value="yyyy-MM-dd hh:mm:ss"/>
+    
+    </bean>
+	
+	<bean id="inComingSMSDetailsRecordFormatContainer"
+		class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordFormatContainer">
+		
+		<constructor-arg name="format">
+			<bean id="inComingSMSDetailsMediationFormatFactory"
+				class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+				<property name="formatFilename" value="/cdr-formats/incoming-sms-details-cdr-format.xml" />
+				<property name="tokenizer" ref="moviusMediationTokenizer" />
+			</bean>
+		</constructor-arg>
+		
+		<constructor-arg name="datePattern"  value="yyyy-MM-dd hh:mm:ss"/>
+		
+	</bean>
+	
+	<!-- CDR to JMR Processor -->
+	<bean id="moviusJMRProcessor" class="com.sapienter.jbilling.server.mediation.customMediations.movius.processor.MoviusMediationProcessor" scope = "step"/>
+    
+    
+    <batch:job id="moviusMediationJobLauncher" job-repository="mediationJobRepository">
+    
+        <batch:step id="moviusMediationStep" next="partionedMoviusCallJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="moviusMediationReader" processor="moviusJMRProcessor"
+                             writer="jmrDefaultLogWriter" commit-interval="100" 
+                             skip-policy="moviusSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+        
+        <batch:step id="partionedMoviusCallJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="moviusPartitionHandler"/>
+        </batch:step>
+         
+        <batch:listeners>
+            <batch:listener ref="moviusMediationJobListener"/>
+        </batch:listeners>
+        
+    </batch:job>
+    
+    <!-- Recycle Job Launcher -->
+    <batch:job id="moviusRecycleJobLauncher" job-repository="mediationJobRepository">
+     
+        <batch:step id="moviusRecycleStep" next="moviusRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="moviusRecycleReader" processor="moviusJMRProcessor"
+                             writer="jmrDefaultLogWriter" commit-interval="100"
+                             skip-policy="moviusSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+        
+        <!--Partitioner Step-->
+        <batch:step id = "moviusRecycleJMRProcessorStep" >
+            <batch:partition partitioner = "jmrDefaultProcessorModulePartitioner" handler = "moviusPartitionHandler"/>
+        </batch:step>
+        
+        <batch:listeners>
+            <batch:listener ref = "moviusRecycleJobListener"/>
+            <batch:listener ref = "moviusMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+    
+    <bean id = "moviusPartitionHandler" class = "org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name = "stepName"     value = "moviusPartitionedJMRProcessorStep"/>
+        <property name = "gridSize"     value = "#{systemEnvironment['JBILLING_BATCH_GRID_SIZE']?:10}"/>
+        <property name = "jobExplorer"  ref   = "mediationJobExplorer"/>
+        <property name = "replyChannel" ref   = "movius-mediation-aggregated-reply"/>
+        <property name = "messagingOperations">
+            <bean class = "org.springframework.integration.core.MessagingTemplate">
+                <property name = "defaultChannel" ref   =  "movius-mediation-requests"/>
+                <property name = "receiveTimeout" value =  "100000"/>
+            </bean>
+        </property>
+    </bean>
+</beans>

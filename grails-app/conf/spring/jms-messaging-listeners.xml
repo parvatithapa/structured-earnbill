@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+       xmlns     = "http://www.springframework.org/schema/beans"
+       xmlns:jms = "http://www.springframework.org/schema/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/jms   http://www.springframework.org/schema/jms/spring-jms.xsd
+    ">
+
+    <!-- for all spring profiles -->
+    <beans>
+        <!-- Topics listeners -->
+        <jms:listener-container connection-factory  = "jmsConnectionFactory"
+                                acknowledge         = "transacted"
+                                concurrency         = "2-4">
+            <jms:listener ref = "notificationMDB"                destination = "#{localNotificationQueueName}"/>
+        </jms:listener-container>
+
+        <jms:listener-container connection-factory  = "jmsConnectionFactory"
+                                destination-type    = "topic"
+                                acknowledge         = "transacted">
+            <jms:listener ref = "pricingBeanRegisterMDB"         destination = "topic.jbilling.pricingBeanRegister"/>
+        </jms:listener-container>
+
+    </beans>
+
+    <!-- profile specific beans -->
+    <beans profile = "billing.slave">
+        <!-- Queue listeners -->
+        <jms:listener-container connection-factory  = "jmsConnectionFactory"
+                                transaction-manager = "transactionManager"
+                                acknowledge         = "transacted">
+            <jms:listener ref = "processPaymentMDB"              destination = "queue.jbilling.processors"/>
+            <jms:listener ref = "externalProvisioningMDB"        destination = "queue.jbilling.provisioningCommands"/>
+            <jms:listener ref = "generateCancellationInvoiceMDB" destination = "queue.jbilling.customer.cancellation.request"/>
+        </jms:listener-container>
+
+        <jms:listener-container connection-factory  = "jmsConnectionFactory"
+                                transaction-manager = "transactionManager"
+                                acknowledge         = "transacted"
+                                concurrency         = "2-4">
+            <jms:listener ref = "autoPaymentMDB" destination = "queue.jbilling.autopayment.processors"/>
+        </jms:listener-container>
+
+        <!-- Topics listeners -->
+        <jms:listener-container connection-factory  = "jmsConnectionFactory"
+                                destination-type    = "topic"
+                                acknowledge         = "transacted">
+            <jms:listener ref = "provisioningCommandsMDB"     destination = "topic.jbilling.provisioningCommandsReply"/>
+            <jms:listener ref = "testExternalProvisioningMDB" destination = "topic.jbilling.provisioningCommandsReply"/>
+            <jms:listener ref = "dtLocalCacheClearMDB"        destination = "topic.jbilling.dtLocalCacheClearMDB"/>
+        </jms:listener-container>
+    </beans>
+</beans>

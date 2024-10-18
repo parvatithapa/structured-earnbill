@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <import resource="classpath:baseContext.xml"/>
+    <import resource="classpath:jbilling-service-context.xml"/>
+    <import resource="classpath:customer-service-context.xml"/>
+    <import resource="classpath:order-service-context.xml"/>
+    <import resource="classpath:database-test-context.xml"/>
+
+    <bean id="jmrProcessorWriterImpl" class="com.sapienter.jbilling.server.mediation.processor.JMRProcessorWriterImpl">
+        <property name="orderService" ref="orderService"/>
+    </bean>
+</beans>

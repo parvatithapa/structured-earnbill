@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="595" pageHeight="842" whenNoDataType="NoDataSection" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="64286985-7b96-4af9-bea3-113fa5bdc1ec">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Crosstab Data Text" hAlign="Center"/>
+	<parameter name="start_year" class="java.lang.String"/>
+	<parameter name="end_year" class="java.lang.String"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="format" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[	 SELECT i.create_datetime,
+							il.amount,
+							curr.symbol AS currency_symbol
+				 	   FROM customer AS c
+			     INNER JOIN base_user bu ON c.user_id = bu.id
+				 INNER JOIN invoice i ON i.user_id = c.user_id
+				 INNER JOIN currency curr ON curr.id = i.currency_id
+				 INNER JOIN invoice_line il ON il.invoice_id = i.id
+					  WHERE bu.entity_id = $P{entity_id}
+					  	AND EXTRACT(YEAR FROM i.create_datetime) >= CAST($P{start_year} AS double precision)
+					    AND EXTRACT(YEAR FROM i.create_datetime) <= CAST($P{end_year} AS double precision)]]>
+	</queryString>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<summary>
+		<band height="178" splitType="Stretch">
+			<printWhenExpression><![CDATA[!("CSV".equals($P{format}))]]></printWhenExpression>
+			<crosstab>
+				<reportElement x="0" y="0" width="555" height="178" uuid="ca31a4f2-7b3d-46df-a036-83cb43ca10ef"/>
+				<rowGroup name="currency_symbol" width="70">
+					<bucket class="java.lang.String">
+						<bucketExpression><![CDATA[$F{currency_symbol}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents backcolor="#F0F8FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="70" height="25" uuid="74902d9e-1b67-475f-b94d-b99d01043ed8"/>
+								<textFieldExpression>
+									<![CDATA["Total " + com.sapienter.jbilling.server.util.Util.formatSymbolMoney($V{currency_symbol}.toString(), false)]]>
+								</textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+				</rowGroup>
+				<columnGroup name="create_datetime" height="30" totalPosition="End">
+					<bucket class="java.lang.String">
+						<bucketExpression><![CDATA[(new SimpleDateFormat("yyyy")).format($F{create_datetime})]]></bucketExpression>
+					</bucket>
+				</columnGroup>
+				<measure name="amountMeasure" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{amount}]]></measureExpression>
+				</measure>
+				<crosstabCell width="50" height="25">
+					<cellContents>
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="25" uuid="936ae05e-06ef-47de-8f57-eefcdc33126c"/>
+							<textFieldExpression>
+								<![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($V{currency_symbol}.toString(), false) +
+										 new java.text.DecimalFormat("#,##0.00").format($V{amountMeasure})]]>
+							</textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell height="25" rowTotalGroup="currency_symbol">
+					<cellContents backcolor="#BFE1FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="25" uuid="d9dc35ce-1153-4049-802d-38ea0d2d4082"/>
+							<textElement>
+								<font isBold="true"/>
+							</textElement>
+							<textFieldExpression>
+								<![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($V{currency_symbol}.toString(), false) +
+										 new java.text.DecimalFormat("#,##0.00").format($V{amountMeasure})]]>
+							</textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="50" columnTotalGroup="create_datetime">
+					<cellContents backcolor="#BFE1FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="25" uuid="d7580e0c-9f91-42ba-b377-f4c4308f22ee"/>
+							<textElement>
+								<font isBold="true"/>
+							</textElement>
+							<textFieldExpression>
+								<![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($V{currency_symbol}.toString(), false) +
+										 new java.text.DecimalFormat("#,##0.00").format($V{amountMeasure})]]>
+							</textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+			</crosstab>
+		</band>
+	</summary>
+</jasperReport>

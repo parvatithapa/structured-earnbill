@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.20.xml">
+
+    <changeSet context="base" id="JB-2302 Split Tiered Pricing Order Lines" author="Faizan Ahmad">
+        <createTable tableName="order_line_tier">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="order_line_tier_pkey"/>
+            </column>
+            <column name="order_line_id" type="java.sql.Types.INTEGER"/>
+            <column name="tier_number" type="java.sql.Types.INTEGER"/>
+            <column name="quantity" type="java.sql.Types.NUMERIC(22,10)"/>
+            <column name="price" type="java.sql.Types.NUMERIC(22,10)"/>
+            <column name="amount" type="java.sql.Types.NUMERIC(22,10)"/>
+            <column name="tier_from" type="java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="tier_to" type="java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="order_line_id" baseTableName="order_line_tier" constraintName="order_line_tier_fk_order_line" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_line" referencesUniqueColumn="false"/>
+
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="order_line_tier"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="jbilling_table">
+            <column name="id" valueComputed="(COALESCE((SELECT MAX(T.id)+1 FROM jbilling_table T),1))"/>
+            <column name="name" value="order_line_tier"/>
+        </insert>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="87"/>
+            <column name="def_value" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="87"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Invoice Lines based on Order Line Tiers"/>
+        </insert>
+
+        <insert tableName="preference">
+            <column name="id" valueNumeric="(COALESCE((SELECT MAX(P.id)+1 FROM preference P),1))"/>
+            <column name="type_id" valueNumeric="87"/>
+            <column name="table_id" valueNumeric="5"/>
+            <column name="foreign_id" valueNumeric="1"/>
+            <column name="value" value="0"/>
+        </insert>
+
+        <comment>Adding index on foreign key(order_line_id) for table order_line_tier</comment>
+        <createIndex indexName="order_line_tier_fk_order_line" tableName="order_line_tier" unique="false">
+            <column name="order_line_id"/>
+        </createIndex>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(COALESCE( (SELECT (CASE WHEN MAX(id) > 10 THEN MAX(p.id/10)+1 ELSE 1 END) FROM preference p), 1))"/>
+            <where>name = 'preference'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JB-2302 fix preference 87 default value to 0" author="Andres Canevaro">
+        <update tableName="preference_type">
+            <column name="def_value" value="0"/>
+            <where>id='87'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JBFC-815 - Add new Preference for Ageing Revaluation on Payment and Credit" author="Ashok Kale">
+        <comment>This preference will allow to Ageing Revaluation on Payment and Credit</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="88" />
+            <column name="def_value" value="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="88" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Enable Ageing Status Revaluation on Payment and Credit" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="88" />
+            <column name="psudo_column" value="instruction" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Enabling this option to Revaluation of customer ageing status based on the overdue time of the oldest unpaid invoice after fully paid out old invoice through payment and credit." />
+        </insert>
+    </changeSet>
+</databaseChangeLog>

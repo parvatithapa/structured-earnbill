@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="unearned_unbilled_detail_report" language="groovy" pageWidth="2200" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="10" bottomMargin="20" uuid="c7a65c24-7f86-4dcb-9a57-e480505fba38">
+	<property name="ireport.zoom" value="0.9090909090909117"/>
+	<property name="ireport.x" value="220"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT * FROM (SELECT
+		invoice.create_datetime AS invoice_date,
+		invoice.id AS invoice_number,
+		invoice.user_id AS customer_id,
+		(SELECT content
+                   FROM international_description
+		  WHERE foreign_id = il.item_id
+                    AND language_id = 1
+		    AND table_id = (SELECT id
+			              FROM jbilling_table
+			             WHERE name = 'item')) AS plan_name,
+		order_process.period_start AS from_date,
+		(order_process.period_end :: date -1) AS to_date,
+		item.active_until AS product_end_date,
+		(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END ) AS revenue_gl_code,
+                                   (CASE WHEN
+item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
+THEN
+0
+WHEN(
+item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
+)
+THEN
+(
+item.active_until :: date - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date)
+ELSE ((order_process.period_end :: date - 1) - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) END) :: decimal AS unearned_days,
+		(CASE WHEN invoice.create_datetime > order_process.period_start
+                      THEN
+                     (CASE WHEN
+item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
+THEN
+0
+WHEN(
+item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
+)
+THEN
+(
+ (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - item.active_until :: date +1
+WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
+THEN 0
+ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (order_process.period_end :: date ) + 1 END):: decimal ELSE 0 END) AS unbilled_days,
+		(order_process.period_end :: date  - order_process.period_start :: date) :: decimal AS period_duration,
+		(CASE WHEN il.gross_amount = 0 THEN  il.amount ELSE  il.gross_amount END) AS sales_ex_tax,
+		(CASE WHEN il.gross_amount = 0 THEN (il.amount*0.1) ELSE il.tax_amount  END) AS GST,
+		(SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code = (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END)),
+
+                (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END) AS costs_gl_code,
+                (SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code =(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END)) AS costs_gl_description,
+                     (SELECT string_agg(string_value, ',')
+	      FROM meta_field_value mfv
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name IN ('ServiceId')
+	INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+	INNER JOIN asset a ON a.id = amfm.asset_id AND order_line_id IN (SELECT id FROM order_line WHERE order_id = il.order_id )) AS service_number_email,
+		(SELECT string_agg(identifier,',') FROM asset WHERE order_line_id IN (SELECT id FROM order_line WHERE order_id = il.order_id)) AS asset_identifire,
+	             (SELECT CASE
+                             WHEN (SELECT COUNT(*) > 0
+                                     FROM plan
+                                       WHERE item_id = il.item_id) = 't'
+                             THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Senior Plan -',''))
+                                     FROM item_type it
+                                 INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+                                         WHERE description LIKE 'Senior Plan -%')
+                             ELSE NULL
+                             END ) AS senior_plan,
+                  0 AS cost_of_service
+         FROM invoice
+    INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
+	          FROM invoice_line
+	    INNER JOIN purchase_order ON purchase_order.id = invoice_line.order_id
+                                     AND purchase_order.period_id != 1
+                                     AND purchase_order.billing_type_id = 1
+                 WHERE invoice_line.item_id  NOT IN (SELECT id FROM item WHERE internal_number = 'GST' AND (entity_id = $P{entity_id} OR $X{IN,entity_id,child_entities}))
+                                       AND invoice_line.item_id IN ( SELECT item_id FROM item_type_map WHERE type_id IN (SELECT id FROM item_type WHERE description = 'Unearned Revenue - Included'))
+		   AND purchase_order.deleted = 0
+		   AND invoice_line.deleted = 0
+              GROUP BY invoice_id,order_id,item_id) il ON il.invoice_id = invoice.id
+    INNER JOIN item ON item.id = il.item_id
+    INNER JOIN purchase_order po ON po.id = il.order_id
+    INNER JOIN order_process ON (order_process.order_id = il.order_id AND order_process.invoice_id = invoice.id)
+    INNER JOIN base_user ON base_user.id = invoice.user_id AND (base_user.entity_id = $P{entity_id} OR $X{IN,base_user.entity_id,child_entities})
+         WHERE invoice.deleted = 0 AND base_user.deleted = 0 AND  invoice.create_datetime >=$P{start_date} AND invoice.create_datetime <= $P{end_date}
+
+UNION ALL
+
+	SELECT
+		invoice.create_datetime AS invoice_date,
+		invoice.id AS invoice_number,
+		invoice.user_id AS customer_id,
+		(SELECT content
+                   FROM international_description
+		  WHERE foreign_id = il.item_id
+                    AND language_id = 1
+		    AND table_id = (SELECT id
+			              FROM jbilling_table
+			             WHERE name = 'item')) AS plan_name,
+		order_process.period_start AS from_date,
+		(order_process.period_end :: date - 1)  AS to_date,
+		item.active_until AS product_end_date,
+		(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END ) AS revenue_gl_code,
+                0 AS unearned_days,
+		(CASE WHEN
+item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
+THEN
+0
+WHEN(
+item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
+)
+THEN
+(
+ (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - item.active_until :: date +1
+WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
+THEN 0
+ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (order_process.period_end :: date ) + 1 END):: decimal AS unbilled_days,
+
+		((order_process.period_end :: date - order_process.period_start :: date))::decimal AS period_duration,
+		(CASE WHEN il.gross_amount = 0 THEN  il.amount  ELSE il.gross_amount END) AS sales_ex_tax,
+		(CASE WHEN il.gross_amount = 0 THEN  (il.amount*0.1) ELSE il.tax_amount END) AS GST,
+		(SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code = (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END)),
+		(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END) AS costs_gl_code,
+                (SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code =(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END)) AS costs_gl_description,
+	    (SELECT string_agg(string_value, ',')
+	      FROM meta_field_value mfv
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name IN ('ServiceId')
+	INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+	INNER JOIN asset a ON a.id = amfm.asset_id AND order_line_id IN (SELECT id FROM order_line WHERE order_id = il.order_id )) AS service_number_email,
+            (SELECT string_agg(identifier,',') FROM asset WHERE  order_line_id IN (SELECT id FROM order_line WHERE order_id = il.order_id)) AS asset_identifire,
+	             (SELECT CASE
+                             WHEN (SELECT COUNT(*) > 0
+                                     FROM plan
+                                       WHERE item_id = il.item_id) = 't'
+                             THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Senior Plan -',''))
+                                     FROM item_type it
+                                 INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+                                         WHERE description LIKE 'Senior Plan -%')
+                             ELSE NULL
+                             END ) AS senior_plan,
+                  0 as cost_of_service
+         FROM invoice
+    INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
+	          FROM invoice_line
+	    INNER JOIN purchase_order ON purchase_order.id = invoice_line.order_id
+                                     AND purchase_order.period_id != 1
+                                     AND (purchase_order.billing_type_id = 2)
+                 WHERE invoice_line.item_id NOT IN (SELECT id FROM item WHERE internal_number = 'GST' AND (entity_id = $P{entity_id} OR $X{IN,entity_id,child_entities}))
+                                       AND invoice_line.item_id IN ( SELECT item_id FROM item_type_map WHERE type_id IN (SELECT id FROM item_type WHERE description = 'Unbilled Revenue - Included'))
+		   AND purchase_order.deleted = 0
+		   AND invoice_line.deleted = 0
+              GROUP BY invoice_id,order_id,item_id) il ON il.invoice_id = invoice.id
+    INNER JOIN item ON item.id = il.item_id
+    INNER JOIN purchase_order po ON po.id = il.order_id
+    INNER JOIN order_process ON (order_process.order_id = il.order_id AND order_process.invoice_id = invoice.id)
+    INNER JOIN base_user ON base_user.id = invoice.user_id AND (base_user.entity_id = $P{entity_id} OR $X{IN,base_user.entity_id,child_entities})
+         WHERE  invoice.deleted = 0 AND base_user.deleted = 0 AND invoice.create_datetime >= $P{start_date} AND invoice.create_datetime <= $P{end_date}
+
+UNION ALL
+
+	SELECT table1.invoice_date,
+               table1.invoice_number,
+               table1.customer_id,
+               table1.plan_name,
+               op.period_start AS from_date,
+               (op.period_end :: date - 1)  AS to_date,
+               table1.product_end_date,
+               table1.revenue_gl_code,
+               0 AS unearned_days,
+(CASE
+WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
+THEN 0
+ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (op.period_end :: date ) + 1 END):: decimal AS unbilled_days,
+
+		((op.period_end :: date - op.period_start :: date))::decimal AS period_duration,
+
+               table1.sales_ex_tax,
+               0 AS GST,
+               table1.gl_description,
+               table1.costs_gl_code,
+               table1.costs_gl_description,
+               table1.service_number_email,
+	       table1.asset_identifire,
+               table1.senior_plan,
+               table1.cost_of_service
+       FROM
+	(SELECT
+		invoice.create_datetime AS invoice_date,
+		invoice.id AS invoice_number,
+		invoice.user_id AS customer_id,
+		(SELECT content
+                   FROM international_description
+		  WHERE foreign_id = il.item_id
+                    AND language_id = 1
+		    AND table_id = (SELECT id
+			              FROM jbilling_table
+			             WHERE name = 'item')) AS plan_name,
+		item.active_until AS product_end_date,
+		(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END ) AS revenue_gl_code,
+	        (SELECT op.id FROM order_process op
+             INNER JOIN purchase_order in_po ON (CASE WHEN in_po.parent_order_id IS NOT NULL THEN in_po.parent_order_id  ELSE in_po.id END) = op.order_id
+             INNER JOIN order_line ol ON in_po.id = ol.order_id
+             INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
+             INNER JOIN asset a ON a.id = aa.asset_id AND a.identifier = (SELECT call_identifier FROM order_line WHERE order_id = po.id AND call_identifier IS NOT NULL AND item_id = il.item_id limit 1)
+		  WHERE op.period_start <= po.active_since AND op.period_end > po.active_since ) AS op_id,
+		il.gross_amount AS sales_ex_tax,
+(SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code = (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE item.gl_code END)) AS gl_description,
+		(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END) AS costs_gl_code,
+                (SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code =(CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id)
+		THEN ( SELECT mfv.string_value
+                         FROM meta_field_value mfv
+                   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                ELSE (SELECT mfv.string_value
+                           FROM item itm
+                     INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+                             AND mfv.meta_field_name_id = mfn.id
+                            AND itm.id = il.item_id) END)) AS costs_gl_description,
+	    (SELECT string_agg(string_value, ',')
+	      FROM meta_field_value mfv
+	INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name IN ('ServiceId')
+	INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+	INNER JOIN asset a ON a.id = amfm.asset_id AND identifier IN (SELECT call_identifier FROM order_line WHERE item_id = il.item_id AND order_id = il.order_id )) AS service_number_email,
+           (SELECT string_agg(call_identifier, ',') FROM order_line WHERE item_id = il.item_id AND order_id = il.order_id) AS asset_identifire,
+	             (SELECT CASE
+                             WHEN (SELECT COUNT(*) > 0
+                                     FROM plan
+                                       WHERE item_id = il.item_id) = 't'
+                             THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Senior Plan -',''))
+                                     FROM item_type it
+                                 INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+                                         WHERE description LIKE 'Senior Plan -%')
+                             ELSE NULL
+                             END ) AS senior_plan,
+                  (SELECT sum(rated_price) FROM jbilling_mediation_record WHERE order_id = il.order_id ) as cost_of_service
+         FROM invoice
+    INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
+	          FROM invoice_line
+	    INNER JOIN purchase_order ON purchase_order.id = invoice_line.order_id
+                                     AND purchase_order.period_id = 1
+                                     AND is_mediated = 't'
+                 WHERE invoice_line.item_id NOT IN (SELECT id FROM item WHERE internal_number = 'GST' AND (entity_id = $P{entity_id} OR $X{IN,entity_id,child_entities}))
+                                     AND invoice_line.item_id IN ( SELECT item_id FROM item_type_map WHERE type_id IN (SELECT id FROM item_type WHERE description = 'Unbilled Revenue - Included'))
+		   AND purchase_order.deleted = 0
+		   AND invoice_line.deleted = 0
+              GROUP BY invoice_id,order_id,item_id) il ON il.invoice_id = invoice.id
+    INNER JOIN item ON item.id = il.item_id
+    INNER JOIN purchase_order po ON po.id = il.order_id
+    INNER JOIN base_user ON base_user.id = invoice.user_id AND (base_user.entity_id = $P{entity_id} OR $X{IN,base_user.entity_id,child_entities})
+         WHERE  invoice.deleted = 0 AND base_user.deleted = 0 AND invoice.create_datetime >= $P{start_date} AND invoice.create_datetime <= $P{end_date}) table1
+INNER JOIN order_process op ON op.id = table1.op_id
+INNER JOIN purchase_order po ON po.id = op.order_id
+INNER JOIN invoice ON invoice.id = op.invoice_id
+) s ORDER BY s.invoice_date, s.invoice_number;]]>
+	</queryString>
+	<field name="invoice_date" class="java.sql.Timestamp"/>
+	<field name="invoice_number" class="java.lang.Integer"/>
+	<field name="customer_id" class="java.lang.Integer"/>
+	<field name="plan_name" class="java.lang.String"/>
+	<field name="from_date" class="java.sql.Date"/>
+	<field name="to_date" class="java.sql.Date"/>
+	<field name="product_end_date" class="java.sql.Date"/>
+	<field name="revenue_gl_code" class="java.lang.String"/>
+	<field name="unearned_days" class="java.math.BigDecimal"/>
+	<field name="unbilled_days" class="java.math.BigDecimal"/>
+	<field name="period_duration" class="java.math.BigDecimal"/>
+	<field name="sales_ex_tax" class="java.math.BigDecimal"/>
+	<field name="gst" class="java.math.BigDecimal"/>
+	<field name="gl_description" class="java.lang.String"/>
+	<field name="costs_gl_code" class="java.lang.String"/>
+	<field name="costs_gl_description" class="java.lang.String"/>
+	<field name="service_number_email" class="java.lang.String"/>
+	<field name="asset_identifire" class="java.lang.String"/>
+	<field name="senior_plan" class="java.lang.String"/>
+	<field name="cost_of_service" class="java.math.BigDecimal"/>
+	<variable name="sum_of_unearned_days" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{unearned_days} > 0 ? $F{unearned_days} : 0]]></variableExpression>
+	</variable>
+	<variable name="sum_sale_ex_tax" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_tax}]]></variableExpression>
+	</variable>
+	<variable name="sum_unearned_ex_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_tax} * (($F{unearned_days} > 0 ? $F{unearned_days} : 0)/$F{period_duration})]]></variableExpression>
+	</variable>
+	<variable name="sum_unbilled_days" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{unbilled_days} > 0 ? $F{unbilled_days} : 0]]></variableExpression>
+	</variable>
+	<variable name="sum_unbilled_ex_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_tax} * (($F{unbilled_days} >0 ? $F{unbilled_days} : 0) /$F{period_duration})]]></variableExpression>
+	</variable>
+	<variable name="sum_cost_of_service" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{cost_of_service} != null ? $F{cost_of_service} :0]]></variableExpression>
+	</variable>
+	<title>
+		<band height="91" splitType="Stretch">
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="2054" y="25" width="106" height="20" uuid="808f3772-c7a8-47cd-87f5-785f0ac9af57"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1989" y="25" width="65" height="20" uuid="49263d65-1df3-4983-8661-68c66f5344f1"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1989" y="45" width="65" height="20" uuid="3bbdda01-4b35-4e58-9364-7b8b09f7e6c8"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1989" y="65" width="65" height="20" uuid="e9b2fe52-17c9-4782-aeba-53d8d0256d48"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="2160" height="20" uuid="86675533-2c20-45d6-bbe8-865b5a193845"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unearned-Unbilled Details]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="2054" y="45" width="106" height="20" uuid="01f0844a-706b-4e2b-a0c1-e1a6609eff17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="2054" y="65" width="106" height="20" uuid="e0385302-c847-4007-8c6d-b5c156054483"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="27" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="93" height="20" uuid="23b28475-3982-42ea-b035-f73d51f1f5ce"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="93" y="0" width="100" height="20" uuid="0d3e912c-f066-4a04-9ad6-9461bf01a4d2"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="193" y="0" width="111" height="20" uuid="11e19979-4fc9-4c61-994a-26d8263dd2b7"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="505" y="0" width="212" height="20" uuid="5c1d4539-225b-4315-bde1-af1700d0645a"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Plan/Product Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="717" y="0" width="100" height="20" uuid="4f1c796b-b249-49c7-a591-e86376f2ae10"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[From Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="817" y="0" width="100" height="20" uuid="7641064e-d9c9-4368-bc5d-d6fc4d408132"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[To Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="917" y="0" width="123" height="20" uuid="88826f44-0240-4eb6-8acb-550bc3f07d3a"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product End Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1040" y="0" width="113" height="20" uuid="98cf3c88-89bf-4775-90a5-8f0f2e940303"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revenue GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1292" y="0" width="100" height="20" uuid="e68de90a-7b75-4747-b364-ad0bdfb31912"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1392" y="0" width="100" height="20" uuid="f7bf9a22-830e-4459-998b-fde9f450610b"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unearned Days]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1492" y="0" width="111" height="20" uuid="64638443-df51-49b3-a7b1-0bd3e152f5c0"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unearned $ ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1603" y="0" width="100" height="20" uuid="7c6704a4-0640-4ea7-9209-3afba9493050"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unbilled Days]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1153" y="0" width="139" height="20" uuid="97b82cbc-663f-4234-8852-eafa989b9b16"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revenue GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1703" y="0" width="111" height="20" uuid="89edbac8-3e25-4e26-9b82-dbb606e9ea2d"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unbilled $ ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1829" y="0" width="100" height="20" uuid="93253799-1663-44fa-b232-3f49fa257d05"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Costs GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1929" y="0" width="126" height="20" uuid="0f8fc3d5-bb38-49ca-9a3d-ddd452e56d4d"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Costs GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="304" y="0" width="201" height="20" uuid="a30e8946-ddd4-4d1e-8742-262b50ad5180"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service Number/Email]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2055" y="0" width="106" height="20" uuid="3656adb4-ac69-4446-9c64-aebf3a7ed026"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cost Of Service]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="23" width="2160" height="1" uuid="c877dcbe-2605-46c9-a19d-2188b4acc1a6"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="93" height="20" uuid="f77600a7-17f9-4589-8372-ed747680f90a"/>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="93" y="0" width="100" height="20" uuid="55724c5e-14a7-47fb-99bf-8735e1e1121f"/>
+				<textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="505" y="0" width="212" height="20" uuid="a062cd25-444b-4d93-8bac-1eaa2bbb8633"/>
+				<textFieldExpression><![CDATA[$F{plan_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="717" y="0" width="100" height="20" uuid="76544e3d-3bf8-4754-916d-dc324a8eca97"/>
+				<textFieldExpression><![CDATA[$F{from_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="817" y="0" width="100" height="20" uuid="469d584d-ffa9-44bc-bb37-0925f294fdb9"/>
+				<textFieldExpression><![CDATA[$F{to_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="917" y="0" width="123" height="20" uuid="1343db51-b076-48cd-bc68-74ae5de791eb"/>
+				<textFieldExpression><![CDATA[$F{product_end_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1040" y="0" width="113" height="20" uuid="ee6c292e-ad9f-4821-9fca-1e18477a9a20"/>
+				<textFieldExpression><![CDATA[$F{revenue_gl_code}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1292" y="0" width="100" height="20" uuid="598712d2-d61a-4b2f-b06f-4a22f2694c28"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_tax}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0" isBlankWhenNull="true">
+				<reportElement x="1392" y="0" width="100" height="20" uuid="e9f8c275-6785-46bb-938b-e78a1a3e05a7"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{unearned_days} > 0 ? $F{unearned_days} : 0]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0" isBlankWhenNull="true">
+				<reportElement x="1603" y="0" width="100" height="20" uuid="c7cb9fbb-00d3-4197-81c6-1f7835f46b0e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{unbilled_days} > 0 ? $F{unbilled_days} : 0]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1153" y="0" width="139" height="20" uuid="0afbd40d-df07-4a66-ba4d-ce95b9a97ee3"/>
+				<textFieldExpression><![CDATA[$F{gl_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="193" y="0" width="111" height="20" uuid="ce2bfae4-8f02-4052-bbed-0bc257372ba5"/>
+				<textFieldExpression><![CDATA[$F{customer_id}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1703" y="0" width="111" height="20" uuid="9dd9f60a-c3e6-4be8-b27d-e5f5b2c96bfc"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_tax} * (($F{unbilled_days} >0 ? $F{unbilled_days} : 0) /$F{period_duration})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1829" y="0" width="100" height="20" uuid="9281a946-f8cb-4d48-998d-81c5409388da"/>
+				<textFieldExpression><![CDATA[$F{costs_gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1929" y="0" width="126" height="20" uuid="c4cb23f3-eff5-4a37-9cd6-58b3b2bd723f"/>
+				<textFieldExpression><![CDATA[$F{costs_gl_description}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1492" y="0" width="111" height="20" uuid="fe9c95d6-7e2f-4f2c-b1d0-2b82dfbf282a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_tax} * (($F{unearned_days} > 0 ? $F{unearned_days} : 0)/$F{period_duration})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="304" y="0" width="201" height="20" uuid="46eac6aa-ae81-4d2d-a89e-67ca7022f14c"/>
+				<textFieldExpression><![CDATA[null != $F{service_number_email} ? $F{service_number_email} : $F{asset_identifire}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="2055" y="0" width="106" height="20" uuid="70ba55ac-be04-43da-be44-8c9c81f2d09a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{cost_of_service} != null ? $F{cost_of_service} :0]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="42">
+			<textField>
+				<reportElement x="2055" y="17" width="105" height="20" uuid="24058874-befd-4420-aea7-8cc4b40c75e8"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<lastPageFooter>
+		<band height="59">
+			<line>
+				<reportElement x="0" y="0" width="2160" height="1" uuid="fbd5f980-018d-451f-a077-360b34b92d24"/>
+			</line>
+			<staticText>
+				<reportElement x="1153" y="3" width="139" height="20" uuid="219c2e84-fc08-4b54-9c3b-4fe6926d1b3d"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total :]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1392" y="3" width="100" height="20" uuid="3c2a9aec-218c-4606-8cd9-51f4a41904b7"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_of_unearned_days}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1292" y="3" width="100" height="20" uuid="cec5c145-e860-4e1c-a567-72543fd9de7f"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_sale_ex_tax}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1492" y="3" width="111" height="20" uuid="fb97d7e7-2a4f-4c68-ae1b-8b225c915ba8"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_unearned_ex_gst}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1603" y="3" width="100" height="20" uuid="cdb8b4ea-bcde-484f-ae66-fd5aedc53254"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_unbilled_days}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="1703" y="3" width="111" height="20" uuid="733f7a31-6747-4e56-83c0-e50164d0cc35"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_unbilled_ex_gst}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="2055" y="3" width="105" height="20" uuid="6c4586f8-1403-4c6d-a87a-df9e9493c4d1"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{sum_cost_of_service}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="2055" y="36" width="105" height="20" uuid="c40e6b27-f45f-4ae8-b4c8-0d6e22d0e2ae"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>

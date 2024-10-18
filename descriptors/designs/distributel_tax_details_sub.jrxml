@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="itg_test_sub_academy" language="groovy" pageWidth="280" pageHeight="830" columnWidth="240" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="52eb6b96-6e58-478a-867d-a91e91e5e658">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[
+        SELECT DISTINCT (il.id),
+               il.description AS description,
+               il.amount AS amount,
+               bu.language_id
+          FROM invoice i
+    INNER JOIN base_user bu ON bu.id = i.user_id
+    INNER JOIN invoice_line il ON il.invoice_id = i.id
+         WHERE il.type_id = 2
+           AND i.id = $P{invoice_id};
+    ]]>
+	</queryString>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="language_id" class="java.lang.Integer"/>
+	<columnHeader>
+		<band/>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<textField pattern="$ #,##0.00">
+				<reportElement x="250" y="2" width="100" height="15" forecolor="#000000" uuid="f0f657f6-2d17-43bf-aa5d-75b578d95ff2">
+					<printWhenExpression><![CDATA[$F{language_id}==1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00 $">
+				<reportElement x="250" y="2" width="100" height="15" forecolor="#000000" uuid="f0f657f6-2d17-43bf-aa5d-75b578d95ff2">
+					<printWhenExpression><![CDATA[$F{language_id}!=1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="54" y="2" width="200" height="15" forecolor="#000000" uuid="0cda6532-d1fb-488c-8b15-6d9cfee47a04"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

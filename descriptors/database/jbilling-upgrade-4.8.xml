@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.8.xml">
+
+    <changeSet id="JBIIE-1487 Added NGES Export plugin" author="Hitesh Yadav">
+        <comment>Add new plug-in for export data from DB.</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name"
+                    value="com.sapienter.jbilling.server.nges.export.plugin.NGESExportTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="NGES Data Export"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin will export data from DB and write into csv file."/>
+        </insert>
+
+        <comment>Sequences update</comment>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id)+1, 1) FROM pluggable_task_type)"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-1607 : Adding column user_id in edi_file" author="Neeraj Bhatt">
+        <addColumn tableName="edi_file">
+            <column  name="user_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column  name="start_date" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column  name="end_date" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column  name="utility_account_number" type="java.sql.Types.VARCHAR(1024)">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="JBIIE-1628 : Fixing autorenewal send notification" author="Neeraj Bhatt">
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM notification_message_type)"/>
+            <column name="category_id" valueNumeric="5"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52"/>
+            <column name="foreign_id" valueComputed="(SELECT max(id) FROM notification_message_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Qpay Control Center Alert"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(t.id)+1 from notification_message_type t),1)"/>
+            <where>name='notification_message_type'</where>
+        </update>
+    </changeSet>
+
+	<changeSet id="JB-991 - 404 Page Not Found, error message is displayed. while clicking on 'New product' at breadcrumb" author="Leandro Zoi" context="base">
+		<addColumn tableName="breadcrumb">
+			<column name="parameters"  type="java.sql.Types.VARCHAR(50)">
+			</column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="#JB-982 Drop blacklist_fk_credit_card constraint" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<foreignKeyConstraintExists foreignKeyName="blacklist_fk_credit_card" foreignKeyTableName="blacklist"/>
+		</preConditions>
+		<dropForeignKeyConstraint baseTableName="blacklist" constraintName="blacklist_fk_credit_card"/>
+	</changeSet>
+
+	<changeSet id="#JB-982 Drop payment_fk_payment_info constraint" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<foreignKeyConstraintExists foreignKeyName="payment_fk_payment_info" foreignKeyTableName="payment"/>
+		</preConditions>
+		<dropForeignKeyConstraint baseTableName="payment" constraintName="payment_fk_payment_info"/>
+	</changeSet>
+
+	<changeSet id="#JB-982 Drop Legacy Credit Card Table" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<tableExists tableName="credit_card"/>
+		</preConditions>
+		<dropTable tableName="credit_card"/>
+	</changeSet>
+
+	<changeSet id="#JB-982 Drop Legacy ach Table" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<tableExists tableName="ach"/>
+		</preConditions>
+		<dropTable tableName="ach"/>
+	</changeSet>
+
+	<changeSet id="#JB-982 Drop Legacy Payment Info Cheque Table" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<tableExists tableName="payment_info_cheque"/>
+		</preConditions>
+		<dropTable tableName="payment_info_cheque"/>
+	</changeSet>
+	
+	<changeSet author="Mahesh Shivarkar" context="base" id="JB-1001-Deleted-CustomerUsagePoolEvaluationCronTask-Plugin">
+		<delete tableName="pluggable_task">
+			<where>
+                type_id in (select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationCronTask')
+			</where>
+		</delete>
+		<delete tableName="pluggable_task_type">
+			<where>
+                class_name = 'com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationCronTask'
+			</where>
+		</delete>
+	</changeSet>
+	
+</databaseChangeLog>

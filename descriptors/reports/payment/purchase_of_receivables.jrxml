@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-04-11T15:52:46 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="purchase_of_receivables" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="fe266c3c-0a15-480a-b0cb-227b2ae4a0ad">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Postgres-jbilling_test"/>
+	<parameter name="division" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(1001)]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entityNames" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.Integer" isForPrompting="false">
+        <defaultValueExpression><![CDATA[new Integer(1)]]></defaultValueExpression>
+    </parameter>
+	<parameter name="entity_timezone" class="java.lang.String" isForPrompting="false">
+    	<defaultValueExpression><![CDATA["UTC"]]></defaultValueExpression>
+    </parameter>
+	<queryString>
+		<![CDATA[select
+	division_mf.value as division,
+	e.description as entity,
+	sum(case when eff.edi_file_field_key = 'ORG_INVOICE_AMT' then cast( eff.edi_file_field_value as numeric) else 0 end) as original_amount,
+	sum(case when eff.edi_file_field_key = 'PYMT_AMOUNT' then cast( eff.edi_file_field_value as numeric) else 0 end) as payment_amount,
+	sum(case when eff.edi_file_field_key = 'DISCOUNT_AMT' then cast( eff.edi_file_field_value as numeric) else 0 end) as discount_amount
+from
+	entity e
+	join edi_file ef on ef.entity_id = e.id and $X{IN,e.id,child_entities} and (coalesce($P{start_date}, to_date('9999', 'YYYY')) = to_date('9999', 'YYYY') or timezone($P{entity_timezone},timezone('UTC',ef.create_datetime)) >= $P{start_date}) and (date_trunc('day', timezone($P{entity_timezone},timezone('UTC',ef.create_datetime))) <= $P{end_date} or coalesce($P{end_date}, to_date('9999', 'YYYY')) = to_date('9999', 'YYYY'))
+	join edi_type et on ef.edi_type_id = et.id
+	join edi_file_status efs on ef.edi_status_id = efs.id
+	join edi_file_record efr on (efr.edi_file_id = ef.id)
+	left join edi_file_field eff on (eff.edi_file_record_id = efr.id) and eff.edi_file_field_key in ('ORG_INVOICE_AMT', 'PYMT_AMOUNT', 'DISCOUNT_AMT')
+	left join edi_file_field eff2 on (eff2.edi_file_record_id = efr.id) and eff2.edi_file_field_key in ('UTILITY_CUST_ACCT_NR')
+	JOIN (
+		SELECT caitt.customer_id, mfv.string_value as value
+		FROM customer c
+		INNER JOIN customer_account_info_type_timeline caitt ON c.id = caitt.customer_id
+		INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+		INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+		WHERE mfn.name = 'UTILITY_CUST_ACCT_NR'
+	) account_nr_mf ON account_nr_mf.value = eff2.edi_file_field_value
+	join customer c on c.id = account_nr_mf.customer_id
+	JOIN (
+		SELECT caitt.customer_id, mfv.string_value as value
+		FROM customer c
+		INNER JOIN customer_account_info_type_timeline caitt ON c.id = caitt.customer_id
+		INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id and (mfv.string_value = $P{division} or $P{division} = '')
+		INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+		WHERE mfn.name = 'DIVISION'
+	) division_mf ON division_mf.customer_id = c.id
+where
+	et.name like '820_Payment_Read%'
+	and efs.is_error = false and (efs.name='DONE' or efs.name='INCONSISTENT_PAYMENT') and efr.edi_file_field_header='ACT' and (efr.comment is null or efr.comment = '')
+group by
+	division_mf.value, e.description]]>
+	</queryString>
+	<field name="division" class="java.lang.String"/>
+	<field name="entity" class="java.lang.String"/>
+	<field name="original_amount" class="java.math.BigDecimal"/>
+	<field name="payment_amount" class="java.math.BigDecimal"/>
+	<field name="discount_amount" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="70" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="280" height="20" uuid="59cd9e57-7cb8-4778-b4e9-d8e915a3af74"/>
+				<textElement>
+					<font fontName="SansSerif" size="15" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Purchase of Receivables"]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="391" y="0" width="63" height="20" uuid="4f303036-d69b-4be2-a259-acb12ee8ef20"/>
+				<textFieldExpression><![CDATA["Executed on"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd-MMM-yyyy HH:mm" isBlankWhenNull="false">
+				<reportElement x="456" y="0" width="108" height="20" uuid="7b73fa02-8aa0-401e-9275-9d6038ab768a"/>
+				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="20" width="90" height="15" uuid="f0dd706e-154b-4bd2-954e-fa15f4f4f850"/>
+				<textFieldExpression><![CDATA["Invoices between"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd-MMM-yyyy    -" isBlankWhenNull="true">
+				<reportElement x="90" y="20" width="90" height="15" uuid="338d1d22-ed64-448c-a8d2-db1462762848"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd-MMM-yyyy" isBlankWhenNull="true">
+				<reportElement x="180" y="20" width="90" height="15" uuid="86d2785f-f2a4-4cf8-8745-2ec0dccde17a"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="35" width="250" height="15" uuid="dc861687-fe5c-4ea6-b3ea-69d1225ba17a"/>
+				<textFieldExpression><![CDATA["Division: " +
+($P{division} != null && $P{division}.length() > 0 ? $P{division} : "All")]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="262" y="35" width="310" height="30" uuid="d659d21c-bb2e-4a44-9c47-2232be01c39f">
+					<printWhenExpression><![CDATA[$P{entityNames} != null && $P{entityNames}.length() > 0]]></printWhenExpression>
+				</reportElement>
+				<textFieldExpression><![CDATA["LDC: " + $P{entityNames}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="17" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="16" width="572" height="1" forecolor="#CCCCCC" uuid="dd61d1cd-a6e8-4dae-9e93-60c467f1314b"/>
+			</line>
+			<textField>
+				<reportElement x="145" y="0" width="70" height="15" uuid="bb210c21-9135-47b5-9253-d1a9bc609d85"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["LDC"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="0" width="70" height="15" uuid="b3c93fa3-d823-4dee-a0f5-5550dde2c209"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Division"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="310" y="0" width="80" height="15" uuid="9ae3ae5f-7068-44e5-8641-224793b52d47"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Original Amt"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="402" y="0" width="80" height="15" uuid="28016e8c-a69c-41d7-b8c8-bc7c1421befe"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Payment Amt"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="489" y="0" width="80" height="15" uuid="6b1b8abe-2af0-479f-83c2-ee50fb6dbd1b"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Discount Amt"]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="145" y="2" width="155" height="16" uuid="d8fcdfbb-32d0-403e-b264-9db84de90112"/>
+				<textFieldExpression><![CDATA[$F{entity}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="489" y="2" width="80" height="16" uuid="b3b658e3-ab2b-4ce4-9d1b-8367648fb08d"/>
+				<textFieldExpression><![CDATA[$F{discount_amount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="402" y="2" width="80" height="16" uuid="6454b53f-fa9a-4faa-9c9f-2eb119696984"/>
+				<textElement>
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payment_amount}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="310" y="2" width="80" height="16" uuid="f5673250-0145-437d-8295-fa7a4bd1f202"/>
+				<textFieldExpression><![CDATA[$F{original_amount}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="20" width="572" height="1" forecolor="#CCCCCC" uuid="f6e0368f-3b98-4ab4-ac74-94a3c4554ff3"/>
+			</line>
+			<textField>
+				<reportElement x="0" y="2" width="140" height="16" uuid="049da5f5-3928-4d49-994d-6dcad2724b96"/>
+				<textFieldExpression><![CDATA[$F{division}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<textField>
+				<reportElement x="10" y="4" width="80" height="20" uuid="9224f39c-6eb9-486e-aba7-2de00b916710"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="90" y="4" width="40" height="20" uuid="330baba4-b3c7-40db-95c2-c2002e42b4a5"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

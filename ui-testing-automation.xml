@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="jbilling"
+    default="ui-testing-automation"
+    xmlns:if="ant:if"
+    xmlns:unless="ant:unless">
+
+    <property file="jbilling-build.properties"/>
+    <property environment="env"/>
+
+    <property unless:set="grails.home" name="grails.home" value="${env.GRAILS_HOME}" />
+
+    <echo message="Building with grails ${grails.home}"/>
+
+    <import file="${grails.home}/src/grails/grails-macros.xml" />
+
+    <target name="build-grails-ant-properties">
+        <property name="grails.properties.file" value="grails-ant.properties" />
+
+        <uptodate property="gails.classpath.uptodate" targetfile="${grails.properties.file}">
+            <srcresources>
+                <dirset dir="." includes="lib" />
+                <fileset dir="lib/" includes="*.jar" />
+                <fileset dir="grails-app/conf/" includes="BuildConfig.groovy" />
+            </srcresources>
+        </uptodate>
+
+        <echo   unless:set="gails.classpath.uptodate">Generating ${grails.properties.file} file</echo>
+        <grails unless:set="gails.classpath.uptodate" command="build-ant-properties">
+            <sysprops>
+                <sysproperty key="grails.offline.mode" value="false" />
+            </sysprops>
+        </grails>
+        <property file="${grails.properties.file}" />
+
+        <path id="test.classpath" path="${test.classpath}" />
+    </target>
+
+
+    <target name="init.testng" depends="build-grails-ant-properties">
+        <taskdef resource="testngtasks" classpathref="test.classpath"/>
+    </target>
+
+
+    <target name="clean.tests">
+        <delete dir="${build.test.dir}"/>
+        <mkdir dir="${build.test.dir}"/>
+    </target>
+
+
+    <target name="clean.results" unless="test.noclean">
+        <delete dir="${build.test-results.dir}"/>
+        <mkdir dir="${build.test-results.dir}"/>
+
+        <!-- only clean test results once per build, otherwise we lose our test reports -->
+        <property name="test.noclean" value="true"/>
+    </target>
+
+
+    <target name="compile.tests" if="suitename" depends="clean.tests">
+        <mkdir dir="${build.test-results.dir}/${suitename}/xml"/>
+        <mkdir dir="${build.test-results.dir}/${suitename}/html"/>
+
+        <echo message="Compiling test suite '${suitename}'"/>
+
+        <javac srcdir="${source.test.dir}/${suitename}"
+               destdir="${build.test.dir}"
+               source="${javac.source.level}"
+               target="${javac.target.level}"
+               includeantruntime="false"
+               debug="true" fork="true" deprecation="false" nowarn="true">
+
+            <classpath path="${test.classpath}"/>
+        </javac>
+    </target>
+
+
+    <target name="test.reports" if="suitename" unless="test.noreport">
+        <junitreport todir="${build.test-results.dir}">
+            <fileset dir="${build.test-results.dir}/${suitename}/xml">
+                <include name="*/*.xml"/>
+            </fileset>
+            <report format="noframes" todir="${build.test-results.dir}/${suitename}/html"/>
+        </junitreport>
+        <fail if="test.failure" message="${ant.project.name} ${suitename} tests failed, see test reports in ${build.test-results-dir}"/>
+    </target>
+
+
+    <target name="ui-testing-automation"  depends="init.testng, clean.results"
+        description="Run UI Selenium-driven tests. Use -Dtestname and -Dgroups to control which test suites and groups are run.">
+
+        <property unless:set = "testngxml"   name = "testngxml"   value = "testng.xml" />
+        <property unless:set = "jbillingUrl" name = "jbillingUrl" value = "http://nightly-regression.jbilling.com/jbilling" />
+        <property unless:set = "loginId"     name = "loginId"     value = "system admin" />
+
+        <!-- compile tests -->
+        <antcall target="compile.tests">
+            <param name="suitename" value="automation"/>
+        </antcall>
+
+        <copy todir="${build.test.dir}">
+                <fileset dir="${source.test.dir}/automation/resources/" includes="**"/>
+        </copy>
+
+        <echo if:set = "spring.profiles.active">spring.profiles.active = ${spring.profiles.active}</echo>
+
+        <testng suitename="${ant.project.name} Automation Test Suite"
+                classpathref="test.classpath"
+                outputDir="${build.test-results.dir}/automation/xml"
+                failureProperty="test.failure"
+                haltonfailure="true"
+                verbose="2">
+
+            <sysproperty if:set="jbillingUrl" key="jbillingUrl" value="${jbillingUrl}" />
+            <sysproperty if:set="loginId"     key="loginId"     value="${loginId}" />
+            <sysproperty if:set="password"    key="password"    value="${password}" />
+            <sysproperty if:set="companyId"   key="companyId"   value="${companyId}" />
+
+            <sysproperty if:set="webdriver.timeouts.implicitWait"
+                            key="webdriver.timeouts.implicitWait"
+                          value="${webdriver.timeouts.implicitWait}" />
+
+            <sysproperty if:set="webdriver.timeouts.pageLoad"
+                            key="webdriver.timeouts.pageLoad"
+                          value="${webdriver.timeouts.pageLoad}" />
+
+            <sysproperty if:set="webdriver.timeouts.scriptTimeout"
+                            key="webdriver.timeouts.scriptTimeout"
+                          value="${webdriver.timeouts.scriptTimeout}" />
+
+
+            <sysproperty key="logback.configurationFile" value="file://${source.test.dir}/ant-tests-logback.xml" />
+            <sysproperty if:set="spring.profiles.active" key = "spring.profiles.active" value = "${spring.profiles.active}" />
+
+            <xmlfileset dir="${source.test.dir}/automation/resources/" includes="${testngxml}"/>
+        </testng>
+
+        <antcall target="test.reports">
+            <param name="suitename" value="automation"/>
+        </antcall>
+    </target>
+</project>

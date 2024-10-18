@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-06-03T14:14:25 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="billing_register_summary" language="groovy" pageWidth="792" pageHeight="612" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="752" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="10e3f4bf-539c-4276-ad3a-3cadfcbfc05f">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Postgres-jbilling_test"/>
+	<parameter name="plan_id" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[null]]></defaultValueExpression>
+	</parameter>
+	<parameter name="division" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="state" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="item_id" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[null]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.util.List">
+		<defaultValueExpression><![CDATA[Arrays.asList(71)]]></defaultValueExpression>
+	</parameter>
+	<parameter name="planName" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="itemName" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(1001)]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[new java.util.Date(System.currentTimeMillis())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entityNames" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["Test"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[71]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select division, state, e.description as entity, pd.content as plan, max(billval.string_value) as bill_model, itd.content as item, max(uom.uom) as uom, sum(il.amount) as amount, sum(il.quantity) as quantity, avg(il.price) as price, coalesce(sum(st.amount), 0) as sales_tax, coalesce(sum(grt.amount),0) as grt
+from customer c join base_user u on u.id=c.user_id
+join entity e on e.id=u.entity_id and $X{IN,e.id,child_entities}
+join
+(
+	select DISTINCT c.id as customer_id,divval.string_value as division,stateval.string_value as state   from customer c join base_user u on u.id=c.user_id
+	join customer_account_info_type_timeline cait on cait.customer_id=c.id
+	join meta_field_value stateval on stateval.id = cait.meta_field_value_id and (stateval.string_value = $P{state} or $P{state} = '')
+	  join meta_field_name statemf on stateval.meta_field_name_id = statemf.id and lower(statemf.name)='state'
+	join customer_account_info_type_timeline cait2 on cait2.customer_id=c.id
+	join meta_field_value divval on divval.id = cait2.meta_field_value_id and (divval.string_value = $P{division} or $P{division} = '')
+	  join meta_field_name divmf on divval.meta_field_name_id = divmf.id and lower(divmf.name)='division'
+ ) ait on customer_id=c.id
+join invoice i on i.user_id=c.user_id and (i.create_datetime >= $P{start_date}) and (i.create_datetime <= $P{end_date})
+join invoice_line il on il.invoice_id=i.id
+join item it on it.id = il.item_id and (it.id = $P{item_id} or $P{item_id} is null)
+join purchase_order po on po.user_id=u.id
+join order_line ol on ol.order_id=po.id
+join plan p on p.item_id=ol.item_id and (p.id = $P{plan_id} or $P{plan_id} is null)
+join plan_meta_field_map pmfm1 on pmfm1.plan_id=p.id
+join meta_field_value billval on billval.id = pmfm1.meta_field_value_id
+  join meta_field_name billmf on billval.meta_field_name_id = billmf.id and lower(billmf.name)='billing model'
+join plan_item pi on pi.plan_id=p.id and pi.item_id=it.id
+join international_description itd on itd.foreign_id=it.id and itd.table_id=14 and itd.language_id=1 and itd.psudo_column='description'
+join international_description pd on pd.foreign_id=p.item_id and pd.table_id=14 and pd.language_id=1 and pd.psudo_column='description'
+left join (
+  select uomit.id, uomval.string_value as uom
+  from item uomit
+  join item_meta_field_map uomimm on uomimm.item_id=uomit.id
+    join meta_field_value uomval on uomval.id = uomimm.meta_field_value_id
+    join meta_field_name uommf on uomval.meta_field_name_id = uommf.id and lower(uommf.name)='unit of measure'
+) as uom on uom.id=it.id
+left join invoice_line st on st.parent_line_id=il.id and (st.description not like '128%' and st.description not like '332%')
+left join invoice_line grt on grt.parent_line_id=il.id and (grt.description like '128%' or grt.description like '332%')
+where i.deleted=0
+group by division, state, entity, item, plan
+order by division, state, entity, item, plan;]]>
+	</queryString>
+	<field name="division" class="java.lang.String"/>
+	<field name="state" class="java.lang.String"/>
+	<field name="entity" class="java.lang.String"/>
+	<field name="plan" class="java.lang.String"/>
+	<field name="sales_tax" class="java.math.BigDecimal"/>
+	<field name="grt" class="java.math.BigDecimal"/>
+	<field name="item" class="java.lang.String"/>
+	<field name="uom" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="price" class="java.math.BigDecimal"/>
+	<field name="bill_model" class="java.lang.String"/>
+	<variable name="divisionTotal" class="java.math.BigDecimal" resetType="Group" resetGroup="divisionGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+	</variable>
+	<variable name="stateTotal" class="java.math.BigDecimal" resetType="Group" resetGroup="stateGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+	</variable>
+	<variable name="companyTotal" class="java.math.BigDecimal" resetType="Group" resetGroup="companyGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+	</variable>
+	<variable name="categoryTotal" class="java.math.BigDecimal" resetType="Group" resetGroup="categoryGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[java.math.BigDecimal.ZERO]]></initialValueExpression>
+	</variable>
+	<group name="divisionGroup">
+		<groupExpression><![CDATA[$F{division}]]></groupExpression>
+		<groupHeader>
+			<band height="22">
+				<textField>
+					<reportElement x="0" y="0" width="423" height="20" uuid="caff7e64-81d1-42a7-a7ca-947327980667"/>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Division: "+ ($F{division} == null ? "" : $F{division})]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="652" y="0" width="100" height="20" uuid="909d19a1-b518-41fd-802c-b4e10c0c76d3"/>
+					<textFieldExpression><![CDATA[$V{divisionTotal}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="20" width="752" height="1" forecolor="#CCCCCC" uuid="8316dcde-15de-417d-8ecb-30c0a91676c3"/>
+				</line>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="stateGroup">
+		<groupExpression><![CDATA[$F{division} + $F{state}]]></groupExpression>
+		<groupHeader>
+			<band height="22">
+				<textField>
+					<reportElement x="0" y="0" width="423" height="20" uuid="3e60f3fe-4cb3-40ac-a908-643eff054cbe"/>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true" isItalic="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA["  State: "+($F{state} == null ? "" : $F{state})
++ "  (" + ($F{division} == null ? "" : $F{division})+")"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="652" y="0" width="100" height="20" uuid="31590295-67ee-449c-bfb7-1022805904f1"/>
+					<textFieldExpression><![CDATA[$V{stateTotal}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="20" width="752" height="1" forecolor="#CCCCCC" uuid="9231ba58-b52a-4265-90a6-c2d6a31f16a6"/>
+				</line>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="companyGroup">
+		<groupExpression><![CDATA[$F{division} + $F{state} + $F{entity}]]></groupExpression>
+		<groupHeader>
+			<band height="21">
+				<textField>
+					<reportElement x="0" y="0" width="423" height="20" uuid="2f7a90a5-a4ba-4535-b665-8ee954d2dc4b"/>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["    LDC: "+($F{entity} == null ? "" : $F{entity}) + "  ("+
+($F{division} == null ? "" : ($F{division}+" - "))+
+($F{state} == null ? "" : $F{state}) + ")"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="652" y="0" width="100" height="20" uuid="39fe4fe6-f103-45b7-bd8a-813f9759e902"/>
+					<textFieldExpression><![CDATA[$V{companyTotal}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="20" width="752" height="1" forecolor="#CCCCCC" uuid="c0a3d3e9-b3b6-44fc-bd3b-a11704825352"/>
+				</line>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="categoryGroup">
+		<groupExpression><![CDATA[$F{division} + $F{state} + $F{entity} + $F{item}]]></groupExpression>
+		<groupHeader>
+			<band height="50">
+				<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				<textField>
+					<reportElement x="0" y="0" width="585" height="20" uuid="e6309103-6fb7-4821-a6f0-c08dbfd4ed9c"/>
+					<textElement>
+						<font fontName="SansSerif" size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["      Commodity: "+
+($F{item} == null ? "" : $F{item}) +"  ("+
+($F{division} == null ? "" : ($F{division}+" - "))+
+($F{state} == null ? "" : ($F{state}+" - "))+
+($F{entity} == null ? "" : $F{entity}) + ")"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="652" y="0" width="100" height="20" uuid="4d5784a9-bef4-44b2-a7f9-00b1ef4a250b"/>
+					<textFieldExpression><![CDATA[$V{categoryTotal}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="20" width="752" height="1" forecolor="#CCCCCC" uuid="bf8047d0-1421-4d7f-8815-92de14dd84ed"/>
+				</line>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="0" y="27" width="110" height="20" isPrintWhenDetailOverflows="true" uuid="46ff6dca-65e6-4b18-8037-12b1e8f3d5fe"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Product"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="197" y="27" width="70" height="20" isPrintWhenDetailOverflows="true" uuid="112f3cd9-5d9f-4ae1-8d2f-20e05313232a"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Bill Model"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="267" y="27" width="54" height="20" isPrintWhenDetailOverflows="true" uuid="13060023-099d-4da0-a9a0-55f101f9039c"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["UoM"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="325" y="21" width="60" height="26" isPrintWhenDetailOverflows="true" uuid="33ec2025-a555-4538-bc15-957ce7f6acf1"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Usage Volume"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="395" y="27" width="70" height="20" isPrintWhenDetailOverflows="true" uuid="ce6b5533-b065-4760-999a-e62b6667e261"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Unit Price"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="465" y="27" width="70" height="20" uuid="9b199c4c-ed87-425b-a59b-990f86c0db95"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Price"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="535" y="21" width="70" height="26" uuid="c307a39a-15c8-4ab5-a1ce-3e9b239fee32"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Gross Receipt Tax"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="682" y="21" width="70" height="26" uuid="96ea01c9-3098-4b40-8ba1-4daa300224ee"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Total Billings"]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="47" width="752" height="1" forecolor="#CCCCCC" uuid="4312e6d2-19c6-4158-8d2f-8b9eee903463"/>
+				</line>
+				<textField>
+					<reportElement x="605" y="21" width="70" height="26" uuid="5d4231b2-104f-4f2d-9905-018bf2b70635"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Sales Tax"]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="85" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="200" height="20" uuid="02abd3b3-ae09-4446-91bf-a4346419a7fe"/>
+				<textElement>
+					<font fontName="SansSerif" size="15" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Summary Billing Register"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="512" y="0" width="73" height="20" uuid="5e5f9223-7a10-4456-8c51-4e716f42508c"/>
+				<textFieldExpression><![CDATA["Executed on"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="dd-MMM-yyyy HH:mm" isBlankWhenNull="false">
+				<reportElement x="585" y="0" width="108" height="20" uuid="d8f8f6c2-59d6-46cc-80fc-7438e6d88b58"/>
+				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="20" width="90" height="15" uuid="ada3f32e-2522-4c6e-860d-491ad0ebc4c9"/>
+				<textFieldExpression><![CDATA["Invoices between"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="dd-MMM-yyyy    -" isBlankWhenNull="true">
+				<reportElement x="90" y="20" width="90" height="15" uuid="88c99973-26ee-4a47-b7c3-fa99c454819b"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="dd-MMM-yyyy" isBlankWhenNull="true">
+				<reportElement x="180" y="20" width="90" height="15" uuid="f10c5149-b61c-457a-9f6f-e93c95781eac"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="35" width="250" height="15" uuid="b213d96c-da8b-469a-9bc4-f35fd577816e"/>
+				<textFieldExpression><![CDATA["Division: " +
+($P{division} != null && $P{division}.length() > 0 ? $P{division} : "All")]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="250" y="35" width="250" height="15" uuid="d8c34a00-0fbf-4ccf-bf50-e1276184e9d7"/>
+				<textFieldExpression><![CDATA["State: " +
+($P{state} != null && $P{state}.length() > 0 ? $P{state} : "All")]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="50" width="250" height="15" uuid="b2902c01-7b14-4d5d-bcf4-772902e05257"/>
+				<textFieldExpression><![CDATA["Commodity: " +
+($P{itemName} != null && $P{itemName}.length() > 0 ? $P{itemName} : "All")]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="250" y="50" width="250" height="15" uuid="bf32e7b9-9d6e-4b45-bb09-5563dda0dc6e"/>
+				<textFieldExpression><![CDATA["Product: " +
+($P{planName} != null && $P{planName}.length() > 0 ? $P{planName} : "All")]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Group" evaluationGroup="divisionGroup" pattern="" isBlankWhenNull="true">
+				<reportElement x="500" y="35" width="250" height="45" uuid="06d329e1-e11c-4ca2-9492-881b5645ec34">
+					<printWhenExpression><![CDATA[$P{entityNames} != null && $P{entityNames}.length() > 0]]></printWhenExpression>
+				</reportElement>
+				<textFieldExpression><![CDATA["LDC: " + $P{entityNames}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<textField>
+				<reportElement x="0" y="0" width="190" height="20" uuid="d3b8533d-f524-46fa-8efc-36e9b8cef1ef"/>
+				<textFieldExpression><![CDATA[$F{plan}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="395" y="0" width="70" height="20" uuid="1190cb3f-eb8a-4238-bbd3-acbbdc8464d7"/>
+				<textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="197" y="0" width="70" height="20" uuid="3957b0f8-bc46-4f85-a7bf-1c315608efef"/>
+				<textFieldExpression><![CDATA[$F{bill_model}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="682" y="0" width="70" height="20" printWhenGroupChanges="divisionGroup" uuid="ea32ded0-ce7b-4396-b4c9-ba7cedc116e6"/>
+				<textFieldExpression><![CDATA[$F{amount}.add($F{sales_tax}).add($F{grt})]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="325" y="0" width="70" height="20" uuid="c2cbd814-1d3f-4151-a3a0-c94c4bcd3634"/>
+				<textElement>
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="267" y="0" width="54" height="20" uuid="762a43d9-d40a-4623-b45a-f319ac8f4193"/>
+				<textFieldExpression><![CDATA[$F{uom}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="20" width="752" height="1" forecolor="#CCCCCC" uuid="bef17219-cbce-4c7f-8249-ad84af706f9a"/>
+			</line>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="535" y="0" width="70" height="20" uuid="429ab8e9-a98d-4190-9f9b-40a0ac144ade"/>
+				<textFieldExpression><![CDATA[$F{grt}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="465" y="0" width="70" height="20" uuid="7100d965-9697-4e87-85ff-cacfe7751e25"/>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="605" y="0" width="70" height="20" uuid="93a3ce7d-958d-46bc-9329-fe738f2793a6"/>
+				<textFieldExpression><![CDATA[$F{sales_tax}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<textField>
+				<reportElement x="10" y="4" width="80" height="20" uuid="3e89b3c8-010b-466d-a9fa-e18bf559a750"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="90" y="4" width="40" height="20" uuid="b48a8b98-339d-47e2-8af7-22cc94c75a65"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

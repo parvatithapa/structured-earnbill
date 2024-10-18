@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <!-- generateIgnitionPaymentsJob -->
+
+    <!-- generateIgnitionPayments step. partitioned by user -->
+
+    <int:channel id = "slave-payments-requests"/>
+    <int-jms:message-driven-channel-adapter id = "slave-payments-requests-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "payments.requests"
+                                            channel            = "slave-payments-requests"/>
+
+    <int:channel id = "slave-payments-reply"/>
+    <int-jms:outbound-channel-adapter id = "slave-payments-reply-adapter"
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "payments.reply"
+                                      channel            = "slave-payments-reply"/>
+
+    <int:service-activator id             = "slave-payments-service-activator"
+                           ref            = "slaveStepExecutionRequestHandler"
+                           input-channel  = "slave-payments-requests"
+                           output-channel = "slave-payments-reply"/>
+
+    <!-- ignitionCustomerPaymentUpdate step. partitioned by payment -->
+
+    <int:channel id = "slave-payment-update-requests"/>
+    <int-jms:message-driven-channel-adapter id = "slave-payment-update-requests-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "payment.update.requests"
+                                            channel            = "slave-payment-update-requests"/>
+
+    <int:channel id = "slave-payment-update-reply"/>
+    <int-jms:outbound-channel-adapter id = "slave-payment-update-reply-adapter"
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "payment.update.reply"
+                                      channel            = "slave-payment-update-reply"/>
+
+    <int:service-activator id             = "slave-payment-update-service-activator"
+                           ref            = "slaveStepExecutionRequestHandler"
+                           input-channel  = "slave-payment-update-requests"
+                           output-channel = "slave-payment-update-reply"/>
+
+
+    <!-- updateIgnitionCustomerJob -->
+
+    <int:channel id = "slave-update-customer-requests"/>
+    <int-jms:message-driven-channel-adapter id = "slave-update-customer-requests-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "update.customer.requests"
+                                            channel            = "slave-update-customer-requests"/>
+
+    <int:channel id = "slave-update-customer-reply"/>
+    <int-jms:outbound-channel-adapter id = "slave-update-customer-reply-adapter"
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "update.customer.reply"
+                                      channel            = "slave-payments-reply"/>
+
+    <int:service-activator id             = "slave-update-customer-service-activator"
+                           ref            = "slaveStepExecutionRequestHandler"
+                           input-channel  = "slave-update-customer-requests"
+                           output-channel = "slave-update-customer-reply"/>
+</beans>

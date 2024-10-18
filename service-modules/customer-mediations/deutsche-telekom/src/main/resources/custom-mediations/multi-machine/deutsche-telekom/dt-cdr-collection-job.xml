@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <!-- Batch Step 1. Copy FTP files-->
+    <bean id="dtCdrFtpStep" class="com.sapienter.jbilling.server.mediation.task.FtpTasklet" scope="step">
+        <property name="server" value="#{jobParameters['server']}"/>
+        <property name="user" value="#{jobParameters['user']}"/>
+        <property name="password" value="#{jobParameters['password']}"/>
+        <property name="remotePath" value="#{jobParameters['remote_path']}"/>
+        <property name="remoteDelete" value="true"/>
+        <property name="localPath" value="#{jobParameters['local_work_folder']}/incoming/"/>
+        <property name="suffix" value="#{jobParameters['suffix']}"/>
+        <property name="tempFolder" value="_incoming_temp"/>
+        <property name="recursive" value="true"/>
+        <property name="overwrite" value="true"/>
+    </bean>
+
+    <bean id="dtCdrFtpStepListener" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CdrFileCountStepListener" scope="step">
+        <property name="folder" value="#{jobParameters['local_work_folder']}/incoming/"/>
+    </bean>
+
+    <!-- Batch Step 2. cdrFilePackage-->
+    <bean id="dtCdrCollectionReader" class="com.sapienter.jbilling.batch.FileListItemReader" scope="step">
+        <property name="folder" value="#{jobParameters['local_work_folder']}/incoming/"/>
+        <property name="recursive" value="#{jobParameters['recursive']}" />
+    </bean>
+
+    <bean id="dtCdrCollectionProcessor" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CombinedCdrToIndividualFileProcessor" scope="step">
+        <property name="outputFolder" value="#{jobParameters['shared_work_folder']}/cdr/"/>
+        <property name="workingFolder" value="#{jobParameters['local_work_folder']}/cdrprocess/"/>
+        <property name="decrypt" value="#{jobParameters['decrypt']}"/>
+        <property name="gpgPassphrase" value="#{jobParameters['gpg_password']}"/>
+    </bean>
+
+    <bean id="dtCdrCollectionWriter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CombinedCdrProcessResultWriter" scope="step">
+        <property name="backupFolder" value="#{jobParameters['backup_folder']}"/>
+        <property name="backup" value="true"/>
+    </bean>
+
+    <!-- Batch Step 3. dtCdrValidation-->
+    <bean id="dtCdrFileReader" class="com.sapienter.jbilling.batch.FileListItemReader" scope="step">
+        <property name="folder" value="#{jobParameters['shared_work_folder']}/cdr/"/>
+        <property name="recursive" value="true"/>
+    </bean>
+
+    <bean id="dtCdrFileValidationProcessor" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CdrFileValidationProcessor" scope="step">
+    </bean>
+
+    <bean id="dtCdrFileValidationWriter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CombinedCdrProcessResultWriter" scope="step">
+        <property name="deleteError" value="true" />
+    </bean>
+
+    <!-- Common -->
+
+    <bean id="dtCdrJobListener" class="com.sapienter.jbilling.batch.JobExecutionTrackerJobListener">
+    </bean>
+
+	<batch:job id="dtCdrCollection" job-repository="mediationJobRepository">
+        <batch:step id="cdrFtpStep" next="cdrFilePackage">
+            <batch:tasklet ref="dtCdrFtpStep">
+            </batch:tasklet>
+            <batch:listeners>
+                <batch:listener ref="dtCdrFtpStepListener"/>
+            </batch:listeners>
+        </batch:step>
+        <batch:step id="cdrFilePackage" next="dtCdrValidationStep">
+            <batch:tasklet task-executor="taskExecutor" throttle-limit="${springbatch.mediation.process.grid.size}">
+                <batch:chunk reader="dtCdrCollectionReader" processor="dtCdrCollectionProcessor"
+                             writer="dtCdrCollectionWriter" commit-interval="10">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="dtCdrValidationStep">
+            <batch:tasklet>
+                <batch:chunk reader="dtCdrFileReader" processor="dtCdrFileValidationProcessor"
+                             writer="dtCdrFileValidationWriter" commit-interval="10">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="dtCdrJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    
+</beans>

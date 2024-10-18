@@ -1,0 +1,983 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.9.xml">
+
+    <changeSet context = "base" id = "JBFC-682 Customer Cancellation Request" author = "Harshad pathan">
+        <validCheckSum>7:70f3d058addef164575c3a5ba184337f</validCheckSum>
+        <validCheckSum>7:128f746860230e34a2a690caaccd52d0</validCheckSum>
+        <createTable tableName = "cancellation_request">
+            <column name = "id"                     type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false" primaryKey = "true" primaryKeyName = "cancellation_request_pkey"/>
+            </column>
+            <column name = "customer_id"            type = "java.sql.Types.INTEGER" />
+            <column name = "reason_of_cancellation" type = "java.sql.Types.VARCHAR(1000)" />
+            <column name = "status"                 type = "java.sql.Types.VARCHAR(10)" />
+            <column name = "create_timestamp"       type = "java.sql.Types.TIMESTAMP" />
+            <column name = "cancellation_date"      type = "java.sql.Types.TIMESTAMP" />
+        </createTable>
+
+        <insert tableName="jbilling_table">
+            <column name="id"   valueComputed = "(select max(jt.id)+1 from jbilling_table jt)"/>
+            <column name="name" value         = "cancellation_request"/>
+        </insert>
+
+        <addForeignKeyConstraint constraintName  = "cancellation_request_fk_1"
+                                 baseTableName   = "cancellation_request"   referencedTableName   = "customer"
+                                 baseColumnNames = "customer_id"            referencedColumnNames = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JBFC-682 Cancellation Requests Report" author="Harshad Pathan">
+        <validCheckSum>7:9ddf563485f0bfc49c1a580d5bf76565</validCheckSum>
+        <validCheckSum>7:cd0f7690d4ea86d0c3248d86ea2938dc</validCheckSum>
+
+        <insert tableName = "report">
+            <column name = "id"        valueComputed = "(select max(id)+1 from report)" />
+            <column name = "type_id"   valueNumeric  = "4" />
+            <column name = "name"      value         = "cancellation_requests" />
+            <column name = "file_name" value         = "cancellation_report.jasper" />
+            <column name = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+                 SELECT (SELECT r.id
+                           FROM report r
+                          WHERE r.name = 'cancellation_requests'),
+                        id
+                  FROM entity
+                 WHERE deleted = 0
+        </sql>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(select id from report r where r.name = 'cancellation_requests')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(select id from report r where r.name = 'cancellation_requests')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+    </changeSet>
+
+	    <changeSet author="Ashwinkumar Patra" context="base" id="#JBFC-682-permission-create-cancellation-request">
+
+        <comment>Add Create Cancellation Request Permission</comment>
+        <insert tableName="permission">
+            <column name="id" valueComputed="(select max(p.id)+1 from permission p)"/>
+            <column name="type_id" valueComputed="(select id from permission_type where description='Customer')"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueComputed="(SELECT max(id) FROM permission)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Cancellation Request"/>
+        </insert>
+
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueComputed="(SELECT max(id) FROM permission)"/>
+            <column name="role_id" valueNumeric="2"/>
+        </insert>
+
+    </changeSet>
+
+	
+	<changeSet id="JBFC-694 Added NPA NXX Table Name Meta Field For Entity Id 1" author="Krunal Bhavsar" context="test">
+	
+	<preConditions onFail="MARK_RAN">
+	            <sqlCheck expectedResult="1">
+	                select count(*) from entity where id = 1;
+	        	</sqlCheck>
+	</preConditions>
+	 
+	 <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="NPA NXX Table Name"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+			<column name="entity_id" valueNumeric="1"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+	</insert>
+	
+	<insert tableName="meta_field_value">
+		<column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)" />
+		<column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)" />
+		<column name="dtype" value="string" />
+		<column name="boolean_value" />
+		<column name="date_value" />
+		<column name="decimal_value" />
+		<column name="integer_value" />
+		<column name="string_value" value="route_1_test_npa_nxx"/>
+	</insert>
+	
+	<insert tableName="entity_meta_field_map">
+		<column name="entity_id" valueNumeric="1" />
+		<column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)" />
+	</insert>
+	
+	</changeSet>
+	
+	<changeSet id="JBFC-694 Create Test NPA NXX table and add Entry to Route Table" author="Krunal Bhavsar" context="test">
+		<createTable tableName="route_1_test_npa_nxx">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="npa" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="nxx" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="city" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="state" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="country" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        
+		 <addPrimaryKey columnNames="id" constraintName="route_1_test_npa_nxx_pkey" tableName="route_1_test_npa_nxx"/>
+		 
+		<insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="1"/>
+            <column name="npa" value="616"/>
+            <column name="nxx" value="504"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="2"/>
+            <column name="npa" value="928"/>
+            <column name="nxx" value="268"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="3"/>
+            <column name="npa" value="928"/>
+            <column name="nxx" value="482"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="4"/>
+            <column name="npa" value="623"/>
+            <column name="nxx" value="505"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="5"/>
+            <column name="npa" value="928"/>
+            <column name="nxx" value="496"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="6"/>
+            <column name="npa" value="928"/>
+            <column name="nxx" value="427"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="PHOENIX"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="7"/>
+            <column name="npa" value="213"/>
+            <column name="nxx" value="640"/>
+            <column name="state" value="AZ"/>
+            <column name="city" value="TUCSON"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="8"/>
+            <column name="npa" value="917"/>
+            <column name="nxx" value="270"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="9"/>
+            <column name="npa" value="925"/>
+            <column name="nxx" value="281"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="10"/>
+            <column name="npa" value="831"/>
+            <column name="nxx" value="708"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="11"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="633"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="12"/>
+            <column name="npa" value="415"/>
+            <column name="nxx" value="366"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="13"/>
+            <column name="npa" value="718"/>
+            <column name="nxx" value="839"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="14"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="361"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="15"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="668"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="16"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="377"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="17"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="895"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="18"/>
+            <column name="npa" value="831"/>
+            <column name="nxx" value="703"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="19"/>
+            <column name="npa" value="925"/>
+            <column name="nxx" value="394"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="20"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="737"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="21"/>
+            <column name="npa" value="408"/>
+            <column name="nxx" value="688"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="22"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="788"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="23"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="549"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="24"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="893"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="25"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="881"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="26"/>
+            <column name="npa" value="415"/>
+            <column name="nxx" value="329"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="27"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="675"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="28"/>
+            <column name="npa" value="510"/>
+            <column name="nxx" value="256"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="29"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="676"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="30"/>
+            <column name="npa" value="925"/>
+            <column name="nxx" value="905"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="31"/>
+            <column name="npa" value="925"/>
+            <column name="nxx" value="666"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="32"/>
+            <column name="npa" value="707"/>
+            <column name="nxx" value="356"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>
+        <insert tableName="route_1_test_npa_nxx">
+            <column name="id" valueNumeric="33"/>
+            <column name="npa" value="631"/>
+            <column name="nxx" value="573"/>
+            <column name="state" value="CA"/>
+            <column name="city" value="SAN FRANCISCO"/>
+            <column name="country" value="United States"/>
+        </insert>        	
+	</changeSet>
+
+    <changeSet context = "base" id = "JBFC-697 Added-InvoiceBillingProcessLinkingTask-Plugin" author = "Harshad Pathan">
+        <validCheckSum>7:4bbb5e4b9c8433d1efaea93f4079657f</validCheckSum>
+        <insert tableName = "pluggable_task_type">
+           <column name = "id"             valueComputed = "coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+           <column name = "category_id"    valueNumeric  = "22"/>
+           <column name = "class_name"     value         = "com.sapienter.jbilling.server.billing.task.InvoiceBillingProcessLinkingTask"/>
+           <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Task for linking invoices to Billing Process"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plug-in will link the invoices to respective billing process based on its invoiced period."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBFC-697 To keep history InvoiceBillingProcessLinkingTask-Plugin" author = "Harshad Pathan">
+        <validCheckSum>7:b8f249684e5be9cb1b15d2eda6ceeef4</validCheckSum>
+        <validCheckSum>7:130decaf1c9df2e09e9a771daa392d91</validCheckSum>
+        <comment>Table is used to keep history InvoiceBillingProcessLinkingTask-Plugin</comment>
+
+        <createTable tableName = "billing_process_link_log">
+            <column name = "id"                 type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false" primaryKey = "true" primaryKeyName = "invoice_billing_process_linking_history_pkey"/>
+            </column>
+            <column name = "invoice_id"         type = "java.sql.Types.INTEGER"/>
+            <column name = "billing_process_id" type = "java.sql.Types.INTEGER"/>
+            <column name = "create_date"        type = "java.sql.Types.TIMESTAMP"/>
+        </createTable>
+	</changeSet>
+
+    <changeSet author="Ashok Kale" context="base" id="JBFC-704-Add-new-table-Invoice-Summary">
+	      <createTable tableName="invoice_summary">
+	          <column name="id" type="java.sql.Types.INTEGER">
+	              <constraints nullable="false" primaryKey="true" primaryKeyName="invoice_summary_pkey"/>
+	          </column>
+	          <column name="creation_invoice_id" type="java.sql.Types.INTEGER">
+	              <constraints nullable="false"/>
+	          </column>
+	          <column name="user_id" type="java.sql.Types.INTEGER">
+	              <constraints nullable="false"/>
+	          </column>
+	          <column name="monthly_charges" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="usage_charges" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="fees" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="taxes" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="adjustment_charges" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="amount_of_last_statement" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="payment_received" type="java.sql.Types.NUMERIC(22,10)"/>
+	          <column name="new_charges" type="java.sql.Types.NUMERIC(22,10)"/>
+			  <column name="total_due" type="java.sql.Types.NUMERIC(22,10)"/>
+			  <column name="invoice_date" type="java.sql.Types.TIMESTAMP">
+			    <constraints nullable="false"/>
+	          </column>
+			  <column name="last_invoice_date" type="java.sql.Types.TIMESTAMP"/>
+              <column name="create_datetime" type="java.sql.Types.TIMESTAMP">
+				<constraints nullable="false"/>
+	          </column>
+		 </createTable>
+	      <addForeignKeyConstraint baseColumnNames="creation_invoice_id"
+	                               baseTableName="invoice_summary"
+	                               constraintName="invoice_summary_creation_invoice_id_FK"
+	                               deferrable="false"
+	                               initiallyDeferred="false"
+	                               onDelete="NO ACTION"
+	                               onUpdate="NO ACTION"
+	                               referencedColumnNames="id"
+	                               referencedTableName="invoice"
+	                               referencesUniqueColumn="false"/>
+
+	        <insert tableName="pluggable_task_type">
+	                <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+	                <column name="category_id" valueNumeric="17"/>
+	                <column name="class_name" value="com.sapienter.jbilling.server.invoiceSummary.task.InvoiceSummaryGenerationTask"/>
+	                <column name="min_parameters" valueNumeric="0"/>
+	        </insert>
+
+	         <insert tableName="international_description">
+	                 <column name="table_id" valueNumeric="24"/>
+	                 <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+	                 <column name="psudo_column" value="title"/>
+	                 <column name="language_id" valueNumeric="1"/>
+	                 <column name="content" value="Generate Invoice Summary for Invoice Template"/>
+	         </insert>
+
+	         <insert tableName="international_description">
+	                 <column name="table_id" valueNumeric="24"/>
+	                 <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+	                 <column name="psudo_column" value="description"/>
+	                 <column name="language_id" valueNumeric="1"/>
+	                 <column name="content" value="This plugin populates invoice summary fields for invoice template that is generated and emailed during the billing process."/>
+	         </insert>
+         <sql>
+			<![CDATA[
+		     INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+		            select (select max(p.id)+1 from pluggable_task p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+		                   e1.id,
+		                   (select max(p.id) from pluggable_task_type p),
+		                   45,
+		                   1
+		            from entity e1
+		            where e1.deleted = 0
+		            order by e1.id
+		    ]]>
+       </sql>
+	</changeSet>
+	<changeSet author="Ashok Kale" context="test" id="JBFC-704-Company-level-meta-field-for-Dormancy-plan-Id">
+	        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((SELECT max(id)+1 FROM meta_field_name),1)"/>
+            <column name="name" value="Dormancy plan Id"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+
+		<insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" value="0"/>
+            <column name="string_value"/>
+        </insert>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base" id="JBFC-704-Added-Plan-Id-in-Invoice-Line">
+	       <addColumn tableName="invoice_line">
+            <column name="usage_plan_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base" id="JBFC-704-Added-amount-in-credit-note-Line">
+	       <addColumn tableName="credit_note_line">
+			  <column name="amount" type="java.sql.Types.NUMERIC(22,10)"/>
+        </addColumn>
+	</changeSet>
+	<changeSet author="Ashok Kale" context="base" id="JBFC-704-Telco-Invoice-Summary-Population-Task">
+        <comment>Task to populate of invoice template parameters</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Telco invoice summary task to populate invoice template parameters"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is specific to telco implementation. It is used for populating invoice template parameters for invoice generation. This plugin handles the CustomInvoiceFieldsEvent event."/>
+        </insert>
+     </changeSet>
+
+	 <changeSet author="Ashok Kale" context="base" id="JBFC-704-Full-Creative-Paper-Invoice-Notification-Task">
+        <comment>Task to populate of invoice template parameters</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="7"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.FullCreativePaperInvoiceNotificationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativePaperInvoiceNotificationTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Full Creative Specific Paper Invoice Notification Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativePaperInvoiceNotificationTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin used to support backward compatibility for old invoice template of full creative."/>
+        </insert>
+     </changeSet>
+
+    <changeSet author="Ashok Kale" context="base" id="#JBFC-704- Added-Adjustment-Type-For-Order-Line-And-Invoice-Line">
+        <insert tableName="order_line_type">
+            <column name="id"  valueNumeric="7"/>
+            <column name="editable" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name = 'order_line_type')"/>
+            <column name="foreign_id" valueNumeric="7"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adjustment"/>
+        </insert>
+
+		<insert tableName="invoice_line_type">
+            <column name="id" valueNumeric="7"/>
+            <column name="description" value="adjustment"/>
+            <column name="order_position" valueNumeric="7"/>
+        </insert>
+    </changeSet>
+	<changeSet id="#JB-1070 - Preference 41 title/description need slight update." author="Leandro Zoi" context="base">
+		<!--English title and description-->
+		<update tableName="international_description">
+			<column name="content" value="Aggregate Mediation Events"/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'description' AND language_id = 1</where>
+		</update>
+
+		<update tableName="international_description">
+			<column name="content" value="Combine all mediation events for a given Billing Cycle into a single Order."/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'instruction' AND language_id = 1</where>
+		</update>
+
+		<!--German title and description-->
+		<update tableName="international_description">
+			<column name="content" value="Aggregatvermittlung"/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'description' AND language_id = 3</where>
+		</update>
+
+		<update tableName="international_description">
+			<column name="content" value="Kombinieren Sie alle Vermittlungsereignisse für einen bestimmten Abrechnungszyklus zu einem einzigen Auftrag."/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'instruction' AND language_id = 3</where>
+		</update>
+
+		<!--French title and description-->
+		<update tableName="international_description">
+			<column name="content" value="Activités de médiation agrégée"/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'description' AND language_id = 4</where>
+		</update>
+
+		<update tableName="international_description">
+			<column name="content" value="Combinez tous les événements de médiation pour un cycle de facturation donné en une seule commande."/>
+			<where>table_id = 50 AND foreign_id = 41 AND psudo_column = 'instruction' AND language_id = 4</where>
+		</update>
+	</changeSet>
+	<changeSet id="#JB-1190 - 'Failed to add a new recent item....' error message is displayed after the product creation" author="Leandro Zoi" context="base">
+		<dropNotNullConstraint tableName="recent_item" columnName="object_id" />
+	</changeSet>
+
+	<changeSet id="#Update Jbilling Seqs" author="Neelabh Dubey" context="base">
+		<update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(id)+1 from pluggable_task_type),1)"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(id)+1 from pluggable_task),1)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+		<update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(id)+1 from permission),1)"/>
+            <where>name='permission'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-1364 Added report parameters" author = "Harshad Pathan">
+       <validCheckSum>7:04619423e2f465acd87b760b86e980b9</validCheckSum>
+       <validCheckSum>7:107e51ca613e41e93b3ecb250a3e9d5a</validCheckSum>
+
+        <sql>
+            DELETE
+              FROM report_parameter
+             WHERE report_id = (SELECT id
+                                  FROM report
+                                 WHERE file_name = 'cancellation_report.jasper');
+        </sql>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(select id from report r where r.name = 'cancellation_requests')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "cancellation_date_start" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name = "id"        valueComputed = "(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(select id from report r where r.name = 'cancellation_requests')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "cancellation_date_end" />
+        </insert>
+
+	</changeSet>
+	
+    <changeSet context = "base" id = "spring-batch-marking-jobs-cleanup" author = "Igor Poteryaev" runAlways = "true">
+        <validCheckSum>7:1f28da1d0440eb0d52281e305b465ea1</validCheckSum>
+        <validCheckSum>7:5df80c95ad64f248075e955942afa5bc</validCheckSum>
+        <sql>
+        DELETE
+          FROM batch_job_execution_params
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_name IN ('MarkingJob', 'MarkingJobForProvisioning')));
+
+        DELETE
+          FROM batch_job_execution_context
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_name IN ('MarkingJob', 'MarkingJobForProvisioning')));
+        DELETE
+          FROM batch_job_execution
+         WHERE job_instance_id
+            IN (SELECT job_instance_id
+                  FROM batch_job_instance
+                 WHERE job_name IN ('MarkingJob', 'MarkingJobForProvisioning'));
+        DELETE
+          FROM batch_job_instance
+         WHERE job_name IN ('MarkingJob', 'MarkingJobForProvisioning');
+        </sql>
+</changeSet>
+
+    <changeSet context = "base" id = "JB-1576-spring-batch-invoices-jobs-cleanup" author = "Amol Gadre">
+        <sql>
+        DELETE
+          FROM batch_step_execution_context
+         WHERE step_execution_id
+            IN (SELECT step_execution_id
+                  FROM batch_step_execution
+                 WHERE job_execution_id
+                    IN (SELECT job_execution_id
+                          FROM batch_job_execution 
+                         WHERE job_instance_id
+                            IN (SELECT job_instance_id
+                                  FROM batch_job_instance
+                                 WHERE job_key IN (SELECT job_key
+                                                     FROM batch_job_instance
+                                                    WHERE job_name = 'generateInvoicesJob'
+                                                 GROUP BY job_name, job_key
+                                                   HAVING COUNT(*) > 1)
+                               )
+                          AND job_execution_id NOT IN (SELECT job_execution_id FROM batch_process_info)));
+
+        DELETE
+          FROM batch_step_execution
+         WHERE job_execution_id 
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'generateInvoicesJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       )
+                   AND job_execution_id NOT IN (SELECT job_execution_id FROM batch_process_info));
+
+        DELETE
+          FROM batch_job_execution_params
+         WHERE job_execution_id 
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance 
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'generateInvoicesJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       )
+                   AND job_execution_id NOT IN (SELECT job_execution_id FROM batch_process_info));
+
+        DELETE
+          FROM batch_job_execution_context
+         WHERE job_execution_id 
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution 
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'generateInvoicesJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       )
+                   AND job_execution_id NOT IN (SELECT job_execution_id FROM batch_process_info));
+
+        DELETE
+          FROM batch_job_execution
+         WHERE job_execution_id 
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'generateInvoicesJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       )
+                   AND job_execution_id NOT IN (SELECT job_execution_id FROM batch_process_info));
+
+        DELETE
+          FROM batch_job_instance
+         WHERE job_name = 'generateInvoicesJob'
+           AND job_instance_id NOT IN (SELECT job_instance_id FROM batch_job_execution);
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-1576-spring-batch-ageing-jobs-cleanup" author = "Amol Gadre">
+        <sql>
+        DELETE
+          FROM batch_step_execution_context
+         WHERE step_execution_id
+            IN (SELECT step_execution_id
+                  FROM batch_step_execution
+                 WHERE job_execution_id
+                    IN (SELECT job_execution_id
+                          FROM batch_job_execution
+                         WHERE job_instance_id
+                            IN (SELECT job_instance_id
+                                  FROM batch_job_instance
+                                 WHERE job_key IN (SELECT job_key
+                                                     FROM batch_job_instance
+                                                    WHERE job_name = 'ageingProcessJob'
+                                                 GROUP BY job_name, job_key
+                                                   HAVING COUNT(*) > 1))));
+
+        DELETE
+          FROM batch_step_execution
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'ageingProcessJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)));
+
+        DELETE
+          FROM batch_job_execution_params
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'ageingProcessJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)));
+
+        DELETE
+          FROM batch_job_execution_context
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance 
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance 
+                                            WHERE job_name = 'ageingProcessJob' 
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       ));
+
+        DELETE
+          FROM batch_job_execution
+         WHERE job_execution_id
+            IN (SELECT job_execution_id
+                  FROM batch_job_execution
+                 WHERE job_instance_id
+                    IN (SELECT job_instance_id
+                          FROM batch_job_instance
+                         WHERE job_key IN (SELECT job_key
+                                             FROM batch_job_instance
+                                            WHERE job_name = 'ageingProcessJob'
+                                         GROUP BY job_name, job_key
+                                           HAVING COUNT(*) > 1)
+                       ));
+
+        DELETE
+          FROM batch_job_instance
+         WHERE job_name = 'ageingProcessJob'
+           AND job_instance_id NOT IN (SELECT job_instance_id FROM batch_job_execution);
+        </sql>
+    </changeSet>
+    
+    <changeSet context = "base" id = "spring-batch-20170311" author = "Igor Poteryaev">
+
+        <addUniqueConstraint        constraintName  = "job_inst_un"
+                                    tableName       = "batch_job_instance"
+                                    columnNames     = "job_name, job_key" />
+
+        <modifyDataType tableName   = "batch_job_execution"
+                        columnName  = "exit_code"
+                        newDataType = "java.sql.Types.VARCHAR(2500)"/>
+
+        <addForeignKeyConstraint    constraintName  = "job_inst_exec_fk"
+                                    baseTableName   = "batch_job_execution" referencedTableName   = "batch_job_instance"
+                                    baseColumnNames = "job_instance_id"     referencedColumnNames = "job_instance_id" />
+
+        <addForeignKeyConstraint    constraintName  = "job_exec_params_fk"
+                                    baseTableName   = "batch_job_execution_params" referencedTableName   = "batch_job_execution"
+                                    baseColumnNames = "job_execution_id"           referencedColumnNames = "job_execution_id" />
+
+        <modifyDataType tableName   = "batch_step_execution"
+                        columnName  = "exit_code"
+                        newDataType = "java.sql.Types.VARCHAR(2500)"/>
+
+        <addForeignKeyConstraint    constraintName  = "job_exec_step_fk"
+                                    baseTableName   = "batch_step_execution" referencedTableName   = "batch_job_execution"
+                                    baseColumnNames = "job_execution_id"     referencedColumnNames = "job_execution_id" />
+
+        <addForeignKeyConstraint    constraintName  = "step_exec_ctx_fk"
+                                    baseTableName   = "batch_step_execution_context" referencedTableName   = "batch_step_execution"
+                                    baseColumnNames = "step_execution_id"            referencedColumnNames = "step_execution_id" />
+
+        <addForeignKeyConstraint    constraintName  = "job_exec_ctx_fk"
+                                    baseTableName   = "batch_job_execution_context" referencedTableName   = "batch_job_execution"
+                                    baseColumnNames = "job_execution_id"            referencedColumnNames = "job_execution_id" />
+    </changeSet>
+
+</databaseChangeLog>

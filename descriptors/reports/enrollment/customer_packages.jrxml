@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="customer_packages" language="groovy" pageWidth="1520" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="47e258db-b4a7-4f4d-a098-5a84bdb4f8cf">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="1740"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="scope" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+po.create_datetime AS spa_action_date,
+date(po.active_since) AS startdate,
+(SELECT mfv.string_value
+FROM meta_field_value mfv
+INNER JOIN order_meta_field_map pom ON pom.meta_field_value_id = mfv.id AND pom.order_id = po.id
+INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+AND mfn.name = 'Staff Identifier') AS staffName,
+po.id,
+(SELECT content
+FROM international_description
+WHERE table_id = 20 AND foreign_id = po.status_id  AND language_id = 1) AS order_status,
+(CASE WHEN (null != po.active_until ) THEN po.active_until ELSE po.finished_date END) AS finished_date,
+(SELECT content
+FROM international_description
+WHERE table_id = 17 AND foreign_id = po.period_id AND language_id = 1) AS billing_cycle,
+(SELECT description from language where id = bu.language_id) As language,
+(SELECT content FROM international_description WHERE foreign_id in (SELECT payment_method FROM payment_information WHERE user_id = po.user_id)
+AND table_id = 35 AND language_id = 1 limit 1) AS payment_method,
+po.user_id,
+(SELECT date(min(active_since))
+FROM purchase_order
+WHERE user_id = po.user_id
+AND deleted = 0) AS oldest_order_date,
+ol.item_id,
+(SELECT content FROM international_description WHERE table_id = 14 AND foreign_id = ol.item_id AND language_id =1)AS description,
+(SELECT SUBSTRING(it.description, POSITION('-' IN it.description )+1,LENGTH(it.description)) FROM item_type it INNER JOIN  item_type_map itmap ON itmap.type_id = it.id INNER join item i ON i.id = itmap.item_id WHERE itmap.item_id = ol.item_id AND (it.description like 'Discount%' OR it.description like 'Migration%' OR it.description like 'Product Class%' OR it.description like 'Report Group%' OR it.description like 'Service Provider%') LIMIT 1) AS service,
+ol.price
+FROM purchase_order po
+INNER JOIN base_user bu ON bu.id = po.user_id
+INNER JOIN order_line ol ON ol.order_id = po.id
+WHERE po.create_datetime::date >=  $P{start_date}
+AND po.create_datetime::date <= $P{end_date}
+AND ol.item_id not in (select item_id from plan)
+AND po.deleted = 0
+AND ( bu.entity_id =$P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+AND  ( CASE WHEN 'New customers' = $P{scope}
+THEN (SELECT CASE WHEN COUNT(*) = 0 THEN TRUE ELSE FALSE END
+FROM meta_field_value mfv
+INNER JOIN order_meta_field_map pom ON pom.meta_field_value_id = mfv.id
+INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+WHERE pom.order_id = po.id AND mfv.string_value = 'New Services'
+AND mfn.name = 'Enrollment Type' AND mfn.entity_id = bu.entity_id AND mfn.entity_type = 'ORDER')
+ELSE 1 = 1
+END)]]>
+	</queryString>
+	<field name="spa_action_date" class="java.sql.Timestamp"/>
+	<field name="startdate" class="java.sql.Date"/>
+	<field name="staffname" class="java.lang.String"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="order_status" class="java.lang.String"/>
+	<field name="finished_date" class="java.sql.Date"/>
+	<field name="billing_cycle" class="java.lang.String"/>
+	<field name="language" class="java.lang.String"/>
+	<field name="payment_method" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="oldest_order_date" class="java.sql.Date"/>
+	<field name="item_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="service" class="java.lang.String"/>
+	<field name="price" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="110" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="207" height="20" uuid="04dc5892-5efe-4590-87d5-9ce1e4cbd483"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Packages Report]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1267" y="30" width="102" height="20" uuid="761e5a57-dfb7-4282-adfe-b3f3a3a2c12b"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1267" y="50" width="102" height="20" uuid="aae0bab6-b1b7-493a-a9cc-a239a7b8d00a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1267" y="70" width="102" height="20" uuid="29d4a818-a0bd-48de-8ff0-95ac0c9a2bb9"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{scope}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1267" y="10" width="102" height="20" uuid="f34cb5a5-1faa-4356-b2f5-f034bde7b5c0"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1167" y="10" width="100" height="20" uuid="7e3f08f6-04ca-4e98-8c25-3314dbd3575e"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1167" y="30" width="100" height="20" uuid="63aa40fa-a024-40ca-9ee6-4c12109e5327"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1167" y="50" width="100" height="20" uuid="c58e6039-b324-4cad-8898-00be9d7d4c24"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1167" y="70" width="100" height="20" uuid="7e818fb8-0c49-497b-891b-7ee51d67c7b8"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Scope:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="92" height="20" uuid="bfaba344-1ffa-4aa3-98e7-84fbcbd3167f"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[SPA Action Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="92" y="0" width="92" height="20" uuid="911d802a-ffb5-458d-8be2-69183748ef73"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="184" y="0" width="114" height="20" uuid="a0a452d3-7fe5-4690-a2e7-46bef55d24e1"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Agent Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="298" y="0" width="92" height="20" uuid="ecd5de13-1410-4452-847d-acd7247bf64b"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="390" y="0" width="92" height="20" uuid="ff438389-da1d-477d-97e8-3cf04d63f297"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Status]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="482" y="0" width="92" height="20" uuid="9908f4e5-ae82-49a3-b50d-84125170ea83"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Finish Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="758" y="0" width="92" height="20" uuid="4a02eff4-7770-489a-9424-1e0aab09e0a3"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Billing Cycle]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="850" y="0" width="92" height="20" uuid="3e6471d3-ef7c-4f0f-b37f-e2cdaa6cf872"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Language]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1034" y="0" width="92" height="20" uuid="df59fba5-103e-4e54-a59d-f7c35590a525"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Method]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="666" y="0" width="92" height="20" uuid="319592bb-59b3-439c-a5ec-a6dc3aa52750"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Oldest Order Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="942" y="0" width="92" height="20" uuid="c550e5da-5f42-4c59-a871-6e5cffd37d89"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1126" y="0" width="141" height="20" uuid="e8763f09-fc97-4287-be61-b70ce9a4e54d"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1267" y="0" width="112" height="20" uuid="fecf57cb-dcc9-4334-93c4-44e1add40da3"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1380" y="0" width="92" height="20" uuid="dcbebb9a-0d9c-4573-9768-18216565f2c7"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Total]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="21" width="1480" height="1" uuid="ac260781-4087-43fa-aac4-5b5dce4d7da0"/>
+			</line>
+			<staticText>
+				<reportElement x="574" y="0" width="92" height="20" uuid="4360900b-ae1f-468c-b594-e543f0630925"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Id]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<textField pattern="yyyy-MM-dd">
+				<reportElement x="0" y="0" width="92" height="20" uuid="4a9c0692-f591-4202-961e-355a4a588489"/>
+				<textFieldExpression><![CDATA[$F{spa_action_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd">
+				<reportElement x="92" y="0" width="92" height="20" uuid="865ed40f-de79-43a4-9a85-02a134acf6d1"/>
+				<textFieldExpression><![CDATA[$F{startdate}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="184" y="0" width="114" height="20" uuid="a2bd21f0-ef81-4f90-af58-527de4f1d7b0"/>
+				<textFieldExpression><![CDATA[$F{staffname}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="298" y="0" width="92" height="20" uuid="0e927e40-2d41-47a8-99d7-fe86268da3d5"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="390" y="0" width="92" height="20" uuid="80ad85bd-5a5c-4e0a-bcaa-b79a1aa92f3e"/>
+				<textFieldExpression><![CDATA[$F{order_status}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="482" y="0" width="92" height="20" uuid="d5b023d4-9ee4-4117-bd51-2ad8e7e8be74"/>
+				<textFieldExpression><![CDATA[$F{finished_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="758" y="0" width="92" height="20" uuid="e2c81f94-3100-43b4-99b6-505fb13e7f09"/>
+				<textFieldExpression><![CDATA[$F{billing_cycle}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="850" y="0" width="92" height="20" uuid="773f086e-8a1e-409f-8e64-797973cb7eb6"/>
+				<textFieldExpression><![CDATA[$F{language}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="574" y="0" width="92" height="20" uuid="aacd03f1-9dee-45df-82bb-4d65d5c75f03"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd">
+				<reportElement x="666" y="0" width="92" height="20" uuid="ca1a0a92-509d-4230-8a0d-78c8329a4d9e"/>
+				<textFieldExpression><![CDATA[$F{oldest_order_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="942" y="0" width="92" height="20" uuid="c916c28b-3600-45ca-9961-9432f6e28f5e"/>
+				<textFieldExpression><![CDATA[$F{item_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1126" y="0" width="141" height="20" uuid="be1e549d-697f-47cc-af92-5ed9640463c6"/>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1267" y="0" width="112" height="20" uuid="2ebbbf88-211b-4423-9131-f2c66f1b1cdd"/>
+				<textFieldExpression><![CDATA[$F{service}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00">
+				<reportElement x="1380" y="0" width="92" height="20" uuid="c39cd2b3-b5ef-4f08-ab2b-ce9c0d45d738"/>
+				<textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1034" y="0" width="92" height="20" uuid="1c8c362e-d763-45d4-b4c9-2a71d2bfb87a"/>
+				<textFieldExpression><![CDATA[$F{payment_method}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

@@ -1,0 +1,12 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	<test name="VerifyUserIsAbleToAddAnotherAITMetafiledToAcountType" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyUserIsAbleToAddAnotherAITMetafiledToAcountType">
+			</class>
+		</classes>
+	</test>
+</suite>

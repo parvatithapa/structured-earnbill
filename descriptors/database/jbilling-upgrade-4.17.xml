@@ -1,0 +1,1948 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.17.xml">
+
+    <changeSet context="base" id="JB-1830. Permission Changes" author="Gerhard Maree">
+        <createTable tableName="permission_implied_map">
+            <column name="permission_id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="implied_permission_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="permission_implied_map"
+                             columnNames="permission_id,implied_permission_id"
+                             constraintName="permission_implied_map_uk"/>
+
+        <addForeignKeyConstraint baseColumnNames="permission_id"
+                                 baseTableName="permission_implied_map"
+                                 constraintName="permission_implied_map_permission_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="permission"
+                                 referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="implied_permission_id"
+                                 baseTableName="permission_implied_map"
+                                 constraintName="permission_implied_map_impl_permission_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="permission"
+                                 referencesUniqueColumn="false"/>
+
+
+        <addColumn tableName="permission">
+            <column name="required_to_assign_permission_id" type="java.sql.Types.INTEGER"></column>
+            <column name="role_assignable" type="java.sql.Types.BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="user_assignable" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseColumnNames="required_to_assign_permission_id"
+                                 baseTableName="permission"
+                                 constraintName="permission_required_to_assign_permission_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="permission"
+                                 referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Role Changes" author="Gerhard Maree">
+        <addColumn tableName="role">
+            <column name="required_to_modify_permission_id" type="java.sql.Types.INTEGER"></column>
+            <column name="required_to_create_user_permission_id" type="java.sql.Types.INTEGER"></column>
+            <column name="parent_role_id" type="java.sql.Types.INTEGER"></column>
+            <column name="is_final" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false"></column>
+        </addColumn>
+
+        <addForeignKeyConstraint baseColumnNames="required_to_modify_permission_id"
+                                 baseTableName="role"
+                                 constraintName="role_required_to_modify_permission_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="permission"
+                                 referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="required_to_create_user_permission_id"
+                                 baseTableName="role"
+                                 constraintName="role_required_to_create_user_permission_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="permission"
+                                 referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="parent_role_id"
+                                 baseTableName="role"
+                                 constraintName="role_parent_role_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="role"
+                                 referencesUniqueColumn="false"/>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Permissions for Roles" author="Gerhard Maree">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1101"/>
+            <column name="type_id" valueNumeric="1"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1101"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create customer sub-account" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1101, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1, 3, 4);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1805"/>
+            <column name="type_id" valueNumeric="18"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1805"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="ITG Menu Access" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1805, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1908"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1908"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Switch User" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1908, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1909"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1909"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Save Company" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1909, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1915"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1915"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Save Preference" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1915, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1910"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1910"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Reseller" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1910, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1911"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1911"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="View Companies" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1911, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1912"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1912"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Use Tools" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1912, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1913"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1913"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Impersonate" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1913, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="200"/>
+            <column name="type_id" valueNumeric="2"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="200"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Order for Self" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 200, id
+                   FROM role
+                  WHERE role_type_id IN (4, 5);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="147"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="147"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit User" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 147, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="148"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="148"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit User Role" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 148, id
+                   FROM role
+                  WHERE role_type_id IN (-1, 2);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="149"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="149"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit User Permissions" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 149, id
+                   FROM role
+                  WHERE role_type_id IN (-1, 2);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1400"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="false" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1400"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Assign Admin Permissions" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1400, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1401"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="false" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1401"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit Self" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1401, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1402"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1402"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Update Default Role" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1402, id
+                   FROM role
+                  WHERE role_type_id IN (-1);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1403"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1403"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="View User Permissions" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1403, id
+                   FROM role
+                  WHERE role_type_id IN (-1, 2);
+        </sql>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1404"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1404"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="View Own Permissions" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1404, id
+                   FROM role
+                  WHERE role_type_id IN (-1, 2, 3, 4);
+        </sql>
+
+
+        <modifyDataType columnName="description"
+                        newDataType="java.sql.Types.VARCHAR(35)"
+                        tableName="permission_type"/>
+
+        <update tableName="permission_type">
+            <column name="description" value="Product Category Status and Assets"/>
+            <where>id = 13</where>
+        </update>
+
+        <update tableName="permission">
+            <column name="type_id"  valueNumeric="13"/>
+            <where>id IN (53, 54)</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Update old permissions" author="Gerhard Maree">
+        <comment>Set the correct parent role</comment>
+        <sql>
+            UPDATE role
+               SET parent_role_id = sq.id
+              FROM ( SELECT MIN(r2.id) AS id, r2.entity_id, r2.role_type_id
+                       FROM role r2
+                   GROUP BY r2.entity_id, r2.role_type_id ) AS sq
+             WHERE role.entity_id=sq.entity_id AND role.role_type_id=sq.role_type_id;
+
+            UPDATE role
+               SET parent_role_id = NULL
+             WHERE id=parent_role_id;
+        </sql>
+
+        <comment>Give all MyAccount permissions to super user (root)</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 160, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2)
+                    AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=160 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 161, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=161 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 162, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=162 );
+        </sql>
+
+        <comment>Customer sub-accounts to super user, clerk</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 18, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2,3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=18 );
+        </sql>
+
+        <comment>Order sub-accounts to super user, clerk</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 29, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2,3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=29 );
+        </sql>
+
+        <comment>Download product CSV to clerk</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 44, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=44 );
+        </sql>
+
+        <comment>Invoice, Sub-accounts to clerk, super user</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 75, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2,3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=75 );
+        </sql>
+
+        <comment>Discounts menu to clerk</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 902, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=902 );
+        </sql>
+
+        <comment>My account to clerk, customer, agent</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 160, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3,4,5) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=160 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 161, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3,4,5) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=161 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 162, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3,4,5) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=162 );
+        </sql>
+
+        <comment>Audit log to super user</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1904, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=1904 );
+
+        </sql>
+
+        <comment>Edit Role to super user</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1903, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=1903 );
+        </sql>
+
+        <comment>Remove crete payment from partner</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id=30 AND role_id IN (SELECT id FROM role WHERE role_type_id IN (4) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove agent permissions from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (101,102,103,104) AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove upload asset file from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (133) AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove delete payment from clerk, super user</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id=32 AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3, 2) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove product permissons from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (40,41,42) AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove product category permissons from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (50,51,52,53,54) AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove plan permissons from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (60,61,62) AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>Remove delete invoice from clerk</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id IN (70) AND role_id in (SELECT id FROM role WHERE role_type_id IN (3) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>View Agent to Clerk</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 104, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=104 );
+
+        </sql>
+
+        <comment>Payment: View Customer sub-accounts to Clerk, Super User</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 37, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2, 3) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=37 );
+
+        </sql>
+
+        <comment>Remove edit payment from clerk, super user</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id=31 AND role_id IN (SELECT id FROM role WHERE role_type_id IN (3, 2) AND parent_role_id IS NULL)
+            </where>
+        </delete>
+
+        <comment>User Code permissions to Super User</comment>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 140, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=140 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 141, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=141 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 142, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=142 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 143, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=143 );
+
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 144, r.id
+                   FROM role r
+                  WHERE r.role_type_id IN (2) AND r.parent_role_id IS NULL
+                    AND NOT EXISTS
+                        (   SELECT 1
+                              FROM permission_role_map r2
+                             WHERE r2.role_id=r.id AND r2.permission_id=144 );
+
+        </sql>
+
+        <comment>Only super user can assign these roles</comment>
+        <update tableName="permission">
+            <column name="required_to_assign_permission_id"  valueNumeric="1400"/>
+            <where>id IN (1902,1903)</where>
+        </update>
+
+        <update tableName="permission">
+            <column name="role_assignable"  valueBoolean="false"/>
+            <column name="user_assignable"  valueBoolean="true"/>
+            <column name="required_to_assign_permission_id"  valueNumeric="1400"/>
+            <where>id IN (120)</where>
+        </update>
+
+        <comment>Make system administrator, customer and partner final (no child role possible)</comment>
+        <update tableName="role">
+            <column name="is_final"  valueBoolean="true"/>
+            <where>role_type_id IN (-1,4,5)</where>
+        </update>
+
+        <comment>Give API access to all users who had a role API access</comment>
+        <sql>
+            INSERT INTO permission_user ( permission_id, user_id, is_grant, id )
+                 SELECT 120, ur.user_id, 1,
+                        (   SELECT COALESCE
+                            ((  SELECT MAX(pu1.id)
+                                  FROM permission_user pu1), 1)  + ur.user_id ) AS new_id
+                   FROM user_role_map ur
+                   JOIN role r ON r.id=ur.role_id
+                  WHERE r.id IN
+                        (   SELECT role_id
+                              FROM permission_role_map
+                             WHERE permission_id=120 )
+                    AND ur.user_id NOT IN
+                        (   SELECT user_id
+                              FROM permission_user
+                             WHERE permission_id=120 );
+        </sql>
+
+        <comment>Remove additional permissions assigned to users</comment>
+        <sql>
+            DELETE FROM permission_user WHERE permission_id != 120 AND is_grant=1;
+        </sql>
+
+        <comment>Revocation of API access no necessary since no role has it.</comment>
+        <sql>
+            DELETE FROM permission_user WHERE permission_id = 120 AND is_grant=0;
+        </sql>
+
+        <comment>Remove API access from all roles</comment>
+        <delete tableName="permission_role_map" >
+            <where>
+                permission_id = 120
+            </where>
+        </delete>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce(max(id) + 1,1) from permission_user p)"/>
+            <where>name='permission_user'</where>
+        </update>
+
+        <comment>Out of the box roles can only be modified by sysadmin</comment>
+        <update tableName="permission">
+            <column name="required_to_assign_permission_id"  valueNumeric="1400"/>
+            <where>id IN (1902,1903)</where>
+        </update>
+
+        <comment>Only sysadmin may change default roles</comment>
+        <update tableName="role">
+            <column name="required_to_modify_permission_id"  valueNumeric="1402"/>
+            <where>parent_role_id IS NULL</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Permission dependencies" author="Gerhard Maree">
+        <comment>Create customer sub-account</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1101" />
+            <column name="implied_permission_id" valueNumeric="10" />
+        </insert>
+        <comment>Edit User Code</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="141" />
+            <column name="implied_permission_id" valueNumeric="140" />
+        </insert>
+        <comment>Modify User Code for Entity</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="144" />
+            <column name="implied_permission_id" valueNumeric="143" />
+        </insert>
+
+        <comment>Create customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="10" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>Edit customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="11" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+
+        <comment>Next invoice date</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="19" />
+            <column name="implied_permission_id" valueNumeric="11" />
+        </insert>
+        <comment>Edit billing cycle of customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="121" />
+            <column name="implied_permission_id" valueNumeric="11" />
+        </insert>
+
+        <comment>Delete customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="12" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>Inspect customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="13" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>Blacklist customer</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="14" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>View customer details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="15" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>Download customer CSV</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="16" />
+            <column name="implied_permission_id" valueNumeric="15" />
+        </insert>
+        <comment>View all customers</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="17" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+
+        <comment>View orders for all customers</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="28" />
+            <column name="implied_permission_id" valueNumeric="17" />
+        </insert>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="28" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>View payments for all customers</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="36" />
+            <column name="implied_permission_id" valueNumeric="17" />
+        </insert>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="36" />
+            <column name="implied_permission_id" valueNumeric="93" />
+        </insert>
+        <comment>View invoices for all customers</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="74" />
+            <column name="implied_permission_id" valueNumeric="17" />
+        </insert>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="74" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+
+        <comment>View customer sub-accounts</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="18" />
+            <column name="implied_permission_id" valueNumeric="90" />
+        </insert>
+        <comment>View orders for customer sub-accounts</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="29" />
+            <column name="implied_permission_id" valueNumeric="18" />
+        </insert>
+        <comment>View payments for all customer sub-accounts</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="37" />
+            <column name="implied_permission_id" valueNumeric="18" />
+        </insert>
+        <comment>View invoices for customer sub-accounts</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="75" />
+            <column name="implied_permission_id" valueNumeric="18" />
+        </insert>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="75" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+
+        <comment>Create order</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="20" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>Edit order</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="21" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>Edit line price</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="26" />
+            <column name="implied_permission_id" valueNumeric="20" />
+        </insert>
+        <comment>Edit line description</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="27" />
+            <column name="implied_permission_id" valueNumeric="20" />
+        </insert>
+        <comment>Delete order</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="22" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>Generate invoice for order</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="23" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>View order details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="24" />
+            <column name="implied_permission_id" valueNumeric="92" />
+        </insert>
+        <comment>Download order CSV</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="25" />
+            <column name="implied_permission_id" valueNumeric="24" />
+        </insert>
+        <comment>Create payment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="30" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+        <comment>Edit payment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="31" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+        <comment>Delete Processed payment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="32" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+        <comment>Delete Entered payment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1907" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+        <comment>Link payment to invoice</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="33" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+        <comment>View payment details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="34" />
+            <column name="implied_permission_id" valueNumeric="93" />
+        </insert>
+        <comment>Download payment CSV</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="35" />
+            <column name="implied_permission_id" valueNumeric="34" />
+        </insert>
+
+        <comment>Create product</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="40" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>Edit product</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="41" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>Delete product</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="42" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>View product details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="43" />
+            <column name="implied_permission_id" valueNumeric="97" />
+        </insert>
+        <comment>Download Product CSV</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="44" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>Create product category</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="50" />
+            <column name="implied_permission_id" valueNumeric="97" />
+        </insert>
+        <comment>Edit product category</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="51" />
+            <column name="implied_permission_id" valueNumeric="97" />
+        </insert>
+        <comment>Delete product category</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="52" />
+            <column name="implied_permission_id" valueNumeric="97" />
+        </insert>
+
+        <comment>Change category statuses</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="53" />
+            <column name="implied_permission_id" valueNumeric="51" />
+        </insert>
+        <comment>Change category meta fields</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="54" />
+            <column name="implied_permission_id" valueNumeric="51" />
+        </insert>
+        <comment>Add asset</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="130" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>Edit asset</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="131" />
+            <column name="implied_permission_id" valueNumeric="130" />
+        </insert>
+        <comment>Delete asset</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="132" />
+            <column name="implied_permission_id" valueNumeric="43" />
+        </insert>
+        <comment>Upload asset file</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="133" />
+            <column name="implied_permission_id" valueNumeric="130" />
+        </insert>
+
+        <comment>Create Plan</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="60" />
+            <column name="implied_permission_id" valueNumeric="98" />
+        </insert>
+        <comment>Edit Plan</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="61" />
+            <column name="implied_permission_id" valueNumeric="98" />
+        </insert>
+        <comment>Delete Plan</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="62" />
+            <column name="implied_permission_id" valueNumeric="98" />
+        </insert>
+        <comment>View Plan Details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="63" />
+            <column name="implied_permission_id" valueNumeric="98" />
+        </insert>
+
+        <comment>Delete Invoice</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="70" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+        <comment>Send Invoice Notification</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="71" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+        <comment>View Invoice Details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="72" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+        <comment>Download Invoice CSV</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="73" />
+            <column name="implied_permission_id" valueNumeric="91" />
+        </insert>
+
+        <comment>Approve/Disprove Billing Review</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="80" />
+            <column name="implied_permission_id" valueNumeric="94" />
+        </insert>
+
+        <comment>Create Agent</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="101" />
+            <column name="implied_permission_id" valueNumeric="901" />
+        </insert>
+        <comment>Edit Agent</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="102" />
+            <column name="implied_permission_id" valueNumeric="901" />
+        </insert>
+        <comment>Delete Agent</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="103" />
+            <column name="implied_permission_id" valueNumeric="901" />
+        </insert>
+        <comment>View Agent Details</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="104" />
+            <column name="implied_permission_id" valueNumeric="901" />
+        </insert>
+
+        <comment>Create Discount</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="151" />
+            <column name="implied_permission_id" valueNumeric="902" />
+        </insert>
+        <comment>Delete Discount</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="152" />
+            <column name="implied_permission_id" valueNumeric="902" />
+        </insert>
+        <comment>Edit Discount</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="153" />
+            <column name="implied_permission_id" valueNumeric="902" />
+        </insert>
+
+        <comment>Edit Password</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="161" />
+            <column name="implied_permission_id" valueNumeric="160" />
+        </insert>
+        <comment>Edit My Account</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="162" />
+            <column name="implied_permission_id" valueNumeric="160" />
+        </insert>
+
+        <comment>ITG access</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1805" />
+            <column name="implied_permission_id" valueNumeric="99" />
+        </insert>
+        <comment>Edit Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1801" />
+            <column name="implied_permission_id" valueNumeric="1805" />
+        </insert>
+        <comment>Add Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1802" />
+            <column name="implied_permission_id" valueNumeric="1805" />
+        </insert>
+        <comment>List Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1803" />
+            <column name="implied_permission_id" valueNumeric="1805" />
+        </insert>
+        <comment>Delete Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1804" />
+            <column name="implied_permission_id" valueNumeric="1805" />
+        </insert>
+
+        <comment>View plug-in</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1901" />
+            <column name="implied_permission_id" valueNumeric="99" />
+        </insert>
+        <comment>Edit plug-in</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1902" />
+            <column name="implied_permission_id" valueNumeric="99" />
+        </insert>
+        <comment>Edit role</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1903" />
+            <column name="implied_permission_id" valueNumeric="99" />
+        </insert>
+        <comment>Audit Log</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1904" />
+            <column name="implied_permission_id" valueNumeric="99" />
+        </insert>
+
+        <comment>View EDI Types</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="920" />
+            <column name="implied_permission_id" valueNumeric="903" />
+        </insert>
+        <comment>Edit EDI Types</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="921" />
+            <column name="implied_permission_id" valueNumeric="903" />
+        </insert>
+        <comment>View EDI Files</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="922" />
+            <column name="implied_permission_id" valueNumeric="903" />
+        </insert>
+
+        <comment>View Enrollment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="910" />
+            <column name="implied_permission_id" valueNumeric="904" />
+        </insert>
+        <comment>Edit Enrollment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="911" />
+            <column name="implied_permission_id" valueNumeric="904" />
+        </insert>
+        <comment>Delete Enrollment</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="912" />
+            <column name="implied_permission_id" valueNumeric="904" />
+        </insert>
+        <comment>Create customer sub-account</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1402" />
+            <column name="implied_permission_id" valueNumeric="1903" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Set faulty roles" author="Gerhard Maree">
+        <comment>Due to a bug users can have the role of the correct type but not linked to an entity</comment>
+        <sql>
+            UPDATE user_role_map
+               SET role_id =
+                    (   SELECT MIN(r2.id)
+                          FROM base_user u
+                          JOIN user_role_map ur ON ur.user_id=u.id
+                          JOIN role r ON r.id=ur.role_id AND r.parent_role_id IS NULL
+                          JOIN role r2 ON r2.entity_id=u.entity_id AND r2.role_type_id=r.role_type_id AND r2.parent_role_id IS NULL
+                         WHERE u.id=user_role_map.user_id
+                    )
+             WHERE user_id IN
+                    (   SELECT ur.user_id
+                          FROM base_user u
+                          JOIN user_role_map ur ON ur.user_id=u.id
+                          JOIN role r ON r.id=ur.role_id AND r.parent_role_id IS NULL
+                          JOIN role r2 ON r2.entity_id=u.entity_id AND r2.role_type_id=r.role_type_id AND r2.parent_role_id IS NULL
+                         WHERE r.id != r2.id
+                    )
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Add and View User" author="Gerhard Maree">
+        <comment>Add user to super user, sys admin</comment>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1405"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1405"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Add User" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1405, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+
+        <comment>View user to super user, sys admin</comment>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1406"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1406"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="View User" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 1406, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1);
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Permission dependencies. Invoice Templates" author="Gerhard Maree">
+        <comment>Add Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1802" />
+            <column name="implied_permission_id" valueNumeric="1803" />
+        </insert>
+        <comment>Edit Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1801" />
+            <column name="implied_permission_id" valueNumeric="1803" />
+        </insert>
+        <comment>Delete Invoice Templates</comment>
+        <insert tableName="permission_implied_map">
+            <column name="permission_id" valueNumeric="1804" />
+            <column name="implied_permission_id" valueNumeric="1803" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Permission for credit notes" author="Gerhard Maree">
+        <comment>Credit Note Menu</comment>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="905"/>
+            <column name="type_id" valueNumeric="9"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="false" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="905"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Show credit note menu" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+                 SELECT 905, id
+                   FROM role
+                  WHERE role_type_id IN (2, -1, 3, 4, 5);
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JB-1830. Reports" author="Gerhard Maree">
+        <insert tableName="report">
+            <column name="id" valueComputed="(select max(id)+1 from report)"/>
+            <column name="type_id" valueComputed="4"/>
+            <column name="name" value="role_permissions"/>
+            <column name="file_name" value="role_permissions.jasper"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name = 'report')"/>
+            <column name="foreign_id" valueComputed="(select id from report r where r.name = 'role_permissions')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="List the permissions by role"/>
+        </insert>
+
+        <sql>
+           INSERT INTO entity_report_map(report_id, entity_id)
+                SELECT (    SELECT r.id
+                              FROM report r
+                             WHERE r.name = 'role_permissions'), id
+                  FROM entity
+                 WHERE parent_id IS NULL;
+        </sql>
+
+        <insert tableName="report">
+            <column name="id" valueComputed="(select max(id)+1 from report)"/>
+            <column name="type_id" valueComputed="4"/>
+            <column name="name" value="user_role"/>
+            <column name="file_name" value="user_role.jasper"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name = 'report')"/>
+            <column name="foreign_id" valueComputed="(select id from report r where r.name = 'user_role')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="List the users by role"/>
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+                 SELECT (   SELECT r.id
+                              FROM report r
+                             WHERE r.name = 'user_role'), id
+                   FROM entity
+                  WHERE parent_id IS NULL;
+        </sql>
+    </changeSet>
+
+  <changeSet context="base" id="JBDIST-70 Added PaymentPaySafeTask in pluggable_task_type" author="Krunal Bhavsar">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*)
+        FROM pluggable_task_type
+        WHERE class_name='com.sapienter.jbilling.server.payment.tasks.PaymentPaySafeTask'
+      </sqlCheck>
+    </preConditions>
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(COALESCE((SELECT MAX(pt.id)+1 FROM pluggable_task_type pt), 1))" />
+      <column name="category_id" valueNumeric="6" />
+      <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentPaySafeTask" />
+      <column name="min_parameters" valueNumeric="7" />
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name ='pluggable_task_type')"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(pt.id) FROM pluggable_task_type pt WHERE pt.category_id = 6)" />
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Submits payments and refund request to Paysafe payment gateway."/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="test" id="JBDIST-70 Added New Credit Card Payment Method For PaySafe GateWay" author="Krunal Bhavsar">
+    <insert tableName="payment_method_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(pmt.id)+1 FROM payment_method_type pmt),1)"/>
+      <column name="method_name" value="PaySafe Credit Card"/>
+      <column name="is_recurring" valueBoolean="true"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="template_id" valueNumeric="1"/>
+      <column name="optlock" valueNumeric="2"/>
+      <column name="all_account_type" valueBoolean="false"/>
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="Card Holder Name"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="CHAR" />
+      <column name="is_disabled" valueBoolean="false"/>
+      <column name="is_mandatory" valueBoolean="true"/>
+      <column name="display_order" valueNumeric="1"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id"/>
+      <column name="filename" value=""/>
+      <column name="field_usage" value="TITLE"/>
+      <column name="data_table_id"/>
+      <column name="help_description" value=""/>
+      <column name="help_content_url" value=""/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+
+    <insert tableName="validation_rule">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(vr.id)+1 FROM validation_rule vr),1)"/>
+      <column name="rule_type" value="PAYMENT_CARD"/>
+      <column name="enabled" valueBoolean="true"/>
+      <column name="optlock" valueNumeric="1"/>
+    </insert>
+
+    <insert tableName="validation_rule_attributes">
+      <column name="validation_rule_id" valueComputed="(SELECT MAX(vr.id) FROM validation_rule vr)"/>
+      <column name="attribute_name" value="regularExpression"/>
+      <column name="attribute_value" value="^[0-9]{1,9}$"/>
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="Card Number"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="CHAR" />
+      <column name="is_disabled" valueBoolean="false"/>
+      <column name="is_mandatory" valueBoolean="true"/>
+      <column name="display_order" valueNumeric="2"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id" valueComputed="(SELECT MAX(vr.id) FROM validation_rule vr)"/>
+      <column name="filename" value=""/>
+      <column name="field_usage" value="PAYMENT_CARD_NUMBER"/>
+      <column name="data_table_id"/>
+      <column name="help_description" value=""/>
+      <column name="help_content_url" value=""/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+
+    <insert tableName="validation_rule">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(vr.id)+1 FROM validation_rule vr),1)"/>
+      <column name="rule_type" value="REGEX"/>
+      <column name="enabled" valueBoolean="true"/>
+      <column name="optlock" valueNumeric="1"/>
+    </insert>
+    <insert tableName="validation_rule_attributes">
+      <column name="validation_rule_id" valueComputed="(SELECT MAX(vr.id) FROM validation_rule vr)"/>
+      <column name="attribute_name" value="regularExpression"/>
+      <column name="attribute_value" value="(?:0[1-9]|1[0-2])/[0-9]{4}"/>
+    </insert>
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="Expiry Date"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="CHAR" />
+      <column name="is_disabled" valueBoolean="false"/>
+      <column name="is_mandatory" valueBoolean="false"/>
+      <column name="display_order" valueNumeric="3"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id" valueComputed="(SELECT MAX(vr.id) FROM validation_rule vr)"/>
+      <column name="filename" value=""/>
+      <column name="field_usage" value="DATE"/>
+      <column name="data_table_id"/>
+      <column name="help_description" value=""/>
+      <column name="help_content_url" value=""/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="cc.gateway.key"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="CHAR" />
+      <column name="is_disabled" valueBoolean="true"/>
+      <column name="is_mandatory" valueBoolean="false"/>
+      <column name="display_order" valueNumeric="4"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id"/>
+      <column name="filename" value=""/>
+      <column name="field_usage" value="GATEWAY_KEY"/>
+      <column name="data_table_id"/>
+      <column name="help_description" value=""/>
+      <column name="help_content_url" value=""/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="Card Type"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="STRING" />
+      <column name="is_disabled" valueBoolean="false"/>
+      <column name="is_mandatory" valueBoolean="false"/>
+      <column name="display_order" valueNumeric="5"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id"/>
+      <column name="filename" value=""/>
+      <column name="field_usage" value="CC_TYPE"/>
+      <column name="data_table_id"/>
+      <column name="help_description" value=""/>
+      <column name="help_content_url" value=""/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+      <column name="name" value="autopayment.limit"/>
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE"/>
+      <column name="data_type" value="DECIMAL"/>
+      <column name="is_disabled" valueBoolean="false"/>
+      <column name="is_mandatory" valueBoolean="false"/>
+      <column name="display_order" valueNumeric="6"/>
+      <column name="default_value_id"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="error_message"/>
+      <column name="is_primary" valueBoolean="true"/>
+      <column name="validation_rule_id"/>
+      <column name="filename"/>
+      <column name="field_usage" value="AUTO_PAYMENT_LIMIT"/>
+      <column name="data_table_id"/>
+      <column name="help_description"/>
+      <column name="help_content_url"/>
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(pmt.id) FROM payment_method_type pmt)"/>
+      <column name="meta_field_id" valueComputed="(SELECT MAX(mfn.id) FROM meta_field_name mfn)"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="test" id="JBDIST-70 Added New Token Payment Method For PaySafe GateWay" author="Krunal Bhavsar">
+
+    <insert tableName="payment_method_type">
+      <column name="id" valueComputed="(COALESCE((SELECT MAX(mn.id)+1 FROM meta_field_name mn), 1))" />
+      <column name="method_name" value="PaySafe Token" />
+      <column name="is_recurring" valueBoolean="true" />
+      <column name="entity_id" valueComputed="(SELECT MIN(e.id) FROM entity e)" />
+      <column name="template_id" valueComputed="(SELECT MIN(t.id) FROM payment_method_template t WHERE t.template_name = 'Payment Card')" />
+      <column name="optlock" valueNumeric="1" />
+    </insert>
+
+    <insert tableName="meta_field_name">
+      <column name="id" valueComputed="(COALESCE((SELECT MAX(mn.id)+1 FROM meta_field_name mn), 1))" />
+      <column name="name" value="cc.payment.token.id" />
+      <column name="entity_type" value="PAYMENT_METHOD_TYPE" />
+      <column name="data_type" value="CHAR" />
+      <column name="is_disabled" valueBoolean="true" />
+      <column name="is_mandatory" valueBoolean="true" />
+      <column name="is_primary" valueBoolean="true" />
+      <column name="display_order" valueNumeric="4" />
+      <column name="default_value_id" />
+      <column name="optlock" valueNumeric="0" />
+      <column name="entity_id" valueComputed="(SELECT MIN(id) FROM entity)" />
+      <column name="field_usage" value="GATEWAY_KEY" />
+      <column name="validation_rule_id" />
+    </insert>
+
+    <insert tableName="payment_method_meta_fields_map">
+      <column name="payment_method_id" valueComputed="(SELECT MAX(t.id) FROM payment_method_type t)" />
+      <column name="meta_field_id" valueComputed="(SELECT MAX(t.id) FROM meta_field_name t)" />
+    </insert>
+
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-99" author="Krunal Bhavsar">
+    <update tableName="pluggable_task_type">
+      <column name="min_parameters" valueNumeric="5"/>
+      <where>class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentPaySafeTask'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-936 Development - CR19 - Payment Gateway Monitoring Process (045)" author="Leandro Bagur">
+    <createTable tableName="payment_processor_unavailable">
+      <column name="id" type="java.sql.Types.INTEGER">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="entity_id" type="java.sql.Types.INTEGER">
+        <constraints nullable="false" />
+      </column>
+      <column name="payment_id" type="java.sql.Types.INTEGER">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id) + 1 FROM pluggable_task_type p), 1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentProcessorUnavailableTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id) + 1 FROM pluggable_task_type p), 1)"/>
+      <column name="category_id" valueNumeric="22"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentGatewayMonitoringTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(COALESCE( (SELECT MAX(t.id) + 1 FROM pluggable_task_type t), 1))"/>
+      <where>name = 'pluggable_task_type'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-958 Development - Refund Report" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) 
+          FROM report r 
+         WHERE r.name = 'refund_payments'
+      </sqlCheck>
+    </preConditions>
+    
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="3" />
+      <column name="name" value="refund_payments" />
+      <column name="file_name" value="refund_payments.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id
+                FROM report r
+               WHERE r.name = 'refund_payments'),
+             id
+        FROM entity
+       WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'refund_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'refund_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'refund_payments')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="payment_method_id" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-915 Ageing Balance Report - CSV columns alignment." author="Fernando Sivila">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*)
+          FROM report_parameter rp
+         WHERE rp.report_id = (SELECT id FROM report r WHERE r.name = 'ageing_balance_detail')
+           AND rp.name = 'format'
+      </sqlCheck>
+    </preConditions>
+    
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'ageing_balance_detail')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="format" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-912 Total Payment Details Report - CSV Column Alignment." author="Fernando Sivila">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*)
+          FROM report_parameter rp
+         WHERE rp.report_id = (SELECT id FROM report r WHERE r.name = 'total_payments_detail')
+           AND rp.name = 'format'
+      </sqlCheck>
+    </preConditions>
+    
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'total_payments_detail')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="format" />
+    </insert>
+  </changeSet>
+
+    <changeSet context="base" id="JBDIST-1105 Development - CR-27 - Limitation on Update of manual Payment Autopayment"
+               author="Matias Cabezas">
+        <validCheckSum>7:be915c0f37ca709a9366313519d92005</validCheckSum>
+        <insert tableName="permission">
+            <column name="id" value="1916"/>
+            <column name="type_id"
+                    valueComputed="(SELECT id FROM permission_type WHERE description='Payment')"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" value="1916"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Change Submit to Payment Gateway"/>
+        </insert>
+
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+                SELECT r.id AS role_id,
+                      (SELECT foreign_id
+                         FROM international_description
+                        WHERE table_id IN (SELECT id
+                                             FROM jbilling_table
+                                            WHERE name = 'permission')
+                          AND language_id = 1
+                          AND content = 'Change Submit to Payment Gateway') AS permission_id
+                  FROM role r
+                  WHERE r.role_type_id != 4;
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBDIST-1228 Development - CR-030 - List of Assets" author="Leandro Bagur">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) from report r WHERE r.name = 'available_asset'
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="report_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(t.id) + 1 FROM report_type t), 1)"/>
+            <column name="name" value="asset"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report_type')"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM report_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Asset Reports"/>
+        </insert>
+
+        <insert tableName="report">
+            <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+            <column name="type_id" valueComputed="(SELECT id FROM report_type rt WHERE rt.name = 'asset')"/>
+            <column name="name" value="list_available_asset" />
+            <column name="file_name" value="list_available_asset.jasper" />
+            <column name="optlock" valueNumeric="0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'list_available_asset'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'list_available_asset')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="threshold_asset" />
+        </insert>
+    </changeSet>
+
+    <include file = "foreign-keys-indexes-20171207.xml"         relativeToChangelogFile = "true"/>
+    <include file = "batch-job-billing-20180212.xml"            relativeToChangelogFile = "true"/>
+    <include file = "batch-job-ignition-payment-20180309.xml"   relativeToChangelogFile = "true"/>
+    <include file = "batch-job-partition-by-users-20180319.xml" relativeToChangelogFile = "true"/>
+
+	<changeSet context ="base" id ="#JBDIST-1283-Add-Index-To-Failed-Payments-Report" author ="Ashok Kale">
+        <!-- payment_instrument_info -->
+
+        <createIndex tableName = "payment_instrument_info"
+                     indexName = "payment_instrument_info_fk_payment">
+            <column name = "payment_id"/>
+        </createIndex>
+
+       <!-- payment_information_meta_fields_map -->
+
+        <createIndex tableName = "payment_information_meta_fields_map"
+                     indexName = "payment_information_mf_map_fk_pi">
+            <column name = "payment_information_id"/>
+        </createIndex>
+    </changeSet>
+
+	<changeSet context="base" id="#JBDIST-1286 -Increase-content-Column-Character-Size-From-1000-To-2000" author="Ashok Kale">
+		<comment>Increase `note_content` Column Limitation from 1000 to 2000 Char</comment>
+		<sql>
+			ALTER TABLE customer_notes ALTER COLUMN note_content TYPE character varying(2000);
+		</sql>
+	</changeSet>
+
+</databaseChangeLog>

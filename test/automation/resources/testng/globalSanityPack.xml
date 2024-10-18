@@ -1,0 +1,51 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="SanityTestScript"
+	annotations="JDK">
+	
+	<test name="SanityTestScript" junit="false" preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.SanityTestScript">
+<!-- 				<methods> -->
+<!-- 					<include name="testCreateNewCompanyUsingCopyCompany"></include> -->
+<!-- 					<include name="testLoginIntoCompany"></include> -->
+<!-- 					<include name="testCreationOfChildCompany"></include> -->
+<!-- 					<include name="testCreationOfChildCompanyInvoiceAsReseller"></include> -->
+<!-- 					<include name="testAddAccountType"></include> -->
+<!-- 					<include name="testAttachPaymentType"></include> -->
+<!-- 					<include name="testAddInfoToAccountType"></include> -->
+<!-- 					<include name="testConfigurePaymentMethod"></include> -->
+<!-- 					<include name="testConfigureOrderPeriod"></include> -->
+<!-- 					<include name="testConfigureCollection"></include> -->
+<!-- 					<include name="testConfigureCollectionPlugins"></include> -->
+<!-- 					<include name="testConfigureBillingProcess"></include> -->
+<!-- 					<include name="testCreateProductCategory"></include> -->
+<!-- 					<include name="testCreateCategoryWithAssetManagement"></include> -->
+<!-- 					<include name="testAddAndEditProduct"></include> -->
+<!-- 					<include name="testCreateProductWithAsset"></include> -->
+<!-- 					<include name="testAssignAccountToProduct"></include> -->
+<!-- 					<include name="testCreateAndEditPlan"></include> -->
+<!-- 					<include name="testRootCompanyImpersonationOnChildCompany"></include> -->
+<!-- 					<include name="testCreateAndEditCustomer"></include> -->
+<!-- 					<include name="testCreateParentChildRelationInCustomersTab"></include> -->
+<!-- 					<include name="testCreateDiscount"></include> -->
+<!-- 					<include name="testChangeOrderFeature"></include> -->
+<!-- 					<include name="testVerifyOrderProvisioningTaskTriggersEvent"></include> -->
+<!-- 					<include name="testMediationRunSuccessfully"></include> -->
+<!-- 					<include name="testVerifyInvoiceGeneration"></include> -->
+<!-- 					<include name="testCreateOrderWithDifferentTypedandPeriods"></include> -->
+<!-- 					<include name="testCustomerStatusChangeAsCollection"></include> -->
+<!-- 					<include name="testUserCanPayInvoiceOnGeneratedInvoice"></include> -->
+<!-- 					<include name="testReportForInvoice"></include> -->
+<!-- 					<include name="testCreateProductWithDependencyOnOther"></include> -->
+<!-- 					<include name="testOrderProductWithDependencyOnOther"></include> -->
+<!-- 					<include name="testAgentsLinkedToCustomer"></include> -->
+<!-- 					<include name="testCreateProductWithCommissions"></include> -->
+<!-- 					<include name="testConfigurePluginPreferencesForCommission"></include> -->
+<!-- 					<include name="testGeneratedCommissionPostInvoiceGeneration"></include> -->
+<!-- 					<include name="testUserTearDownCreatedData"></include> -->
+<!-- 				</methods> -->
+			</class>
+		</classes>
+	</test>
+</suite>

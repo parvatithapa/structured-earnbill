@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>Record Type</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Account Number</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Sequence Number</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Filename</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>File Creation</name>
+        <type>string</type>
+    </field>
+</format>

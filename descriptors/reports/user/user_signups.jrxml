@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="user_signups" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e875f7ea-fe80-4111-a33d-2bea6a7b29eb">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="period" class="java.lang.Integer"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="entity_timezone" class="java.lang.String"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select id from entity where (id = $P{entity_id} or $X{IN,id,child_entities})]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<group name="day_breakdown">
+		<groupHeader>
+			<band height="20">
+				<printWhenExpression><![CDATA[$P{period}.equals(Integer.valueOf(1))]]></printWhenExpression>
+				<subreport>
+					<reportElement x="0" y="0" width="555" height="20" uuid="66868c43-5012-4fbe-a1f8-473a147fe4c1"/>
+					<subreportParameter name="startDate">
+						<subreportParameterExpression><![CDATA[$P{start_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="entityId">
+						<subreportParameterExpression><![CDATA[$P{entity_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="endDate">
+						<subreportParameterExpression><![CDATA[$P{end_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="entityTimezone">
+						<subreportParameterExpression><![CDATA[$P{entity_timezone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+						<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="childEntities">
+						<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "user_signups_day.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="week_breakdown">
+		<groupHeader>
+			<band height="20">
+				<printWhenExpression><![CDATA[$P{period}.equals(Integer.valueOf(2))]]></printWhenExpression>
+				<subreport>
+					<reportElement x="0" y="0" width="555" height="20" uuid="577da0ea-f3fa-41b8-885c-c79a3cc4731f"/>
+					<subreportParameter name="entityId">
+						<subreportParameterExpression><![CDATA[$P{entity_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="entityTimezone">
+						<subreportParameterExpression><![CDATA[$P{entity_timezone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="childEntities">
+						<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="startDate">
+						<subreportParameterExpression><![CDATA[$P{start_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="endDate">
+						<subreportParameterExpression><![CDATA[$P{end_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "user_signups_week.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="month_breakdown">
+		<groupHeader>
+			<band height="20">
+				<printWhenExpression><![CDATA[$P{period}.equals(Integer.valueOf(3))]]></printWhenExpression>
+				<subreport>
+					<reportElement x="0" y="0" width="555" height="20" uuid="4cfcc42a-5ffd-4f07-a860-e7c11e2588a9"/>
+					<subreportParameter name="entityId">
+						<subreportParameterExpression><![CDATA[$P{entity_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="entityTimezone">
+						<subreportParameterExpression><![CDATA[$P{entity_timezone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="childEntities">
+						<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="startDate">
+						<subreportParameterExpression><![CDATA[$P{start_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="endDate">
+						<subreportParameterExpression><![CDATA[$P{end_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "user_signups_month.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupHeader>
+	</group>
+	<title>
+		<band height="100">
+			<staticText>
+				<reportElement x="0" y="1" width="190" height="20" uuid="eaafac08-61cd-4400-96d9-b92c04d44094"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Signups]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="454" y="1" width="100" height="20" uuid="600dabec-f60a-44f0-a2de-65373bd0b038"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="454" y="21" width="100" height="20" uuid="f1d006bd-7992-4da1-aa4c-7df1125cc6c9"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="454" y="41" width="100" height="20" uuid="269719e6-44dd-4a5a-877e-30f5ad623362"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{period}.equals(Integer.valueOf(1)) ? "Day"
+: $P{period}.equals(Integer.valueOf(2)) ? "Week"
+: $P{period}.equals(Integer.valueOf(3)) ? "Month" : ""]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="354" y="1" width="100" height="20" uuid="ccc9481f-f77a-47fe-85f0-33934063811e"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="354" y="21" width="100" height="20" uuid="de942cbe-8953-4ddb-bca5-4e27a50ce4c5"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="334" y="41" width="120" height="20" uuid="6f9da859-2e75-47be-857b-ba06f2f341b7"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Period Breakdown:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="190" height="20" uuid="19067992-04f5-4f26-b687-da0265961997"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[User Signups]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<pageFooter>
+		<band height="25">
+			<textField>
+				<reportElement x="434" y="0" width="80" height="20" uuid="cfad992b-8f10-40ef-b04d-68e283ec5c81"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="514" y="0" width="40" height="20" uuid="b4ce070c-2988-4dd6-ae7f-7fa88f9e80f7"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

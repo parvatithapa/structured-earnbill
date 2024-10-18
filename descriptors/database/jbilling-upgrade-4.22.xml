@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.22.xml">
+
+    <changeSet context = "base" id = "JBFC-783 : Free trial check for plan" author = "Swapnil Patil">
+        <comment>Free trial check for plan</comment>
+        <addColumn tableName = "plan">
+            <column name = "is_free_trial" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="JBFC-783 : free-trial-task" author="Swapnil Patil" context="base">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((SELECT MAX(p.ID)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.usagePool.task.FreeTrialConsumptionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Free trial consumption task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="When a Free Trial Consumption Event take place, this plug-in will fire defined action on the expiration of free quantity consumption"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBFC-866 : Unified Braintree Payment External Task" author="Ashwin Patra">
+        <comment>This is the payment plugin for the unified Braintree payment task</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)" />
+            <column name="category_id" valueNumeric="6" />
+            <column name="class_name"
+                value="com.sapienter.jbilling.server.payment.tasks.unified.braintree.UnifiedBrainTreePaymentExternalTask" />
+            <column name="min_parameters" valueNumeric="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24" />
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name="psudo_column" value="title" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Unified Braintree Payment External Task" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24" />
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Unified Braintree Payment External Task" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="#JBFC-900: This Preference Use Invoice Id as Invoice Number in Invoice Line Descriptions"
+    author="Mahesh Shivarkar">
+        <comment>This preference Use Invoice Id as Invoice Number in Invoice Line Descriptions if set to 1.</comment>
+        <insert tableName="preference_type">
+            <column name="id" value="91" />
+            <column name="def_value" value="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" value="91" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Enable configuration to Use Invoice Id as Invoice Number in Invoice Line Descriptions" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" value="91" />
+            <column name="psudo_column" value="instruction" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="This preference enables configuration to Use Invoice Id as Invoice Number in Invoice Line Descriptions" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3208 Delete Notification message type with wrong ids inserted with 4.21 upgrade" author="Mahesh Shivarkar">
+    <validCheckSum>7:d6f6d3aeb27b57b4dde8936dc4808fc2</validCheckSum>
+    <comment>Create Reseller company throwing PSQL exception: foreign key constraint error.
+            Records from following change set id's will be deleted and
+            inserted again with expected notification message type id 36 and 37:
+            1) JB-2278 Notification for Scheduled Task Started
+            2) JB-2278 Notification for Scheduled Task Started in all entities
+            3) JB-2278 Notification for Scheduled Task Completed
+            4) JB-2278 Notification for Scheduled Task Finished in all entities
+    </comment>
+        <delete tableName="notification_medium_type">
+            <where>notification_id IN
+                    (SELECT id
+                    FROM notification_message
+                    WHERE type_id IN
+                        (SELECT id
+                        FROM notification_message_type
+                        WHERE category_id = (SELECT foreign_id
+                                               FROM international_description
+                                              WHERE content = 'Scheduled Notifications'
+                                                AND table_id = 104
+                                                AND language_id = 1)))
+            </where>
+        </delete>
+        <delete tableName="notification_message_line">
+            <where>message_section_id IN
+                    (SELECT id
+                    FROM notification_message_section
+                    WHERE message_id IN
+                        (SELECT id
+                        FROM notification_message
+                        WHERE type_id IN
+                            (SELECT id
+                            FROM notification_message_type
+                            WHERE category_id = (SELECT foreign_id
+                                               FROM international_description
+                                              WHERE content = 'Scheduled Notifications'
+                                                AND table_id = 104
+                                                AND language_id = 1))))
+            </where>
+        </delete>
+        <delete tableName="notification_message_section">
+            <where>message_id IN
+                    (SELECT id
+                    FROM notification_message
+                    WHERE type_id IN
+                        (SELECT id
+                        FROM notification_message_type
+                        WHERE category_id  = (SELECT foreign_id
+                                               FROM international_description
+                                              WHERE content = 'Scheduled Notifications'
+                                                AND table_id = 104
+                                                AND language_id = 1)))
+            </where>
+        </delete>
+        <delete tableName="notification_message">
+            <where>type_id IN
+                    (SELECT id
+                    FROM notification_message_type
+                    WHERE category_id  = (SELECT foreign_id
+                                               FROM international_description
+                                              WHERE content = 'Scheduled Notifications'
+                                                AND table_id = 104
+                                                AND language_id = 1))
+            </where>
+        </delete>
+        <delete tableName="international_description">
+            <where>table_id = (SELECT id FROM jbilling_table WHERE name = 'notification_message_type')
+                    AND content = 'Scheduled Task Started'
+                    OR content = 'Scheduled Task Finished'
+                    AND language_id = 1
+            </where>
+        </delete>
+        <delete tableName="notification_message_type">
+            <where>id IN (SELECT nmt.id FROM notification_message_type nmt where nmt.category_id = 6)</where>
+        </delete>
+    </changeSet>
+    <changeSet context="base" id="JB-3208 Correction changeset of Notification for Scheduled Task Started" author="Mahesh Shivarkar">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM notification_message_type WHERE id = 36</sqlCheck>
+        </preConditions>
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="36" />
+            <column name="category_id" valueNumeric="6" />
+            <column name="optlock" valueNumeric="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52" />
+            <column name="foreign_id" valueComputed="36" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Scheduled Task Started" />
+        </insert>
+    </changeSet>
+    <changeSet context="base" id="JB-3208 Correction changeset of Notification for Scheduled Task Started in all entities" author="Mahesh Shivarkar">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="t">SELECT (COUNT(*) > 0) AS address FROM entity</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity WHERE id NOT IN (SELECT entity_id FROM notification_message WHERE type_id = 36 AND entity_id IN (SELECT entity_id FROM notification_message WHERE type_id = 36)) LOOP
+                            INSERT INTO notification_message (id,type_id,entity_id,language_id,use_flag,optlock) VALUES (COALESCE((SELECT MAX(nm.id)+1 FROM notification_message nm),1),36,t,1,1,0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),1,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Scheduled Task Has Started',0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),2,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Please note that $plugin_name process event for entity id $company_id on $url has started as of $start_time.',0);
+                            INSERT INTO notification_medium_type(notification_id, medium_type) VALUES (COALESCE((SELECT MAX(nm.id) FROM notification_message nm),1), 'EMAIL');
+
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+
+        </sql>
+    </changeSet>
+    <changeSet context="base" id="JB-3208 Correction changeset of Notification for Scheduled Task Completed" author="Mahesh Shivarkar">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="0">SELECT count(*) FROM notification_message_type WHERE id = 37</sqlCheck>
+        </preConditions>
+        <insert tableName="notification_message_type">
+            <column name="id" valueComputed="37" />
+            <column name="category_id" valueNumeric="6" />
+            <column name="optlock" valueNumeric="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52" />
+            <column name="foreign_id" valueComputed="37" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Scheduled Task Finished" />
+        </insert>
+    </changeSet>
+    <changeSet context="base" id="JB-3208 Correction changeset of Notification for Scheduled Task Finished in all entities" author="Mahesh Shivarkar">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="t">SELECT (COUNT(*) > 0) AS address FROM entity</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity WHERE id NOT IN (SELECT entity_id FROM notification_message WHERE type_id = 37 AND entity_id IN (SELECT entity_id FROM notification_message WHERE type_id = 37)) LOOP
+                            INSERT INTO notification_message (id,type_id,entity_id,language_id,use_flag,optlock) VALUES (COALESCE((SELECT MAX(nm.id)+1 FROM notification_message nm),1),37,t,1,1,0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),1,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Scheduled Task Has Been Completed',0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),2,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Please note that $plugin_name process event for entity id $company_id on $url has been completed as of $end_time.',0);
+                            INSERT INTO notification_medium_type(notification_id, medium_type) VALUES (COALESCE((SELECT MAX(nm.id) FROM notification_message nm),1), 'EMAIL');
+
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+
+        </sql>
+    </changeSet>
+
+    <include file = "constraints/jb-3286.xml"   relativeToChangelogFile = "true"/>
+
+    <changeSet context="base" id="JB-3373 Correctly populate user_assigned_status_id for teaser pricing" author="Nitisha Sahay">
+        <sql>
+            UPDATE order_change
+               SET user_assigned_status_id = 41
+             WHERE user_assigned_status_id = 36
+               AND item_id IN (SELECT i.id FROM item i, item_price_timeline ipt, entity_item_price_map eipm, price_model pm
+                                WHERE i.id = eipm.item_id
+                                  AND ipt.price_model_id = pm.id
+                                  AND ipt.model_map_id = eipm.id
+                                  AND pm.strategy_type = 'TEASER_PRICING');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

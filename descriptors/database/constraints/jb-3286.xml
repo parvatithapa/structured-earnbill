@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jb-3286.xml">
+
+    <!--
+      || 1. Rename constraints which names has mixed (uppercase and lowercase) characters to avoid need to use
+      ||    "" around these names in manual SQL commands.
+      || 2. Rename foreign keys to 'child_fk_parent' naming convention.
+      || 3. Rename primary keys to 'table_pkey' naming convention.
+      || 3. Rename unique constraints to 'table_uq_column1_column2' naming convention.
+      || 4. Add missing primary and foreign keys constraints where applicable.
+      || 5. Create indexes on 'parent_id' columns in 'child' table for each foreign key.
+      ||    To speedup parent + child joins, delete from parent SQL commands
+      || -->
+    <changeSet context = "base" id = "JB-3286 clean-up before applying primary key constraints to DB tables" author = "Nitisha Sahay">
+        <sql>
+            UPDATE base_user
+               SET user_name = '_' || user_name
+             WHERE deleted = 1
+               AND user_name IN (SELECT user_name
+                                   FROM base_user
+                               GROUP BY entity_id ,user_name
+                                 HAVING COUNT(*) > 1);
+            DELETE FROM reset_password_code
+                  WHERE base_user_id NOT IN (SELECT id
+                                               FROM base_user);
+            DELETE FROM item_account_type_availability
+                  WHERE item_id NOT IN (SELECT id
+                                          FROM item);
+            UPDATE base_user
+               SET user_name = 'deleted' || id || '-' || user_name
+             WHERE user_name IN (SELECT user_name
+                                   FROM base_user
+                                  WHERE deleted = 1
+                               GROUP BY entity_id ,user_name
+                                 HAVING COUNT(*) > 1);
+            UPDATE invoice_template
+               SET invoice_id = NULL
+             WHERE invoice_id NOT IN (SELECT id
+                                        FROM invoice);
+            DELETE FROM contact_map
+                  WHERE contact_id IN (SELECT id
+                                         FROM contact
+                                        WHERE user_id NOT IN (SELECT id
+                                                                FROM base_user));
+            DELETE FROM contact
+                  WHERE user_id NOT IN (SELECT id
+                                          FROM base_user);
+            DELETE FROM user_password_map
+                  WHERE base_user_id NOT IN (SELECT id
+                                               FROM base_user);
+
+            DELETE FROM account_type_price
+                  WHERE account_type_id NOT IN (SELECT id
+                                                  FROM account_type);
+            DELETE FROM invoice_template
+                  WHERE entity_id NOT IN (SELECT id
+                                            FROM entity);
+            UPDATE customer
+               SET invoice_template_id = NULL
+             WHERE invoice_template_id IN (SELECT id
+                                             FROM invoice_template
+                                            WHERE entity_id NOT IN (SELECT id
+                                                                      FROM entity));
+            DELETE FROM process_run_total_pm
+                  WHERE process_run_total_id NOT IN (SELECT id
+                                                       FROM process_run_total);
+            DELETE FROM provisioning_request
+                  WHERE command_id NOT IN (SELECT id
+                                             FROM provisioning_command);
+            DELETE FROM enumeration_values
+                  WHERE enumeration_id IN (SELECT id
+                                             FROM enumeration
+                                            WHERE entity_id NOT IN (SELECT id
+                                                                      FROM entity));
+            DELETE FROM enumeration
+                  WHERE entity_id NOT IN (SELECT id
+                                            FROM entity);
+            DELETE FROM order_status
+                  WHERE entity_id NOT IN (SELECT id
+                                            FROM entity);
+        </sql>
+    </changeSet>
+
+    <include file = "jb-3286-3rd-party-tables.xml"  relativeToChangelogFile = "true" />
+    <include file = "jb-3286-ordinary-tables.xml"   relativeToChangelogFile = "true" />
+    <include file = "jb-3286-maps-tables.xml"       relativeToChangelogFile = "true" />
+    <include file = "jb-3286-test-tables.xml"       relativeToChangelogFile = "true" />
+
+</databaseChangeLog>

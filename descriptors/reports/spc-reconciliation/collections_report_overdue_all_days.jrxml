@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report1" language="groovy" pageWidth="1630" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="1590" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a08d0d65-3745-43bc-8502-5ffc5b3fb266">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT bu.id AS user_id,
+                        userstatus.content AS user_status,
+                        CASE WHEN cus.exclude_aging = 1
+                             THEN 'Yes'
+                             ELSE 'No'
+                        END AS exclude_from_collections,
+                        i.id AS last_invoice_id,
+                        i.total AS amount_due,
+                        i.carried_balance AS amount_carried,
+                        (SELECT MAX(payment.create_datetime) FROM payment, payment_invoice pi
+                          WHERE payment.id = pi.payment_id AND payment.user_id = bu.id)  AS date_last_direct_debit_attempted,
+                        p.id AS payment_id_for_last_invoice,
+                        i.due_date AS date_due,
+                        pa.response_message AS reason_of_failure,
+                        (SELECT MAX(create_datetime) FROM payment
+                          WHERE result_id=1 AND user_id=bu.id) AS last_successful_payment_date
+                   FROM (SELECT us.id,
+                                id1.content FROM ageing_entity_step aes, user_status us,
+                                                 international_description id1, jbilling_table jt1
+                          WHERE aes.status_id = us.id AND us.id = id1.foreign_id
+                                                      AND id1.table_id = jt1.id
+                                                      AND jt1.name = 'user_status'
+                                                      AND aes.entity_id = 70) AS userstatus
+             INNER JOIN base_user bu ON bu.status_id = userstatus.id
+             INNER JOIN customer cus ON bu.id = cus.user_id
+             INNER JOIN invoice i ON (i.user_id = bu.id AND i.id = (SELECT MAX(id) FROM invoice
+                                                                     WHERE user_id = bu.id))
+              LEFT JOIN payment p ON (bu.id = p.user_id AND p.id = (SELECT MAX(payment.id) FROM payment, payment_invoice pi
+                                                                     WHERE payment.id = pi.payment_id AND payment.user_id = bu.id
+                                                                                                      AND pi.invoice_id = (SELECT MAX(id) FROM invoice
+                                                                                                                            WHERE user_id = bu.id)))
+              LEFT JOIN payment_authorization pa ON (p.id = pa.payment_id)
+                  WHERE userstatus.id >= 601 AND bu.deleted = 0
+                                             AND i.deleted = 0
+                                             AND (bu.entity_id = $P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+               ORDER BY p.id DESC,userstatus.content, cus.exclude_aging DESC, 1 ASC]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="user_status" class="java.lang.String"/>
+	<field name="exclude_from_collections" class="java.lang.String"/>
+	<field name="last_invoice_id" class="java.lang.Integer"/>
+	<field name="amount_due" class="java.math.BigDecimal"/>
+	<field name="amount_carried" class="java.math.BigDecimal"/>
+	<field name="date_last_direct_debit_attempted" class="java.sql.Timestamp"/>
+	<field name="payment_id_for_last_invoice" class="java.lang.Integer"/>
+	<field name="date_due" class="java.sql.Date"/>
+	<field name="reason_of_failure" class="java.lang.String"/>
+	<field name="last_successful_payment_date" class="java.sql.Timestamp"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="1489" height="20" uuid="f5e7b3af-9c29-437b-9989-0da28e0850b1"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Collections Report Overdue All Days]]></text>
+			</staticText>
+			<textField pattern="yyyy/MM/dd">
+				<reportElement x="1389" y="21" width="100" height="20" uuid="7b8d2d38-2838-41d7-9f08-587a587d3b56"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1307" y="21" width="82" height="20" uuid="96dc1fda-b146-4190-ad5a-2f14a1093304"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="25" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="84" height="20" uuid="5082d74c-6577-46b0-8732-2878167168ae"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="84" y="0" width="92" height="20" uuid="eb402300-83e5-451a-8775-198f63bb98d6"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Status]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="176" y="0" width="161" height="20" uuid="12932332-f012-4a8a-850e-e8eebf65036c"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Exclude FROM  Collections]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="337" y="0" width="89" height="20" uuid="fc0ac961-3efb-445c-a456-ef76d067f651"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Invoice Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="426" y="0" width="80" height="20" uuid="8185b62c-5c40-4b72-84cc-b7882b4cc40d"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount Due]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="506" y="0" width="99" height="20" uuid="e076bcf8-33c6-4981-8290-bdda983c2317"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount Carried]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="605" y="0" width="207" height="20" uuid="18cbd0c3-2385-439f-9dc9-7cc11847d402"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Last Direct Debit Attempted]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="812" y="0" width="171" height="20" uuid="688714be-935e-4ae3-bb6d-2abe5169f6a7"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Id for Last Invoice]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="983" y="0" width="82" height="20" uuid="13e128cf-f9e6-461b-9e1e-f966f0ae445b"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Due]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1065" y="0" width="242" height="20" uuid="7b71667c-984b-44e8-9999-aca2f3c3697e"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph firstLineIndent="10"/>
+				</textElement>
+				<text><![CDATA[Reason of Failure]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1307" y="0" width="182" height="20" uuid="1dcb4032-440b-483c-8f02-94ac472a078c"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Successful Payment Date]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="22" width="1489" height="1" uuid="ec05c952-f25e-4bca-a8da-38aa50232584"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="84" height="20" uuid="bb42b2ab-38be-4820-8e5a-c713fb71b9f4"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="84" y="0" width="92" height="20" uuid="dcef23b6-664f-4a0c-a336-be3c0330cc4f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_status}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="176" y="0" width="161" height="20" uuid="283825dd-5f3f-4e09-81d1-f3a9d36eef06"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{exclude_from_collections}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="337" y="0" width="89" height="20" uuid="88487a99-61d8-457c-8951-6cab86172c23"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{last_invoice_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="426" y="0" width="80" height="20" uuid="3ac4e263-3568-49a9-9a5e-74690e8d3de7"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount_due}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="506" y="0" width="99" height="20" uuid="107448ec-b16c-442c-9679-6d14993cd1b0"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount_carried}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="605" y="0" width="207" height="20" uuid="75abef52-85d1-4231-8e6e-528ce5a40403"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date_last_direct_debit_attempted}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="812" y="0" width="171" height="20" uuid="eb37df1f-346d-4851-bcca-3aa8e2d770bb"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{payment_id_for_last_invoice}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="983" y="0" width="82" height="20" uuid="61c11aab-27ae-4c5c-8842-6263a1c3fa5c"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date_due}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1065" y="0" width="242" height="20" uuid="bac9e7b9-db66-4157-b053-453f04ab4349"/>
+				<textElement>
+					<paragraph firstLineIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{reason_of_failure}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="1307" y="0" width="182" height="20" uuid="07f7706b-ee5d-4439-be27-108a2e1b1896"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{last_successful_payment_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21" splitType="Stretch">
+			<textField>
+				<reportElement x="605" y="0" width="207" height="20" uuid="613a48d5-5a53-4445-89af-fdc4f8691e7a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="812" y="0" width="171" height="20" uuid="eab8d2f2-b679-4ef9-bfe1-412d1dd05874"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

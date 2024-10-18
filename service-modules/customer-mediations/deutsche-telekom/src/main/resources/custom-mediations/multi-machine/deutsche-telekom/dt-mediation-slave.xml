@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/integration
+       http://www.springframework.org/schema/integration/spring-integration.xsd
+       http://www.springframework.org/schema/integration/jms
+       http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+       http://www.springframework.org/schema/batch
+       http://www.springframework.org/schema/batch/spring-batch.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd"
+       profile="mediation.slave">
+
+    <!--
+    ######################################
+     CDR to JMR
+    ######################################
+     -->
+
+    <int:channel id="dt-cdr-slave-outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="dt-cdr-slave-outbound-requests-adapter"
+                                      destination-name="dtCdrRequestsQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="dt-cdr-slave-outbound-requests"/>
+
+    <int:channel id="dt-cdr-slave-inbound-requests"/>
+    <int-jms:message-driven-channel-adapter id="dt-cdr-slave-inbound-requests-adapter"
+                                            destination-name="dtCdrRequestsQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="dt-cdr-slave-inbound-requests"/>
+
+    <int:service-activator id="dt-cdr-slave-inbound-requests-service-activator"
+                           ref="stepExecutionRequestHandler"
+                           input-channel="dt-cdr-slave-inbound-requests"
+                           output-channel="dt-cdr-slave-outbound-staging"/>
+
+    <int:channel id="dt-cdr-slave-outbound-staging"/>
+    <int-jms:outbound-channel-adapter id="dt-cdr-slave-outbound-staging-adapter"
+                                      destination-name="dtCdrStagingQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="dt-cdr-slave-outbound-staging"/>
+
+    <int:channel id="dt-cdr-slave-outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+
+    <batch:step id="dtCdrProcessorStep" job-repository="mediationJobRepository">
+        <!--TODO throttle-limit="${springbatch.executor.max.pool.size}"-->
+        <batch:tasklet transaction-manager     ="jbillingMediationTransactionManager"
+                       task-executor           ="taskExecutor"
+                       throttle-limit          ="${springbatch.mediation.process.grid.size}"
+                       allow-start-if-complete ="false">
+
+            <batch:chunk reader             ="dtOfflineMediationMultiReader"
+                         processor          ="dtOfflineCdrToJmr"
+                         writer             ="jmrDefaultLogWriter"
+                         skip-policy        ="dtCdrToJmrSkipPolicy"
+                         commit-interval    ="1" >
+            </batch:chunk>
+        </batch:tasklet>
+        <batch:listeners>
+            <batch:listener ref="dtOfflineCdrToJmr"/>
+        </batch:listeners>
+    </batch:step>
+
+
+    <!--
+    #############################
+    JMR Processor
+    #############################
+    -->
+
+    <bean id="dtOfflineCdrJmrProcessorAggregator" class="com.sapienter.jbilling.server.mediation.processor.HourlyAggregator" scope="prototype">
+        <property name="pricingFieldName" value="ProductID" />
+        <property name="pricingFieldValues" value="#{dtMediationHelperService.productsToAggregate()}" >
+        </property>
+    </bean>
+
+    <int:channel id="dt-jmr-slave-outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="dt-jmr-slave-outbound-requests-adapter"
+                                      destination-name="dtJmrRequestsQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="dt-jmr-slave-outbound-requests"/>
+
+    <int:channel id="dt-jmr-slave-inbound-requests"/>
+    <int-jms:message-driven-channel-adapter id="dt-jmr-slave-inbound-requests-adapter"
+                                            destination-name="dtJmrRequestsQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="dt-jmr-slave-inbound-requests"/>
+
+    <int:service-activator id="dt-jmr-slave-inbound-requests-service-activator"
+                           ref="stepExecutionRequestHandler"
+                           input-channel="dt-jmr-slave-inbound-requests"
+                           output-channel="dt-jmr-slave-outbound-staging"/>
+
+    <int:channel id="dt-jmr-slave-outbound-staging"/>
+    <int-jms:outbound-channel-adapter id="dt-jmr-slave-outbound-staging-adapter"
+                                      destination-name="dtJmrStagingQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="dt-jmr-slave-outbound-staging"/>
+
+    <int:channel id="dt-jmr-slave-outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+    <batch:step id="dtPartitionedJMRProcessorStep" job-repository="mediationJobRepository">
+        <batch:tasklet task-executor       = "taskExecutor"
+                       throttle-limit      = "${springbatch.mediation.process.grid.size}"
+                       transaction-manager = "jbillingMediationTransactionManager">
+            <batch:chunk reader          = "dtPartitionedJMRReader"
+                         writer          = "dtPartitionedJMRProcessorWriter"
+                         commit-interval = "1"
+                         skip-policy     = "skipPolicy"/>
+        </batch:tasklet>
+        <batch:listeners>
+            <batch:listener ref="dtPartitionedJMRReader"/>
+        </batch:listeners>
+    </batch:step>
+
+</beans>

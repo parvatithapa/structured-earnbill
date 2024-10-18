@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_of_all_mediated_orders_with_negative_amount" language="groovy" pageWidth="580" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6acb1b67-d225-48b6-9b2a-a24e7af36f08">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT
+bu.entity_id,
+e.description,
+po.user_id,
+po.id,
+ol.id AS orderLineId,
+po.active_since,
+ol.quantity,
+ol.price,
+ol.amount,
+(
+ SELECT content
+ FROM international_description
+ WHERE table_id in
+ (
+  SELECT id
+  FROM jbilling_table
+  WHERE name = 'order_status'
+ )
+AND foreign_id = po.status_id
+) AS status,
+(
+ SELECT sum(quantity)
+ FROM order_line_usage_pool_map
+ WHERE order_line_id = ol.id
+) AS free_quantity_utilized,
+po.deleted,
+c.symbol AS currency_symbol
+FROM purchase_order po
+INNER JOIN order_line ol ON ol.order_id = po.id
+INNER JOIN base_user bu ON bu.id = po.user_id
+INNER JOIN entity e ON e.id = bu.entity_id
+INNER JOIN order_status os ON os.id = po.status_id
+INNER JOIN currency c ON c.id = po.currency_id
+WHERE po.deleted = 0
+AND os.order_status_flag = 0
+AND po.notes= 'Current order created by mediation process. Do not edit manually.'
+AND ol.amount < 0
+AND ol.deleted = 0
+AND po.user_id = bu.id
+AND bu.entity_id = e.id
+AND e.deleted = 0
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+ORDER BY 1;]]>
+	</queryString>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="orderlineid" class="java.lang.Integer"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="price" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="free_quantity_utilized" class="java.math.BigDecimal"/>
+	<field name="deleted" class="java.lang.Integer"/>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<group name="entity_id_group">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="83">
+				<staticText>
+					<reportElement x="231" y="49" width="61" height="20" uuid="3709d3bb-844b-4103-9f86-a2a18d4dcc84"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="61" y="48" width="55" height="21" uuid="a910df16-2b13-4d1d-a19c-eff740b032e7"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="171" y="48" width="60" height="30" uuid="d063908e-7c43-4d63-ae58-bde37cd24e3f"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Since]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="6" y="48" width="55" height="21" uuid="d8f87ceb-6269-4a71-bbf7-472a9f3b150b"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="116" y="49" width="55" height="20" uuid="bbcd35ad-0060-4e28-a89d-4d04f52fc869"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Line Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="394" y="49" width="47" height="20" uuid="a822cfed-6a9d-4acd-8f96-2abb8cf92b36"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Status]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="292" y="49" width="50" height="20" uuid="1daadbad-4c4e-43b0-bcb9-37a22b6ff5a7"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Price]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="342" y="49" width="52" height="20" uuid="4a5c168e-03a3-4038-b06c-41e090a47c20"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="501" y="49" width="52" height="20" uuid="2cae3d56-33b8-49e0-a369-1be62df074ae"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Deleted]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="441" y="48" width="60" height="30" uuid="a9d6edcf-dc1c-4612-8f8a-9de91d9d2402"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<text><![CDATA[FUP Utilized]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="116" y="21" width="150" height="20" uuid="f25560c9-14bb-487c-92ee-06cc78caed85"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="9" y="21" width="100" height="20" uuid="fd1eb5d8-ccea-4cd3-87a6-44ba08fb1eeb"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="9" y="0" width="100" height="20" uuid="9a4a8c7c-6c41-4a87-be43-c54881d71c85"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="116" y="0" width="100" height="20" uuid="0d4ebd28-dddb-4a0a-a272-0e55baffc3f0"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="4" y="78" width="555" height="1" uuid="9e597f8e-95bc-4d62-8517-29bbda9cf4cb"/>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="18">
+				<line>
+					<reportElement x="9" y="17" width="555" height="1" uuid="9b1182bf-c5a6-43e6-80ac-b97060598d70"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="70" splitType="Stretch">
+			<staticText>
+				<reportElement x="100" y="39" width="325" height="20" uuid="96e580f6-85e7-4aa7-8be0-9cc9edcf9bbd"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Mediated orders with Negative Amounts]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="26" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="9" y="0" width="50" height="20" uuid="f7ff6d25-de22-44dc-abe3-f6f9c302d1d6"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="61" y="0" width="50" height="20" uuid="54a1ad1f-d3b7-499f-a50b-a4d8fb8cbb48"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="111" y="0" width="50" height="20" uuid="a3a3d00f-f748-4e0a-bf1b-4233ad0ec65d"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{orderlineid}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="161" y="0" width="65" height="20" uuid="249f7be9-e618-4bf3-8612-60ced3dc85fe"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString("format.date")]]></patternExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00" isBlankWhenNull="true">
+				<reportElement x="226" y="0" width="61" height="20" uuid="58956bd9-1cae-4475-9117-7021b409e382"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="287" y="0" width="50" height="20" uuid="5b69ef0e-0d72-4b95-acd3-e925ab6a82ec"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{price} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{price}) :
+						"("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{price}.negate())+")"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="337" y="0" width="52" height="20" uuid="350ef348-75c2-4b77-a4ec-1e37ecb006b3"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{amount}) :
+						"("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{amount}.negate())+")"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="389" y="0" width="47" height="20" uuid="f90f073c-4594-4267-9e8c-cc4ea433bb6d"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00" isBlankWhenNull="true">
+				<reportElement x="436" y="0" width="57" height="20" uuid="a3a2e5bb-3655-4719-8e2f-d98225021856"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{free_quantity_utilized}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="493" y="0" width="52" height="20" uuid="79dad169-bede-4cf4-92c9-08cdb5ba3a96"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{deleted}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="12" splitType="Stretch">
+			<line>
+				<reportElement x="9" y="10" width="555" height="1" uuid="7f7e3a6b-123c-49d3-bc74-54134c2d9f67"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

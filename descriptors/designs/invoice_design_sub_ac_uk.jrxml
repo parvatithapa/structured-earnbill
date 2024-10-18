@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_sub_ac_uk" language="groovy" pageWidth="595" pageHeight="842" orientation="Landscape" columnWidth="523" leftMargin="36" rightMargin="36" topMargin="10" bottomMargin="10" uuid="d35a02fd-8f7a-498e-bfff-8b5ed8395c64">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="customer_notes" class="java.lang.String"/>
+	<parameter name="sales_tax" class="java.math.BigDecimal"/>
+	<parameter name="invoice_line_tax_id" class="java.lang.Integer"/>
+	<parameter name="tax_price" class="java.lang.String"/>
+	<parameter name="tax_amount" class="java.math.BigDecimal"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select
+	quantity,
+        description,
+	price as unit_price,
+	amount as line_total
+from
+	invoice_line il
+where
+	il.deleted = 0
+	and il.invoice_id = $P{invoice_id}
+	and il.type_id != $P{invoice_line_tax_id}
+
+union all
+
+select
+	1,
+	'Service Credit' as description,
+	-(amount/1.2) as unit_price,
+	-- credit payment amount after deducting VAT %
+	-(amount/1.2) as line_total
+from
+	payment p
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoice_id})
+	-- payment of type credit
+	and method_id = 15
+	-- where payment date between 1st day of previous month and last day of month
+	and p.create_datetime >= (select date_trunc('month', create_datetime - interval '1 month')::date from invoice where id = $P{invoice_id})
+	and p.create_datetime <= (select (date_trunc('month', create_datetime)::date - 1) from invoice where id = $P{invoice_id});]]>
+	</queryString>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="unit_price" class="java.math.BigDecimal"/>
+	<field name="line_total" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{line_total}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="25">
+			<rectangle>
+				<reportElement x="33" y="4" width="150" height="17" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="af7a3799-f0c5-4035-a54d-97e75e847196"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Transparent" x="33" y="5" width="150" height="16" forecolor="#1F5868" backcolor="#B7DBFF" uuid="b037dce3-13e2-4155-84a6-cc028fcd9e70"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[ CURRENT CHARGES:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="17">
+			<rectangle>
+				<reportElement x="33" y="0" width="70" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="9f62dd06-5041-4af3-b260-93bde6875a5e"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="418" y="0" width="85" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="35dbfbcb-df08-4140-a5ed-107059b02d41"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Transparent" x="33" y="0" width="70" height="17" forecolor="#1F5868" backcolor="#FFFFFE" uuid="cc817102-f705-421c-9bcb-0b2633fc141b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[QTY]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="310" y="0" width="108" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="655ea597-95ad-4440-ad3f-7d0898743042"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="103" y="0" width="207" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="7ed6fdbd-76a3-4f66-982c-48f83b1ce488"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement mode="Transparent" x="103" y="1" width="207" height="16" forecolor="#1F5868" backcolor="#B7DBFF" uuid="577ec626-642f-45c8-a144-775dba69083b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[DESCRIPTION]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="418" y="1" width="85" height="16" forecolor="#1F5868" backcolor="#FFFFFF" uuid="2df5ba56-b7ce-44a1-9d5c-4757874caef1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[LINE TOTAL]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Transparent" x="310" y="0" width="108" height="17" forecolor="#1F5868" backcolor="#FFFFFE" uuid="57876f4f-4a79-43c3-ae08-5332d6fca1d6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[UNIT PRICE]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<rectangle>
+				<reportElement x="33" y="0" width="70" height="25" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="7c0e068c-28c0-46de-8ca3-142565e50e7f"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="418" y="0" width="85" height="25" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="1b52b97a-2a3f-4893-9251-a9d86bb7649b"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="310" y="0" width="108" height="25" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="65f3d992-d5f7-40c3-851e-96e943cadf6b"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="103" y="0" width="207" height="25" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="042846dd-99b8-4324-be3a-cdb398eae031"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="33" y="0" width="70" height="25" forecolor="#808080" uuid="c9ff892e-af1f-4f9c-a8da-8770ab74186f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(new DecimalFormat("#,##0.##")).format($F{quantity})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="117" y="0" width="193" height="25" forecolor="#808080" uuid="399e1aa7-bf14-4416-8f74-d0e35d6eadba"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="314" y="0" width="96" height="25" forecolor="#808080" uuid="043ac5f4-808e-4dce-af92-6f97c87d71e4"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+" "+$F{unit_price}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="429" y="0" width="71" height="25" forecolor="#808080" uuid="49158874-0cc6-423e-87a1-708f75f4b3ff"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+" "+$F{line_total}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="110">
+			<rectangle>
+				<reportElement x="418" y="80" width="85" height="25" forecolor="#A6A7A7" uuid="baff7ba1-d266-449f-b4c3-3f99e3e3cfa0"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="418" y="25" width="85" height="55" forecolor="#A6A7A7" uuid="33be29be-81ca-4c13-ac38-0eb65c999542"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="418" y="0" width="85" height="25" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="e5a67140-a920-4069-8375-bce9986c7992"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="429" y="25" width="71" height="53" isRemoveLineWhenBlank="true" forecolor="#808080" uuid="72103684-effb-4b1f-a77c-827b757876ce"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+" "+$P{tax_amount}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="33" y="0" width="385" height="25" forecolor="#A6A7A7" uuid="1e543e70-4b5e-4031-a0db-3ab80114f2c9"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="428" y="80" width="71" height="25" forecolor="#808080" uuid="b770f918-9579-46a1-8f7e-7b881c7c50e7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $P{tax_amount} ? $P{currency_symbol}+" "+((null == $V{sub_total} ? new BigDecimal(0.00) : $V{sub_total}).add(new BigDecimal($P{tax_amount}))).setScale(2, BigDecimal.ROUND_HALF_UP).toString() : $P{currency_symbol}+" "+((null == $V{sub_total} ? new BigDecimal(0.00) : $V{sub_total}).add(new BigDecimal(0.00))).setScale(2, BigDecimal.ROUND_HALF_UP).toString()]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="33" y="25" width="385" height="55" forecolor="#A6A7A7" uuid="e3f1e020-085e-4183-bf78-858709bfe5b1"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="429" y="0" width="71" height="25" forecolor="#808080" uuid="a2290dc3-7c22-4a30-9aab-dfdfb9b11113"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+" "+($V{sub_total}).setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="258" y="24" width="160" height="57" uuid="0b519b5a-0239-40d9-b4a7-1925c50da866"/>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_taxes_ac_uk.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement mode="Transparent" x="258" y="0" width="160" height="25" forecolor="#808080" uuid="6c4c64fc-31b2-456f-8114-4ed13fabc55a"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[  SUB TOTAL]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="207" y="25" width="40" height="54" forecolor="#808080" uuid="4f37a04e-9c52-40e4-a712-70e869c1f1dc"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[  TAXES]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="33" y="80" width="385" height="25" forecolor="#A6A7A7" uuid="4dc29cb6-ae3b-4a0b-9ea2-2169a6429cf4"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="258" y="80" width="160" height="25" forecolor="#808080" uuid="e014d7b0-b7c3-41b3-ae55-403c1f817bb4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[  TOTAL]]></text>
+			</staticText>
+		</band>
+	</lastPageFooter>
+</jasperReport>

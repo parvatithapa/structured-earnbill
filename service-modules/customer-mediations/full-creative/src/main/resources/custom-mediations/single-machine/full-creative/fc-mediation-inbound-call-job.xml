@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+
+	<!-- CDR Mediation Reader -->
+	<bean id="inboundCallMediationReader" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.reader.FullCreativeMediationReader" >
+        <property name="recordSeparatorPolicy" ref="fcRecordSeparatorPolicy"/>
+        <property name="lineMapper" ref="inboundCallMediationConverter"/>
+        <property name="linesToSkip" value="0"/>
+        <property name="strict" value="false"/>
+    </bean>
+	<bean id="inboundCallMediationConverter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.reader.FullCreativeMediationRecordLineConverter" lazy-init="true">
+        <property name="format" ref="inboundCallMediationFormatFactory" />
+        <property name="dateTimeFormatter" value="MM/dd/yyyy HH:mm:ss" />
+    </bean>
+	<bean id="inboundCallMediationFormatFactory" class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory" lazy-init="true">
+        <property name="formatFilename" value="/custom-mediations/single-machine/full-creative/cdr-formats/inbound-call-cdr-format.xml" />
+        <property name="tokenizer" ref="fcMediationTokenizer" />
+    </bean>	
+
+	<!-- CDR to JMR Processor -->
+	<bean id="inboundCallCDRToJMR" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.jobs.FullCreativeCallDataRecordToConversionResult">
+        <property name="resolver" ref="inboundCallRecordMediationCdrResolver"></property>
+        <property name="mediationHelperService" ref="mediationHelperService" />
+    </bean>
+    <bean id="inboundCallRecordMediationCdrResolver" class="com.sapienter.jbilling.server.mediation.converter.common.steps.JMRMediationCdrResolver" >
+        <property name="steps" ref="inboundCallMediationCdrResolverSteps" />
+        <property name="validationSteps" ref="fcMediationCdrValidationSteps" />
+    </bean>
+    
+    <!-- Mediation CDR Resolver Steps -->
+	<util:map id="inboundCallMediationCdrResolverSteps" map-class="java.util.LinkedHashMap">
+		<entry key="USER_ID_AND_CURRENCY" value-ref="fcAssetUserItemResolverStep" /> 
+		<entry key="EVENT_DATE" value-ref="inboundCallEventDateResolverStep" />
+		<entry key="ITEM_RESOLUTION" value-ref="fcItemResolutionStep" />
+		<entry key="ORDER_LINE_ITEM" value-ref="fcItemQuantityResolutionStep" />
+		<entry key="DESCRIPTION" value-ref="fcDescriptionResolutionStep" />
+		<entry key="PRICING" value-ref="fcJMRPricingResolutionStep" /> 
+	</util:map>
+    <bean id="inboundCallEventDateResolverStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.EventDateResolutionStep" >
+    	<property name="date" value="Date" />
+    	<property name="time" value="Time" />
+    	<property name="dateFormat">
+			<bean class="java.text.SimpleDateFormat">
+				<constructor-arg type="java.lang.String" value="MM/dd/yy hh:mm:ss a" />
+			</bean>
+		</property>
+	</bean>
+    
+    <!-- Inbound Call: Mediation & Recycle Job Launchers -->
+	<batch:job id="inboundCallsMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="inboundCallMediationStep" next="partionedInboundCallJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="partionedInboundCallJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+	
+    <batch:job id="inboundCallsRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="inboundCallRecycleStep" next="inboundCallRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <!--Partitioner Step-->
+        <batch:step id="inboundCallRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+	<!-- IVR: Mediation & Recycle Job Launchers -->
+	<batch:job id="ivrMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="ivrMediationStep" next="ivrJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+		<batch:step id="ivrJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+	
+	<batch:job id="ivrRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="ivrRecycleStep" next="ivrRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+       <batch:step id="ivrRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+	
+	<!-- Spanish: Mediation & Recycle Job Launchers -->
+	<batch:job id="spanishMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="spanishMediationStep" next="spanishJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+		<batch:step id="spanishJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+	
+	<batch:job id="spanishRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="spanishRecycleStep" next="spanishRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="spanishRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+    
+    <!-- Supervisor: Mediation & Recycle Job Launchers -->
+	<batch:job id="supervisorMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="supervisorMediationStep" next="supervisorJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+         <batch:step id="supervisorJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+		<batch:listeners>
+			<batch:listener ref="fcMediationJobListener" />
+		</batch:listeners>
+    </batch:job>
+
+    <batch:job id="supervisorRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="supervisorRecycleStep" next="supervisorRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="supervisorRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+      	<batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+    
+    <!-- Call Relay: Mediation & Recycle Job Launchers -->
+	<batch:job id="callRelayMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="callRelayMediationStep" next="callRelayJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="callRelayJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+		<batch:listeners>
+			<batch:listener ref="fcMediationJobListener" />
+		</batch:listeners>
+    </batch:job>
+
+    <batch:job id="callRelayRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="callRelayRecycleStep" next="callRelayRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+         <batch:step id="callRelayRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+      	<batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+    
+    <!-- Live Reception: Mediation & Recycle Job Launchers -->
+	<batch:job id="liveReceptionMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="liveReceptionMediationStep" next="liveReceptionJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="inboundCallMediationReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+       <batch:step id="liveReceptionJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+		<batch:listeners>
+			<batch:listener ref="fcMediationJobListener" />
+		</batch:listeners>
+    </batch:job>
+
+    <batch:job id="liveReceptionRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="liveReceptionRecycleStep" next="liveReceptionRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="fcRecycleReader" processor="inboundCallCDRToJMR"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+         <batch:step id="liveReceptionRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+      	<batch:listeners>
+            <batch:listener ref="fcRecycleMediationJobListener"/>
+            <batch:listener ref="fcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+</beans>

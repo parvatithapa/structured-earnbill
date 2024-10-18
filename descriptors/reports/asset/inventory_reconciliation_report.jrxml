@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Inventory Report 2" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="cad5aeed-8ec3-42e4-8d1d-d280cfbb8158">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <style name="table">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 4">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 4_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 4_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 4_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <subDataset name="Varity sold" uuid="3512138d-8338-46a4-aa1b-8008b2360d78">
+        <parameter name="start_date" class="java.util.Date"/>
+        <parameter name="end_date" class="java.util.Date"/>
+        <queryString>
+            <![CDATA[WITH my_sold_product AS (
+ SELECT
+   product_data.*,
+   rating_data.increment_unit_quantity,
+   rating_data.price_unit_name
+ FROM (
+     	SELECT odl.item_id, odl.description AS Sold_Product, SUM(odl.quantity) AS Quantity
+   	FROM order_line odl JOIN purchase_order po ON po.id = odl.order_id
+   	JOIN item_type_map ittm ON odl.item_id = ittm.item_id
+   	JOIN item_type itt ON itt.id = ittm.type_id
+   	WHERE itt.description='Variety'
+   	AND po.status_id IN (SELECT statusId FROM get_all_order_status_of_entity('Madhur Agro', ARRAY['Finished', 'Active']))
+   	AND DATE(po.create_datetime)
+   	BETWEEN $P{start_date} AND $P{end_date}
+   	AND po.deleted = 0
+   	GROUP BY odl.item_id, odl.description
+   	ORDER BY odl.description
+     ) product_data
+    JOIN (
+    	SELECT i.id AS Item_Id,ru.increment_unit_quantity, ru.price_unit_name
+    	FROM item i
+    	JOIN item_rating_configuration_map ircm ON i.id = ircm.item_id
+    	JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+    	JOIN rating_unit ru ON ru.id = rc.rating_unit
+    	) rating_data ON product_data.item_id = rating_data.Item_Id
+   )
+    SELECT price_unit_name,
+    ROUND(SUM(quantity / increment_unit_quantity)) AS Peti
+    FROM my_sold_product
+    GROUP BY price_unit_name;]]>
+        </queryString>
+        <field name="peti" class="java.math.BigDecimal"/>
+        <field name="price_unit_name" class="java.lang.String"/>
+        <variable name="var_tab_1" class="java.math.BigDecimal" calculation="Sum">
+            <variableExpression><![CDATA[$F{peti}]]></variableExpression>
+            <initialValueExpression><![CDATA[0]]></initialValueExpression>
+        </variable>
+        <group name="price_unit_name">
+            <groupExpression><![CDATA[$F{price_unit_name}]]></groupExpression>
+        </group>
+    </subDataset>
+    <subDataset name="Alphonso Sold" uuid="a3930beb-c358-435d-af88-5259bf095b23">
+        <parameter name="start_date" class="java.util.Date"/>
+        <parameter name="end_date" class="java.util.Date"/>
+        <queryString>
+            <![CDATA[WITH my_sold_product AS (
+  SELECT
+    product_data.*,
+    rating_data.increment_unit_quantity,
+    rating_data.price_unit_name
+  FROM
+    (
+        SELECT odl.item_id, odl.description AS Sold_Product, SUM(odl.quantity) AS Quantity
+   	FROM order_line odl JOIN purchase_order po ON po.id = odl.order_id
+   	JOIN item_type_map ittm ON odl.item_id = ittm.item_id
+   	JOIN item_type itt ON itt.id = ittm.type_id
+   	WHERE itt.description='Alphonso'
+   	AND po.status_id IN (SELECT statusId FROM get_all_order_status_of_entity('Madhur Agro', ARRAY['Finished', 'Active']))
+   	AND DATE(po.create_datetime)
+   	BETWEEN $P{start_date} AND $P{end_date}
+   	AND po.deleted = 0
+   	GROUP BY odl.item_id, odl.description
+   	ORDER BY odl.description
+    ) product_data
+   JOIN (
+        SELECT i.id AS Item_Id, ru.increment_unit_quantity, ru.price_unit_name
+        FROM item i
+        JOIN item_rating_configuration_map ircm ON i.id = ircm.item_id
+        JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+        JOIN rating_unit ru ON ru.id = rc.rating_unit
+        WHERE i.deleted = 0
+
+        ) rating_data ON product_data.item_id = rating_data.Item_Id
+ )
+  SELECT price_unit_name AS product_name,
+  ROUND( SUM( quantity / increment_unit_quantity ) ) AS sold_Peti
+  FROM my_sold_product
+  GROUP BY price_unit_name
+  ORDER BY price_unit_name;]]>
+        </queryString>
+        <field name="product_name" class="java.lang.String"/>
+        <field name="sold_peti" class="java.math.BigDecimal"/>
+        <variable name="var_tab_2" class="java.math.BigDecimal" calculation="Sum">
+            <variableExpression><![CDATA[$F{sold_peti}]]></variableExpression>
+            <initialValueExpression><![CDATA[0]]></initialValueExpression>
+        </variable>
+        <group name="product_name">
+            <groupExpression><![CDATA[$F{product_name}]]></groupExpression>
+        </group>
+    </subDataset>
+    <subDataset name="Variety available" uuid="e49b0331-788b-46ce-9d11-fe2af84eae72">
+        <parameter name="start_date" class="java.util.Date"/>
+        <parameter name="end_date" class="java.util.Date"/>
+        <queryString>
+            <![CDATA[WITH my_available_product AS(
+    SELECT
+    i.internal_number AS product,
+    a.item_id,
+    COUNT(a.item_id) AS available_product
+    FROM item i
+    JOIN asset a ON a.item_id = i.id
+    WHERE status_id IN (
+      SELECT status.id
+      FROM asset_status status
+      WHERE status.is_available = 1
+    )
+    AND a.deleted = 0
+    AND item_id IN(
+     	SELECT ie.id
+      	FROM  item ie
+        JOIN item_type_map itm ON itm.item_id = ie.id
+        JOIN item_type it ON it.id = itm.type_id
+      	WHERE it.description = 'Variety'
+    )
+    AND DATE(create_datetime) BETWEEN $P{start_date} AND $P{end_date}
+    AND a.entity_id = (SELECT id FROM entity WHERE description = 'Madhur Agro')
+    AND i.deleted = 0
+    GROUP BY a.item_id, i.internal_number
+),
+ my_rating_unit AS (
+    SELECT i.id AS Item_Id,
+           ru.increment_unit_quantity,
+           ru.price_unit_name
+    FROM item i
+    JOIN item_rating_configuration_map ircm ON i.id = ircm.item_id
+    JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+    JOIN rating_unit ru ON ru.id = rc.rating_unit
+    WHERE i.deleted = 0
+)
+    SELECT mru.price_unit_name AS product_name,
+    ROUND( SUM( map.available_product / mru.increment_unit_quantity ) ) AS available_peti
+    FROM my_available_product map
+    JOIN my_rating_unit mru ON map.item_id = mru.item_id
+    GROUP BY product_name
+    ORDER BY product_name;]]>
+        </queryString>
+        <field name="product_name" class="java.lang.String"/>
+        <field name="available_peti" class="java.math.BigDecimal"/>
+        <variable name="var_tab_3" class="java.math.BigDecimal" calculation="Sum">
+            <variableExpression><![CDATA[$F{available_peti}]]></variableExpression>
+            <initialValueExpression><![CDATA[0]]></initialValueExpression>
+        </variable>
+        <group name="product_name">
+            <groupExpression><![CDATA[$F{product_name}]]></groupExpression>
+        </group>
+    </subDataset>
+    <subDataset name="Alphonso Avaliable" uuid="d7495353-d4e2-41d6-b754-cb2b0098c485">
+        <parameter name="start_date" class="java.util.Date"/>
+        <parameter name="end_date" class="java.util.Date"/>
+        <queryString>
+            <![CDATA[WITH my_available_product AS(
+  SELECT
+    i.internal_number AS product,
+    a.item_id,
+    COUNT(a.item_id) AS available_product
+    FROM  item i
+    JOIN asset a ON a.item_id = i.id
+    WHERE
+    status_id IN (
+      SELECT status.id
+      FROM asset_status status
+      WHERE status.is_available = 1
+    )
+    AND a.deleted = 0
+    AND item_id IN(
+      	SELECT ie.id
+      	FROM  item ie
+        JOIN item_type_map itm ON itm.item_id = ie.id
+        JOIN item_type it ON it.id = itm.type_id
+      	WHERE it.description = 'Alphonso'
+    )
+    AND DATE(create_datetime) BETWEEN $P{start_date} AND $P{end_date}
+    AND a.entity_id = (SELECT id FROM entity WHERE description = 'Madhur Agro')
+    AND i.deleted = 0
+    GROUP BY a.item_id, i.internal_number
+),
+ my_rating_unit AS (
+    SELECT i.id AS Item_Id,
+    	   ru.increment_unit_quantity,
+    	   ru.price_unit_name
+    FROM item i
+    JOIN item_rating_configuration_map ircm ON i.id = ircm.item_id
+    JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+    JOIN rating_unit ru ON ru.id = rc.rating_unit
+   WHERE
+    i.deleted = 0
+)
+  SELECT mru.price_unit_name AS product_name,
+  ROUND( SUM( map.available_product / mru.increment_unit_quantity ) ) AS available_peti
+  FROM my_available_product map
+  INNER JOIN my_rating_unit mru ON map.item_id = mru.item_id
+  GROUP BY product_name
+  ORDER BY product_name;]]>
+        </queryString>
+        <field name="product_name" class="java.lang.String"/>
+        <field name="available_peti" class="java.math.BigDecimal"/>
+        <variable name="var_tab_4" class="java.math.BigDecimal" calculation="Sum">
+            <variableExpression><![CDATA[$F{available_peti}]]></variableExpression>
+            <initialValueExpression><![CDATA[0]]></initialValueExpression>
+        </variable>
+        <group name="product_name">
+            <groupExpression><![CDATA[$F{product_name}]]></groupExpression>
+        </group>
+    </subDataset>
+    <parameter name="start_date" class="java.util.Date"/>
+    <parameter name="end_date" class="java.util.Date"/>
+    <queryString language="plsql">
+        <![CDATA[select * from base_user limit 1;]]>
+    </queryString>
+    <field name="id" class="java.lang.Integer"/>
+    <variable name="total" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[]]></variableExpression>
+        <initialValueExpression><![CDATA[0]]></initialValueExpression>
+    </variable>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="79" splitType="Stretch">
+            <staticText>
+                <reportElement x="134" y="11" width="295" height="20" uuid="7a8cdaae-fe0d-4877-bba8-a632bc7686dc"/>
+                <textElement>
+                    <font size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Inventory Reconciliation Report]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="4" y="43" width="44" height="13" uuid="6fae3484-d902-415a-8967-827df1264eb5"/>
+                <text><![CDATA[From: ]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="4" y="56" width="44" height="15" uuid="54ba6356-38d6-4e40-80d3-9d9980bbae6d"/>
+                <text><![CDATA[To: ]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="357" y="58" width="69" height="15" uuid="ccd8e178-8122-4103-800b-df064c73a5b6"/>
+                <text><![CDATA[Report Date:]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="78" width="555" height="1" uuid="5b33add5-c1dc-450a-98cb-a6d5ee287ac6"/>
+            </line>
+            <textField pattern="dd/MM/yyyy">
+                <reportElement x="50" y="44" width="119" height="12" uuid="cc0a4a18-17b3-4c9a-a909-54150dad7f3e"/>
+                <textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+            </textField>
+            <textField pattern="dd MMMMM yyyy">
+                <reportElement x="428" y="58" width="100" height="20" uuid="d838d239-b691-4a7b-8e87-4c11e27d3ff3"/>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+            <textField pattern="dd/MM/yyyy">
+                <reportElement x="50" y="58" width="119" height="12" uuid="0b61e418-e324-49c3-89ff-1317d9bb4c98"/>
+                <textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <columnHeader>
+        <band height="33" splitType="Stretch">
+            <staticText>
+                <reportElement x="136" y="12" width="49" height="20" uuid="9b37e3e7-57c6-4ca4-8df0-080ec9d4b28e"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Product]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="386" y="12" width="57" height="20" uuid="bd2b3df7-53dd-4349-b2d3-06b668098058"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Quantity]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="40" splitType="Stretch">
+            <staticText>
+                <reportElement x="10" y="3" width="58" height="13" uuid="0e6fde0a-9f23-4a2f-89f5-f4cc27fd6bd0"/>
+                <text><![CDATA[Sold Stock]]></text>
+            </staticText>
+            <componentElement>
+                <reportElement key="table 1" style="table 1" x="110" y="14" width="360" height="20" uuid="2f6f5853-af51-4d1c-8297-87b271d1bc37"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="Varity sold" uuid="ed8ad59b-cad9-4fc5-8191-381280229a20">
+                        <datasetParameter name="start_date">
+                            <datasetParameterExpression><![CDATA[$P{start_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <datasetParameter name="end_date">
+                            <datasetParameterExpression><![CDATA[$P{end_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                    </datasetRun>
+                    <jr:column width="228" uuid="70696e6d-e73e-4fd8-aa2e-f5e2157ee2c3">
+                        <jr:columnHeader height="20" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="66" height="20" uuid="e7704cc1-02d1-4ae6-bce7-0a4ce47dde0f"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Variety]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="228" height="30" uuid="2e969d7a-76cd-44a6-967b-c8157e3e72b6"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Total Variety]]></text>
+                            </staticText>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 1_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="19" y="0" width="161" height="20" uuid="8ece124d-b251-4b63-bd6a-e63ddf6a929c"/>
+                                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{price_unit_name}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="114" uuid="dcf1a438-ed07-427f-bcb5-9ae0a2e9a018">
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="91" height="30" uuid="39fecb66-8280-4a96-88a7-35caef32438c"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <textFieldExpression><![CDATA[$V{var_tab_1}]]></textFieldExpression>
+                            </textField>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 1_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="1" y="0" width="90" height="20" uuid="15ea25f4-ccc8-4cc5-9f08-862239b6ccae"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{peti}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+        </band>
+        <band height="30">
+            <componentElement>
+                <reportElement key="table 2" style="table 2" x="110" y="0" width="360" height="20" uuid="c07f5a86-dafd-4f4f-adc2-18527b09966e"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="Alphonso Sold" uuid="931d5102-ef32-4a13-b433-b1f35e7f8ef3">
+                        <datasetParameter name="start_date">
+                            <datasetParameterExpression><![CDATA[$P{start_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <datasetParameter name="end_date">
+                            <datasetParameterExpression><![CDATA[$P{end_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                    </datasetRun>
+                    <jr:column width="228" uuid="17af9b5f-db03-4d03-a69b-d79abb660b8a">
+                        <jr:columnHeader height="19" rowSpan="1">
+                            <staticText>
+                                <reportElement x="1" y="0" width="73" height="19" uuid="ceef2b2d-002b-4876-9356-9d0341180917"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Alphonso]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="228" height="30" uuid="9aa2e65a-cbf0-4ad4-9dd8-cba0007a6460"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Total Alphonso]]></text>
+                            </staticText>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 2_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="20" y="0" width="176" height="20" uuid="27a1b8ac-3a0e-488f-8294-a56f9012c513"/>
+                                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{product_name}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="114" uuid="d80a8eb7-8a18-49aa-827b-ef3e45b5936e">
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="90" height="30" uuid="802981e0-db4b-4083-b833-dc4a8494ddf2"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <textFieldExpression><![CDATA[$V{var_tab_2}]]></textFieldExpression>
+                            </textField>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 2_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="90" height="20" uuid="e54e07c8-e600-411e-abac-6523d2ea3919"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{sold_peti}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+        </band>
+        <band height="37">
+            <componentElement>
+                <reportElement key="table 3" style="table 3" x="110" y="11" width="180" height="20" uuid="1502ed3b-e58d-4160-8979-90d09b12022f"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="Variety available" uuid="f0875f7f-1d2f-4db7-8903-f977b9c38425">
+                        <datasetParameter name="start_date">
+                            <datasetParameterExpression><![CDATA[$P{start_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <datasetParameter name="end_date">
+                            <datasetParameterExpression><![CDATA[$P{end_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                    </datasetRun>
+                    <jr:column width="228" uuid="e135f2c9-658f-44c0-aa2b-87a142ac6bec">
+                        <jr:columnHeader height="20" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="66" height="20" uuid="102d5d22-5952-4dcd-8a7d-2fe28296b1fd"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Variety]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="228" height="30" uuid="8a13a90c-4f07-44f9-9ddd-44c62fe10677"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Total Variety]]></text>
+                            </staticText>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 3_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="20" y="0" width="161" height="20" uuid="a2fe0f46-bf68-48d0-8e40-69ce2c5fab49"/>
+                                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{product_name}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="116" uuid="57b758e8-6243-4f0f-a9f3-78cbd14e58ac">
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="90" height="30" uuid="94895744-32b6-4bcd-9f43-3733047c26f8"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <textFieldExpression><![CDATA[$V{var_tab_3}]]></textFieldExpression>
+                            </textField>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 3_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="90" height="20" uuid="4cd66e60-a309-4145-b529-c764bb823121"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{available_peti}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+            <staticText>
+                <reportElement x="10" y="0" width="77" height="17" uuid="18d32742-b65b-436a-bc87-03f6e9f3512b"/>
+                <text><![CDATA[Unsold Stock]]></text>
+            </staticText>
+        </band>
+        <band height="50">
+            <componentElement>
+                <reportElement key="table 4" style="table 4" x="110" y="0" width="180" height="20" uuid="e9a97ab2-f0d3-4193-a481-3a5540001311"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="Alphonso Avaliable" uuid="4853750f-e3c1-463c-8d76-29e1055d3cd4">
+                        <datasetParameter name="start_date">
+                            <datasetParameterExpression><![CDATA[$P{start_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <datasetParameter name="end_date">
+                            <datasetParameterExpression><![CDATA[$P{end_date}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                    </datasetRun>
+                    <jr:column width="227" uuid="1bd7c2e7-0b46-4271-b1d2-5ff715f683cb">
+                        <jr:columnHeader height="20" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="74" height="20" uuid="f9b39106-bdbe-4a3c-a7f8-33b61566b2a2"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Alphonso]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="0" width="227" height="30" uuid="bbe93d41-be03-4119-857b-9b0d32b9302f"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Total Alphonso]]></text>
+                            </staticText>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 4_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="20" y="0" width="177" height="20" uuid="2394ce3f-fa24-4e64-934a-a39a04618dd2"/>
+                                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{product_name}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="117" uuid="ca571bdf-a4be-481c-bec0-6ae0dfb50958">
+                        <jr:columnFooter height="30" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="93" height="30" uuid="29c1e3d2-6692-4b6b-a7a5-e741599b43a8"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <textFieldExpression><![CDATA[$V{var_tab_4}]]></textFieldExpression>
+                            </textField>
+                        </jr:columnFooter>
+                        <jr:detailCell style="table 4_TD" height="20" rowSpan="1">
+                            <textField>
+                                <reportElement x="0" y="0" width="93" height="20" uuid="40045e3e-8497-4d9a-b78f-4cfbb861b7d1"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{available_peti}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+        </band>
+    </detail>
+</jasperReport>

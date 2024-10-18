@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="900" pageHeight="842" whenNoDataType="NoDataSection" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryWithPageHeaderAndFooter="true" uuid="7d7a60e1-305a-42b9-9573-fb9b926368c0">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Crosstab Data Text" hAlign="Center"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[	 SELECT bu.user_name,
+							itt.description,
+							il.amount,
+							i.currency_id,
+							curr.symbol AS currency_symbol
+				   	   FROM customer AS c
+				 INNER JOIN base_user bu ON c.user_id = bu.id
+				 INNER JOIN invoice i ON i.user_id = c.user_id
+				 INNER JOIN currency curr ON curr.id = i.currency_id
+				 INNER JOIN invoice_line il ON il.invoice_id = i.id
+				 INNER JOIN item it ON it.id = il.item_id
+				 INNER JOIN item_type_map ittm ON ittm.item_id = it.id
+				 INNER JOIN item_type itt ON itt.id = ittm.type_id
+					  WHERE bu.entity_id = $P{entity_id}
+					    AND i.create_datetime BETWEEN $P{start_date} AND $P{end_date}]]>
+	</queryString>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="start_date" class="java.util.Date"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="61" splitType="Stretch">
+			<staticText>
+				<reportElement x="169" y="0" width="232" height="22" uuid="a45e3549-32df-43bb-aa72-535c82302198"/>
+				<textElement>
+					<font fontName="SansSerif" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Invoiced per Customer]]></text>
+			</staticText>
+			<textField >
+				<reportElement x="311" y="22" width="70" height="20" uuid="570207e6-191b-4654-aa83-739586084e20"/>
+				<textElement>
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField >
+				<reportElement x="224" y="22" width="70" height="20" uuid="46fb0c0a-eb49-438d-aa48-a37cf6570827"/>
+				<textElement>
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<staticText>
+				<reportElement x="294" y="22" width="17" height="20" uuid="1695eaf8-41b9-41ca-ae37-fb8c803d1adc"/>
+				<textElement textAlignment="Center">
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[-]]></text>
+			</staticText>
+		</band>
+	</title>
+	<summary>
+		<band height="178" splitType="Stretch">
+			<crosstab>
+				<reportElement x="0" y="0" width="900" height="178" uuid="17c44aa0-c957-439b-b8e4-011072ed93db"/>
+				<rowGroup name="user_name" width="70">
+					<bucket class="java.lang.String">
+						<bucketExpression><![CDATA[$F{user_name}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents backcolor="#F0F8FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField isStretchWithOverflow="true">
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="70" height="25" uuid="9386c40a-d0f3-417c-a768-f9e4b56201aa"/>
+								<textFieldExpression><![CDATA[$V{user_name}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+				</rowGroup>
+				<rowGroup name="currency_symbol" width="70">
+					<bucket class="java.lang.String">
+						<bucketExpression><![CDATA[$F{currency_symbol}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents backcolor="#F0F8FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="70" height="25" uuid="9386c40a-d0f3-417c-a768-f9e4b56201aa"/>
+								<textFieldExpression>
+									<![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($V{currency_symbol}.toString(), false)]]>
+								</textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+				</rowGroup>
+				<columnGroup name="description" height="30" totalPosition="End">
+					<bucket class="java.lang.String">
+						<bucketExpression><![CDATA[$F{description}]]></bucketExpression>
+					</bucket>
+					<crosstabColumnHeader>
+						<cellContents backcolor="#F0F8FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="30" uuid="2177587e-269e-43d6-9652-787358f43c04"/>
+								<textFieldExpression><![CDATA[$V{description}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabColumnHeader>
+					<crosstabTotalColumnHeader>
+						<cellContents backcolor="#BFE1FF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="50" height="30" uuid="378449e9-0c8d-480f-86d2-ade9f36ed16e"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Total]]></text>
+							</staticText>
+						</cellContents>
+					</crosstabTotalColumnHeader>
+				</columnGroup>
+				<measure name="amountMeasure" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{amount}]]></measureExpression>
+				</measure>
+				<crosstabCell width="50" height="25">
+					<cellContents>
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="25" uuid="2e28ff07-66b5-4bac-a399-ca43674fa269"/>
+							<textFieldExpression>
+								<![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{amountMeasure})]]>
+							</textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="50" height="25" columnTotalGroup="description">
+					<cellContents backcolor="#BFE1FF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField>
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="50" height="25" uuid="531d5278-963f-4f8e-a262-9d59a32ebe80"/>
+							<textElement>
+								<font isBold="true"/>
+							</textElement>
+							<textFieldExpression>
+								<![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{amountMeasure})]]>
+							</textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+			</crosstab>
+		</band>
+	</summary>
+	<noData>
+		<band height="50">
+			<staticText>
+				<reportElement x="43" y="0" width="490" height="22" uuid="90d0fc64-97a6-4797-9087-3c481152c737">
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement>
+					<font fontName="SansSerif" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[There are no customers with invoices for the selected period]]></text>
+			</staticText>
+			<textField >
+				<reportElement x="311" y="22" width="70" height="20" uuid="37ddd0eb-10a9-4497-936d-e378cb367768"/>
+				<textElement>
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField>
+				<reportElement x="224" y="22" width="70" height="20" uuid="602a71ea-ed91-431f-8970-6cc7a57704a8"/>
+				<textElement>
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<staticText>
+				<reportElement x="294" y="22" width="17" height="20" uuid="c22c8a37-8567-4e2b-bfee-eefa8665dc86"/>
+				<textElement textAlignment="Center">
+					<font isBold="true" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[-]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

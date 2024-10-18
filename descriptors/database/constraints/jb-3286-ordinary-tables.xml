@@ -1,0 +1,3404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jb-3286-ordinary-tables.xml">
+
+    <changeSet context = "base" id = "JB-3286 - account_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "account_type_currency_id_FK"
+                       TO account_type_fk_currency;
+
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "account_type_entity_id_FK"
+                       TO account_type_fk_entity;
+
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "account_type_language_id_FK"
+                       TO account_type_fk_language;
+
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "invoice_delivery_method_id_FK"
+                       TO account_type_fk_invoice_delivery_method;
+
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "account_type_invoice_template_FK"
+                       TO account_type_fk_invoice_template;
+
+              ALTER TABLE account_type
+        RENAME CONSTRAINT "account_type_main_subscription_period_FK"
+                       TO account_type_fk_order_period;
+        </sql>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_invoice_template">
+            <column name = "invoice_template_id" />
+        </createIndex>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_language">
+            <column name = "language_id" />
+        </createIndex>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_order_period">
+            <column name = "main_subscript_order_period_id" />
+        </createIndex>
+
+        <createIndex tableName = "account_type"
+                     indexName = "account_type_fk_invoice_delivery_method">
+            <column name = "invoice_delivery_method_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - account_type_price" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName      = "account_type_price"
+                       columnNames    = "plan_item_id, account_type_id" />
+
+<!--  'account_type_price_pkey' index is sufficient for account_type_price_fk_plan_item constraint - ->
+        <createIndex tableName = "account_type_price"
+                     indexName = "account_type_price_fk_plan_item">
+            <column name = "plan_item_id" />
+        </createIndex>
+<!- -  -->
+
+        <createIndex tableName = "account_type_price"
+                     indexName = "account_type_price_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "account_type_price_fk_account_type"
+                                 baseTableName          = "account_type_price"
+                                 referencedTableName    = "account_type"
+                                 baseColumnNames        = "account_type_id"
+                                 referencedColumnNames  = "id" />
+
+
+        <addForeignKeyConstraint constraintName         = "account_type_price_fk_plan_item"
+                                 baseTableName          = "account_type_price"
+                                 referencedTableName    = "plan_item"
+                                 baseColumnNames        = "plan_item_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - ageing_entity_step" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE ageing_entity_step
+        RENAME CONSTRAINT ageing_entity_step_fk_2
+                       TO ageing_entity_step_fk_entity;
+
+              ALTER TABLE ageing_entity_step
+        RENAME CONSTRAINT entity_step_days_collection_type
+                       TO ageing_entity_step_uq_days_collection_type;
+
+        ALTER INDEX ageing_entity_step_fk_status
+          RENAME TO ageing_entity_step_fk_user_status;
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "ageing_entity_step_fk_user_status"
+                                 baseTableName          = "ageing_entity_step"
+                                 referencedTableName    = "user_status"
+                                 baseColumnNames        = "status_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset
+        RENAME CONSTRAINT asset_fk_1
+                       TO asset_fk_item;
+
+              ALTER TABLE asset
+        RENAME CONSTRAINT asset_fk_2
+                       TO asset_fk_order_line;
+
+              ALTER TABLE asset
+        RENAME CONSTRAINT asset_fk_3
+                       TO asset_fk_asset_status;
+
+              ALTER TABLE asset
+        RENAME CONSTRAINT asset_fk_4
+                       TO asset_fk_entity;
+        </sql>
+
+        <createIndex tableName = "asset"
+                     indexName = "asset_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset"
+                     indexName = "asset_fk_asset_status">
+            <column name = "status_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset"
+                     indexName = "asset_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset"
+                     indexName = "asset_fk_group">
+            <column name = "group_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "asset_fk_group"
+                                 baseTableName          = "asset"
+                                 referencedTableName    = "asset"
+                                 baseColumnNames        = "group_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_assignment" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_assignment
+        RENAME CONSTRAINT asset_assignment_fk_1
+                       TO asset_assignment_fk_asset;
+
+              ALTER TABLE asset_assignment
+        RENAME CONSTRAINT asset_assignment_fk_2
+                       TO asset_assignment_fk_order_line;
+        </sql>
+
+        <createIndex tableName = "asset_assignment"
+                     indexName = "asset_assignment_fk_asset">
+            <column name = "asset_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_assignment"
+                     indexName = "asset_assignment_fk_order_line">
+            <column name = "order_line_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_reservation" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_reservation
+        RENAME CONSTRAINT asset_reservation_fk_1
+                       TO asset_reservation_fk_creator;
+
+              ALTER TABLE asset_reservation
+        RENAME CONSTRAINT asset_reservation_fk_2
+                       TO asset_reservation_fk_user;
+
+              ALTER TABLE asset_reservation
+        RENAME CONSTRAINT asset_reservation_fk_3
+                       TO asset_reservation_fk_asset;
+
+        ALTER INDEX asset_reservation_end_date_index
+          RENAME TO asset_reservation_idx_end_date;
+        </sql>
+
+        <createIndex tableName = "asset_reservation"
+                     indexName = "asset_reservation_fk_creator">
+            <column name = "creator_user_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_reservation"
+                     indexName = "asset_reservation_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_reservation"
+                     indexName = "asset_reservation_fk_asset">
+            <column name = "asset_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_status" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_status
+        RENAME CONSTRAINT asset_status_fk_1
+                       TO asset_status_fk_item_type;
+        </sql>
+
+        <createIndex tableName = "asset_status"
+                     indexName = "asset_status_fk_item_type">
+            <column name = "item_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_transition" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_transition
+        RENAME CONSTRAINT asset_transition_fk_1
+                       TO asset_transition_fk_assigned_to;
+
+              ALTER TABLE asset_transition
+        RENAME CONSTRAINT asset_transition_fk_2
+                       TO asset_transition_fk_user;
+
+              ALTER TABLE asset_transition
+        RENAME CONSTRAINT asset_transition_fk_3
+                       TO asset_transition_fk_asset;
+
+              ALTER TABLE asset_transition
+        RENAME CONSTRAINT asset_transition_fk_4
+                       TO asset_transition_fk_new_status;
+
+              ALTER TABLE asset_transition
+        RENAME CONSTRAINT asset_transition_fk_5
+                       TO asset_transition_fk_previous_status;
+        </sql>
+
+        <createIndex tableName = "asset_transition"
+                     indexName = "asset_transition_fk_assigned_to">
+            <column name = "assigned_to_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_transition"
+                     indexName = "asset_transition_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_transition"
+                     indexName = "asset_transition_fk_asset">
+            <column name = "asset_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_transition"
+                     indexName = "asset_transition_fk_new_status">
+            <column name = "new_status_id" />
+        </createIndex>
+
+        <createIndex tableName = "asset_transition"
+                     indexName = "asset_transition_fk_previous_status">
+            <column name = "previous_status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - base_user" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE base_user
+        RENAME CONSTRAINT base_user_fk_3
+                       TO base_user_fk_entity;
+
+              ALTER TABLE base_user
+        RENAME CONSTRAINT base_user_fk_4
+                       TO base_user_fk_language;
+
+              ALTER TABLE base_user
+        RENAME CONSTRAINT base_user_fk_5
+                       TO base_user_fk_currency;
+
+              ALTER TABLE base_user
+        RENAME CONSTRAINT base_user_fk_6
+                       TO base_user_fk_user_status;
+
+        ALTER INDEX base_user_fk_status
+          RENAME TO base_user_fk_user_status;
+
+        DROP INDEX ix_base_user_un;
+        </sql>
+
+        <addUniqueConstraint tableName      = "base_user"
+                             constraintName = "base_user_uq_user_name_per_entity"
+                             columnNames    = "entity_id, user_name" />
+
+        <createIndex tableName = "base_user"
+                     indexName = "base_user_fk_language">
+            <column name = "language_id" />
+        </createIndex>
+
+        <createIndex tableName = "base_user"
+                     indexName = "base_user_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_job_data_ignition" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_job_data_ignition
+        RENAME CONSTRAINT batch_job_data_ignition_pk
+                       TO batch_job_data_ignition_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_job_user_ids" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_job_user_ids
+        RENAME CONSTRAINT batch_job_user_ids_pk
+                       TO batch_job_user_ids_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - billing_batch_job_data" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE billing_batch_job_data
+        RENAME CONSTRAINT billing_batch_job_data_pk
+                       TO billing_batch_job_data_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - billing_process" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE billing_process
+        RENAME CONSTRAINT billing_process_fk_1
+                       TO billing_process_fk_period_unit;
+
+              ALTER TABLE billing_process
+        RENAME CONSTRAINT billing_process_fk_2
+                       TO billing_process_fk_entity;
+
+              ALTER TABLE billing_process
+        RENAME CONSTRAINT billing_process_fk_3
+                       TO billing_process_fk_paper_invoice_batch;
+        </sql>
+
+        <createIndex tableName = "billing_process"
+                     indexName = "billing_process_fk_period_unit">
+            <column name = "period_unit_id" />
+        </createIndex>
+
+        <createIndex tableName = "billing_process"
+                     indexName = "billing_process_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "billing_process"
+                     indexName = "billing_process_fk_paper_invoice_batch">
+            <column name = "paper_invoice_batch_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - billing_process_configuration" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE billing_process_configuration
+        RENAME CONSTRAINT billing_process_config_pkey
+                       TO billing_process_configuration_pkey;
+
+              ALTER TABLE billing_process_configuration
+        RENAME CONSTRAINT billing_proc_configtn_fk_1
+                       TO billing_process_configuration_fk_period_unit;
+
+              ALTER TABLE billing_process_configuration
+        RENAME CONSTRAINT billing_proc_configtn_fk_2
+                       TO billing_process_configuration_fk_entity;
+        </sql>
+
+        <createIndex tableName = "billing_process_configuration"
+                     indexName = "billing_process_configuration_fk_period_unit">
+            <column name = "period_unit_id" />
+        </createIndex>
+
+        <createIndex tableName = "billing_process_configuration"
+                     indexName = "billing_process_configuration_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - blacklist" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE blacklist
+        RENAME CONSTRAINT blacklist_fk_1
+                       TO blacklist_fk_entity;
+
+              ALTER TABLE blacklist
+        RENAME CONSTRAINT blacklist_fk_2
+                       TO blacklist_fk_user;
+
+              ALTER TABLE blacklist
+        RENAME CONSTRAINT blacklist_fk_4
+                       TO blacklist_fk_meta_field_value;
+
+        ALTER INDEX ix_blacklist_entity_type
+          RENAME TO blacklist_idx_entity_type;
+
+        ALTER INDEX ix_blacklist_user_type
+          RENAME TO blacklist_idx_user_type;
+        </sql>
+
+        <createIndex tableName = "blacklist"
+                     indexName = "blacklist_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - boa_bai_processed_files" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE boa_bai_processed_files
+        RENAME CONSTRAINT boa_processed_files_pkey
+                       TO boa_bai_processed_files_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - boa_bai_processing_errors" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE boa_bai_processing_errors
+        RENAME CONSTRAINT boa_processing_errors_pkey
+                       TO boa_bai_processing_errors_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - cancellation_request" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE cancellation_request
+        RENAME CONSTRAINT cancellation_request_fk_1
+                       TO cancellation_request_fk_customer;
+        </sql>
+
+        <createIndex tableName = "cancellation_request"
+                     indexName = "cancellation_request_fk_customer">
+            <column name = "customer_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - charge_sessions" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE charge_sessions
+        RENAME CONSTRAINT fk_sessions_user
+                       TO charge_sessions_fk_user;
+        </sql>
+
+        <createIndex tableName = "charge_sessions"
+                     indexName = "charge_sessions_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - collection_batch_job_data" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE collection_batch_job_data
+        RENAME CONSTRAINT collection_batch_job_data_pk
+                       TO collection_batch_job_data_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - company_info" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE company_info
+        RENAME CONSTRAINT company_info_company_id_fk
+                       TO company_info_fk_entity;
+
+              ALTER TABLE company_info
+        RENAME CONSTRAINT company_info_company_info_type_id_fk
+                       TO company_info_fk_meta_field_group;
+
+              ALTER TABLE company_info
+        RENAME CONSTRAINT company_info_meta_field_value_id_fk
+                       TO company_info_fk_meta_field_value;
+
+              ALTER TABLE company_info
+        RENAME CONSTRAINT company_info_uk
+                       TO company_info_uq_entity_meta_field_value_company_info_type;
+        </sql>
+
+        <createIndex tableName = "company_info"
+                     indexName = "company_info_fk_entity">
+            <column name = "company_id" />
+        </createIndex>
+
+        <createIndex tableName = "company_info"
+                     indexName = "company_info_fk_meta_field_group">
+            <column name = "company_info_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "company_info"
+                     indexName = "company_info_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - contact" author = "Igor Poteryaev">
+        <sql>
+        ALTER INDEX contact_i_del
+          RENAME TO contact_idx_deleted;
+
+        ALTER INDEX ix_contact_address
+          RENAME TO contact_idx_address;
+
+        ALTER INDEX ix_contact_fname
+          RENAME TO contact_idx_first_name;
+
+        ALTER INDEX ix_contact_fname_lname
+          RENAME TO contact_idx_first_name_last_name;
+
+        ALTER INDEX ix_contact_lname
+          RENAME TO contact_idx_last_name;
+
+        ALTER INDEX ix_contact_orgname
+          RENAME TO contact_idx_organization_name;
+
+        ALTER INDEX ix_contact_phone
+          RENAME TO contact_idx_phone;
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "contact_fk_user"
+                                 baseTableName          = "contact"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - country" author = "Igor Poteryaev">
+
+        <addUniqueConstraint tableName      = "country"
+                             constraintName = "country_uq_code"
+                             columnNames    = "code" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - credit_note" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE credit_note
+        RENAME CONSTRAINT "credit_note_creation_invoice_id_FK"
+                       TO credit_note_fk_invoice;
+        </sql>
+
+        <createIndex tableName = "credit_note"
+                     indexName = "credit_note_fk_invoice">
+            <column name = "creation_invoice_id" />
+        </createIndex>
+
+        <createIndex tableName = "credit_note"
+                     indexName = "credit_note_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "credit_note_fk_entity"
+                                 baseTableName          = "credit_note"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - credit_note_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE credit_note_line
+        RENAME CONSTRAINT "credit_note_line_invoice_line_id_FK"
+                       TO credit_note_line_fk_invoice_line;
+
+              ALTER TABLE credit_note_line
+        RENAME CONSTRAINT "credit_note_line_note_id_FK"
+                       TO credit_note_line_fk_credit_note;
+        </sql>
+
+        <createIndex tableName = "credit_note_line"
+                     indexName = "credit_note_line_fk_invoice_line">
+            <column name = "invoice_line_id" />
+        </createIndex>
+
+        <createIndex tableName = "credit_note_line"
+                     indexName = "credit_note_line_fk_credit_note">
+            <column name = "credit_note_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - currency_exchange" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE currency_exchange
+        RENAME CONSTRAINT currency_exchange_fk_1
+                       TO currency_exchange_fk_currency;
+        </sql>
+
+        <createIndex tableName = "currency_exchange"
+                     indexName = "currency_exchange_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+<!--  FK can't be added, because CurrencyBL uses fake 'SYSTEM' entity to assign default exchange rates.
+SYSTEM_RATE_ENTITY_ID = 0
+
+        <addForeignKeyConstraint constraintName         = "currency_exchange_fk_entity"
+                                 baseTableName          = "currency_exchange"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+ -->
+
+        <addUniqueConstraint tableName      = "currency_exchange"
+                             constraintName = "currency_exchange_uq_entity_currency_valid_since"
+                             columnNames    = "entity_id, currency_id, valid_since" />
+
+        <createIndex tableName = "currency_exchange"
+                     indexName = "currency_exchange_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer
+        RENAME CONSTRAINT customer_account_type_fk
+                       TO customer_fk_account_type;
+
+              ALTER TABLE customer
+        RENAME CONSTRAINT customer_fk_1
+                       TO customer_fk_invoice_delivery_method;
+
+              ALTER TABLE customer
+        RENAME CONSTRAINT customer_fk_3
+                       TO customer_fk_user;
+
+              ALTER TABLE customer
+        RENAME CONSTRAINT "customer_invoice_template_FK"
+                       TO customer_fk_invoice_template;
+
+              ALTER TABLE customer
+        RENAME CONSTRAINT "customer_main_subscription_period_FK"
+                       TO customer_fk_order_period;
+
+        ALTER INDEX ix_parent_customer_id
+          RENAME TO customer_idx_parent;
+
+        DROP INDEX parent_id_index;
+        </sql>
+
+        <createIndex tableName = "customer"
+                     indexName = "customer_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer"
+                     indexName = "customer_fk_invoice_delivery_method">
+            <column name = "invoice_delivery_method_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer"
+                     indexName = "customer_fk_invoice_template">
+            <column name = "invoice_template_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer"
+                     indexName = "customer_fk_order_period">
+            <column name = "main_subscript_order_period_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_account_info_type_timeline" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_account_info_type_timeline
+        RENAME CONSTRAINT customer_account_info_type_timeline_account_info_type_id_fk
+                       TO customer_account_info_type_timeline_fk_account_info_type;
+
+              ALTER TABLE customer_account_info_type_timeline
+        RENAME CONSTRAINT customer_account_info_type_timeline_customer_id_fk
+                       TO customer_account_info_type_timeline_fk_customer;
+
+              ALTER TABLE customer_account_info_type_timeline
+        RENAME CONSTRAINT customer_account_info_type_timeline_meta_field_value_id_fk
+                       TO customer_account_info_type_timeline_fk_meta_field_value;
+
+              ALTER TABLE customer_account_info_type_timeline
+        RENAME CONSTRAINT customer_account_info_type_timeline_uk
+                       TO customer_account_info_type_timeline_fk_customer_mfv_ait;
+
+        ALTER INDEX cust_acct_typ_tmln_fk_mfvalue
+          RENAME TO customer_account_info_type_timeline_fk_meta_field_value;
+        </sql>
+
+        <createIndex tableName = "customer_account_info_type_timeline"
+                     indexName = "customer_account_info_type_timeline_fk_account_info_type">
+            <column name = "account_info_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_commission_def" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_commission_def
+        RENAME CONSTRAINT customer_commission_def_pk
+                       TO customer_commission_def_pkey;
+
+        DROP INDEX customer_commission_def_fk_user;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_enrollment" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_enrollment
+        RENAME CONSTRAINT customer_enrollment_pk
+                       TO customer_enrollment_pkey;
+
+              ALTER TABLE customer_enrollment
+        RENAME CONSTRAINT "customer_enrollment_account_type_id_FK"
+                       TO customer_enrollment_fk_account_type;
+
+              ALTER TABLE customer_enrollment
+        RENAME CONSTRAINT "customer_enrollment_entity_id_FK"
+                       TO customer_enrollment_fk_entity;
+        </sql>
+
+        <createIndex tableName = "customer_enrollment"
+                     indexName = "customer_enrollment_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer_enrollment"
+                     indexName = "customer_enrollment_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_enrollment_agent" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_enrollment_agent
+        RENAME CONSTRAINT customer_enrollment_agent_pk
+                       TO customer_enrollment_agent_pkey;
+
+              ALTER TABLE customer_enrollment_agent
+        RENAME CONSTRAINT customer_enrollment_agent_fk_enrollment
+                       TO customer_enrollment_agent_fk_customer_enrollment;
+
+        ALTER INDEX customer_enrollment_agent_fk_enrollment
+          RENAME TO customer_enrollment_agent_fk_customer_enrollment;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_enrollment_comments" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_enrollment_comments
+        RENAME CONSTRAINT pk_customer_enrollment_comments
+                       TO customer_enrollment_comments_pkey;
+
+              ALTER TABLE customer_enrollment_comments
+        RENAME CONSTRAINT "customer_enrollment_comment_customer_enrollment_id_FK"
+                       TO customer_enrollment_comments_fk_customer_enrollment;
+
+              ALTER TABLE customer_enrollment_comments
+        RENAME CONSTRAINT "customer_enrollment_comment_user_id_FK"
+                       TO customer_enrollment_comments_fk_user;
+        </sql>
+
+        <createIndex tableName = "customer_enrollment_comments"
+                     indexName = "customer_enrollment_comments_fk_customer_enrollment">
+            <column name = "customer_enrollment_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer_enrollment_comments"
+                     indexName = "customer_enrollment_comments_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_notes" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_notes
+        RENAME CONSTRAINT pk_customer_notes
+                       TO customer_notes_pkey;
+
+              ALTER TABLE customer_notes
+        RENAME CONSTRAINT "customer_notes_customer_id_FK"
+                       TO customer_notes_fk_customer;
+
+              ALTER TABLE customer_notes
+        RENAME CONSTRAINT "customer_notes_entity_id_FK"
+                       TO customer_notes_fk_entity;
+
+              ALTER TABLE customer_notes
+        RENAME CONSTRAINT "customer_notes_user_id_FK"
+                       TO customer_notes_fk_user;
+        </sql>
+
+        <createIndex tableName = "customer_notes"
+                     indexName = "customer_notes_fk_customer">
+            <column name = "customer_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer_notes"
+                     indexName = "customer_notes_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "customer_notes"
+                     indexName = "customer_notes_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_price" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_price
+        RENAME CONSTRAINT customer_price_plan_item_id_fk
+                       TO customer_price_fk_plan_item;
+
+              ALTER TABLE customer_price
+        RENAME CONSTRAINT customer_price_user_id_fk
+                       TO customer_price_fk_user;
+        </sql>
+
+        <createIndex tableName = "customer_price"
+                     indexName = "customer_price_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_status_change_history" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_status_change_history
+        RENAME CONSTRAINT customer_status_change_history_map_user_id_fk
+                       TO customer_status_change_history_fk_user;
+        </sql>
+
+        <createIndex tableName = "customer_status_change_history"
+                     indexName = "customer_status_change_history_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - data_table_query" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE data_table_query
+        RENAME CONSTRAINT pk_data_table_query
+                       TO data_table_query_pkey;
+
+              ALTER TABLE data_table_query
+        RENAME CONSTRAINT "data_table_query_next_FK"
+                       TO data_table_query_fk_data_table_query_entry;
+        </sql>
+
+        <createIndex tableName = "data_table_query"
+                     indexName = "data_table_query_fk_data_table_query_entry">
+            <column name = "root_entry_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - data_table_query_entry" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE data_table_query_entry
+        RENAME CONSTRAINT pk_data_table_query_entry
+                       TO data_table_query_entry_pkey;
+
+              ALTER TABLE data_table_query_entry
+        RENAME CONSTRAINT "data_table_query_entry_next_FK"
+                       TO data_table_query_entry_fk_next_entry;
+        </sql>
+
+        <createIndex tableName = "data_table_query_entry"
+                     indexName = "data_table_query_entry_fk_next_entry">
+            <column name = "next_entry_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - discount" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE discount
+        RENAME CONSTRAINT discount_entity_id_fk
+                       TO discount_fk_entity;
+        </sql>
+
+        <createIndex tableName = "discount"
+                     indexName = "discount_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - discount_attribute" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE discount_attribute
+        RENAME CONSTRAINT discount_attr_id_fk
+                       TO discount_attribute_fk_discount;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - discount_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE discount_line
+        RENAME CONSTRAINT discount_line_discount_id_fk
+                       TO discount_line_fk_discount;
+
+              ALTER TABLE discount_line
+        RENAME CONSTRAINT discount_line_item_id_fk
+                       TO discount_line_fk_item;
+
+              ALTER TABLE discount_line
+        RENAME CONSTRAINT discount_line_order_id_fk
+                       TO discount_line_fk_purchase_order;
+
+              ALTER TABLE discount_line
+        RENAME CONSTRAINT discount_line_order_line_id_fk
+                       TO discount_line_fk_order_line;
+
+              ALTER TABLE discount_line
+        RENAME CONSTRAINT discount_line_plan_item_id_fk
+                       TO discount_line_fk_plan_item;
+        </sql>
+
+        <createIndex tableName = "discount_line"
+                     indexName = "discount_line_fk_discount">
+            <column name = "discount_id" />
+        </createIndex>
+
+        <createIndex tableName = "discount_line"
+                     indexName = "discount_line_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "discount_line"
+                     indexName = "discount_line_fk_purchase_order">
+            <column name = "order_id" />
+        </createIndex>
+
+        <createIndex tableName = "discount_line"
+                     indexName = "discount_line_fk_order_line">
+            <column name = "discount_order_line_id" />
+        </createIndex>
+
+        <createIndex tableName = "discount_line"
+                     indexName = "discount_line_fk_plan_item">
+            <column name = "plan_item_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_file" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_file
+        RENAME CONSTRAINT edi_file_pk
+                       TO edi_file_pkey;
+
+              ALTER TABLE edi_file
+        RENAME CONSTRAINT "edi_file_edi_type_id_FK"
+                       TO edi_file_fk_edi_type;
+
+              ALTER TABLE edi_file
+        RENAME CONSTRAINT "edi_file_entity_id_FK"
+                       TO edi_file_fk_entity;
+        </sql>
+
+        <createIndex tableName = "edi_file"
+                     indexName = "edi_file_fk_edi_type">
+            <column name = "edi_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "edi_file"
+                     indexName = "edi_file_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_file_exception_code" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_file_exception_code
+        RENAME CONSTRAINT edi_file_exception_code_pk
+                       TO edi_file_exception_code_pkey;
+
+              ALTER TABLE edi_file_exception_code
+        RENAME CONSTRAINT "edi_file_exception_status_id_FK"
+                       TO edi_file_exception_code_fk_edi_file_status;
+        </sql>
+
+        <createIndex tableName = "edi_file_exception_code"
+                     indexName = "edi_file_exception_code_fk_edi_file_status">
+            <column name = "status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_file_field" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_file_field
+        RENAME CONSTRAINT edi_file_record_field_pk
+                       TO edi_file_field_pkey;
+
+              ALTER TABLE edi_file_field
+        RENAME CONSTRAINT "edi_file_field_edi_file_record_id_FK"
+                       TO edi_file_field_fk_edi_file_record;
+
+        ALTER INDEX edi_file_field_key_idx
+          RENAME TO edi_file_field_idx_edi_file_field_key;
+        </sql>
+
+        <createIndex tableName = "edi_file_field"
+                     indexName = "edi_file_field_fk_edi_file_record">
+            <column name = "edi_file_record_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_file_record" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_file_record
+        RENAME CONSTRAINT edi_file_record_pk
+                       TO edi_file_record_pkey;
+
+              ALTER TABLE edi_file_record
+        RENAME CONSTRAINT "edi_file_record_edi_file_id_FK"
+                       TO edi_file_record_fk_edi_file;
+
+              ALTER TABLE edi_file_record
+        RENAME CONSTRAINT "edi_file_record_entity_id_FK"
+                       TO edi_file_record_fk_entity;
+        </sql>
+
+        <createIndex tableName = "edi_file_record"
+                     indexName = "edi_file_record_fk_edi_file">
+            <column name = "edi_file_id" />
+        </createIndex>
+
+        <createIndex tableName = "edi_file_record"
+                     indexName = "edi_file_record_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_file_status" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_file_status
+        RENAME CONSTRAINT edi_file_status_pk
+                       TO edi_file_status_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE edi_type
+        RENAME CONSTRAINT edi_type_pk
+                       TO edi_type_pkey;
+
+              ALTER TABLE edi_type
+        RENAME CONSTRAINT "edi_type_entity_id_FK"
+                       TO edi_type_fk_entity;
+        </sql>
+
+        <createIndex tableName = "edi_type"
+                     indexName = "edi_type_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - entity" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE entity
+        RENAME CONSTRAINT entity_fk_1
+                       TO entity_fk_currency;
+
+              ALTER TABLE entity
+        RENAME CONSTRAINT entity_fk_2
+                       TO entity_fk_language;
+
+              ALTER TABLE entity
+        RENAME CONSTRAINT entity_fk_3
+                       TO entity_fk_parent;
+        </sql>
+
+        <createIndex tableName = "entity"
+                     indexName = "entity_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "entity"
+                     indexName = "entity_fk_language">
+            <column name = "language_id" />
+        </createIndex>
+
+        <createIndex tableName = "entity"
+                     indexName = "entity_fk_parent">
+            <column name = "parent_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - enumeration" author = "Igor Poteryaev">
+
+        <createIndex tableName = "enumeration"
+                     indexName = "enumeration_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "enumeration_fk_entity"
+                                 baseTableName          = "enumeration"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+
+<!-- TODO [2018-10-19 igor.poteryaev@appdirect.com]. duplicated data in table. Need to fix EnumerationBL
+getEnumerationByName returns random row from rowset.  BUG !
+
+        <addUniqueConstraint tableName      = "enumeration"
+                             constraintName = "enumeration_uq_name"
+                             columnNames    = "entity_id, name" />
+-->
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - enumeration_values" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE enumeration_values
+        RENAME CONSTRAINT enumeration_values_fk_1
+                       TO enumeration_values_fk_enumeration;
+        </sql>
+
+        <createIndex tableName = "enumeration_values"
+                     indexName = "enumeration_values_fk_enumeration">
+            <column name = "enumeration_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - event_log(pre-condition)" author = "Nitisha Sahay">
+        <preConditions onFail = "MARK_RAN">
+             <indexExists indexName = "event_log_fk_affected_user"/>
+        </preConditions>
+        <dropIndex tableName = "event_log"
+                   indexName = "event_log_fk_affected_user"/>
+        <comment>In Ignition, the event_log_fk_affected_user index was created manually. So, dropping it.</comment>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - event_log" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_1
+                       TO event_log_fk_event_log_module;
+
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_2
+                       TO event_log_fk_entity;
+
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_3
+                       TO event_log_fk_user;
+
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_4
+                       TO event_log_fk_jbilling_table;
+
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_5
+                       TO event_log_fk_event_log_message;
+
+              ALTER TABLE event_log
+        RENAME CONSTRAINT event_log_fk_6
+                       TO event_log_fk_affected_user;
+
+              ALTER INDEX ix_el_main
+        RENAME TO event_log_idx_module_message_create_datetime;
+        </sql>
+
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_fk_event_log_message">
+            <column name = "message_id" />
+        </createIndex>
+
+        <createIndex tableName = "event_log"
+                     indexName = "event_log_fk_affected_user">
+            <column name = "affected_user_id" />
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - filter" author = "Igor Poteryaev">
+
+        <createIndex tableName = "filter"
+                     indexName = "filter_fk_filter_set">
+            <column name = "filter_set_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "filter_fk_filter_set"
+                                 baseTableName          = "filter"
+                                 referencedTableName    = "filter_set"
+                                 baseColumnNames        = "filter_set_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - filter_set" author = "Igor Poteryaev">
+
+        <createIndex tableName = "filter_set"
+                     indexName = "filter_set_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "filter_set_fk_user"
+                                 baseTableName          = "filter_set"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - generic_status" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE generic_status
+        RENAME CONSTRAINT generic_status_entity_id_fk
+                       TO generic_status_fk_entity;
+
+              ALTER TABLE generic_status
+        RENAME CONSTRAINT generic_status_fk_1
+                       TO generic_status_fk_generic_status_type;
+        </sql>
+
+        <createIndex tableName = "generic_status"
+                     indexName = "generic_status_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "generic_status"
+                     indexName = "generic_status_fk_generic_status_type">
+            <column name = "dtype" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - international_description" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE international_description
+        RENAME CONSTRAINT international_description_fk_1
+                       TO international_description_fk_language;
+
+        ALTER INDEX international_description_i_2
+          RENAME TO international_description_idx_table_foreign_id_language;
+        </sql>
+
+        <createIndex tableName = "international_description"
+                     indexName = "international_description_fk_language">
+            <column name = "language_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice
+        RENAME CONSTRAINT invoice_fk_1
+                       TO invoice_fk_billing_process;
+
+              ALTER TABLE invoice
+        RENAME CONSTRAINT invoice_fk_2
+                       TO invoice_fk_paper_invoice_batch;
+
+              ALTER TABLE invoice
+        RENAME CONSTRAINT invoice_fk_3
+                       TO invoice_fk_currency;
+
+              ALTER TABLE invoice
+        RENAME CONSTRAINT invoice_fk_4
+                       TO invoice_fk_delegated_invoice;
+
+        ALTER INDEX ix_invoice_date
+          RENAME TO invoice_idx_create_datetime;
+
+        ALTER INDEX ix_invoice_due_date
+          RENAME TO invoice_idx_user_due_date;
+
+        ALTER INDEX ix_invoice_number
+          RENAME TO invoice_idx_user_public_number;
+
+        ALTER INDEX ix_invoice_ts
+          RENAME TO invoice_idx_create_timestamp_user;
+
+        ALTER INDEX ix_invoice_user_id
+          RENAME TO invoice_idx_user_deleted;
+        </sql>
+
+        <createIndex tableName = "invoice"
+                     indexName = "invoice_fk_billing_process">
+            <column name = "billing_process_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice"
+                     indexName = "invoice_fk_paper_invoice_batch">
+            <column name = "paper_invoice_batch_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice"
+                     indexName = "invoice_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice"
+                     indexName = "invoice_fk_delegated_invoice">
+            <column name = "delegated_invoice_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice_line
+        RENAME CONSTRAINT invoice_line_fk_1
+                       TO invoice_line_fk_invoice;
+
+              ALTER TABLE invoice_line
+        RENAME CONSTRAINT invoice_line_fk_2
+                       TO invoice_line_fk_item;
+
+              ALTER TABLE invoice_line
+        RENAME CONSTRAINT invoice_line_fk_3
+                       TO invoice_line_fk_invoice_line_type;
+
+              ALTER TABLE invoice_line
+        RENAME CONSTRAINT invoice_line_fk_4
+                       TO invoice_line_fk_purchase_order;
+
+              ALTER TABLE invoice_line
+        RENAME CONSTRAINT invoice_line_fk_invoice_line
+                       TO invoice_line_fk_parent_line;
+
+        ALTER INDEX invoice_line_fk_invoice_line
+          RENAME TO invoice_line_fk_parent_line;
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "invoice_line_fk_user"
+                                 baseTableName          = "invoice_line"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "source_user_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "invoice_line"
+                     indexName = "invoice_line_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice_line"
+                     indexName = "invoice_line_fk_invoice_line_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice_line"
+                     indexName = "invoice_line_fk_purchase_order">
+            <column name = "order_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_summary" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice_summary
+        RENAME CONSTRAINT "invoice_summary_creation_invoice_id_FK"
+                       TO invoice_summary_fk_invoice;
+        </sql>
+
+        <createIndex tableName = "invoice_summary"
+                     indexName = "invoice_summary_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "invoice_summary_fk_user"
+                                 baseTableName          = "invoice_summary"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "invoice_summary"
+                     indexName = "invoice_summary_fk_invoice">
+            <column name = "creation_invoice_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_template" author = "Igor Poteryaev">
+        <sql>
+        DROP INDEX public.invoice_template_name_uq;
+        </sql>
+
+        <addUniqueConstraint tableName      = "invoice_template"
+                             constraintName = "invoice_template_uq_name_per_entity"
+                             columnNames    = "name, entity_id" />
+
+        <createIndex tableName = "invoice_template"
+                     indexName = "invoice_template_fk_invoice">
+            <column name = "invoice_id" />
+        </createIndex>
+
+        <createIndex tableName = "invoice_template"
+                     indexName = "invoice_template_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "invoice_template_fk_invoice"
+                                 baseTableName          = "invoice_template"
+                                 referencedTableName    = "invoice"
+                                 baseColumnNames        = "invoice_id"
+                                 referencedColumnNames  = "id" />
+
+        <addForeignKeyConstraint constraintName         = "invoice_template_fk_entity"
+                                 baseTableName          = "invoice_template"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_template_file" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice_template_file
+        RENAME CONSTRAINT invoice_template_file_pk
+                       TO invoice_template_file_pkey;
+
+              ALTER TABLE invoice_template_file
+        RENAME CONSTRAINT invoice_template_file_invoice_template_id_fk
+                       TO invoice_template_file_fk_invoice_template;
+
+              ALTER TABLE invoice_template_file
+        RENAME CONSTRAINT invoice_template_file_invoice_template_id_name_uq
+                       TO invoice_template_file_uq_invoice_template_name;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_template_version" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice_template_version
+        RENAME CONSTRAINT invoice_temp_ver_pkey
+                       TO invoice_template_version_pkey;
+
+              ALTER TABLE invoice_template_version
+        RENAME CONSTRAINT invoice_temp_ver_invoice_temp_id_fk
+                       TO invoice_template_version_fk_invoice_template;
+
+              ALTER TABLE invoice_template_version
+        RENAME CONSTRAINT invoice_temp_ver_vn_uq
+                       TO invoice_template_version_uq_version_number;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item
+        RENAME CONSTRAINT item_fk_1
+                       TO item_fk_entity;
+
+        ALTER INDEX ix_item_ent
+          RENAME TO item_idx_entity_internal_number;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_dependency" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_dependency
+        RENAME CONSTRAINT item_dependency_pk
+                       TO item_dependency_pkey;
+
+              ALTER TABLE item_dependency
+        RENAME CONSTRAINT item_dependency_fk1
+                       TO item_dependency_fk_item;
+
+              ALTER TABLE item_dependency
+        RENAME CONSTRAINT item_dependency_fk2
+                       TO item_dependency_fk_dependent_item;
+
+              ALTER TABLE item_dependency
+        RENAME CONSTRAINT item_dependency_fk3
+                       TO item_dependency_fk_item_type;
+        </sql>
+
+        <createIndex tableName = "item_dependency"
+                     indexName = "item_dependency_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "item_dependency"
+                     indexName = "item_dependency_fk_dependent_item">
+            <column name = "dependent_item_id" />
+        </createIndex>
+
+        <createIndex tableName = "item_dependency"
+                     indexName = "item_dependency_fk_item_type">
+            <column name = "dependent_item_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_price_timeline" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_price_timeline
+        RENAME CONSTRAINT item_pm_map_model_map_id_fk
+                       TO item_price_timeline_fk_entity_item_price_map;
+
+              ALTER TABLE item_price_timeline
+        RENAME CONSTRAINT item_pm_map_price_model_id_fk
+                       TO item_price_timeline_fk_price_model;
+
+              ALTER TABLE item_price_timeline
+        RENAME CONSTRAINT itmprctimelnprc_model_id_key
+                       TO item_price_timeline_uq_price_model;
+        </sql>
+
+        <!--  - ->  not created. waiting until check for mistake be done. 
+         potential mistake: price_model_id is UQ and FK at the same time.
+
+        <createIndex tableName = "item_price_timeline"
+                     indexName = "item_price_timeline_fk_price_model">
+            <column name = "price_model_id" />
+        </createIndex>
+        <!- -  -->
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type
+        RENAME CONSTRAINT item_type_fk_1
+                       TO item_type_fk_entity;
+
+              ALTER TABLE item_type
+        RENAME CONSTRAINT parent_id_fk
+                       TO item_type_fk_parent;
+        </sql>
+
+        <createIndex tableName = "item_type"
+                     indexName = "item_type_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "item_type"
+                     indexName = "item_type_fk_parent">
+            <column name = "parent_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - jbilling_seqs" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE jbilling_seqs
+        RENAME CONSTRAINT jbilling_seqs_pk
+                       TO jbilling_seqs_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - jbilling_table" author = "Igor Poteryaev">
+
+        <addUniqueConstraint tableName      = "jbilling_table"
+                             constraintName = "jbilling_table_uq_name"
+                             columnNames    = "name" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - matching_field" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE matching_field
+        RENAME CONSTRAINT "matching_field_route_id_FK"
+                       TO matching_field_fk_route;
+
+              ALTER TABLE matching_field
+        RENAME CONSTRAINT "matching_field_route_rate_card_id_FK"
+                       TO matching_field_fk_route_rate_card;
+        </sql>
+
+        <createIndex tableName = "matching_field"
+                     indexName = "matching_field_fk_route">
+            <column name = "route_id" />
+        </createIndex>
+
+        <createIndex tableName = "matching_field"
+                     indexName = "matching_field_fk_route_rate_card">
+            <column name = "route_rate_card_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - mediation_cfg" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE mediation_cfg
+        RENAME CONSTRAINT fk_mediation_cfg_root_route
+                       TO mediation_cfg_fk_route;
+
+              ALTER TABLE mediation_cfg
+        RENAME CONSTRAINT mediation_cfg_fk_1
+                       TO mediation_cfg_fk_pluggable_task;
+        </sql>
+
+        <createIndex tableName = "mediation_cfg"
+                     indexName = "mediation_cfg_fk_route">
+            <column name = "root_route" />
+        </createIndex>
+
+        <createIndex tableName = "mediation_cfg"
+                     indexName = "mediation_cfg_fk_pluggable_task">
+            <column name = "pluggable_task_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - mediation_process" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE mediation_process
+        RENAME CONSTRAINT mediation_process_fk_1
+                       TO mediation_process_fk_mediation_cfg;
+        </sql>
+
+        <createIndex tableName = "mediation_process"
+                     indexName = "mediation_process_fk_mediation_cfg">
+            <column name = "configuration_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - meta_field_group" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE meta_field_group
+        RENAME CONSTRAINT metafield_group_pkey
+                       TO meta_field_group_pkey;
+
+              ALTER TABLE meta_field_group
+        RENAME CONSTRAINT "meta_field_group_account_type_FK2"
+                       TO meta_field_group_fk_account_type;
+
+              ALTER TABLE meta_field_group
+        RENAME CONSTRAINT "meta_field_group_entity_FK1"
+                       TO meta_field_group_fk_entity;
+        </sql>
+
+        <createIndex tableName = "meta_field_group"
+                     indexName = "meta_field_group_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "meta_field_group"
+                     indexName = "meta_field_group_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - meta_field_name" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE meta_field_name
+        RENAME CONSTRAINT meta_field_entity_id_fk
+                       TO meta_field_name_fk_entity;
+
+              ALTER TABLE meta_field_name
+        RENAME CONSTRAINT meta_field_name_fk_1
+                       TO meta_field_name_fk_default_value;
+
+              ALTER TABLE meta_field_name
+        RENAME CONSTRAINT validation_rule_fk_1
+                       TO meta_field_name_fk_validation_rule;
+        </sql>
+
+        <createIndex tableName = "meta_field_name"
+                     indexName = "meta_field_name_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "meta_field_name"
+                     indexName = "meta_field_name_fk_default_value">
+            <column name = "default_value_id" />
+        </createIndex>
+
+        <createIndex tableName = "meta_field_name"
+                     indexName = "meta_field_name_fk_validation_rule">
+            <column name = "validation_rule_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - meta_field_value" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE meta_field_value
+        RENAME CONSTRAINT meta_field_value_fk_1
+                       TO meta_field_value_fk_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "meta_field_value"
+                       columnNames  = "id" />
+<!-- TODO [2018-10-19 igor.poteryaev@appdirect.com]. recreate dependent FKeys. To depend on PK instead of UQ
+        <sql>
+            ALTER TABLE meta_field_value
+        DROP CONSTRAINT meta_field_value_id_key;
+        </sql>
+-->
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_category" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_category
+        RENAME CONSTRAINT notification_category_pk
+                       TO notification_category_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_medium_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_medium_type
+        RENAME CONSTRAINT pk_notification_medium_type
+                       TO notification_medium_type_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message
+        RENAME CONSTRAINT notifictn_msg_pkey
+                       TO notification_message_pkey;
+
+              ALTER TABLE notification_message
+        RENAME CONSTRAINT notification_message_fk_1
+                       TO notification_message_fk_language;
+
+              ALTER TABLE notification_message
+        RENAME CONSTRAINT notification_message_fk_2
+                       TO notification_message_fk_notification_message_type;
+
+              ALTER TABLE notification_message
+        RENAME CONSTRAINT notification_message_fk_3
+                       TO notification_message_fk_entity;
+        </sql>
+
+        <createIndex tableName = "notification_message"
+                     indexName = "notification_message_fk_language">
+            <column name = "language_id" />
+        </createIndex>
+
+        <createIndex tableName = "notification_message"
+                     indexName = "notification_message_fk_notification_message_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <createIndex tableName = "notification_message"
+                     indexName = "notification_message_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message_arch" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message_arch
+        RENAME CONSTRAINT notifictn_msg_arch_pkey
+                       TO notification_message_arch_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message_arch_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message_arch_line
+        RENAME CONSTRAINT notifictn_msg_arch_line_pkey
+                       TO notification_message_arch_line_pkey;
+
+              ALTER TABLE notification_message_arch_line
+        RENAME CONSTRAINT notif_mess_arch_line_fk_1
+                       TO notification_message_arch_line_fk_notification_message_arch;
+        </sql>
+
+        <createIndex tableName = "notification_message_arch_line"
+                     indexName = "notification_message_arch_line_fk_notification_message_arch">
+            <column name = "message_archive_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message_line
+        RENAME CONSTRAINT notifictn_msg_line_pkey
+                       TO notification_message_line_pkey;
+
+              ALTER TABLE notification_message_line
+        RENAME CONSTRAINT notification_message_line_fk_1
+                       TO notification_message_line_fk_notification_message_section;
+        </sql>
+
+        <createIndex tableName = "notification_message_line"
+                     indexName = "notification_message_line_fk_notification_message_section">
+            <column name = "message_section_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message_section" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message_section
+        RENAME CONSTRAINT notifictn_msg_section_pkey
+                       TO notification_message_section_pkey;
+
+              ALTER TABLE notification_message_section
+        RENAME CONSTRAINT notification_msg_section_fk_1
+                       TO notification_message_section_fk_notification_message;
+        </sql>
+
+        <createIndex tableName = "notification_message_section"
+                     indexName = "notification_message_section_fk_notification_message">
+            <column name = "message_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - notification_message_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE notification_message_type
+        RENAME CONSTRAINT notifictn_msg_type_pkey
+                       TO notification_message_type_pkey;
+
+              ALTER TABLE notification_message_type
+        RENAME CONSTRAINT category_id_fk_1
+                       TO notification_message_type_fk_notification_category;
+        </sql>
+
+        <createIndex tableName = "notification_message_type"
+                     indexName = "notification_message_type_fk_notification_category">
+            <column name = "category_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_item_id_fk
+                       TO order_change_fk_item;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_order_change_type_id_fk
+                       TO order_change_fk_order_change_type;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_order_id_fk
+                       TO order_change_fk_purchase_order;
+
+              ALTER TABLE order_change
+        DROP CONSTRAINT order_change_order_line_id_fk;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_order_status_id_fk
+                       TO order_change_fk_order_status;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_parent_order_change_fk
+                       TO order_change_fk_parent_order_change;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_parent_order_line_id_fk
+                       TO order_change_fk_parent_order_line;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_status_id_fk
+                       TO order_change_fk_generic_status;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_user_id_fk
+                       TO order_change_fk_user;
+
+              ALTER TABLE order_change
+        RENAME CONSTRAINT order_change_user_status_id_fk
+                       TO order_change_fk_user_assigned_status;
+
+        ALTER INDEX order_change_fk_order
+          RENAME TO order_change_fk_purchase_order;
+
+        ALTER INDEX order_change_fk_parent
+          RENAME TO order_change_fk_parent_order_change;
+
+        ALTER INDEX order_change_idx_order_line
+          RENAME TO order_change_fk_order_line;
+        </sql>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_order_change_type">
+            <column name = "order_change_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_order_status">
+            <column name = "order_status_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_parent_order_line">
+            <column name = "parent_order_line_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_generic_status">
+            <column name = "status_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_user_assigned_status">
+            <column name = "user_assigned_status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_plan_item" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_plan_item
+        RENAME CONSTRAINT porder_change_plan_item_pkey
+                       TO order_change_plan_item_pkey;
+
+              ALTER TABLE order_change_plan_item
+        RENAME CONSTRAINT order_change_plan_item_fk1
+                       TO order_change_plan_item_fk_order_change;
+
+              ALTER TABLE order_change_plan_item
+        RENAME CONSTRAINT order_change_plan_item_fk2
+                       TO order_change_plan_item_fk_item;
+        </sql>
+
+        <createIndex tableName = "order_change_plan_item"
+                     indexName = "order_change_plan_item_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_change_plan_item"
+                     indexName = "order_change_plan_item_fk_order_change">
+            <column name = "order_change_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_type
+        RENAME CONSTRAINT order_change_type_entity_id_fk
+                       TO order_change_type_fk_order_entity;
+        </sql>
+
+        <createIndex tableName = "order_change_type"
+                     indexName = "order_change_type_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_line
+        RENAME CONSTRAINT order_line_fk_1
+                       TO order_line_fk_item;
+
+              ALTER TABLE order_line
+        RENAME CONSTRAINT order_line_fk_2
+                       TO order_line_fk_purchase_order;
+
+              ALTER TABLE order_line
+        RENAME CONSTRAINT order_line_fk_3
+                       TO order_line_fk_order_line_type;
+
+              ALTER TABLE order_line
+        RENAME CONSTRAINT order_line_parent_line_id_fk
+                       TO order_line_fk_parent_line;
+
+        ALTER INDEX order_line_fk_order
+          RENAME TO order_line_fk_purchase_order;
+        </sql>
+
+        <createIndex tableName = "order_line"
+                     indexName = "order_line_fk_order_line_type">
+            <column name = "type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_period" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_period
+        RENAME CONSTRAINT order_period_fk_1
+                       TO order_period_fk_entity;
+
+              ALTER TABLE order_period
+        RENAME CONSTRAINT order_period_fk_2
+                       TO order_period_fk_period_unit;
+        </sql>
+
+        <createIndex tableName = "order_period"
+                     indexName = "order_period_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_period"
+                     indexName = "order_period_fk_period_unit">
+            <column name = "unit_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_process" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_process
+        RENAME CONSTRAINT order_process_fk_1
+                       TO order_process_fk_purchase_order;
+        </sql>
+
+        <createIndex tableName = "order_process"
+                     indexName = "order_process_fk_purchase_order">
+            <column name = "order_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_process"
+                     indexName = "order_process_fk_billing_process">
+            <column name = "billing_process_id" />
+        </createIndex>
+
+        <createIndex tableName = "order_process"
+                     indexName = "order_process_fk_invoice">
+            <column name = "invoice_id" />
+        </createIndex>
+
+<!-- Remove bad data (references to non-existent billing_process parents)
+ Key (billing_process_id)=(22) is not present in table "billing_process".
+-->
+        <sql>
+        DELETE FROM order_process
+              WHERE billing_process_id NOT IN (SELECT id FROM billing_process);
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "order_process_fk_billing_process"
+                                 baseTableName          = "order_process"
+                                 referencedTableName    = "billing_process"
+                                 baseColumnNames        = "billing_process_id"
+                                 referencedColumnNames  = "id" />
+
+<!-- Remove bad data (references to non-existent invoice parents)
+ Key (invoice_id)=(25) is not present in table "invoice".
+-->
+
+        <sql>
+        DELETE FROM order_process
+              WHERE invoice_id IN (select invoice_id from order_process except select id from invoice);
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "order_process_fk_invoice"
+                                 baseTableName          = "order_process"
+                                 referencedTableName    = "invoice"
+                                 baseColumnNames        = "invoice_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_status" author = "Igor Poteryaev">
+
+        <createIndex tableName = "order_status"
+                     indexName = "order_status_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "order_status_fk_entity"
+                                 baseTableName          = "order_status"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner
+        RENAME CONSTRAINT partner_fk_4
+                       TO partner_fk_user;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_commission
+        RENAME CONSTRAINT partner_commission_pk
+                       TO partner_commission_pkey;
+
+              ALTER TABLE partner_commission
+        RENAME CONSTRAINT "partner_commission_currency_id_FK"
+                       TO partner_commission_fk_currency;
+        </sql>
+
+        <createIndex tableName = "partner_commission"
+                     indexName = "partner_commission_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+
+        <createIndex tableName = "partner_commission"
+                     indexName = "partner_commission_fk_partner">
+            <column name = "partner_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_fk_partner"
+                                 baseTableName          = "partner_commission"
+                                 referencedTableName    = "partner"
+                                 baseColumnNames        = "partner_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission_exception" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "partner_commission_exception"
+                       columnNames  = "id" />
+
+        <createIndex tableName = "partner_commission_exception"
+                     indexName = "partner_commission_exception_fk_partner">
+            <column name = "partner_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_exception_fk_partner"
+                                 baseTableName          = "partner_commission_exception"
+                                 referencedTableName    = "partner"
+                                 baseColumnNames        = "partner_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "partner_commission_exception"
+                     indexName = "partner_commission_exception_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_exception_fk_item"
+                                 baseTableName          = "partner_commission_exception"
+                                 referencedTableName    = "item"
+                                 baseColumnNames        = "item_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission_line" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commission_line_pk
+                       TO partner_commission_line_pkey;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commissn_lne_fk_comms
+                       TO partner_commission_line_fk_partner_commission;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commissn_lne_fk_invce
+                       TO partner_commission_line_fk_invoice;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commissn_lne_fk_prcss
+                       TO partner_commission_line_fk_partner_commission_process_run;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commissn_lne_fk_prtnr
+                       TO partner_commission_line_fk_partner;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT partner_commissn_lne_fk_rfrl
+                       TO partner_commission_line_fk_referral_partner;
+
+              ALTER TABLE partner_commission_line
+        RENAME CONSTRAINT prtnr_cmm_lne_fk_prtnr_cmm_lne
+                       TO partner_commission_line_fk_partner_commission_line;
+
+        ALTER INDEX partner_commissn_lne_fk_comms
+          RENAME TO partner_commission_line_fk_partner_commission;
+
+        ALTER INDEX partner_commissn_lne_fk_invce
+          RENAME TO partner_commission_line_fk_invoice;
+
+        ALTER INDEX partner_commissn_lne_fk_prcss
+          RENAME TO partner_commission_line_fk_partner_commission_process_run;
+
+        ALTER INDEX partner_commissn_lne_fk_prtnr
+          RENAME TO partner_commission_line_fk_partner;
+
+        ALTER INDEX partner_commissn_lne_fk_rfrl
+          RENAME TO partner_commission_line_fk_referral_partner;
+
+        ALTER INDEX prtnr_cmm_lne_fk_prtnr_cmm_lne
+          RENAME TO partner_commission_line_fk_partner_commission_line;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission_proc_config" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "partner_commission_proc_config"
+                       columnNames  = "id" />
+
+        <createIndex tableName = "partner_commission_proc_config"
+                     indexName = "partner_commission_proc_config_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_proc_config_fk_entity"
+                                 baseTableName          = "partner_commission_proc_config"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "partner_commission_proc_config"
+                     indexName = "partner_commission_proc_config_fk_period_unit">
+            <column name = "period_unit_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_proc_config_fk_period_unit"
+                                 baseTableName          = "partner_commission_proc_config"
+                                 referencedTableName    = "period_unit"
+                                 baseColumnNames        = "period_unit_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission_process_run" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_commission_process_run
+        RENAME CONSTRAINT partner_commission_process_run_pk
+                       TO partner_commission_process_run_pkey;
+        </sql>
+
+        <createIndex tableName = "partner_commission_process_run"
+                     indexName = "partner_commission_process_run_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_commission_process_run_fk_entity"
+                                 baseTableName          = "partner_commission_process_run"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_commission_value" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_commission_value
+        RENAME CONSTRAINT prtnr_commissn_val_fk_prtnr
+                       TO partner_commission_value_fk_partner;
+
+        ALTER INDEX prtnr_commissn_val_fk_prtnr
+          RENAME TO partner_commission_value_fk_partner;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_payout" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_payout
+        RENAME CONSTRAINT partner_payout_fk_1
+                       TO partner_payout_fk_partner;
+        </sql>
+
+        <createIndex tableName = "partner_payout"
+                     indexName = "partner_payout_fk_partner">
+            <column name = "partner_id" />
+        </createIndex>
+
+        <createIndex tableName = "partner_payout"
+                     indexName = "partner_payout_fk_payment">
+            <column name = "payment_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_payout_fk_payment"
+                                 baseTableName          = "partner_payout"
+                                 referencedTableName    = "payment"
+                                 baseColumnNames        = "payment_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_referral_commission" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "partner_referral_commission"
+                       columnNames  = "id" />
+
+        <createIndex tableName = "partner_referral_commission"
+                     indexName = "partner_referral_commission_fk_referral">
+            <column name = "referral_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_referral_commission_fk_referral"
+                                 baseTableName          = "partner_referral_commission"
+                                 referencedTableName    = "partner"
+                                 baseColumnNames        = "referral_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "partner_referral_commission"
+                     indexName = "partner_referral_commission_fk_referrer">
+            <column name = "referrer_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "partner_referral_commission_fk_referrer"
+                                 baseTableName          = "partner_referral_commission"
+                                 referencedTableName    = "partner"
+                                 baseColumnNames        = "referrer_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment
+        RENAME CONSTRAINT payment_fk_2
+                       TO payment_fk_currency;
+
+              ALTER TABLE payment
+        RENAME CONSTRAINT payment_fk_3
+                       TO payment_fk_payment;
+
+              ALTER TABLE payment
+        RENAME CONSTRAINT payment_fk_5
+                       TO payment_fk_payment_result;
+
+              ALTER TABLE payment
+        RENAME CONSTRAINT payment_fk_6
+                       TO payment_fk_payment_method;
+
+              ALTER TABLE payment
+        RENAME CONSTRAINT payment_fk_7
+                       TO payment_fk_payment_information;
+
+        ALTER INDEX payment_i_2
+          RENAME TO payment_idx_user_create_datetime;
+
+        ALTER INDEX payment_i_3
+          RENAME TO payment_idx_user_balance;
+        </sql>
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_payment">
+            <column name = "payment_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_payment_result">
+            <column name = "result_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_payment_method">
+            <column name = "method_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_payment_information">
+            <column name = "credit_card_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "payment_fk_user"
+                                 baseTableName          = "payment"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "payment"
+                     indexName = "payment_fk_partner_payout">
+            <column name = "payout_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "payment_fk_partner_payout"
+                                 baseTableName          = "payment"
+                                 referencedTableName    = "partner_payout"
+                                 baseColumnNames        = "payout_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_authorization" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_authorization
+        RENAME CONSTRAINT payment_authorization_fk_1
+                       TO payment_authorization_fk_payment;
+
+        ALTER INDEX create_datetime
+          RENAME TO payment_authorization_idx_create_datetime;
+
+        ALTER INDEX transaction_id
+          RENAME TO payment_authorization_idx_transaction;
+        </sql>
+
+        <createIndex tableName = "payment_authorization"
+                     indexName = "payment_authorization_fk_payment">
+            <column name = "payment_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_commission" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "payment_commission"
+                       columnNames  = "id" />
+
+        <createIndex tableName = "payment_commission"
+                     indexName = "payment_commission_fk_invoice">
+            <column name = "invoice_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "payment_commission_fk_invoice"
+                                 baseTableName          = "payment_commission"
+                                 referencedTableName    = "invoice"
+                                 baseColumnNames        = "invoice_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_information" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_information
+        RENAME CONSTRAINT "payment_information_FK1"
+                       TO payment_information_fk_user;
+
+              ALTER TABLE payment_information
+        RENAME CONSTRAINT "payment_information_FK2"
+                       TO payment_information_fk_payment_method_type;
+        </sql>
+
+        <createIndex tableName = "payment_information"
+                     indexName = "payment_information_fk_payment_method_type">
+            <column name = "payment_method_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_instrument_info" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_instrument_info
+        RENAME CONSTRAINT "payment_instrument_info_FK1"
+                       TO payment_instrument_info_fk_payment_result;
+
+              ALTER TABLE payment_instrument_info
+        RENAME CONSTRAINT "payment_instrument_info_FK2"
+                       TO payment_instrument_info_fk_payment_method;
+
+              ALTER TABLE payment_instrument_info
+        RENAME CONSTRAINT "payment_instrument_info_FK3"
+                       TO payment_instrument_info_fk_payment_information;
+
+              ALTER TABLE payment_instrument_info
+        RENAME CONSTRAINT "payment_instrument_info_FK4"
+                       TO payment_instrument_info_fk_payment;
+        </sql>
+
+        <createIndex tableName = "payment_instrument_info"
+                     indexName = "payment_instrument_info_fk_payment_result">
+            <column name = "result_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment_instrument_info"
+                     indexName = "payment_instrument_info_fk_payment_method">
+            <column name = "method_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment_instrument_info"
+                     indexName = "payment_instrument_info_fk_payment_information">
+            <column name = "instrument_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_method_template" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_method_template
+        RENAME CONSTRAINT payment_method_template_template_name_key
+                       TO payment_method_template_uq_template_name;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_method_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_method_type
+        RENAME CONSTRAINT "payment_method_type_FK1"
+                       TO payment_method_type_fk_entity;
+
+              ALTER TABLE payment_method_type
+        RENAME CONSTRAINT "payment_method_type_FK2"
+                       TO payment_method_type_fk_payment_method_template;
+        </sql>
+
+        <createIndex tableName = "payment_method_type"
+                     indexName = "payment_method_type_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "payment_method_type"
+                     indexName = "payment_method_type_fk_payment_method_template">
+            <column name = "template_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_process_run" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_process_run
+        RENAME CONSTRAINT pk_payment_process_run
+                       TO payment_process_run_pkey;
+
+              ALTER TABLE payment_process_run
+        RENAME CONSTRAINT "billing_process_id_FK"
+                       TO payment_process_run_fk_billing_process;
+        </sql>
+
+        <createIndex tableName = "payment_process_run"
+                     indexName = "payment_process_run_fk_billing_process">
+            <column name = "billing_process_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_processor_unavailable" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_processor_unavailable
+        RENAME CONSTRAINT pk_payment_processor_unavailable
+                       TO payment_processor_unavailable_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_transfer" author = "Igor Poteryaev">
+
+        <createIndex tableName = "payment_transfer"
+                     indexName = "payment_transfer_fk_payment">
+            <column name = "payment_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "payment_transfer_fk_payment"
+                                 baseTableName          = "payment_transfer"
+                                 referencedTableName    = "payment"
+                                 baseColumnNames        = "payment_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - paypal_ipn" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "paypal_ipn"
+                       columnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - permission" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE permission
+        RENAME CONSTRAINT permission_fk_1
+                       TO permission_fk_permission_type;
+
+              ALTER TABLE permission
+        RENAME CONSTRAINT permission_required_to_assign_permission_fk
+                       TO permission_fk_required_to_assign_permission;
+        </sql>
+
+        <createIndex tableName = "permission"
+                     indexName = "permission_fk_permission_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <createIndex tableName = "permission"
+                     indexName = "permission_fk_required_to_assign_permission">
+            <column name = "required_to_assign_permission_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan
+        RENAME CONSTRAINT plan_item_id_fk
+                       TO plan_fk_item;
+
+              ALTER TABLE plan
+        RENAME CONSTRAINT plan_period_id_fk
+                       TO plan_fk_order_period;
+        </sql>
+
+        <createIndex tableName = "plan"
+                     indexName = "plan_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "plan"
+                     indexName = "plan_fk_order_period">
+            <column name = "period_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan_item" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan_item
+        RENAME CONSTRAINT plan_item_bundle_id_fk
+                       TO plan_item_fk_plan_item_bundle;
+
+              ALTER TABLE plan_item
+        RENAME CONSTRAINT plan_item_item_id_fk
+                       TO plan_item_fk_item;
+
+              ALTER TABLE plan_item
+        RENAME CONSTRAINT plan_item_plan_id_fk
+                       TO plan_item_fk_plan;
+
+        ALTER INDEX plan_item_item_id_i
+          RENAME TO plan_item_idx_precedence;
+        </sql>
+
+        <createIndex tableName = "plan_item"
+                     indexName = "plan_item_fk_plan_item_bundle">
+            <column name = "plan_item_bundle_id" />
+        </createIndex>
+
+        <createIndex tableName = "plan_item"
+                     indexName = "plan_item_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <createIndex tableName = "plan_item"
+                     indexName = "plan_item_fk_plan">
+            <column name = "plan_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan_item_bundle" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan_item_bundle
+        RENAME CONSTRAINT plan_item_bundle_period_fk
+                       TO plan_item_bundle_fk_order_period;
+        </sql>
+
+        <createIndex tableName = "plan_item_bundle"
+                     indexName = "plan_item_bundle_fk_order_period">
+            <column name = "period_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan_item_price_timeline" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan_item_price_timeline
+        RENAME CONSTRAINT plan_itm_timelin_plan_itm_fk
+                       TO plan_item_price_timeline_fk_plan_item;
+
+              ALTER TABLE plan_item_price_timeline
+        RENAME CONSTRAINT plnitmtimelnprc_mode_fk
+                       TO plan_item_price_timeline_fk_price_model;
+        </sql>
+
+        <createIndex tableName = "plan_item_price_timeline"
+                     indexName = "plan_item_price_timeline_fk_price_model">
+            <column name = "price_model_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pluggable_task" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pluggable_task
+        RENAME CONSTRAINT pluggable_task_fk_1
+                       TO pluggable_task_fk_pluggable_task_type;
+
+              ALTER TABLE pluggable_task
+        RENAME CONSTRAINT pluggable_task_fk_2
+                       TO pluggable_task_fk_entity;
+        </sql>
+
+        <createIndex tableName = "pluggable_task"
+                     indexName = "pluggable_task_fk_pluggable_task_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <createIndex tableName = "pluggable_task"
+                     indexName = "pluggable_task_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pluggable_task_parameter" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pluggable_task_parameter
+        RENAME CONSTRAINT pluggable_task_parameter_fk_1
+                       TO pluggable_task_parameter_fk_pluggable_task;
+        </sql>
+
+        <createIndex tableName = "pluggable_task_parameter"
+                     indexName = "pluggable_task_parameter_fk_pluggable_task">
+            <column name = "task_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pluggable_task_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pluggable_task_type
+        RENAME CONSTRAINT pluggable_task_type_fk_1
+                       TO pluggable_task_type_fk_pluggable_task_type_category;
+        </sql>
+
+        <createIndex tableName = "pluggable_task_type"
+                     indexName = "pluggable_task_type_fk_pluggable_task_type_category">
+            <column name = "category_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pluggable_task_type_category" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pluggable_task_type_category
+        RENAME CONSTRAINT pluggable_task_type_cat_pkey
+                       TO pluggable_task_type_category_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pre_evaluated_sql" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pre_evaluated_sql
+        RENAME CONSTRAINT pk_pre_evaluated_sql
+                       TO pre_evaluated_sql_pkey;
+
+              ALTER TABLE pre_evaluated_sql
+        RENAME CONSTRAINT pre_evaluated_sql_query_code_key
+                       TO pre_evaluated_sql_uq_query_code;
+
+              ALTER TABLE pre_evaluated_sql
+        RENAME CONSTRAINT pre_evaluated_sql_sql_query_key
+                       TO pre_evaluated_sql_uq_sql_query;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - pre_evaluated_sql_parameter" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE pre_evaluated_sql_parameter
+        RENAME CONSTRAINT pk_pre_evaluated_sql_parameter
+                       TO pre_evaluated_sql_parameter_pkey;
+
+              ALTER TABLE pre_evaluated_sql_parameter
+        RENAME CONSTRAINT pre_evaluated_sql_parameter_fk_1
+                       TO pre_evaluated_sql_parameter_fk_pre_evaluated_sql;
+
+              ALTER TABLE pre_evaluated_sql_parameter
+        RENAME CONSTRAINT parameter_name_pre_evaluated_sql_id
+                       TO pre_evaluated_sql_parameter_uq_parameter_name_pre_evaluated_sql;
+        </sql>
+
+        <createIndex tableName = "pre_evaluated_sql_parameter"
+                     indexName = "pre_evaluated_sql_parameter_fk_pre_evaluated_sql">
+            <column name = "pre_evaluated_sql_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - preference" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE preference
+        RENAME CONSTRAINT preference_fk_1
+                       TO preference_fk_preference_type;
+
+              ALTER TABLE preference
+        RENAME CONSTRAINT preference_fk_2
+                       TO preference_fk_jbilling_table;
+        </sql>
+
+        <createIndex tableName = "preference"
+                     indexName = "preference_fk_preference_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <createIndex tableName = "preference"
+                     indexName = "preference_fk_jbilling_table">
+            <column name = "table_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - preference_type" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE preference_type
+        RENAME CONSTRAINT preference_type_vr_fk_1
+                       TO preference_type_fk_validation_rule;
+        </sql>
+
+        <createIndex tableName = "preference_type"
+                     indexName = "preference_type_fk_validation_rule">
+            <column name = "validation_rule_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - price_model" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE price_model
+        RENAME CONSTRAINT price_model_company_id_fk
+                       TO price_model_fk_entity;
+
+              ALTER TABLE price_model
+        RENAME CONSTRAINT price_model_currency_id_fk
+                       TO price_model_fk_currency;
+
+              ALTER TABLE price_model
+        RENAME CONSTRAINT price_model_next_id_fk
+                       TO price_model_fk_next_model;
+        </sql>
+
+        <createIndex tableName = "price_model"
+                     indexName = "price_model_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "price_model"
+                     indexName = "price_model_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "price_model"
+                     indexName = "price_model_fk_next_model">
+            <column name = "next_model_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - price_model_attribute" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE price_model_attribute
+        RENAME CONSTRAINT price_model_attr_model_id_fk
+                       TO price_model_attribute_fk_price_model;
+        </sql>
+
+        <createIndex tableName = "price_model_attribute"
+                     indexName = "price_model_attribute_fk_price_model">
+            <column name = "price_model_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - process_run" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE process_run
+        RENAME CONSTRAINT process_run_fk_1
+                       TO process_run_fk_billing_process;
+
+              ALTER TABLE process_run
+        RENAME CONSTRAINT process_run_fk_2
+                       TO process_run_fk_status;
+        </sql>
+
+        <createIndex tableName = "process_run"
+                     indexName = "process_run_fk_status">
+            <column name = "status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - process_run_total" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE process_run_total
+        RENAME CONSTRAINT process_run_total_fk_1
+                       TO process_run_total_fk_currency;
+
+              ALTER TABLE process_run_total
+        RENAME CONSTRAINT process_run_total_fk_2
+                       TO process_run_total_fk_process_run;
+        </sql>
+
+        <createIndex tableName = "process_run_total"
+                     indexName = "process_run_total_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "process_run_total"
+                     indexName = "process_run_total_fk_process_run">
+            <column name = "process_run_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - process_run_total_pm" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE process_run_total_pm
+        RENAME CONSTRAINT process_run_total_pm_fk_1
+                       TO process_run_total_pm_fk_payment_method;
+
+        ALTER INDEX bp_pm_index_total
+          RENAME TO process_run_total_pm_fk_process_run_total;
+        </sql>
+
+        <createIndex tableName = "process_run_total_pm"
+                     indexName = "process_run_total_pm_fk_payment_method">
+            <column name = "payment_method_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "process_run_total_pm_fk_process_run_total"
+                                 baseTableName          = "process_run_total_pm"
+                                 referencedTableName    = "process_run_total"
+                                 baseColumnNames        = "process_run_total_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - process_run_user" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE process_run_user
+        RENAME CONSTRAINT process_run_user_fk_1
+                       TO process_run_user_fk_process_run;
+
+              ALTER TABLE process_run_user
+        RENAME CONSTRAINT process_run_user_fk_2
+                       TO process_run_user_fk_user;
+
+        DROP INDEX process_run_user_fk_user;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - promotion" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE promotion
+        RENAME CONSTRAINT promotion_fk_1
+                       TO promotion_fk_item;
+                       
+        ALTER INDEX ix_promotion_code
+          RENAME TO promotion_idx_code;
+        </sql>
+
+        <createIndex tableName = "promotion"
+                     indexName = "promotion_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - provisioning_command" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE provisioning_command
+        RENAME CONSTRAINT entity_provisioning_command_fk_1
+                       TO provisioning_command_fk_entity;
+
+        ALTER INDEX ix_entity_id
+          RENAME TO provisioning_command_fk_entity;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - provisioning_command_parameter_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE provisioning_command_parameter_map
+        RENAME CONSTRAINT provisioning_command_parameter_fk_1
+                       TO provisioning_command_parameter_map_fk_provisioning_command;
+        </sql>
+
+        <addPrimaryKey tableName    = "provisioning_command_parameter_map"
+                       columnNames  = "provisioning_command_id, parameter_name" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - provisioning_request" author = "Igor Poteryaev">
+        <sql>
+        ALTER INDEX ix_command_id
+          RENAME TO provisioning_request_fk_provisioning_command;
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "provisioning_request_fk_provisioning_command"
+                                 baseTableName          = "provisioning_request"
+                                 referencedTableName    = "provisioning_command"
+                                 baseColumnNames        = "command_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - provisioning_request_result_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE provisioning_request_result_map
+        RENAME CONSTRAINT provisioning_request_result_fk_1
+                       TO provisioning_request_result_map_fk_provisioning_request;
+        </sql>
+
+        <addPrimaryKey tableName    = "provisioning_request_result_map"
+                       columnNames  = "provisioning_request_id, result_parameter_name" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - purchase_order" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT order_primary_order_fk_1
+                       TO purchase_order_fk_primary_order;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_fk_1
+                       TO purchase_order_fk_currency;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_fk_2
+                       TO purchase_order_fk_order_billing_type;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_fk_3
+                       TO purchase_order_fk_order_period;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_fk_4
+                       TO purchase_order_fk_user;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_fk_5
+                       TO purchase_order_fk_created_by;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT purchase_order_parent__order_id_fk
+                       TO purchase_order_fk_parent_order;
+
+              ALTER TABLE purchase_order
+        RENAME CONSTRAINT "purchase_order_statusId_fk"
+                       TO purchase_order_fk_order_status;
+
+        ALTER INDEX ix_purchase_order_date
+          RENAME TO purchase_order_idx_user_create_datetime;
+
+        ALTER INDEX purchase_order_fk_parent
+          RENAME TO purchase_order_fk_parent_order;
+
+        ALTER INDEX purchase_order_i_notif
+          RENAME TO purchase_order_idx_active_until_notification_step;
+
+        ALTER INDEX purchase_order_i_user
+          RENAME TO purchase_order_idx_user_deleted;
+        </sql>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_primary_order">
+            <column name = "primary_order_id" />
+        </createIndex>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_currency">
+            <column name = "currency_id" />
+        </createIndex>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_order_billing_type">
+            <column name = "billing_type_id" />
+        </createIndex>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_order_period">
+            <column name = "period_id" />
+        </createIndex>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_created_by">
+            <column name = "created_by" />
+        </createIndex>
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_order_status">
+            <column name = "status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - rate_card" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rate_card
+        RENAME CONSTRAINT rate_card_entity_id_fk
+                       TO rate_card_fk_entity;
+
+              ALTER TABLE rate_card
+        RENAME CONSTRAINT rate_card_table_name_key
+                       TO rate_card_uq_table_name;
+        </sql>
+
+        <createIndex tableName = "rate_card"
+                     indexName = "rate_card_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - rating_scheme" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rating_scheme
+        RENAME CONSTRAINT "rating_cheme_entity_FK"
+                       TO rating_scheme_fk_entity;
+        </sql>
+
+        <createIndex tableName = "rating_scheme"
+                     indexName = "rating_scheme_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - rating_scheme_association" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rating_scheme_association
+        RENAME CONSTRAINT "rating_scheme_FK"
+                       TO rating_scheme_association_fk_rating_scheme;
+        </sql>
+
+        <createIndex tableName = "rating_scheme_association"
+                     indexName = "rating_scheme_association_fk_rating_scheme">
+            <column name = "rating_scheme" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - rating_unit" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rating_unit
+        RENAME CONSTRAINT pk_rating_unit
+                       TO rating_unit_pkey;
+
+              ALTER TABLE rating_unit
+        RENAME CONSTRAINT "rating_unit_entity_id_FK"
+                       TO rating_unit_fk_entity;
+        </sql>
+
+        <createIndex tableName = "rating_unit"
+                     indexName = "rating_unit_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - report" author = "Igor Poteryaev">
+
+        <createIndex tableName = "report"
+                     indexName = "report_fk_report_type">
+            <column name = "type_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "report_fk_report_type"
+                                 baseTableName          = "report"
+                                 referencedTableName    = "report_type"
+                                 baseColumnNames        = "type_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - report_parameter" author = "Igor Poteryaev">
+
+        <createIndex tableName = "report_parameter"
+                     indexName = "report_parameter_fk_report">
+            <column name = "report_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "report_parameter_fk_report"
+                                 baseTableName          = "report_parameter"
+                                 referencedTableName    = "report"
+                                 baseColumnNames        = "report_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - reseller_entityid_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE reseller_entityid_map
+        RENAME CONSTRAINT reseller_entityid_map_fk_1
+                       TO reseller_entityid_map_fk_entity;
+
+              ALTER TABLE reseller_entityid_map
+        RENAME CONSTRAINT reseller_entityid_map_fk_2
+                       TO reseller_entityid_map_fk_user;
+
+        DROP INDEX reseller_entityid_map_fk_entity;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - reserved_amounts" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE reserved_amounts
+        RENAME CONSTRAINT fk_reservations_session
+                       TO reserved_amounts_fk_charge_sessions;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - reset_password_code" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE reset_password_code
+        RENAME CONSTRAINT reset_password_code_base_user_id_key
+                       TO reset_password_code_uq_user;
+
+              ALTER TABLE reset_password_code
+        RENAME CONSTRAINT token_unique
+                       TO reset_password_code_uq_token;
+        </sql>
+
+        <addPrimaryKey tableName    = "reset_password_code"
+                       columnNames  = "id" />
+
+        <addForeignKeyConstraint constraintName         = "reset_password_code_fk_user"
+                                 baseTableName          = "reset_password_code"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "base_user_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - role" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE role
+        RENAME CONSTRAINT role_entity_id_fk
+                       TO role_fk_entity;
+
+              ALTER TABLE role
+        RENAME CONSTRAINT role_parent_role_id_fk
+                       TO role_fk_parent_role;
+
+              ALTER TABLE role
+        RENAME CONSTRAINT role_required_to_create_user_permission_id_fk
+                       TO role_fk_create_user_permission;
+
+              ALTER TABLE role
+        RENAME CONSTRAINT role_required_to_modify_permission_id_fk
+                       TO role_fk_modify_permission;
+        </sql>
+
+        <createIndex tableName = "role"
+                     indexName = "role_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "role"
+                     indexName = "role_fk_parent_role">
+            <column name = "parent_role_id" />
+        </createIndex>
+
+        <createIndex tableName = "role"
+                     indexName = "role_fk_create_user_permission">
+            <column name = "required_to_create_user_permission_id" />
+        </createIndex>
+
+        <createIndex tableName = "role"
+                     indexName = "role_fk_modify_permission">
+            <column name = "required_to_modify_permission_id" />
+        </createIndex>
+
+        <!-- route -->
+
+        <createIndex tableName = "route"
+                     indexName = "route_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "route_fk_entity"
+                                 baseTableName          = "route"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - route_rate_card" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE route_rate_card
+        RENAME CONSTRAINT route_rate_card_rating_unit_id
+                       TO route_rate_card_fk_rating_unit;
+        </sql>
+
+        <createIndex tableName = "route_rate_card"
+                     indexName = "route_rate_card_fk_rating_unit">
+            <column name = "rating_unit_id" />
+        </createIndex>
+
+        <createIndex tableName = "route_rate_card"
+                     indexName = "route_rate_card_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "route_rate_card_fk_entity"
+                                 baseTableName          = "route_rate_card"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - shortcut" author = "Igor Poteryaev">
+
+        <createIndex tableName = "shortcut"
+                     indexName = "shortcut_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "shortcut_fk_user"
+                                 baseTableName          = "shortcut"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - tab" author = "Igor Poteryaev">
+
+        <createIndex tableName = "tab"
+                     indexName = "tab_fk_parent_tab">
+            <column name = "parent_tab_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "tab_fk_parent_tab"
+                                 baseTableName          = "tab"
+                                 referencedTableName    = "tab"
+                                 baseColumnNames        = "parent_tab_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - tab_configuration" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE tab_configuration
+        RENAME CONSTRAINT tab_configuration_fk_1
+                       TO tab_configuration_fk_user;
+        </sql>
+
+        <createIndex tableName = "tab_configuration"
+                     indexName = "tab_configuration_fk_user">
+            <column name = "user_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - tab_configuration_tab" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE tab_configuration_tab
+        RENAME CONSTRAINT tab_configuration_tab_fk_1
+                       TO tab_configuration_tab_fk_tab;
+
+              ALTER TABLE tab_configuration_tab
+        RENAME CONSTRAINT tab_configuration_tab_fk_2
+                       TO tab_configuration_tab_fk_tab_configuration;
+        </sql>
+
+        <createIndex tableName = "tab_configuration_tab"
+                     indexName = "tab_configuration_tab_fk_tab">
+            <column name = "tab_id" />
+        </createIndex>
+
+        <createIndex tableName = "tab_configuration_tab"
+                     indexName = "tab_configuration_tab_fk_tab_configuration">
+            <column name = "tab_configuration_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool
+        RENAME CONSTRAINT usage_pool_entity_id_fk
+                       TO usage_pool_fk_entity;
+        </sql>
+
+        <createIndex tableName = "usage_pool"
+                     indexName = "usage_pool_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_attribute" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_attribute
+        RENAME CONSTRAINT usage_pool_attr_pool_id_fk
+                       TO usage_pool_attribute_fk_usage_pool;
+        </sql>
+
+        <addPrimaryKey tableName    = "usage_pool_attribute"
+                       columnNames  = "usage_pool_id, attribute_name" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_consumption_action" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_consumption_action
+        RENAME CONSTRAINT usage_pool_con_action_pkey
+                       TO usage_pool_consumption_action_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_consumption_actions" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_consumption_actions
+        RENAME CONSTRAINT usage_pool_consumption_actions_fk
+                       TO usage_pool_consumption_actions_fk_usage_pool;
+        </sql>
+
+        <createIndex tableName = "usage_pool_consumption_actions"
+                     indexName = "usage_pool_consumption_actions_fk_usage_pool">
+            <column name = "usage_pool_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_consumption_log" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_consumption_log
+        RENAME CONSTRAINT usage_pool_consumption_log_fk
+                       TO usage_pool_consumption_log_fk_customer_usage_pool_map;
+        </sql>
+
+        <createIndex tableName = "usage_pool_consumption_log"
+                     indexName = "usage_pool_consumption_log_fk_customer_usage_pool_map">
+            <column name = "customer_usage_pool_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - user_code_link" author = "Igor Poteryaev">
+
+        <createIndex tableName = "user_code_link"
+                     indexName = "user_code_link_fk_user_code">
+            <column name = "user_code_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "user_code_link_fk_user_code"
+                                 baseTableName          = "user_code_link"
+                                 referencedTableName    = "user_code"
+                                 baseColumnNames        = "user_code_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - user_password_map" author = "Igor Poteryaev">
+
+        <createIndex tableName = "user_password_map"
+                     indexName = "user_password_map_fk_user">
+            <column name = "base_user_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "user_password_map_fk_user"
+                                 baseTableName          = "user_password_map"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "base_user_id"
+                                 referencedColumnNames  = "id" />
+
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - fix bad data in validation_rule_attributes" author = "Igor Poteryaev">
+
+        <preConditions onFail = "MARK_RAN">
+            <sqlCheck expectedResult = "2">
+            SELECT COUNT(*)
+              FROM validation_rule_attributes
+             WHERE validation_rule_id = 3
+            </sqlCheck>
+        </preConditions>
+        <sql>
+        DELETE FROM validation_rule_attributes
+              WHERE validation_rule_id = 3;
+        INSERT INTO validation_rule_attributes
+                    (validation_rule_id, attribute_name, attribute_value)
+             VALUES (                 3, 'validationScript',
+                '_this.value ==~ /[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})/'
+                );
+        </sql>
+        <comment>validation_rule_attributes test data contains duplicates. we remove duplicate.</comment>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - validation_rule_attributes" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE validation_rule_attributes
+        RENAME CONSTRAINT validation_rule_fk_2
+                       TO validation_rule_attributes_fk_validation_rule;
+        </sql>
+
+        <addPrimaryKey tableName    = "validation_rule_attributes"
+                       columnNames  = "validation_rule_id, attribute_name" />
+    </changeSet>
+
+</databaseChangeLog>

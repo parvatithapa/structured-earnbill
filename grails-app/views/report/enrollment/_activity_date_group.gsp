@@ -1,0 +1,8 @@
+<%--
+  Parameters for the Activity by Date, Product Group report.
+
+  @author Leandro Bagur
+  @since  07-Jun-2017
+--%>
+
+<g:render template="enrollment/activity_full"></g:render>

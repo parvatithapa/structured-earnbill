@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.7.xml">
+
+	   <changeSet id="JB-515 Configurable Timezone Support" author="Pablo Galera" context="base">
+        <addColumn tableName="entity">
+            <column name="timezone" type="java.sql.Types.VARCHAR(40)" defaultValue="UTC">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+ 	   </changeSet>
+    
+	<changeSet id="JBAMA-24 Added New Credit Card Payment Method For EP2 GateWay" author="Krunal Bhavsar" context="test">
+
+		<insert tableName="payment_method_type">
+			<column name="id" valueComputed="(coalesce((select max(mn.id)+1 from meta_field_name mn), 1))" />
+			<column name="method_name" value="EP2 Gateway Token" />
+			<column name="is_recurring" valueBoolean="true" />
+			<column name="entity_id" valueComputed="(select min(e.id) from entity e)" />
+			<column name="template_id" valueComputed="(select min(t.id) from payment_method_template t where t.template_name = 'Payment Card')" />
+			<column name="optlock" valueNumeric="1" />
+		</insert>
+
+		<insert tableName="validation_rule">
+			<column name="id" valueComputed="(select max(t.id)+10 from validation_rule t)" />
+			<column name="rule_type" value="REGEX" />
+			<column name="enabled" valueBoolean="true" />
+			<column name="optlock" valueNumeric="0" />
+		</insert>
+
+		<insert tableName="meta_field_name">
+			<column name="id" valueComputed="(coalesce((select max(mn.id)+1 from meta_field_name mn), 1))" />
+			<column name="name" value="cc.expiry.date" />
+			<column name="entity_type" value="PAYMENT_METHOD_TYPE" />
+			<column name="data_type" value="CHAR" />
+			<column name="is_disabled" valueBoolean="false" />
+			<column name="is_mandatory" valueBoolean="false" />
+			<column name="is_primary" valueBoolean="true" />
+			<column name="display_order" valueNumeric="3" />
+			<column name="default_value_id" />
+			<column name="optlock" valueNumeric="0" />
+			<column name="entity_id" valueComputed="(select min(id) from entity)" />
+			<column name="field_usage" value="DATE" />
+			<column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)" />
+		</insert>
+
+		<insert tableName="validation_rule_attributes">
+			<column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)" />
+			<column name="attribute_name" value="regularExpression" />
+			<column name="attribute_value" value="(?:0[1-9]|1[0-2])/[0-9]{4}" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)" />
+			<column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')" />
+			<column name="psudo_column" value="errorMessage" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Expiry date should be in format MM/yyyy" />
+		</insert>
+
+		<insert tableName="payment_method_meta_fields_map">
+			<column name="payment_method_id" valueComputed="(select max(t.id) from payment_method_type t)" />
+			<column name="meta_field_id" valueComputed="(select max(t.id) from meta_field_name t)" />
+		</insert>
+
+		<insert tableName="meta_field_name">
+			<column name="id" valueComputed="(coalesce((select max(mn.id)+1 from meta_field_name mn), 1))" />
+			<column name="name" value="cc.token.id" />
+			<column name="entity_type" value="PAYMENT_METHOD_TYPE" />
+			<column name="data_type" value="CHAR" />
+			<column name="is_disabled" valueBoolean="true" />
+			<column name="is_mandatory" valueBoolean="true" />
+			<column name="is_primary" valueBoolean="true" />
+			<column name="display_order" valueNumeric="4" />
+			<column name="default_value_id" />
+			<column name="optlock" valueNumeric="0" />
+			<column name="entity_id" valueComputed="(select min(id) from entity)" />
+			<column name="field_usage" value="GATEWAY_KEY" />
+			<column name="validation_rule_id" />
+		</insert>
+
+		<insert tableName="payment_method_meta_fields_map">
+			<column name="payment_method_id" valueComputed="(select max(t.id) from payment_method_type t)" />
+			<column name="meta_field_id" valueComputed="(select max(t.id) from meta_field_name t)" />
+		</insert>
+
+	</changeSet>
+
+	<changeSet id="JBAMA-24 Added PaymentEP2Task in pluggable_task_type" author="Krunal Bhavsar" context="base">
+
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="(coalesce((select max(pt.id)+1 from pluggable_task_type pt), 1))" />
+			<column name="category_id" valueNumeric="6" />
+			<column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentEP2Task" />
+			<column name="min_parameters" valueNumeric="4" />
+		</insert>
+	
+		<insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name ='pluggable_task_type')"/>
+            <column name="foreign_id" valueComputed="(select max(pt.id) from pluggable_task_type pt where pt.category_id = 6)" />
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Submits payments to Ep2 payment gateway and made payment on gateway."/>
+        </insert>
+	</changeSet>
+
+        <changeSet author="Wajeeha" id="JB-1020 Update payment meta-fields to use CHAR value" context="base">
+                <update tableName="meta_field_name">
+                        <column name="data_type" value="CHAR"/>
+                        <where>
+                                name IN ('cc.cardholder.name', 'cc.number', 'cc.expiry.date', 'cc.gateway.key',
+                                'ach.routing.number', 'ach.account.number', 'ach.gateway.key')
+                        </where>
+                </update>
+                <sql>
+                        UPDATE meta_field_value
+                        SET dtype = 'char'
+                        WHERE meta_field_name_id IN (SELECT names.id
+                        FROM meta_field_name names
+                        WHERE names.name IN ('cc.cardholder.name', 'cc.number', 'cc.expiry.date', 'cc.gateway.key',
+                        'ach.routing.number', 'ach.account.number', 'ach.gateway.key'))
+                        and meta_field_value.dtype != 'char'
+                </sql>
+        </changeSet>
+
+	<changeSet author="Neelabh Dubey" id="JBFC-673: Update payment meta-fields data type to use CHAR value based on field usage" context="base">
+        <update tableName="meta_field_name">
+            <column name="data_type" value="CHAR"/>
+            <where>
+                field_usage IN ('PAYMENT_CARD_NUMBER', 'GATEWAY_KEY', 'BANK_ACCOUNT_NUMBER', 'BANK_ROUTING_NUMBER')
+                and entity_type IN ('PAYMENT_METHOD_TEMPLATE', 'PAYMENT_METHOD_TYPE')
+            </where>
+        </update>
+        <sql>
+             UPDATE meta_field_value
+             SET dtype = 'char'
+             WHERE meta_field_name_id IN (SELECT names.id
+             FROM meta_field_name names
+             WHERE names.field_usage IN ('PAYMENT_CARD_NUMBER', 'GATEWAY_KEY', 'BANK_ACCOUNT_NUMBER', 'BANK_ROUTING_NUMBER')
+             and entity_type IN ('PAYMENT_METHOD_TEMPLATE', 'PAYMENT_METHOD_TYPE'))
+             and meta_field_value.dtype != 'char'
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

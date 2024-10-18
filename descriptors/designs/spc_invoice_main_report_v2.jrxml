@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_main_report" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="565" leftMargin="15" rightMargin="15" topMargin="15" bottomMargin="15" uuid="0a83947c-e151-494c-8eca-1a33729f10df">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="768"/>
+	<parameter name="core.param.companyLogo" class="java.lang.String"/>
+	<parameter name="core.param.first.name" class="java.lang.String"/>
+	<parameter name="core.param.last.name" class="java.lang.String"/>
+	<parameter name="core.param.customer.address" class="java.lang.String"/>
+	<parameter name="core.param.customer.address2" class="java.lang.String"/>
+	<parameter name="core.param.customer.city" class="java.lang.String"/>
+	<parameter name="core.param.customer.province" class="java.lang.String"/>
+	<parameter name="core.param.customer.postalCode" class="java.lang.String"/>
+	<parameter name="core.param.total_due" class="java.lang.String"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="core.param.dueDate" class="java.lang.String"/>
+	<parameter name="core.param.invoice_date" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="core.param.userId" class="java.lang.Integer"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="billingAddress1" class="java.lang.String"/>
+	<parameter name="billingAddress2" class="java.lang.String"/>
+	<parameter name="core.param.title" class="java.lang.String"/>
+	<parameter name="invoiceNumber" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select 1]]>
+	</queryString>
+	<field name="?column?" class="java.lang.Integer"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="726" splitType="Stretch">
+			<staticText>
+				<reportElement x="411" y="5" width="100" height="20" uuid="e88405fe-e53f-427d-b83b-5c2a2fc53b0c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tax Invoice]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="370" y="30" width="90" height="15" uuid="ada5ca4d-0cf9-4425-9ecb-10a9a485513e"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Invoice Number:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="370" y="47" width="90" height="15" uuid="beef108f-41d7-40b3-ae9e-75769108e92b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Issue Date:]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="5" y="102" width="166" height="56" uuid="b58312c6-c672-4139-ada2-fa2b6128fb92"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{core.param.title}.isEmpty() ? "" : $P{core.param.title}.toUpperCase()+" ")+$P{core.param.first.name}.toUpperCase() + " " + $P{core.param.last.name}.toUpperCase() +"\n"+
+$P{billingAddress1}.toUpperCase() +"\n"+
+$P{billingAddress2}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="4">
+				<reportElement x="370" y="82" width="186" height="25" backcolor="#D6036C" uuid="f622252e-4d9b-469d-877b-39054f92e0b1"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="376" y="87" width="60" height="15" forecolor="#FFFFFF" uuid="263a8f09-eb9d-4395-851d-c95c8d0c839c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Due]]></text>
+			</staticText>
+			<rectangle radius="4">
+				<reportElement x="370" y="116" width="186" height="25" backcolor="#D6036C" uuid="1987681f-a642-4041-ab5e-a05400c5a5ec"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="451" y="87" width="100" height="15" forecolor="#FFFFFF" uuid="e748e8ea-71f9-4280-a63a-3b16defd4d9a"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+""+$P{core.param.total_due}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="376" y="121" width="60" height="15" forecolor="#FFFFFF" uuid="563e67e1-5d06-4a47-ac95-eaa035aa7b2e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Due Date]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="451" y="121" width="100" height="15" forecolor="#FFFFFF" uuid="7046239c-3a46-490d-8356-395597527674"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.dueDate}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="461" y="47" width="95" height="15" uuid="08cd29fd-54cf-4d64-959a-31af7ae788e0"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceDate}]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="0" y="0" width="170" height="70" uuid="a72febb0-82c7-4c91-a2d8-fc57db8229a8"/>
+				<imageExpression><![CDATA[$P{core.param.companyLogo}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="0" y="204" width="172" height="20" forecolor="#D6036C" uuid="dda3b1a8-80a6-42c9-9c20-5e96a6c9c836"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Billing History]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="301" y="204" width="172" height="20" forecolor="#D6036C" uuid="63838b5c-1500-4c15-b307-5a3032204b15"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Your Last Bill Summary]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="461" y="30" width="95" height="15" uuid="44c955a0-9130-4098-b7cd-af706aaf438f"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceNumber}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="-13" y="230" width="528" height="143" uuid="a80c4e24-8629-4577-8fb1-ad6b21785c54"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{core.param.userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_bar_graph_sub_report_v2.jasper"]]></subreportExpression>
+			</subreport>
+			<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle">
+				<reportElement positionType="Float" x="3" y="390" width="553" height="50" uuid="feafc14a-5177-43ff-bde1-a097751746b2"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/marketting_banner.jpg"]]></imageExpression>
+			</image>
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement x="209" y="540" width="36" height="20" uuid="f7fc6952-e93d-4190-a9c6-18bc756acf73"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/phone.png"]]></imageExpression>
+			</image>
+			<subreport>
+				<reportElement x="1" y="592" width="361" height="113" uuid="a9578a80-9f5a-4f71-8c8e-6c189b06c401"/>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{core.param.userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_bpay_info_sub_report_v2.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="197" y="560" width="153" height="20" uuid="824837c9-1b86-4e81-be8a-01c3067a9769"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Mon-Sun 8am to 8pm]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="393" y="540" width="171" height="40" uuid="58798e54-40be-44cc-a3e6-896f71a8e8dd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Manage your account 24/7 with the
+Southern Phone app]]></text>
+			</staticText>
+			<line>
+				<reportElement x="1" y="584" width="562" height="1" uuid="f30255a8-444c-48c1-9162-b043e220ff92"/>
+				<graphicElement>
+					<pen lineWidth="3.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="52" y="540" width="61" height="20" uuid="a4bba8af-3989-47e4-8ae9-cfbcb2ebc3f2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Live Chat]]></text>
+			</staticText>
+			<rectangle radius="4">
+				<reportElement x="370" y="153" width="186" height="25" backcolor="#D6036C" uuid="fe18631b-2d6f-4e71-90c1-184681343edb"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<image>
+				<reportElement x="362" y="536" width="30" height="40" uuid="8b099c4a-7cab-4aff-ab8c-be0aa29d4a28"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/cell_phone.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="247" y="540" width="61" height="20" uuid="1c6cb263-3bd2-46a1-b075-aff11bf314ec"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[13 14 64]]></text>
+			</staticText>
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement x="5" y="539" width="42" height="20" uuid="687bb107-3387-4658-9d28-662e4a7340b5"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/chat.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="2" y="560" width="153" height="20" uuid="7bf350d0-b05e-467f-940e-c2be14cc0fd4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[www.southernphone.com.au]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="513" width="172" height="20" forecolor="#D6036C" uuid="368069ed-5a97-49df-973d-a68c59345387"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Bill Enquiries]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="376" y="158" width="103" height="15" forecolor="#FFFFFF" uuid="60db6ad3-0ed1-4aa3-9f47-661d93db64b7"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<rectangle radius="4">
+				<reportElement positionType="FixRelativeToBottom" x="188" y="701" width="186" height="25" backcolor="#D6036C" uuid="917ca50f-dcb3-44fc-822e-07b63975dc9e"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="4">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="701" width="186" height="25" backcolor="#D6036C" uuid="79b39267-0f91-417f-ae3e-10e9f2ea588c"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="4">
+				<reportElement positionType="FixRelativeToBottom" x="376" y="701" width="186" height="25" backcolor="#D6036C" uuid="ef62d275-f5f2-4d26-a1b7-f40ee9f5598c"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="194" y="706" width="60" height="15" forecolor="#FFFFFF" uuid="23b333f5-133a-4ee0-b2be-f6af995e7742"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Due Date]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="FixRelativeToBottom" x="269" y="706" width="100" height="15" forecolor="#FFFFFF" uuid="ad641057-f230-4516-a999-cffba22e0814"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.dueDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="6" y="706" width="60" height="15" forecolor="#FFFFFF" uuid="058f97bd-b1ea-4a88-a901-1c439457643b"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Due]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="FixRelativeToBottom" x="81" y="706" width="100" height="15" forecolor="#FFFFFF" uuid="6f97f18c-1ce2-4e21-a68b-47842693f7ce"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.currency_symbol}+""+$P{core.param.total_due}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="382" y="706" width="103" height="15" forecolor="#FFFFFF" uuid="d9d67e7a-5807-4a20-b1e9-c56b84af2874"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="FixRelativeToBottom" x="487" y="706" width="72" height="15" forecolor="#FFFFFF" uuid="87a38a51-405f-42b4-90fd-13d70c690411"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="481" y="158" width="72" height="15" forecolor="#FFFFFF" uuid="58fc35f1-1e66-4955-beaf-386e22ced136"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="70">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} != 1]]></printWhenExpression>
+			<image>
+				<reportElement x="3" y="1" width="170" height="69" uuid="b5528a4c-1c8c-4aab-ade9-e0c6e73c99dd"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/entity-70.jpg"]]></imageExpression>
+			</image>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="346">
+			<staticText>
+				<reportElement x="65" y="84" width="72" height="20" uuid="63c21bac-2a29-4c78-9ef3-ce7cc80354a5"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Direct Debit]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="-13" y="123" width="558" height="25" uuid="798b7e75-67d8-4f7b-b38c-bbdeb6ad4cea"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{core.param.currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_CONNECTION">
+					<subreportParameterExpression><![CDATA[$P{REPORT_CONNECTION}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_line_report_v2.jasper"]]></subreportExpression>
+			</subreport>
+			<image>
+				<reportElement x="9" y="83" width="50" height="20" uuid="ed14eed7-dbe5-4351-bedf-50106981151d"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"logos/direct_debit.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="4" y="57" width="560" height="24" uuid="09b2df16-f4cf-45d8-87e8-6a1a058f9873"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Check out our Bill Explainer video at southernphone.com.au/MyBill and take a detailed look at your Southern Phone bill.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="3" y="5" width="172" height="20" forecolor="#D6036C" uuid="c80232c4-aea6-4115-a4df-bb8632e4286d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[About Your Bill]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="4" y="107" width="560" height="27" uuid="32e0a16f-e429-49da-9a29-93d3797a7846"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Southern Phone accepts direct debit. If you need to update your payment details, please contact us at
+myaccount@southernphone.com.au or call us on 13 14 64]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="3" y="35" width="207" height="20" uuid="a15d3d02-9d79-4ba5-bdcf-d55bacadc053"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Need help understanding your bill?]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="16" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="515" height="15" uuid="f456cd17-053c-460d-89f3-22feb48b580e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri" size="8"/>
+				</textElement>
+				<text><![CDATA[Southern Phone Company Limited | ABN 42 100 901 184 | 6 Page Street, MORUYA NSW 2537 | www.southernphone.com.au]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="531" y="0" width="32" height="15" uuid="6e4ce304-81c9-4b75-af31-ddfbff2d8938">
+					<printWhenExpression><![CDATA[$V{PAGE_NUMBER} != 1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="10" splitType="Stretch"/>
+	</summary>
+</jasperReport>

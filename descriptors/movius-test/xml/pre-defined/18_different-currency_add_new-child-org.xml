@@ -1,0 +1,36 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Currency Test</name>
+		<id>786080</id>
+		<subscription>6.5</subscription>
+		<count>1</count>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id> 
+		<billing-plan-name>Telstra Master Plan</billing-plan-name>
+		<billable>true</billable>
+		<sub-orgs>
+			<org>
+				<name>Child Currency Test-01</name>
+				<id>786081</id>
+				<subscription>2</subscription>
+				<count>1</count>
+				<timezone>Europe/London</timezone>
+				<billable>true</billable>
+				<billing-plan-id>10</billing-plan-id>
+				<billing-plan-name>Telstra ABC Plan</billing-plan-name>
+			</org>
+			<org>
+				<name>Child Currency Test-02</name>
+				<id>786082</id>
+				<timezone>Australia/Melbourne</timezone>
+				<billable>false</billable>
+			</org>
+			<org>
+				<name>Child Currency Test-03</name>
+				<id>786083</id>
+				<timezone>Australia/Melbourne</timezone>
+				<billable>false</billable>
+			</org>
+		</sub-orgs>
+	</org>
+</organizations>

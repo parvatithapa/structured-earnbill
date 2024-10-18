@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.30.xml">
+
+    <changeSet context = "base" id = "JB-3475 - Update preference 39 and 68 descriptions" author = "Andres Canevaro">
+
+        <comment>Updates Preference 39 description and validation message</comment>
+        <update tableName="international_description">
+            <column name="content" value="The number of retries to allow before locking the user account. A locked user account will be locked for the amount of minutes specified in Preference 68. Values lower than one are not allowed."/>
+            <where> table_id = 50 AND foreign_id = 39 AND language_id = 1 AND psudo_column = 'instruction' </where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Failed login attempts can not be more than 6 or less than 0"/>
+            <where>content = 'Failed login attempts can not be more than 6 or less than 1'</where>
+        </update>
+
+        <comment>Updates Preference 68 description</comment>
+        <update tableName="international_description">
+            <column name="content" value="Number of minutes a User's account will remain locked after the number of allowed retries (Preference 39) are exhausted. Values lower than one are not allowed."/>
+            <where> table_id = 50 AND foreign_id = 68 AND language_id = 1 AND psudo_column = 'instruction' </where>
+        </update>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-273-Telco-Invoice-Summary-Population-Task-Extended" author="Mahesh Shivarkar">
+        <comment>Task to populate of invoice template with extended parameters</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersExTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersExTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Telco invoice summary task to populate invoice template with extended parameters"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.TelcoInvoiceParametersExTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is specific to telco implementation. It is used for populating invoice template with extended parameters for invoice generation. This plugin handles the CustomInvoiceFieldsEvent event."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-287: Added Bpay Payment Method" author = "Krunal Bhavsar">
+        <insert tableName = "payment_method">
+            <column name = "id" valueNumeric = "-2"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric = "35"/>
+            <column name = "foreign_id"    valueNumeric = "-2"/>
+            <column name = "psudo_column"  value        = "description"/>
+            <column name = "language_id"   valueNumeric = "1"/>
+            <column name = "content"       value        = "BPay"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-291 - Require Payment Authorization for Collection Process" author="Manish Bansod">
+        <comment>This preference will require Payment Authorization for Collection Process on Payment Instruments.</comment>
+        <insert tableName="preference_type">
+            <column name="id"        valueNumeric="98" />
+            <column name="def_value" value       ="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="98" />
+            <column name="psudo_column" value       ="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Require Payment Authorization for Collection Process" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="98" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="If value is 1, the Payment Instruments will require Payment Authorization for Collection Process." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-276 - Preference to include credit invoices" author="Neelabh Dubey">
+        <comment>This preference is used to consider non-anniversary, intermediate credit invoices for previous balance on invoice summary</comment>
+        <insert tableName="preference_type">
+            <column name="id"        valueNumeric="99" />
+            <column name="def_value" value       ="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="99" />
+            <column name="psudo_column" value       ="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Consider non-anniversary, intermediate credit invoices for previous balance on invoice summary." />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="99" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="If this preference is set to 1, system will consider non-anniversary, intermediate credit invoices generated manually for identification of last invoice whose balance should reflect as previous balance on the current invoice. If the preference is set to zero, system will not consider zero amount credit invoices as the last invoice for previous balance." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-331: Preference to include credit invoices removed" author="Mahesh Shivarkar">
+        <delete tableName="preference">
+            <where>type_id = 99</where>
+        </delete>
+        <delete tableName="preference_type">
+            <where>id = 99</where>
+        </delete>
+        <delete tableName="international_description">
+            <where>
+                content = 'Consider non-anniversary, intermediate credit invoices for previous balance on invoice summary.'
+            </where>
+        </delete>
+        <delete tableName="international_description">
+            <where>
+                content = 'If this preference is set to 1, system will consider non-anniversary, intermediate credit invoices generated manually for identification of last invoice whose balance should reflect as previous balance on the current invoice. If the preference is set to zero, system will not consider zero amount credit invoices as the last invoice for previous balance.'
+            </where>
+        </delete>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-336: Added description for Payment Method Id 9" author = "Manish Bansod">
+        <sql>
+            DELETE FROM international_description
+                  WHERE table_id = 35 and foreign_id = 9 and language_id = 1;
+        </sql>
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric = "35"/>
+            <column name = "foreign_id"    valueNumeric = "9"/>
+            <column name = "psudo_column"  value        = "description"/>
+            <column name = "language_id"   valueNumeric = "1"/>
+            <column name = "content"       value        = "Card Token"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-368 Add new table Service Summary Details." author = "Krunal Bhavsar">
+          <createTable tableName = "service_summary">
+              <column name = "id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable       = "false"
+                               primaryKey     = "true"
+                               primaryKeyName = "service_summary_pkey"/>
+              </column>
+              <column name = "invoice_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "user_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "plan_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "invoice_line_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "item_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "true"/>
+              </column>
+              <column name = "plan_description"    type = "java.sql.Types.VARCHAR(1000)" />
+              <column name = "service_description" type = "java.sql.Types.VARCHAR(1000)" >
+                <constraints nullable = "false"/>
+              </column>
+              <column name = "service_id"        type = "java.sql.Types.VARCHAR(1000)" />
+              <column name = "start_date"        type = "java.sql.Types.DATE"/>
+              <column name = "end_date"          type = "java.sql.Types.DATE"/>
+              <column name = "is_plan"           type = "java.sql.Types.BOOLEAN"  defaultValue = "false" />
+         </createTable>
+
+         <addForeignKeyConstraint constraintName         = "service_summary_fk_invoice"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "invoice"
+                                  baseColumnNames        = "invoice_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_invoice">
+            <column name = "invoice_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint  constraintName         = "service_summary_fk_base_user"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "base_user"
+                                  baseColumnNames        = "user_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_base_user">
+            <column name = "user_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint  constraintName         = "service_summary_fk_plan"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "plan"
+                                  baseColumnNames        = "plan_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_plan">
+            <column name = "plan_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint  constraintName         = "service_summary_fk_invoice_line"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "invoice_line"
+                                  baseColumnNames        = "invoice_line_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_invoice_line">
+            <column name = "invoice_line_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint  constraintName         = "service_summary_fk_item"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "item"
+                                  baseColumnNames        = "item_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+
+        <addUniqueConstraint tableName      = "service_summary"
+                             constraintName = "service_summary_uq_invoice_line"
+                             columnNames    = "invoice_line_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-194 : CRM Data Orchestration" author = "Satyendra Soni">
+        <insert tableName = "tab">
+            <column name = "id"              valueComputed = "(SELECT MAX(id)+1 FROM tab)"/>
+            <column name = "message_code"    value         = "menu.link.outboundInterChange"/>
+            <column name = "controller_name" value         = "outboundInterChange"/>
+            <column name = "access_url"      value         = "/outboundInterChange/list"/>
+            <column name = "required_role"   value         = ""/>
+            <column name = "version"         valueNumeric  = "1"/>
+            <column name = "default_order"   valueComputed = "(SELECT MAX(default_order)+1 FROM tab)"/>
+        </insert>
+        <sql>
+            UPDATE tab SET default_order = (SELECT MAX(default_order) FROM tab) WHERE controller_name = 'config';
+            UPDATE tab SET default_order = (SELECT MAX(default_order)-1 FROM tab) WHERE controller_name = 'outboundInterChange'
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-154 OutBoundInterchange Table - drop table if exists" author = "Satyendra Soni">
+        <preConditions onFail="HALT">
+            <tableExists tableName = "outbound_interchange" schemaName = "public"/>
+            <and>
+                <tableIsEmpty tableName = "outbound_interchange" schemaName = "public"/>
+            </and>
+        </preConditions>
+        <dropTable tableName = "outbound_interchange" schemaName = "public"/>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-155 OutBoundInterchange Table - create table again" author = "Satyendra Soni" >
+        <createTable tableName = "outbound_interchange">
+            <column name = "id" type = "java.sql.Types.INTEGER">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "outbound_interchange_pkey"/>
+            </column>
+            <column name = "request" type = "java.sql.Types.CLOB" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "response" type = "java.sql.Types.CLOB" >
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "create_datetime" type = "java.sql.Types.TIMESTAMP" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "entity_id" type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "retry_count" type = "java.sql.Types.INTEGER" >
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "last_retry_datetime" type = "java.sql.Types.TIMESTAMP" >
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "http_method" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "method_name" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "status" type = "java.sql.Types.VARCHAR(100)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "optlock" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName = "outbound_interchange"
+                     indexName = "outbound_interchange_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "outbound_interchange_fk_entity"
+                                 baseTableName          = "outbound_interchange"
+                                 referencedTableName    = "entity"
+                                 baseColumnNames        = "entity_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-194. Permission for outboundInterChange" author = "Satyendra Soni">
+        <comment>OutboundInterChange Menu</comment>
+        <insert tableName = "permission">
+            <column name = "id"              valueNumeric = "1919"/>
+            <column name = "type_id"         valueNumeric = "9"/>
+            <column name = "foreign_id"/>
+            <column name = "role_assignable" valueBoolean = "true" />
+            <column name = "user_assignable" valueBoolean = "false" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric = "59"/>
+            <column name = "foreign_id"   valueNumeric = "1919"/>
+            <column name = "psudo_column" value        = "description"/>
+            <column name = "language_id"  valueNumeric = "1"/>
+            <column name = "content"      value        = "Show outboundInterChange menu" />
+        </insert>
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)
+            SELECT 1919, id
+            FROM role
+            WHERE role_type_id IN (2, -1, 3, 4, 5);
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-400 - Require CVV for one time payments" author="Harshad Pathan">
+        <comment>This preference will required for CVV for at time payments.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"        valueNumeric = "99" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric="50" />
+            <column name  = "foreign_id"   valueNumeric="99" />
+            <column name  = "psudo_column" value       ="description" />
+            <column name  = "language_id"  valueNumeric="1" />
+            <column name  = "content"
+                value="Require CVV for one time payments" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="99" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="If value is 1, CVV will be used for one time payments." />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-395 Add new column display_identifier." author = "Krunal Bhavsar">
+        <sql>
+          ALTER TABLE service_summary
+        DROP CONSTRAINT service_summary_uq_invoice_line;
+        </sql>
+        <addColumn tableName = "service_summary">
+            <column name = "display_identifier" type = "java.sql.Types.VARCHAR(1000)"/>
+        </addColumn>
+    </changeSet>
+
+     <changeSet context = "base" id = "JBSPC-395 drop not null from invoice_line_id column." author = "Krunal Bhavsar">
+        <sql>
+            ALTER TABLE service_summary
+        ALTER COLUMN invoice_line_id DROP NOT NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-504 Add new column sub scription order id." author = "Mahesh Shivarkar">
+        <addColumn tableName = "service_summary">
+            <column name = "subscription_order_id" type = "java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addForeignKeyConstraint  constraintName         = "service_summary_fk_purchase_order"
+                                  baseTableName          = "service_summary"
+                                  referencedTableName    = "purchase_order"
+                                  baseColumnNames        = "subscription_order_id"
+                                  referencedColumnNames  = "id" />
+        <createIndex tableName = "service_summary"
+                     indexName = "service_summary_fk_purchase_order">
+            <column name = "subscription_order_id" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

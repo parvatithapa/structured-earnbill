@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/batch
+       http://www.springframework.org/schema/batch/spring-batch.xsd"
+       profile="mediation.slave">
+
+    <import resource="classpath:slave/slave-integration.xml"/>
+
+    <!--	Acts as reader of the chunk. Read the ids of the users to be processed later	-->
+    <!--    Executed on the slave-->
+    <!-- JMRProcessor to save orders depending on the JMR that are in the database -->
+    <bean id="defaultPartitionedJMRProcessorReader"
+          class="com.sapienter.jbilling.server.mediation.processor.JMRPaginationProcessorReader" scope="step">
+        <property name="userIds" value="#{stepExecutionContext['usersToProcess']}"/>
+    </bean>
+    <bean id="defaultPartitionedJMRProcessorWriter"
+          class="com.sapienter.jbilling.server.mediation.processor.JMRPaginationProcessorWriterImpl" scope="step"/>
+
+    <!--	These beans must be registered on all jBilling instances which will run JMR Processor slave tasks	-->
+
+    <!--	first and only step. This step is executed on the slave nodes	-->
+    <!--	It uses the task executor that is used by all batch processes. This means the thread pool is shared among all batch processes which partition their processing	-->
+
+    <batch:step id="DefaultPartitionedJMRProcessorStep" job-repository="mediationJobRepository">
+        <batch:tasklet task-executor       = "taskExecutor"
+                       throttle-limit      = "${springbatch.mediation.process.grid.size}"
+                       transaction-manager = "jbillingMediationTransactionManager">
+
+            <batch:chunk reader          = "defaultPartitionedJMRProcessorReader"
+                         writer          = "defaultPartitionedJMRProcessorWriter"
+                         commit-interval = "1"
+                         skip-policy     = "skipPolicy"/>
+        </batch:tasklet>
+    </batch:step>
+
+</beans>

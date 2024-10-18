@@ -1,0 +1,103 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd"
+        profile = "billing.master">
+
+    <import resource="billing-master-integration.xml"/>
+
+    <!--    generate invoices job bean  -->
+    <batch:job id = "generateInvoicesJob">
+        <batch:listeners>
+            <batch:listener ref = "billingJobListener"/>
+        </batch:listeners>
+
+        <batch:step id = "generateInvoices" allow-start-if-complete = "true">
+            <batch:partition partitioner = "generateInvoicesPartitioner" handler = "partitionGenerateInvoicesHandler"/>
+            <batch:next on = "COMPLETED_REVIEW" to = "stepDecider"/>
+            <batch:next on = "FAILED_REVIEW"    to = "stepDecider"/>
+            <batch:next on = "COMPLETED"        to = "emailAndPayment"/>
+            <batch:next on = "FAILED"           to = "emailAndPayment"/>
+            <batch:listeners>
+                <batch:listener ref = "generateInvoicesListener"/>
+            </batch:listeners>
+        </batch:step>
+
+        <batch:step id = "emailAndPayment" next = "stepDecider" allow-start-if-complete = "true">
+            <batch:partition partitioner = "emailAndPaymentPartitioner" handler = "partitionEmailAndPaymentHandler"/>
+        </batch:step>
+
+        <batch:decision id = "stepDecider" decider = "jobFlowDecider">
+            <batch:next on = "COMPLETED"        to = "billingSuccess"/>
+            <batch:next on = "FAILED"           to = "billingFailure"/>
+        </batch:decision>
+
+        <batch:step id = "billingSuccess">
+            <batch:tasklet ref = "billingProcessSucceededTasklet"/>
+        </batch:step>
+
+        <batch:step id = "billingFailure">
+            <batch:tasklet ref = "billingProcessFailedTasklet"/>
+        </batch:step>
+    </batch:job>
+
+    <bean   id = "partitionGenerateInvoicesHandler"
+        parent = "generalMessagePartitionHandler">
+        <property name = "stepName"     value = "partitionGenerateInvoices"/>
+        <property name = "replyChannel"   ref = "billing-invoices-aggregated-reply"/>
+        <property name = "messagingOperations">
+            <bean class = "org.springframework.integration.core.MessagingTemplate">
+                <property name = "defaultChannel" ref   = "billing-invoices-requests"/>
+                <property name = "receiveTimeout" value = "100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean   id = "partitionEmailAndPaymentHandler"
+        parent = "generalMessagePartitionHandler">
+        <property name = "stepName"     value = "partitionEmailAndPayment"/>
+        <property name = "replyChannel"   ref = "billing-emails-aggregated-reply"/>
+        <property name = "messagingOperations">
+            <bean class = "org.springframework.integration.core.MessagingTemplate">
+                <property name = "defaultChannel" ref   = "billing-emails-requests"/>
+                <property name = "receiveTimeout" value = "100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!--    spring batch tasklet containing piece of that will run if billing process succeeds  -->
+    <bean  id = "billingProcessSucceededTasklet"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessSucceededTasklet"
+        scope = "job"/>
+
+    <!--    spring batch tasklet containing code that will run if billing process fails -->
+    <bean  id = "billingProcessFailedTasklet"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessFailedTasklet"
+        scope = "job"/>
+
+    <!--    spring batch listener to set custom exit status of step -->
+    <bean  id = "jobFlowDecider"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessJobFlowDecider"
+        scope = "job"/>
+
+    <!--    billing process job listener to initialize maps and save values in database at the start and end of job -->
+    <bean  id = "billingJobListener"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessJobListener"/>
+
+    <bean  id = "generateInvoicesPartitioner"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessPartitioner"
+        scope = "job"/>
+
+    <bean  id = "emailAndPaymentPartitioner"
+        class = "com.sapienter.jbilling.batch.billing.EmailAndPaymentPartitioner"
+        scope = "job"/>
+
+    <bean  id = "generateInvoicesListener"
+        class = "com.sapienter.jbilling.batch.billing.GenerateInvoicesStepListener"
+        scope = "job"/>
+</beans>

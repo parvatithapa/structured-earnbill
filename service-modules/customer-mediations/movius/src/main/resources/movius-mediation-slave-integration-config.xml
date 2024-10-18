@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+    xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+    xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/integration
+http://www.springframework.org/schema/integration/spring-integration.xsd
+http://www.springframework.org/schema/integration/jms
+http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <import resource="classpath:slave/slave-integration.xml"/>
+    
+    <int:channel id = "movius-mediation-slave-requests"/>
+    <int-jms:message-driven-channel-adapter id = "movius-mediation-slave-adapter" 
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "movius.mediation.requests" 
+                                            channel            = "movius-mediation-slave-requests"/>
+
+    <int:channel id = "movius-mediation-slave-reply"/>
+    <int-jms:outbound-channel-adapter id = "movius-mediation-slave-reply-adapter" 
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "movius.mediation.reply" 
+                                      channel            = "movius-mediation-slave-reply"/>
+
+    <int:service-activator id             = "movius-mediation-slave-service-activator"
+                           ref            = "stepExecutionRequestHandler" 
+                           input-channel  = "movius-mediation-slave-requests"
+                           output-channel = "movius-mediation-slave-reply"/>
+
+</beans>

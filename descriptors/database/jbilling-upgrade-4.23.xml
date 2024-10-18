@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.23.xml">
+
+    <changeSet context="base" id="JBDT-19. Job Statistics" author="Gerhard Maree">
+        <createTable tableName="job_execution_header">
+            <column name="id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false" primaryKey="true" primaryKeyName="job_execution_header_pk"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false" />
+            </column>
+            <column name="job_execution_id" type="java.sql.Types.INTEGER" />
+            <column name="job_type" type="java.sql.Types.VARCHAR(100)" />
+            <column name="start_date" type="java.sql.Types.TIMESTAMP" >
+                <constraints nullable="false" />
+            </column>
+            <column name="end_date" type="java.sql.Types.TIMESTAMP" />
+            <column name="status" type="java.sql.Types.VARCHAR(20)" />
+        </createTable>
+
+        <createTable tableName="job_execution_line">
+            <column name="id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false" primaryKey="true" primaryKeyName="job_execution_line_pk"/>
+            </column>
+            <column name="header_id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="line_type" type="java.sql.Types.VARCHAR(20)" >
+                <constraints nullable="false" />
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(100)" >
+                <constraints nullable="false" />
+            </column>
+            <column name="value" type="java.sql.Types.VARCHAR(100)" />
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="header_id"
+                                 baseTableName="job_execution_line"
+                                 constraintName="job_execution_line_job_execution_header_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="job_execution_header"
+                                 referencesUniqueColumn="false"/>
+
+        <createIndex indexName="job_execution_line_job_execution_header_index" tableName="job_execution_line" unique="false">
+            <column name="header_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context="test" id="JBDT-19. Job Statistics Test Data" author="Gerhard Maree" >
+        <insert tableName="job_execution_header">
+            <column name="id" valueComputed="-10"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="job_execution_id" valueNumeric="-1"/>
+            <column name="job_type" value="testType"/>
+            <column name="start_date" valueDate="2004-03-09T01:00:00.0"/>
+            <column name="end_date" valueDate="2004-03-09T02:00:00.0"/>
+            <column name="status" value="SUCCESS"/>
+        </insert>
+
+        <insert tableName="job_execution_line">
+            <column name="id" valueComputed="-100"/>
+            <column name="header_id" valueNumeric="-10"/>
+            <column name="line_type" value="LINE"/>
+            <column name="name" value="line.1"/>
+            <column name="value" value="value.1"/>
+        </insert>
+        <insert tableName="job_execution_line">
+            <column name="id" valueComputed="-101"/>
+            <column name="header_id" valueNumeric="-10"/>
+            <column name="line_type" value="LINE"/>
+            <column name="name" value="line.2"/>
+            <column name="value" value="value.2"/>
+        </insert>
+
+        <insert tableName="job_execution_header">
+            <column name="id" valueComputed="-11"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="job_execution_id" valueNumeric="-2"/>
+            <column name="job_type" value="testType"/>
+            <column name="start_date" valueDate="2004-03-09T03:00:00.0"/>
+            <column name="end_date" valueDate="2004-03-09T04:00:00.0"/>
+            <column name="status" value="SUCCESS"/>
+        </insert>
+
+        <insert tableName="job_execution_header">
+            <column name="id" valueComputed="-12"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="job_execution_id" valueNumeric="-3"/>
+            <column name="job_type" value="testType"/>
+            <column name="start_date" valueDate="2004-03-19T03:00:00.0"/>
+            <column name="end_date" valueDate="2004-03-19T04:00:00.0"/>
+            <column name="status" value="SUCCESS"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBDT-71 Product Level Rating Unit configuration" author="Tarun Rathor">
+        <createTable tableName="item_rating_unit_map">
+            <column name="item_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating_unit_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="item_id,start_date" constraintName="item_rating_unit_map_pkey" tableName="item_rating_unit_map"/>
+
+        <addForeignKeyConstraint baseColumnNames="item_id" baseTableName="item_rating_unit_map" constraintName="item_rating_unit_map_fk1" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="item" referencesUniqueColumn="false"/>
+        <addForeignKeyConstraint baseColumnNames="rating_unit_id" baseTableName="item_rating_unit_map" constraintName="item_rating_unit_map_fk2" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="rating_unit" referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBDT-27 Scheduled Task to trigger mediation usage integration job" author="Tarun Rathor" >
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.meteredUsage.MeteredUsageIntegrationTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Scheduled Task to trigger reserved monthly purchase report integration job" author="Abhishek Yadav" >
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.meteredUsage.ReservedMonthlySubscriptionReportTask"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Description for metered usage tasks" author="Abhishek Yadav">
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id"
+                    valueComputed="(select id from pluggable_task_type where category_id = 22 and class_name = 'com.sapienter.jbilling.server.meteredUsage.MeteredUsageIntegrationTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Reports usage for mediation orders"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id"
+                    valueComputed="(select id from pluggable_task_type where category_id = 22 and class_name = 'com.sapienter.jbilling.server.meteredUsage.MeteredUsageIntegrationTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Metered Usage Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id"
+                    valueComputed="(select id from pluggable_task_type where category_id = 22 and class_name = 'com.sapienter.jbilling.server.meteredUsage.ReservedMonthlySubscriptionReportTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Reports monthly cost of MONTHLY RESERVE PLANS to Market Place"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id"
+                    valueComputed="(select id from pluggable_task_type where category_id = 22 and class_name = 'com.sapienter.jbilling.server.meteredUsage.ReservedMonthlySubscriptionReportTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="MONTHLY RESERVE PLAN REPORT TASK"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet context="base" author="Vaibhav Ranglani" id="JBDT-50 create customers for DT">
+        <comment>ALTER Table base_user and modify user_name field to accomodate larger usernames</comment>
+        <modifyDataType
+            tableName="base_user"
+            columnName="user_name"
+            newDataType="VARCHAR(512)" />
+    </changeSet>
+
+    <changeSet context="base" id="JBDT-24 Add permission for product bulk loader functionality" author="Wajeeha Ahmed">
+        <insert tableName="permission">
+            <column name="id" valueComputed="1917"/>
+            <column name="type_id" valueComputed="19"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1917"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Bulk Upload Product"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="JBDT-78 : Usage Rating scheme creation" author="Pukhraj soni">
+    <comment> create Usage Rating scheme table to store rating scheme information</comment>
+
+    <createTable tableName="usage_rating_scheme_type">
+        <column name="id"  type="java.sql.Types.INTEGER">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="usage_rating_scheme_type_pk"/>
+        </column>
+        <column name = "name" type = "java.sql.Types.VARCHAR(128)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+        <column name = "impl_class" type = "java.sql.Types.VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name = "active" type="java.sql.Types.BOOLEAN">
+            <constraints nullable="false"/>
+        </column>
+    </createTable>
+
+    <createTable tableName="usage_rating_scheme">
+        <column name="id"  type="java.sql.Types.INTEGER">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="usage_rating_scheme_pk"/>
+        </column>
+        <column name = "rating_scheme_code" type = "java.sql.Types.VARCHAR(50)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+        <column name = "rating_scheme_type_id" type = "java.sql.Types.INTEGER">
+            <constraints nullable="false"/>
+        </column>
+        <column name = "dynamic_attribute_name" type="java.sql.Types.VARCHAR(50)" />
+        <column name = "uses_dynamic_attributes" type="java.sql.Types.BOOLEAN">
+            <constraints nullable="false"/>
+        </column>
+    </createTable>
+
+    <addForeignKeyConstraint baseColumnNames="rating_scheme_type_id"
+                                                     baseTableName="usage_rating_scheme"
+                                                     constraintName="usage_rating_scheme_type_fk"
+                                                     deferrable="false" initiallyDeferred="false"
+                                                     referencedColumnNames="id" referencedTableName="usage_rating_scheme_type"/>
+
+    <createTable tableName="usage_rating_scheme_fixed_attribute">
+        <column name="attribute_name" type="java.sql.Types.VARCHAR(50)" >
+            <constraints nullable="false"/>
+        </column>
+        <column name="attribute_value" type="java.sql.Types.VARCHAR(50)"/>
+        <column name="rating_scheme_id" type="java.sql.Types.INTEGER" >
+            <constraints nullable="false"/>
+        </column>
+    </createTable>
+
+    <addForeignKeyConstraint baseColumnNames="rating_scheme_id"
+                                                     baseTableName="usage_rating_scheme_fixed_attribute" constraintName="Fixed_attribute_fk"
+                                                     deferrable="false" initiallyDeferred="false" onDelete="CASCADE"
+                                                     onUpdate="CASCADE" referencedColumnNames="id" referencedTableName="usage_rating_scheme"/>
+    <!--referencesUniqueColumn="false"/>-->
+
+    <createTable tableName="usage_rating_scheme_dynamic_attribute_line">
+        <column name="id" type="java.sql.Types.INTEGER" >
+            <constraints nullable="false" primaryKey="true" primaryKeyName="usage_rating_scheme_dynamic_attribute_line_pk"/>
+        </column>
+        <column name="sequence" type="java.sql.Types.INTEGER" >
+            <constraints nullable="false" />
+        </column>
+        <column name="rating_scheme_id" type="java.sql.Types.INTEGER" />
+    </createTable>
+
+    <createTable tableName="usage_rating_scheme_dynamic_attribute_map">
+    <column name="attribute_name" type="java.sql.Types.VARCHAR(50)">
+        <constraints nullable="false"/>
+    </column>
+    <column name="attribute_value" type="java.sql.Types.VARCHAR(50)"/>
+    <column name="line_id" type="java.sql.Types.INTEGER" >
+        <constraints nullable="false"/>
+    </column>
+    </createTable>
+        <addForeignKeyConstraint baseColumnNames="line_id"
+                                                         baseTableName="usage_rating_scheme_dynamic_attribute_map" constraintName="dynamic_attributes_fk"
+                                                         deferrable="false" initiallyDeferred="false" onDelete="CASCADE"
+                                                         onUpdate="CASCADE" referencedColumnNames="id" referencedTableName="usage_rating_scheme_dynamic_attribute_line"/>
+        <!--referencesUniqueColumn="false"/>-->
+
+        <addForeignKeyConstraint baseColumnNames="rating_scheme_id"
+                                                         baseTableName="usage_rating_scheme_dynamic_attribute_line" constraintName="usage_rating_scheme_dynamic_attribute_fk"
+                                                         deferrable="false" initiallyDeferred="false" onDelete="CASCADE"
+                                                         onUpdate="CASCADE" referencedColumnNames="id" referencedTableName="usage_rating_scheme"/>
+        <!--referencesUniqueColumn="false"/>-->
+    </changeSet>
+
+    <changeSet context="base" id="JBDT-19. Preference - Single Order" author="Gerhard Maree">
+        <comment>Added preference for Single Order per mediation run</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="89"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="89"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="One Order per Mediation"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="89"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create a new order for every mediation run"/>
+        </insert>
+
+        <sql>
+            <![CDATA[
+               insert into preference(id, type_id, table_id, foreign_id, value)
+               select
+                    (select case count(t.id) when 0 then 1 ELSE max(t.id) + 1 END from preference t) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                    89,
+                    5,
+                    e1.id,
+                    '0'
+               from entity e1
+               order by e1.id
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet id="JBDT-50 Product Level Rating scheme configuration" author="Pukhraj soni">
+        <createTable tableName="item_usage_rating_scheme_map">
+            <column name="item_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating_scheme_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames="item_id,start_date"
+                                     constraintName="item_usage_rating_scheme_map_pkey"
+                                     tableName="item_usage_rating_scheme_map"/>
+
+        <addForeignKeyConstraint baseColumnNames="item_id" baseTableName="item_usage_rating_scheme_map"
+                                                         constraintName="item_usage_rating_scheme_map_fk1" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="item"
+                                                         referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="rating_scheme_id" baseTableName="item_usage_rating_scheme_map"
+                                                         constraintName="item_usage_rating_scheme_map_fk2" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="usage_rating_scheme"
+                                                         referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet id="Rating TimeLine Configuration" author="Maria Khan">
+        <createTable tableName="item_rating_configuration_map">
+            <column name="item_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating_unit" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+            <column name="usage_rating_scheme" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+            <column name="pricing_unit" type="java.sql.Types.VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+
+
+        </createTable>
+
+        <addPrimaryKey columnNames="item_id,start_date"
+                                     constraintName="item_rating_configuration_map_pkey"
+                                     tableName="item_rating_configuration_map"/>
+
+        <addForeignKeyConstraint baseColumnNames="item_id" baseTableName="item_rating_configuration_map"
+                                                         constraintName="item_rating_configuration_map_fk1" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="item"
+                                                         referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="usage_rating_scheme" baseTableName="item_rating_configuration_map"
+                                                         constraintName="item_rating_configuration_map_fk2" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="usage_rating_scheme"
+                                                         referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="rating_unit" baseTableName="item_rating_configuration_map"
+                                                         constraintName="item_rating_configuration_map_fk3" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="rating_unit"
+                                                         referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "New column cacheable in rating scheme type" author = "Priyank">
+        <addColumn tableName = "usage_rating_scheme_type">
+            <column name = "cacheable" type = "java.sql.Types.BOOLEAN" defaultValue="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id="Migrating data to item_rating_configuration_map" author="Maria Khan">
+        <sql>
+            INSERT INTO item_rating_configuration_map(item_id, start_date, rating_unit, usage_rating_scheme)
+            SELECT  rs.item_id as item_id, rs.start_date as start_date, ru.rating_unit_id as rating_unit,
+            rs.rating_scheme_id as usage_rating_scheme
+            FROM    item_usage_rating_scheme_map rs LEFT OUTER JOIN item_rating_unit_map ru
+            ON      rs.item_id = ru.item_id
+            AND     rs.start_date = ru.start_date
+            UNION
+            SELECT  ru.item_id as item_id, ru.start_date as start_date, ru.rating_unit_id as rating_unit,
+            rs.rating_scheme_id as usage_rating_scheme
+            FROM    item_usage_rating_scheme_map rs RIGHT OUTER JOIN item_rating_unit_map ru
+            ON      rs.item_id = ru.item_id
+            AND     rs.start_date = ru.start_date
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id="Removing item_rating_unit_map and item_usage_rating_scheme_map " author="Maria Khan">
+        <dropTable tableName = "item_rating_unit_map"/>
+        <dropTable tableName = "item_usage_rating_scheme_map"/>
+    </changeSet>
+
+    <changeSet context="base" id="Increase field size for Local input directory in mediation config" author="Priyank">
+        <modifyDataType
+            tableName="mediation_cfg"
+            columnName="local_input_directory"
+            newDataType="java.sql.Types.VARCHAR(512)" />
+    </changeSet>
+
+    <changeSet context = "base" id="Rating Configuration Creation" author="Maria Khan">
+
+        <createTable tableName="rating_configuration">
+
+            <column name="id"  type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="rating_configuration_pk"/>
+            </column>
+
+            <column name="rating_unit" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+            <column name="usage_rating_scheme" type="java.sql.Types.INTEGER">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name = "active" type="java.sql.Types.BOOLEAN" defaultValue="true">
+                <constraints nullable="false"/>
+            </column>
+
+
+        </createTable>
+
+
+        <addForeignKeyConstraint baseColumnNames="usage_rating_scheme" baseTableName="rating_configuration"
+                                                         constraintName="rating_configuration_fk1" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="usage_rating_scheme"
+                                                         referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="rating_unit" baseTableName="rating_configuration"
+                                                         constraintName="rating_configuration_fk2" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="rating_unit"
+                                                         referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "Updating item_rating_configuration_map" author = "Maria Khan">
+        <addColumn tableName = "item_rating_configuration_map">
+            <column name = "rating_configuration_id" type = "java.sql.Types.INTEGER" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "Migrating data item_rating_configuration_map to rating_configuration" author="PriyankS">
+        <sql>
+            UPDATE item_rating_configuration_map SET rating_configuration_id = t.rn FROM
+            (SELECT item_id, start_date, row_number() over (ORDER BY item_id, start_date) AS rn
+            FROM item_rating_configuration_map) t
+            WHERE t.item_id = item_rating_configuration_map.item_id
+            AND t.start_date = item_rating_configuration_map.start_date
+        </sql>
+        <sql>
+            INSERT INTO rating_configuration(id, rating_unit, usage_rating_scheme)
+            SELECT  im.rating_configuration_id, im.rating_unit, im.usage_rating_scheme
+            FROM    item_rating_configuration_map im
+        </sql>
+
+        <dropColumn columnName="rating_unit" tableName="item_rating_configuration_map"/>
+        <dropColumn columnName="usage_rating_scheme" tableName="item_rating_configuration_map"/>
+        <dropColumn columnName="pricing_unit" tableName="item_rating_configuration_map"/>
+
+        <addNotNullConstraint tableName = "item_rating_configuration_map" columnName = "rating_configuration_id" />
+
+        <addForeignKeyConstraint baseColumnNames="rating_configuration_id" baseTableName="item_rating_configuration_map"
+                                                         constraintName="item_rating_configuration_map_rc" deferrable="false"
+                                                         initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                                         referencedColumnNames="id" referencedTableName="rating_configuration"
+                                                         referencesUniqueColumn="false"/>
+    </changeSet>
+
+    <changeSet context = "base" id = "Adding rating_configuration to JBillingTable" author = "Maria Khan">
+        <insert tableName="jbilling_table">
+            <column name="id"   valueComputed = "coalesce((select max(jt.id)+1 from jbilling_table jt), 1)"/>
+            <column name="name" value         = "rating_configuration"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "Update seqs value for rating_configuration" author="PriyankS">
+        <sql>
+            UPDATE jbilling_seqs SET next_id = (SELECT max(id) + 1 FROM rating_configuration)
+            WHERE name = 'rating_configuration'
+        </sql>
+    </changeSet>
+
+    <changeSet id="api user table for basicAuth" author="Pukhraj">
+    <createTable tableName="api_user_details">
+        <column name="user_name" type = "java.sql.Types.VARCHAR(255)"/>
+        <column name="password" type = "java.sql.Types.VARCHAR(255)"/>
+        <column name="access_code" type = "java.sql.Types.VARCHAR(255)">
+            <constraints primaryKey="true" primaryKeyName="api_user_details_pk" />
+        </column>
+        <column name="company_id" type = "java.sql.Types.INTEGER"/>
+    </createTable>
+    </changeSet>
+
+    <changeSet context = "base" id="Entity id for rating schemes" author="Priyank">
+        <addColumn tableName = "usage_rating_scheme">
+            <column name = "entity_id" type = "java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <addForeignKeyConstraint constraintName="rating_scheme_entity_id_FK"
+                                 baseTableName="usage_rating_scheme" baseColumnNames="entity_id"
+                                 referencedTableName="entity" referencedColumnNames="id"/>
+
+        <sql>
+            UPDATE usage_rating_scheme
+            SET entity_id = (SELECT min(id) FROM entity)
+        </sql>
+
+        <addNotNullConstraint columnDataType="int"
+                              columnName="entity_id"
+                              tableName="usage_rating_scheme"/>
+    </changeSet>
+
+    <changeSet id="JBDT-163 Adding extra security and removing password column" author="Chetan">
+        <dropColumn tableName = "api_user_details"    columnName="password"/>
+    </changeSet>
+
+    <changeSet id="JBDT-172 Precision value of preference 87 is incorrect (Decimal)" author="PriyankS">
+        <update tableName="preference_type">
+            <column name="def_value" value="0"/>
+            <where>id = 87</where>
+        </update>
+        <sql>
+            UPDATE preference SET value = '0' WHERE value = '0.0'
+        </sql>
+        <sql>
+            <![CDATA[
+                INSERT INTO preference(id, type_id, table_id, foreign_id, value)
+                SELECT
+                    (select case count(t.id) when 0 then 1 ELSE max(t.id) + 1 END from preference t) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                    87,
+                    5,
+                    e1.id,
+                    '0'
+                FROM entity e1
+                WHERE e1.id NOT IN (SELECT foreign_id FROM preference WHERE table_id = 5 AND type_id = 87)
+                order by e1.id
+            ]]>
+        </sql>
+
+    </changeSet>
+
+    <changeSet context="base" id="Adding category Undo Mediation Filter Task" author="Maria Khan" >
+        <insert tableName="pluggable_task_type_category">
+            <column name="id" valueComputed="30"/>
+            <column name="interface_name" value="com.sapienter.jbilling.server.pluggableTask.UndoMediationFilterTask"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Undo Mediation Filter Task international desc" author="Maria Khan" >
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="23"/>
+            <column name="foreign_id" valueComputed="30"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Filters orders to be undone by status for Undo mediation."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Preference - Use pricing cache for mediated orders" author="PriyankS">
+        <comment>Added preference for Single Order per mediation run</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="90"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="90"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Price model caching in mediation"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="90"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Enable Price model caching for mediated orders"/>
+        </insert>
+
+        <sql>
+            <![CDATA[
+               insert into preference(id, type_id, table_id, foreign_id, value)
+               select
+                    (select case count(t.id) when 0 then 1 ELSE max(t.id) + 1 END from preference t) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                    90, 5, e1.id, '0'
+               from entity e1
+               order by e1.id
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="Drop unique constraint on usage rating scheme name" author="PriyankS">
+        <sql>
+            <![CDATA[
+                ALTER TABLE usage_rating_scheme DROP CONSTRAINT usage_rating_scheme_rating_scheme_code_key
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="Task to cache clean up whenever a plan or order created/modified" author="Pukhraj soni" >
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.dt.ReserveCacheClearTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Description for Reserve cache cleanup task" author="Pukhraj soni">
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.dt.ReserveCacheClearTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Reserved plan cache cleanup when plan or order got updated "/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.dt.ReserveCacheClearTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Reserved plan cache cleanup task"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id = "Add Permissions for old Rating scheme config menu" author = "PriyankS">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="1918"/>
+            <column name="type_id" valueNumeric="19"/>
+            <column name="role_assignable" valueBoolean="false"/>
+            <column name="user_assignable" valueBoolean="true"/>
+            <column name="required_to_assign_permission_id" valueNumeric="1400"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="1918"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Mediation Rating Scheme"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

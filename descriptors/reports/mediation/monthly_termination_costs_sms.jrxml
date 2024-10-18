@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="monthly_termination_costs" language="groovy" pageWidth="842" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryWithPageHeaderAndFooter="true" uuid="4945617d-a05c-4c25-85f9-5ff9a4f828b4">
+	<property name="ireport.zoom" value="1.000000000000004"/>
+	<property name="ireport.x" value="296"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="event_date_start" class="java.util.Date"/>
+	<parameter name="event_date_end" class="java.util.Date"/>
+	<parameter name="user_id" class="java.lang.Integer"/>
+	<parameter name="include_non_invoiceable" class="java.lang.Boolean"/>
+	<parameter name="sub_account_list" class="java.util.List"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cdrType" class="java.lang.String"/>
+	<parameter name="logo" class="java.io.File"/>
+	<parameter name="user_name" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="export_format" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT  jmr.event_date,
+	        jmr.source,
+	        jmr.destination,
+	        b.user_name AS Sub_ORG,
+	        jmr.original_quantity,
+	        jmr.rated_price AS UnitCost,
+	(SELECT COALESCE(SUM(rated_price),0)
+	   FROM jbilling_mediation_record
+	  WHERE user_id = jmr.user_id
+	    AND (DATE(event_date) >= $P{event_date_start}
+	    AND DATE(event_date) <= $P{event_date_end})
+	    AND cdr_type ILIKE '%'||$P{cdrType}||'%'
+	    -- same cdr type for split sms
+	    AND SUBSTRING(cdr_type,0,13) = SUBSTRING(jmr.cdr_type,0,13)
+	    -- session id is same for split sms
+	    AND (SUBSTRING(pricing_fields,POSITION('session+id:1:string:' IN pricing_fields)+21,(POSITION(',application+name:1:string:' IN pricing_fields))-(POSITION('session+id:1:string:' IN pricing_fields)+21))
+		) = (SUBSTRING(jmr.pricing_fields,POSITION('session+id:1:string:' IN jmr.pricing_fields)+21,(POSITION(',application+name:1:string:' IN jmr.pricing_fields))-(POSITION('session+id:1:string:' IN jmr.pricing_fields)+21))
+		)
+	    -- event date is same for split sms
+	    AND event_date = jmr.event_date) AS amount,
+	(SELECT user_name AS parent_user
+	   FROM base_user
+	  WHERE id = $P{user_id}),
+		(SUBSTRING(pricing_fields,POSITION('session+id:1:string:' IN pricing_fields)+21,(POSITION(',application+name:1:string:' IN pricing_fields))-(POSITION('session+id:1:string:' IN pricing_fields)+21))
+		) AS session_id,
+		count(*) AS count
+	   FROM jbilling_mediation_record jmr
+     INNER JOIN customer c ON jmr.user_id = c.user_id
+     INNER JOIN base_user b ON c.user_id = b.id
+	  WHERE (DATE(jmr.event_date) >= $P{event_date_start}
+	    AND DATE(jmr.event_date) <= $P{event_date_end})
+	    AND b.deleted=0
+	    AND jmr.status != 'UNPROCESSED'
+	    AND jmr.cdr_type ILIKE '%'||$P{cdrType}||'%'
+	    AND $X{IN,c.id,sub_account_list}
+       GROUP BY event_date,
+		source,
+		destination,
+		Sub_ORG,
+		original_quantity,
+		UnitCost,
+		amount,
+		parent_user,
+		session_id
+       ORDER BY jmr.event_date ASC]]>
+	</queryString>
+	<field name="event_date" class="java.sql.Timestamp"/>
+	<field name="source" class="java.lang.String"/>
+	<field name="destination" class="java.lang.String"/>
+	<field name="sub_org" class="java.lang.String"/>
+	<field name="original_quantity" class="java.math.BigDecimal"/>
+	<field name="unitcost" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="parent_user" class="java.lang.String"/>
+	<field name="session_id" class="java.lang.String"/>
+	<field name="count" class="java.lang.Long"/>
+	<variable name="original_quantity_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{original_quantity}]]></variableExpression>
+	</variable>
+	<variable name="variable1" class="java.lang.String"/>
+	<variable name="total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="79" splitType="Stretch">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
+			<subreport>
+				<reportElement x="0" y="0" width="618" height="65" uuid="36517500-0031-4a06-9c5c-b2f5f960fb06">
+					<printWhenExpression><![CDATA[$P{export_format} == "CSV"]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="sub_account_list">
+					<subreportParameterExpression><![CDATA[$P{sub_account_list}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="event_date_start">
+					<subreportParameterExpression><![CDATA[$P{event_date_start}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="event_date_end">
+					<subreportParameterExpression><![CDATA[$P{event_date_end}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="parent_id">
+					<subreportParameterExpression><![CDATA[$P{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="parent_user">
+					<subreportParameterExpression><![CDATA[$P{user_name}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "monthly_termination_costs_sub.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="37" splitType="Stretch">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="5" width="73" height="20" backcolor="#A9A9A9" uuid="c9e34e9b-9948-40c1-8bc8-56bc02041b97"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="73" y="5" width="72" height="20" backcolor="#A9A9A9" uuid="75e4f098-3979-4898-88b6-5d0875127cd6"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="145" y="5" width="150" height="20" backcolor="#A9A9A9" uuid="7bc3d1aa-22ba-499c-90c8-84db4ff620c1"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sub-ORG]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="295" y="5" width="129" height="20" backcolor="#A9A9A9" uuid="2fabdf39-5304-4312-a413-c648bcf6ac7d"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[From]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="424" y="5" width="129" height="20" backcolor="#A9A9A9" uuid="47143e24-42d8-4048-9b6f-d29e7cb6fc26"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[To]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="553" y="5" width="65" height="20" isRemoveLineWhenBlank="true" backcolor="#A9A9A9" uuid="c6c88932-a95b-4ce6-98bf-83b2164e05ae">
+					<printWhenExpression><![CDATA[$P{cdrType} == "CALL"]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Duration]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="618" y="5" width="100" height="20" backcolor="#A9A9A9" uuid="d82f9dcd-f79c-42b6-b209-44e104b89231"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="553" y="5" width="65" height="20" isRemoveLineWhenBlank="true" backcolor="#A9A9A9" uuid="603f2404-7843-423e-9c99-b16a9c3354a8">
+					<printWhenExpression><![CDATA[$P{cdrType} == "SMS"]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Count]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="23" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="MM/dd/yyyy" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="73" height="20" uuid="b9287345-05fa-406c-90bb-4659aef78701"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="145" y="0" width="150" height="20" uuid="e4dc5634-a4ad-4cae-b37d-befe4ce94ac5"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{sub_org}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="hh:mm:ss a" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="73" y="0" width="72" height="20" uuid="81bb3b1d-9786-4730-8387-1c9e2787ab6f"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="295" y="0" width="129" height="20" uuid="b6136759-8c2e-4a69-850e-f41a01920bb9"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{source}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="424" y="0" width="129" height="20" uuid="a2a82b9d-1c9d-492c-a218-0d624ad7a704"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{destination}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="553" y="0" width="65" height="20" isRemoveLineWhenBlank="true" uuid="06472cd3-4ee7-43b1-aa38-781bd549f519">
+					<printWhenExpression><![CDATA[$P{cdrType} == "CALL"]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[null != $F{original_quantity} ? $F{original_quantity} + " min" : ""]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0.0000" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="618" y="0" width="100" height="20" uuid="c3d140e7-8f08-4dee-8693-01bab6e212c5"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + $F{amount}.setScale(4, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="553" y="0" width="65" height="20" uuid="d731c078-bb1e-4575-8634-114bfed85f33">
+					<printWhenExpression><![CDATA[$P{cdrType} == "SMS"]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{count}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="25" splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="23" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="618" y="0" width="100" height="20" uuid="66d3b8b0-eb35-49ca-8192-918f6460c8e5"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + $V{total}.setScale(4, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" mode="Opaque" x="424" y="0" width="194" height="20" isRemoveLineWhenBlank="true" backcolor="#A9A9A9" uuid="e4dbd59c-4b8b-4a14-a782-0c65c3ddaff0"/>
+				<textElement textAlignment="Right">
+					<font isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Total "+(null != $F{parent_user} ? $F{parent_user} : "")]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

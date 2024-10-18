@@ -1,0 +1,61 @@
+<testdata>
+	<testdataset name="createOrder" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<product>Flat 1 Priced Product</product>
+		<discount>Test Discount1RFX - Test Discount1RFR</discount>
+		<discountItem>Test Code Description - Qty=1 - Percentage=15.0000%</discountItem>
+		<order>pre paid</order>
+		<quantity>2</quantity>
+		<product2>SIM CardsJYK</product2>
+		<sim>true</sim>
+	</testdataset>
+	<testdataset name="createOrderSecond" category="co"
+		testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<product>Date Service</product>
+		<message>The order has an error in the hierarchy field: Mandatory dependency not satisfied</message>
+		<depandentProduct>Installation Fee</depandentProduct>
+	</testdataset>
+	<testdataset name="OrderWithDifferentPeriods" category="co"
+		testenv="develop|lab3">
+		<period>One time</period>
+		<activeDate>01/01/2001</activeDate>
+		<product>Billing Graduated</product>
+		<quantity>14</quantity>
+		<effectiveDate>01/01/2001</effectiveDate>
+	</testdataset>
+	<testdataset name="OrderTwoWithDifferentPeriods" category="co"
+		testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<activeDate>01/01/2001</activeDate>
+		<product>Billing Flat</product>
+		<quantity>3</quantity>
+		<effectiveDate>01/01/2001</effectiveDate>
+	</testdataset>
+	<testdataset name="OrderThreeWithDifferentPeriods"
+		category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>post paid</type>
+		<activeDate>01/01/2001</activeDate>
+		<product>Billing Graduated</product>
+		<quantity>14</quantity>
+		<effectiveDate>01/01/2001</effectiveDate>
+	</testdataset>
+	<testdataset name="OrderfourWithDifferentPeriods" category="co"
+		testenv="develop|lab3">
+		<product>Billing Flat</product>
+		<quantity>2</quantity>
+		<effectiveDate>01/01/2001</effectiveDate>
+	</testdataset>
+	<testdataset name="TC_102_AddOrder" category="ao"
+		testenv="develop|lab3">
+		<message>The order has an error in the hierarchy field: Mandatory dependency not satisfied</message>
+	</testdataset>
+	<testdataset name="editOrder" category="eo"
+		testenv="develop|lab3">
+		<period>One time</period>
+		<type>post paid</type>
+	</testdataset>
+</testdata>

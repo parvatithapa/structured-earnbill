@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <bean id="sampleRecordMediationCdrResolver" class="com.sapienter.jbilling.server.mediation.converter.common.steps.JMRMediationCdrResolver" >
+        <property name="steps" ref="SampleResolutionStep" />
+    </bean>
+
+    <!-- CDR to JMR -->
+
+    <bean id="sampleCDRToJMR" class="com.sapienter.jbilling.server.mediation.converter.common.job.CallDataRecordToConversionResult">
+        <property name="resolver" ref="sampleRecordMediationCdrResolver"></property>
+    </bean>
+
+    <bean id="sampleMediationReader" class="com.sapienter.jbilling.server.mediation.converter.common.reader.SampleMediationReader" >
+        <property name="lineMapper" ref="sampleMediationConverter"/>
+        <property name="linesToSkip" value="0"/>
+        <property name="strict" value="false"/>
+    </bean>
+
+    <bean id="sampleRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+        <property name="dataSource" ref="jBillingMediationDataSource"/>
+        <property name="sql" value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+        <property name="rowMapper" ref="sampleRecycleRowMapper"/>
+    </bean>
+
+    <!-- Mediation line to CDR -->
+    <bean id="SampleMediationTokenizer" class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer" lazy-init="true">
+        <property name="fieldSeparator" value="[,]" />
+    </bean>
+
+    <bean id="SampleMediationFormatFactory" class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory" lazy-init="true">
+        <property name="formatFilename" value="/custom-mediations/sampleMediationFormat.xml" />
+        <property name="tokenizer" ref="SampleMediationTokenizer" />
+    </bean>
+
+    <bean id="sampleMediationConverter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleMediationRecordLineConverter" lazy-init="true">
+        <property name="format" ref="SampleMediationFormatFactory" />
+    </bean>
+    <!-- Mediation line to CDR -->
+
+    <!-- CDR to JMR -->
+    <bean id="SampleItemResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleItemResolutionStep" />
+    <bean id="SampleEventDateResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleEventDateResolutionStep"/>
+
+    <util:map id="SampleResolutionStep" map-class="java.util.LinkedHashMap">
+        <entry key="USER_CURRENCY" value-ref="DefaultUserLoginResolutionStep" />
+        <entry key="EVENT_DATE" value-ref="SampleEventDateResolutionStep" />
+        <entry key="ORDER_LINE_ITEM" value-ref="SampleItemResolutionStep" />
+        <entry key="PRICING" value-ref="DefaultPricingResolutionStep" />
+    </util:map>
+
+    <!-- CDR to JMR -->
+    <bean id="sampleRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleRecycleRowMapper" />
+
+
+    <batch:job id="sampleMediationJob" job-repository="mediationJobRepository">
+
+        <!--CDR TO JMR STEP-->
+        <batch:step id="sampleMediationStep" next="sampleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="sampleMediationReader" processor="sampleCDRToJMR"
+                             writer="jmrDefaultWriter" commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="sampleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="defaultJMRProcessorReader" writer="defaultJMRProcessorWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="mediationJobListener"/>
+        </batch:listeners>
+
+    </batch:job>
+
+    <!--sample recycle job-->
+    <batch:job id="sampleRecycleJob" job-repository="mediationJobRepository">
+        <batch:step id="sampleRecycleStep" next="sampleRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="sampleRecycleReader" processor="sampleCDRToJMR"
+                             writer="jmrDefaultWriter" commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="sampleRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="defaultJMRProcessorReader" writer="defaultJMRProcessorWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="recycleMediationJobListener"/>
+            <batch:listener ref="mediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+</beans>

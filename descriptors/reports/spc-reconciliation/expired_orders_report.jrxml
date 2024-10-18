@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="expired_orders_report" language="groovy" pageWidth="1680" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="1640" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="71027f93-6b83-4cc3-884a-94b960ab412e">
+	<property name="ireport.zoom" value="1.3310000000000004"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT bu.id,
+                        bu.user_name,
+                        CONCAT(
+                               (SELECT DISTINCT mfv.string_value
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.name ='Title'
+                                 WHERE caitt.customer_id = cu.id),
+                               (SELECT DISTINCT CASE WHEN mfv.string_value is not null THEN ' '||  mfv.string_value  END
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.name ='First Name'
+                                 WHERE caitt.customer_id = cu.id),
+                               (SELECT DISTINCT CASE WHEN mfv.string_value is not null THEN ' '||  mfv.string_value  END
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.name ='Last Name'
+                                 WHERE caitt.customer_id = cu.id)) AS "Full Name",
+                               pu.id AS "Order Id",
+                               (SELECT mfv.string_value FROM order_meta_field_map omfm
+                                 INNER JOIN meta_field_value mfv ON mfv.id = omfm.meta_field_value_id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'amaysim Order ID'
+                                                                                                   AND mfn.is_primary = 't'
+                                 WHERE omfm.order_id = pu.id) AS "amaysim Order ID",
+                               itm.id "Prod Id",
+                               ol.description,
+                               ol.amount,
+                               ol.amount * 0.10 AS "GST" ,
+                               (ol.amount + (ol.amount * 0.10)) AS "Price Inc GST",
+                               pu.create_datetime,
+                               pu.active_since,
+                               pu.active_until,
+                               pu.next_billable_day,
+                               (SELECT content FROM international_description
+                                 WHERE foreign_id = pu.period_id
+                                       AND table_id = (SELECT id FROM jbilling_table
+                                                        WHERE name='order_period')
+                                       AND language_id = 1) AS "Order Period",
+                               (SELECT content FROM international_description
+                                 WHERE foreign_id = pu.status_id
+                                       AND table_id = (SELECT id FROM jbilling_table
+                                                        WHERE name='order_status')
+                                       AND language_id = 1) AS "Order Status",
+                               (SELECT content FROM international_description
+                                 WHERE foreign_id = pu.billing_type_id
+                                       AND table_id = (SELECT id FROM jbilling_table
+                                                        WHERE name='order_billing_type')
+                                       AND language_id = 1) AS "Type",
+                               (CASE WHEN (pu.parent_order_id != null)
+                                     THEN 'Child'
+                                     ELSE 'Parent'
+                                      END) AS "Parent/child"
+                   FROM base_user bu
+                  INNER JOIN customer cu ON cu.user_id = bu.id
+                  INNER JOIN purchase_order pu ON bu.id = pu.user_id AND pu.deleted =0
+                             AND pu.status_id in (SELECT id FROM order_status
+                                                   WHERE order_status_flag =1 AND entity_id=$P{entity_id}
+                                                                               OR $X{IN,entity_id,child_entities})
+                             AND ((pu.active_until BETWEEN $P{start_date} AND $P{end_date} AND pu.period_id != 1)
+                              OR (pu.active_since BETWEEN $P{start_date} AND $P{end_date} AND pu.period_id = 1))
+                  INNER JOIN order_line ol ON ol.order_id = pu.id AND ol.deleted = 0
+                   LEFT JOIN item itm ON itm.id = ol.item_id
+                   LEFT JOIN asset a ON a.order_line_id = ol.id
+                  ORDER BY bu.id, pu.id,17;]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="Full Name" class="java.lang.String"/>
+	<field name="Order Id" class="java.lang.Integer"/>
+	<field name="amaysim Order ID" class="java.lang.String"/>
+	<field name="Prod Id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="GST" class="java.math.BigDecimal"/>
+	<field name="Price Inc GST" class="java.math.BigDecimal"/>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="active_until" class="java.sql.Date"/>
+	<field name="next_billable_day" class="java.sql.Date"/>
+	<field name="Order Period" class="java.lang.String"/>
+	<field name="Order Status" class="java.lang.String"/>
+	<field name="Type" class="java.lang.String"/>
+	<field name="Parent/child" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="1630" height="20" uuid="571d4a96-d812-4c0e-ae0c-8a1ca9959f32"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Expired Orders Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1450" y="20" width="80" height="20" uuid="b9ce984c-8670-427c-a62c-a9b926343173"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy/MM/dd">
+				<reportElement x="1530" y="20" width="100" height="20" uuid="6fc19d9a-e234-4577-84f1-af50439bb9df"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="28" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="75" height="20" uuid="e0f4bde7-fd47-48d1-8828-9d763f45f733"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="75" y="0" width="165" height="20" uuid="0bae88cd-9ae4-458b-b32f-d591c522630d"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Login Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="240" y="0" width="115" height="20" uuid="07549f6b-8368-4090-8871-9abf3e8fb4f9"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="355" y="0" width="55" height="20" uuid="c98e64a5-bfe1-4f5f-bbf5-8df018c42a35"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="410" y="0" width="110" height="20" uuid="c97f876c-2c73-4f56-91f0-9b146c2345ad"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amaysim Order ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="520" y="0" width="80" height="20" uuid="5b40b008-72ff-4968-99e4-0398b7a643f7"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Prod ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="600" y="0" width="161" height="20" uuid="6462f243-9d47-4922-bdf0-b611c54f7313"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="761" y="0" width="84" height="20" uuid="bf22baa2-6ac6-4a4f-94d3-4d8ced7faa39"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Price (Ex GST)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="845" y="0" width="70" height="20" uuid="65b4a4a9-c8bd-4733-883e-4bf5bdb28cf0"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="915" y="0" width="80" height="20" uuid="779b0e59-2567-4a62-ade3-9b4c73365a01"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Price Inc GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="995" y="0" width="120" height="20" uuid="9ef2f3c8-bc44-4bff-bb83-83dda102b144"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order creation date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1115" y="0" width="80" height="20" uuid="00d553d9-4efd-4c39-8de5-0564ca77f4fd"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Active Since]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1195" y="0" width="80" height="20" uuid="e89dc1cb-f212-4892-aa7a-3605527b44e2"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Active Until]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1275" y="0" width="115" height="20" uuid="5c819c4e-d7fa-47a8-a3bd-1963f7248783"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Next Billable Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1390" y="0" width="60" height="20" uuid="2864f165-3766-4494-aa7d-bb0a29fa3612"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Period]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1450" y="0" width="80" height="20" uuid="5ac0c129-1482-44d3-a745-102fcd5fae95"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Status]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1530" y="0" width="50" height="20" uuid="d0979d17-5d9a-4a3b-a2f0-59c774ebb600"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1580" y="0" width="50" height="20" uuid="35214494-201e-4b7e-99b8-d118a86c98ad"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Parent /Child]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="21" width="1630" height="1" uuid="ffc212ce-2e02-4a4c-bec9-8e5cedcff340"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="75" height="20" uuid="e34cc71a-8bdf-4cfb-ba10-a45934285a50"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="75" y="0" width="165" height="20" uuid="4402125e-7a9a-486a-9b20-47376245f979"/>
+				<textFieldExpression><![CDATA[$F{user_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="240" y="0" width="115" height="20" uuid="27439164-2deb-43ff-9232-ae6faa6180b7"/>
+				<textFieldExpression><![CDATA[$F{Full Name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="355" y="0" width="55" height="20" uuid="951999f7-ff6f-470e-8c9b-40d02e9153c7"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{Order Id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="410" y="0" width="110" height="20" uuid="af19acfc-2761-4a79-9868-b41cf6e83ea5"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{amaysim Order ID}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="520" y="0" width="80" height="20" uuid="ee08242e-61e2-40a9-ac46-10ff93053a8b"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{Prod Id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="600" y="0" width="161" height="20" uuid="fc3f1b2c-ee7c-4d1e-adac-a6439732524b"/>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="761" y="0" width="84" height="20" uuid="0676cdc2-0659-4ebe-9b4c-2f4221fe8de4"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="845" y="0" width="70" height="20" uuid="9972c599-920b-49ee-bdb8-5b76ebdd228e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{GST}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="915" y="0" width="80" height="20" uuid="bf3276d8-481a-4353-af14-cc63b47f850c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{Price Inc GST}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="995" y="0" width="120" height="20" uuid="001dbf0b-91aa-429b-abdd-bd2438b3b679"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="1115" y="0" width="80" height="20" uuid="93e27fa2-ab18-4d0b-8657-320eed8ae83b"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="1195" y="0" width="80" height="20" uuid="4a05efb1-a1db-4401-94b5-89c7d425efd7"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_until}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="1275" y="0" width="115" height="20" uuid="90a6615b-6b78-4f47-97a9-be4b0cb40856"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{next_billable_day}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1390" y="0" width="60" height="20" uuid="670aeebf-c964-4ba7-82ed-c8960f92432c"/>
+				<textFieldExpression><![CDATA[$F{Order Period}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1450" y="0" width="80" height="20" uuid="2f2b601b-0225-45e1-9808-034dda2ea6fa"/>
+				<textFieldExpression><![CDATA[$F{Order Status}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1530" y="0" width="50" height="20" uuid="be916cdb-40d4-4d0f-9b1e-2ce026a4cb51"/>
+				<textFieldExpression><![CDATA[$F{Type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1580" y="0" width="50" height="20" uuid="37712df1-4198-4286-b10d-5a9f767fb48a"/>
+				<textFieldExpression><![CDATA[$F{Parent/child}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="762" height="20" uuid="4cb4930d-fa95-4766-9677-b129c0244371"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="762" y="0" width="868" height="20" uuid="ac4c1c0d-b573-44c6-9e35-f323c2fd5fd6"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

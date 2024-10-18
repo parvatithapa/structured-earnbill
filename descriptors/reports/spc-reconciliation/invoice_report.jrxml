@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_report" language="groovy" pageWidth="1400" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="1360" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="103bd412-49ba-4672-aff7-a849d3ba6f72">
+	<property name="ireport.zoom" value="1.4641000000000013"/>
+	<property name="ireport.x" value="990"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.lang.String"/>
+	<parameter name="end_date" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT i.user_id,
+                        i.id,
+                        i.public_number,
+                        i.total,
+                        i.balance,
+                        (SELECT SUM(amount)
+                           FROM invoice_line il
+                          WHERE il.invoice_id = i.id AND il.type_id = 3) AS carried_balance,
+                        (SELECT SUM(amount)
+                           FROM invoice_line il
+                          WHERE il.invoice_id = i.id AND il.type_id != 3) AS current_charges,
+                        CASE WHEN i.status_id = 26
+                             THEN 'PAID'
+                             WHEN i.status_id = 27
+                             THEN 'UNPAID'
+                             ELSE 'CARRIED'
+                        END AS invoice_status,
+                        TIMEZONE('AEDT', p.create_datetime::timestamp with time zone)::DATE AS aedt_date_paid,
+                        TIMEZONE('AEDT', p.create_datetime::timestamp with time zone)::TIME AS aedt_time_paid,
+                        pa.transaction_id AS "bank_reference_number",
+                        TIMEZONE('AEDT', p.create_datetime::timestamp with time zone) AS bank_settlement_date
+                   FROM invoice i
+              LEFT JOIN payment_invoice pi ON (pi.invoice_id = i.id AND pi.payment_id IN
+                                                                                        (SELECT MAX(payment_id)
+                                                                                           FROM payment_invoice
+                                                                                          WHERE invoice_id = i.id))
+              LEFT JOIN payment p ON (p.id = pi.payment_id AND p.result_id IN (1, 4))
+              LEFT JOIN payment_authorization pa ON pa.payment_id = p.id AND pa.transaction_id != 'N/A'
+                  WHERE CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                             THEN i.create_datetime :: DATE = DATE($P{start_date})
+                             ELSE i.create_datetime :: DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                        END
+                        AND i.deleted = 0
+                        AND i.is_review = 0
+               ORDER BY 7, 6, 2]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="public_number" class="java.lang.String"/>
+	<field name="total" class="java.math.BigDecimal"/>
+	<field name="balance" class="java.math.BigDecimal"/>
+	<field name="carried_balance" class="java.math.BigDecimal"/>
+	<field name="current_charges" class="java.math.BigDecimal"/>
+	<field name="invoice_status" class="java.lang.String"/>
+	<field name="aedt_date_paid" class="java.sql.Date"/>
+	<field name="aedt_time_paid" class="java.sql.Time"/>
+	<field name="bank_reference_number" class="java.lang.String"/>
+	<field name="bank_settlement_date" class="java.sql.Timestamp"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="98" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="1257" height="20" uuid="3cb787ce-7e5a-4a4e-9456-d7d82ae9e77d"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Report                           ]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1160" y="20" width="97" height="20" uuid="68885366-0a78-4af3-b588-09699eeb0d93"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1075" y="20" width="85" height="20" uuid="de2f2fc3-9edc-41bb-868b-2d3641863d9d"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1075" y="60" width="85" height="20" uuid="5229c79c-1cae-4edb-a342-00cc7ab0429c"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1075" y="40" width="85" height="20" uuid="f9c7764c-078c-4cea-998d-5c536dcbe8a9"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1160" y="40" width="97" height="20" uuid="e5017253-a72f-4332-bd50-c08c8b2dc8e7"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1160" y="60" width="97" height="20" uuid="a24ae196-23e0-40d7-94ae-8dc67ca75733"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="23" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="55" height="20" uuid="135cb106-e4fb-4545-803a-17e228fb30ea"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="55" y="0" width="72" height="20" uuid="cb877153-e271-4021-9138-e92ab87f51ed"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB Invoice Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="127" y="0" width="107" height="20" isPrintWhenDetailOverflows="true" uuid="dd84947b-d515-4525-958d-3d2eaf88a9f1"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB Invoice Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="234" y="0" width="89" height="20" uuid="52246a95-582c-4677-bbbb-a544a8da60c7"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Total]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="323" y="0" width="102" height="20" uuid="fc1ad230-9e05-4c41-aa8b-54f105005112"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Balance]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="757" y="0" width="101" height="20" uuid="b1a7652f-8ad8-4ba9-96e7-a3fd78009329"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[AEDT Date Paid]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="858" y="0" width="100" height="20" uuid="da5893e0-befc-4286-9842-f2f683f18eb9"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[AEDT Time Paid]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="958" y="0" width="117" height="20" uuid="8d61ae9f-8a18-4c88-a99b-0960169c1aef"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Bank Reference No]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1075" y="0" width="182" height="20" uuid="89821149-a479-49eb-a56a-244a78ad3ba2"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Bank Settlement Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="660" y="0" width="97" height="20" uuid="f18b0c32-a918-4857-991d-536fdf472b99"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Status]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="20" width="1257" height="1" uuid="9d23c67e-c816-41c7-b49a-8b6facc07705"/>
+			</line>
+			<staticText>
+				<reportElement x="425" y="0" width="122" height="20" uuid="8c0474c2-6f89-490c-bbe9-c22221d2e9d3"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Carried Forward]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="547" y="0" width="113" height="20" uuid="86b4e5d2-a1ea-4aed-bd53-3859badf5d0e"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Current Charges]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="55" height="20" uuid="82687018-3540-4902-b135-e5be0fc2ed35"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="55" y="0" width="72" height="20" uuid="4bb9363a-1819-4400-876c-67eda3ecdfc1"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="127" y="0" width="107" height="20" uuid="573df25a-edf7-41ca-aab1-2a6b099b87a2"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{public_number}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="234" y="0" width="89" height="20" uuid="b4abc44d-df86-4c26-89c1-32178b2d7ea5"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{total}.setScale(4, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="323" y="0" width="102" height="20" uuid="c7fe1c0d-c4c8-438b-ae56-0d486cfa23ab"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{balance}.setScale(4, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="958" y="0" width="117" height="20" uuid="38a33b83-d339-43d7-806d-d3dde8c7ebfc"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{bank_reference_number}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="1075" y="0" width="182" height="20" uuid="372ae8c8-48c5-4a6e-9a52-00b8a5ac971a"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{bank_settlement_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="660" y="0" width="97" height="20" uuid="bd07721a-fca0-4bc4-8abc-dcb07c04ce33"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{invoice_status}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="757" y="0" width="101" height="20" uuid="ad33af2a-c1cf-493a-8339-c817a63a1719"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{aedt_date_paid}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="858" y="0" width="100" height="20" uuid="924beb62-564d-41d0-bc71-c2a8b1e9824d"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{aedt_time_paid}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="425" y="0" width="122" height="20" uuid="ea7d37b1-ea05-4e2d-8d3f-207ed9aff980"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{carried_balance}.setScale(4, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="547" y="0" width="113" height="20" uuid="f00ee999-bf18-4074-a132-5d8c9d3c420b"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{current_charges}.setScale(4, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="425" y="1" width="122" height="20" uuid="11898c74-d6f3-4f3a-9237-470222a20753"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="547" y="1" width="113" height="20" uuid="9456d6ec-0d9d-4692-8f09-2e536997c515"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

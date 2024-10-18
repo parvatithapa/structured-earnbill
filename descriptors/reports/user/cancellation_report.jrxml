@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="cancellation_report" language="groovy" pageWidth="675" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9bf40113-31aa-4f6d-a321-9666f45cbcc8">
+	<property name="ireport.zoom" value="1.768460768250005"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="net.sf.jasperreports.engine.JREmptyDataSource">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA[$P{child_entities}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cancellation_date_start" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="cancellation_date_end" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select b.id,b.entity_id,b.user_name,cr.create_timestamp,cr.cancellation_date,cr.reason_of_cancellation
+From cancellation_request cr
+INNER JOIN customer c ON cr.customer_id = c.id
+INNER JOIN base_user b ON c.user_id = b.id
+where (cr.cancellation_date >= $P{cancellation_date_start} AND cr.cancellation_date <=$P{cancellation_date_end})
+AND (b.entity_id=$P{entity_id})
+AND b.deleted=0
+ORDER BY b.entity_id,cr.cancellation_date desc ;]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="create_timestamp" class="java.sql.Timestamp"/>
+	<field name="cancellation_date" class="java.sql.Timestamp"/>
+	<field name="reason_of_cancellation" class="java.lang.String"/>
+	<group name="Entity Id">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="8"/>
+		</groupHeader>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="55" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="15" width="202" height="29" uuid="c43dd6b2-9216-4c90-82cd-56e7f80a524a"/>
+				<textElement>
+					<font size="14" isBold="true" isUnderline="false" isStrikeThrough="false" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Cancellation Requests]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="327" y="24" width="100" height="20" uuid="6d62f020-942f-4c46-b289-99b4e49dc559"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="327" y="4" width="100" height="20" uuid="f91c5ad7-7671-4cde-8c04-dd800a928b64"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<textField pattern="">
+				<reportElement x="427" y="4" width="100" height="20" uuid="9f497263-63c6-425c-bb4d-7e7553324422"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{cancellation_date_start}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement x="427" y="24" width="100" height="20" uuid="5f1f1185-8aae-44f6-86a2-249b9d8b0b25"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{cancellation_date_end}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="9" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="3" width="630" height="2" uuid="35e4c969-71a9-4c1b-9276-fa21b3116681"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="31" splitType="Stretch">
+			<staticText>
+				<reportElement x="122" y="0" width="80" height="20" uuid="f0de0ac1-603a-4fca-9803-eee8c85387cf"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[User Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="202" y="0" width="129" height="20" isPrintWhenDetailOverflows="true" uuid="b2ae19b2-c926-4f72-a3f1-8fbe7995505d"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Date of Cancellation]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="331" y="0" width="154" height="20" uuid="1b886840-b054-4018-8eec-3cd04ba067bd"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Reason of Cancellation]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="23" width="630" height="2" uuid="d3da25ec-e32a-4a07-97c5-e176f27d8ff1"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="72" y="0" width="50" height="20" uuid="40ce8a33-158d-4ba7-8b90-87f54cd70e51"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="72" height="20" uuid="13604727-d49b-4764-a089-fb7e8b24f680"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Company Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="485" y="0" width="145" height="20" uuid="b4b64d24-9158-4d1c-bb65-8f54248276d0"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Request Creation Date]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="28" splitType="Stretch">
+			<textField>
+				<reportElement x="122" y="0" width="80" height="24" uuid="a1e1e474-f83d-412a-8d89-544e266341d2"/>
+				<textFieldExpression><![CDATA[$F{user_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement x="202" y="1" width="129" height="24" isPrintWhenDetailOverflows="true" uuid="1bf810f8-4a9d-40d9-8304-28a6cfa20874"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{cancellation_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField>
+				<reportElement x="72" y="0" width="50" height="24" uuid="5f831938-52f3-4540-aeb0-671f22612bf1"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="9" y="1" width="63" height="23" uuid="283b85fe-4a09-4b91-ab2b-179ca00f48c8"/>
+				<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="">
+				<reportElement stretchType="RelativeToTallestObject" x="331" y="1" width="154" height="23" isPrintWhenDetailOverflows="true" uuid="799475a7-f3f1-4085-bf7a-2bb1f39ab496"/>
+				<textFieldExpression><![CDATA[$F{reason_of_cancellation}]]></textFieldExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement x="485" y="0" width="145" height="24" uuid="083ccb07-d1c0-43dd-b55a-21e72cfc9ca3"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{create_timestamp}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="10" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="3" width="630" height="2" uuid="a2e287b4-85b0-415b-911d-95d6e53ce8a2"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

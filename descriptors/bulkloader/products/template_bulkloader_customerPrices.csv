@@ -1,0 +1,3 @@
+PRICE,<product_code>,<external_account_identifier>,<price_start_date>,<price_expiry_date>,<currency>,<chained>
+FLAT,<flat_rate>
+TIER,<from>,<rate>

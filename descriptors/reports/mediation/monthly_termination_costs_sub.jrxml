@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="monthly_termination_costs_sub" language="groovy" pageWidth="555" pageHeight="802" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="199a044d-18fe-4894-aee6-1d6cf13f3198">
+	<property name="ireport.zoom" value="1.6105100000000014"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="parent_id" class="java.lang.Integer"/>
+	<parameter name="event_date_start" class="java.util.Date"/>
+	<parameter name="event_date_end" class="java.util.Date"/>
+	<parameter name="parent_user" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="sub_account_list" class="java.util.List"/>
+	<queryString>
+		<![CDATA[SELECT	mfv.string_value as country_code,
+		ol.quantity,
+		bu.user_name,
+		ol.price,
+		ol.amount
+	FROM 	order_line ol
+    INNER JOIN	purchase_order po ON po.id = ol.order_id
+    INNER JOIN	base_user bu ON po.user_id = bu.id
+    INNER JOIN	customer c ON c.user_id = bu.id
+    INNER JOIN	item i ON ol.item_id = i.id
+    INNER JOIN	item_type_map itm ON i.id = itm.item_id
+    INNER JOIN	item_meta_field_map imfm ON i.id = imfm.item_id
+    INNER JOIN	meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+    INNER JOIN	meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+         WHERE	itm.type_id =
+       (SELECT	integer_value
+	FROM	meta_field_value
+         WHERE	meta_field_name_id =
+       (SELECT	id
+	FROM	meta_field_name
+         WHERE	name = 'Origination Item type'
+	 AND	entity_id = bu.entity_id))
+	 AND	bu.id= $P{parent_id}
+	 AND	ol.deleted = 0
+	 AND	mfn.name='Country Code'
+	 AND	mfn.entity_type = 'PRODUCT'
+	 AND	mfn.data_type = 'STRING'
+	 AND	mfn.field_usage = 'COUNTRY_CODE'
+	 OR $X{IN,c.id,sub_account_list};]]>
+	</queryString>
+	<field name="country_code" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="price" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="78">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="57" width="145" height="20" backcolor="#A9A9A9" uuid="a31cb782-ffc0-4c21-abbc-2c3e7ab88142">
+					<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Line Rental Costs]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="553" height="57" uuid="c72fe32d-979a-44da-a606-3d07a369aaa8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Monthly Termination Costs"
++"\n"+
+"Period : " + new SimpleDateFormat("MMM dd, yyyy").format($P{event_date_start}) + " - " + new SimpleDateFormat("MMM dd, yyyy").format($P{event_date_end})
++"\n"+
+(null != $P{parent_user} ? $P{parent_user} : "")]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="11">
+			<textField>
+				<reportElement x="0" y="0" width="73" height="10" uuid="ace26cc3-1552-40e5-8cd7-0601e9fb5001"/>
+				<textFieldExpression><![CDATA["\n"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="23" splitType="Stretch">
+			<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+			<staticText>
+				<reportElement mode="Opaque" x="73" y="2" width="72" height="20" backcolor="#A9A9A9" uuid="ab60a9d9-d78d-4cf3-a1b8-dcd1aae843b0"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Qty]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="2" width="73" height="20" backcolor="#A9A9A9" uuid="56e6623f-a8cf-4954-9508-50bb0c0f34e4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Country]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="145" y="2" width="150" height="20" backcolor="#A9A9A9" uuid="f7805c0e-d5ce-4b6e-9e44-1aa3da91bd2f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Enterprise]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="295" y="2" width="129" height="20" backcolor="#A9A9A9" uuid="c85867d7-bcb9-4a01-bfdf-967c5fd145dd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unit Cost]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="424" y="2" width="129" height="20" backcolor="#A9A9A9" uuid="2a7f4c83-f924-4e5c-add3-3a7ff1209226"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="23" splitType="Stretch">
+			<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement x="73" y="0" width="72" height="20" uuid="7906e115-db84-495b-acde-77181301a35b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[null != $F{quantity} ? $F{quantity} : 0]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="73" height="20" uuid="a605777c-55e1-40df-abd4-2e3d39fd9d7e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{country_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0.0000" isBlankWhenNull="true">
+				<reportElement x="295" y="0" width="129" height="20" uuid="ac3495fd-4d73-4204-b6d1-a2d06a738e69"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + $F{price}.setScale(4, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0.0000" isBlankWhenNull="true">
+				<reportElement x="424" y="0" width="129" height="20" uuid="18d9ca93-63ea-453d-bb07-52f5bb14e4b7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + $F{amount}.setScale(4, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="145" y="0" width="150" height="20" uuid="69c80af7-51a5-420b-98dc-f5e0155c4ed9"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_name}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="12">
+			<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+			<textField>
+				<reportElement x="0" y="0" width="73" height="10" uuid="39a3ec96-38d9-4edf-a85a-063ad279e3a0"/>
+				<textFieldExpression><![CDATA["\n"]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnFooter>
+</jasperReport>

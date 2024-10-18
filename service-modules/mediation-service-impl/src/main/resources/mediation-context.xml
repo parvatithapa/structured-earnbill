@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:jms-context.xml"/>
+    <import resource="classpath:custom-mediations/default-mediation-beans.xml"/>
+    
+    <!-- 'FullCreative' mediation configurations for single node/machine -->
+    <import resource="classpath:custom-mediations/single-machine/performance-mediation-job.xml"/>
+
+    <!-- <import resource="classpath:custom-mediations/jms-remote-chunking-master.xml"/>
+    <import resource="classpath:custom-mediations/jms-remote-chunking-slave.xml"/> -->
+    <import resource="classpath:custom-mediations/multi-machine/sample-mediation-config-master.xml"/>
+    
+    <import resource="classpath:mediation-process-context.xml"/>
+
+    <import resource="classpath:custom-mediations/multi-machine/distributel-mediation-config.xml"/>
+
+    <import resource="classpath:custom-mediations/single-machine/distributel-mediation-job.xml"/>
+    <!-- spring batch jobs -->
+    <bean id="mediationJobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="mediationJobRepository"></property>
+    </bean>
+
+    <bean id="mediationService" class="com.sapienter.jbilling.server.mediation.converter.MediationServiceImplementation"/>
+
+    <bean id="jmrRepositoryDAS" class="com.sapienter.jbilling.server.mediation.converter.db.JMRRepositoryDASImpl"/>
+
+</beans>

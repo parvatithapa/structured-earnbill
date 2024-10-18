@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="data_consistency_checks" language="groovy" pageWidth="612" pageHeight="792" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a8f7bb47-5f85-4367-a1a2-1ecc2eecf9a8">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="827"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+			<style backcolor="#EFF7FF"/>
+		</conditionalStyle>
+	</style>
+	<style name="table 1">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+			<style backcolor="#EFF7FF"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/jbilling/DCC-reports/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="include_mediated_orders_without_usage_pool" class="java.lang.Boolean"/>
+	<parameter name="include_one_time_orders_with_active_since_date_as_1st_Of_the_month_and_status_as_finished" class="java.lang.Boolean"/>
+	<parameter name="include_mediated_orders_with_active_since_date_in_future" class="java.lang.Boolean"/>
+	<parameter name="include_mediated_orders_with_active_since_date_before_1st.of_current_month_and_status_not_finished" class="java.lang.Boolean"/>
+	<parameter name="include_payments_with_pre_auth" class="java.lang.Boolean"/>
+	<parameter name="customer_usage_pools_with_cycle_start_date_and_cycle_end_date_in_future_month" class="java.lang.Boolean"/>
+	<parameter name="subscription_orders_that_dont_have_associated_customer_usage_pool" class="java.lang.Boolean"/>
+	<parameter name="include_next_billable_date_mismatch_between_orders_and_order_changes" class="java.lang.Boolean"/>
+	<parameter name="include_plan_customer_usage_pool_mismatch" class="java.lang.Boolean"/>
+	<parameter name="include_negative_invoices_reports" class="java.lang.Boolean"/>
+	<parameter name="mediated_orders_with_negative_amounts" class="java.lang.Boolean"/>
+	<parameter name="include_customer_usage_pools_with_cycle_start_date_or_cycle_end_date_in_past_month" class="java.lang.Boolean"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="order_active_until_less_than_orderNBD_and_not_finished" class="java.lang.Boolean"/>
+	<parameter name="customer_NID_less_than_today" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="asset_conflict_report" class="java.lang.Boolean" isForPrompting="false"/>
+	<parameter name="multiple_plans_on_same_order" class="java.lang.Boolean" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[select 1]]>
+	</queryString>
+	<field name="?column?" class="java.lang.Integer"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="73" splitType="Stretch">
+			<staticText>
+				<reportElement x="104" y="6" width="345" height="22" uuid="1fe6f0cf-fe7d-4af0-aae4-b63237608c23"/>
+				<textElement textAlignment="Center">
+					<font size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Data Consistency Checks Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="154" y="28" width="100" height="20" uuid="27d6acd5-7a1b-43fe-b2ff-91a657af2b64"/>
+				<textElement textAlignment="Right">
+					<font size="12"/>
+				</textElement>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="259" y="28" width="135" height="20" uuid="7636f0b6-4778-4590-babd-d8da8b2416f3"/>
+				<textElement>
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<line>
+				<reportElement x="9" y="56" width="555" height="1" uuid="f5a090b3-6f82-4741-a997-452a664c5c23"/>
+			</line>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="1" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="f56e362c-0a1c-40dd-a6b1-356b7cf5c516">
+					<printWhenExpression><![CDATA[$P{include_negative_invoices_reports}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_of_negative_invoice.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="68bf63e2-392d-4645-b73a-5ecc8ec3dd7a">
+					<printWhenExpression><![CDATA[$P{include_mediated_orders_without_usage_pool}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_all_mediated_orders_without_any_usage_pool.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="e8238db7-e5b4-4079-98af-9c8e3cd14be5">
+					<printWhenExpression><![CDATA[$P{include_one_time_orders_with_active_since_date_as_1st_Of_the_month_and_status_as_finished}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_all_one_time_orders.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="fe1b1ac4-73e3-441c-80ee-d58ac2d7840d">
+					<printWhenExpression><![CDATA[$P{include_mediated_orders_with_active_since_date_in_future}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_of_all_mediated_orders_with_active_since_date_in_future.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="8fed6ba1-4c09-41d3-b2e8-5acbe52f46e7">
+					<printWhenExpression><![CDATA[$P{include_mediated_orders_with_active_since_date_before_1st.of_current_month_and_status_not_finished}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_all_mediated_orders_with_active_since_date_before_1st_of_current_month.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="986d1389-9585-4c14-a326-5ee4f8283f79">
+					<printWhenExpression><![CDATA[$P{include_customer_usage_pools_with_cycle_start_date_or_cycle_end_date_in_past_month}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_all_customer_usage_pools_in_past_month.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68" splitType="Stretch">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="92e97665-fcae-4c05-9aab-b22049427d6e">
+					<printWhenExpression><![CDATA[$P{customer_usage_pools_with_cycle_start_date_and_cycle_end_date_in_future_month}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_all_customer_usage_pools_in_future_month.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="69">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="b52909ac-0963-41a3-979d-27c17b7f53f1">
+					<printWhenExpression><![CDATA[$P{subscription_orders_that_dont_have_associated_customer_usage_pool}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_of_subscription_orders_that_donot_have_associated_customer_usage_pool.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="e0a355af-ea1d-47be-8c56-47069d72d8d5">
+					<printWhenExpression><![CDATA[$P{include_next_billable_date_mismatch_between_orders_and_order_changes}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "next_billable_date_mismatch_between_orders_and_order_changes.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="c9fe0b2f-830f-4fe3-94db-cd3262186b7c">
+					<printWhenExpression><![CDATA[$P{include_plan_customer_usage_pool_mismatch}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "plan_mismatch_usage_pool.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="60" isRemoveLineWhenBlank="true" uuid="99a7d181-dd45-4908-826e-37412a6e66b1">
+					<printWhenExpression><![CDATA[$P{include_payments_with_pre_auth}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "pre_auth.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="68">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="57" isRemoveLineWhenBlank="true" uuid="4d30afff-0887-4c5f-8b67-3ae999f9c977">
+					<printWhenExpression><![CDATA[$P{mediated_orders_with_negative_amounts}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "list_of_all_mediated_orders_with_negative_amount.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="66">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="55" uuid="d75139ee-8288-4efc-94be-de29bbe19b0e">
+					<printWhenExpression><![CDATA[$P{asset_conflict_report}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "asset_conflict_report.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="56">
+			<subreport>
+				<reportElement x="0" y="0" width="572" height="50" uuid="4ae7fb4b-c3a4-4103-87a1-32df63c2d0e7">
+					<printWhenExpression><![CDATA[$P{order_active_until_less_than_orderNBD_and_not_finished}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "order_active_until_less_than_orderNBD_and_not_finished.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="55">
+			<subreport>
+				<reportElement x="1" y="0" width="572" height="48" uuid="0fe4370c-8f81-4f6a-b8c3-ab4050e4f04d">
+					<printWhenExpression><![CDATA[$P{customer_NID_less_than_today}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "customer_NID_less_than_today.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="50">
+			<subreport>
+				<reportElement x="1" y="0" width="571" height="40" uuid="4688ed20-c283-4cd3-9846-c753682541f1">
+					<printWhenExpression><![CDATA[$P{multiple_plans_on_same_order}==true]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "multiple_plans_on_same_order.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="50">
+			<subreport>
+				<reportElement x="1" y="0" width="571" height="40" uuid="cc63cd36-1069-475c-9359-bd5e38bd0f74"/>
+				<subreportParameter name="is_parent_inculde">
+					<subreportParameterExpression><![CDATA[$P{is_parent_inculde}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="child_entities">
+					<subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "usage_order_quantity_mismatches_customer_usage_pool_quantity.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="29" splitType="Stretch"/>
+	</summary>
+</jasperReport>

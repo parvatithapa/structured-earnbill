@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_usage_charges_section_fc_hosted" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d7023383-6fe7-411e-815b-b74e708d8e5d">
+	<property name="ireport.zoom" value="3.1384283767210035"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="115"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="customerId" class="java.lang.String"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{invoiceId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="companyLogo" class="java.io.File"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="serviceNumber" class="java.lang.String"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="core.param.usage_charges" class="java.math.BigDecimal"/>
+	<parameter name="usage_start_date" class="java.util.Date"/>
+	<parameter name="usage_end_date" class="java.util.Date"/>
+	<queryString>
+		<![CDATA[SELECT  CASE WHEN (il.usage_plan_id IS NOT NULL)
+	THEN (SELECT idesc.content
+		FROM international_description idesc, plan p, item i
+		WHERE p.item_id = i.id
+		AND i.id = idesc.foreign_id
+		AND idesc.table_id =
+			(SELECT id
+			FROM jbilling_table
+			WHERE name = 'item')
+		AND idesc.language_id = 1
+		AND p.id = il.usage_plan_id)
+        ELSE
+	'No Plan'
+	END as "plan_description",
+	il.call_identifier AS phone_number,
+	il.description AS call_type,
+	(SELECT mfv.string_value
+	FROM item i, meta_field_value mfv, asset_meta_field_map amfm, asset a
+	WHERE mfv.meta_field_name_id in
+		(SELECT id
+		FROM meta_field_name
+		WHERE name = 'Asset Nick Name')
+	AND amfm.meta_field_value_id = mfv.id
+	AND amfm.asset_id = a.id
+	AND a.item_id = i.id
+	AND i.id = item_id
+	AND a.deleted = 0
+	AND a.identifier = call_identifier) AS asset_nick_name,
+	il.call_counter,
+	il.quantity,
+	il.amount,
+	il.usage_plan_id as "plan_id"
+FROM invoice_line il
+WHERE  il.invoice_id = $P{invoiceId}
+AND il.call_identifier IS NOT NULL
+ORDER BY plan_description;]]>
+	</queryString>
+	<field name="plan_description" class="java.lang.String"/>
+	<field name="phone_number" class="java.lang.String"/>
+	<field name="call_type" class="java.lang.String"/>
+	<field name="asset_nick_name" class="java.lang.String"/>
+	<field name="call_counter" class="java.lang.Long"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="plan_id" class="java.lang.Integer"/>
+	<variable name="total_amount" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+	</variable>
+	<variable name="serviceNumber" class="java.lang.String"/>
+	<group name="PlanGroup">
+		<groupExpression><![CDATA[$F{plan_description}]]></groupExpression>
+		<groupHeader>
+			<band height="40">
+				<textField isBlankWhenNull="true">
+					<reportElement x="13" y="5" width="284" height="20" forecolor="#505861" uuid="64947afe-8c63-448c-93df-2c4fc5f17ec2"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{plan_description}.substring(0, $F{plan_description}.indexOf("-") > 0 ? $F{plan_description}.indexOf("-") :0).length() > 0 ?
+"Live Answer Usage with "+$F{plan_description}.substring(0, $F{plan_description}.indexOf("-")) :
+"Live Answer Usage with "+$F{plan_description}]]></textFieldExpression>
+				</textField>
+				<subreport>
+					<reportElement x="293" y="5" width="244" height="20" uuid="c7ec7e4a-bf20-4b5c-8ce8-175c537b9b43"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="invoiceId">
+						<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="currency_symbol">
+						<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="plan_id">
+						<subreportParameterExpression><![CDATA[$F{plan_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_usage_charges_section_group_by_plan_sub_totals_fc_hosted.jasper"]]></subreportExpression>
+				</subreport>
+				<textField isStretchWithOverflow="true" pattern="dd MMM yy" isBlankWhenNull="true">
+					<reportElement x="39" y="25" width="52" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="25e842d9-44e0-4553-927d-45d6e2cf657f"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{usage_start_date}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="86" y="25" width="12" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="4de45336-cf40-494f-946e-0b37a0b0fcc6"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<text><![CDATA[to]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="13" y="25" width="32" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="0a5df835-3f51-416e-bc52-f8245f796fc7"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<text><![CDATA[From]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="dd MMM yy" isBlankWhenNull="true">
+					<reportElement x="97" y="25" width="54" height="15" isRemoveLineWhenBlank="true" forecolor="#505861" uuid="0cd8ff05-caf0-4561-81f7-7896e1e0738d"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{usage_end_date}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band/>
+		</groupFooter>
+	</group>
+	<group name="usage_period">
+		<groupExpression><![CDATA[$F{plan_description}]]></groupExpression>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="68" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="7" width="518" height="17" forecolor="#505861" uuid="af5b565e-40ff-48f2-9456-a1732390f1b2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Usage Details & Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="13" y="39" width="100" height="14" forecolor="#505861" uuid="0551abcf-e2e0-4a38-bd11-ed7d4f7cc17c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="302" y="39" width="70" height="14" forecolor="#505861" uuid="6da17d3f-4120-4c81-89dd-4bd9701d4502"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Calls]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="375" y="39" width="70" height="14" forecolor="#505861" uuid="2e67b6d4-d5aa-4507-8c63-997cd5ef22c1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Minutes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="447" y="39" width="95" height="14" forecolor="#505861" uuid="b4e434e8-1b2c-4614-827c-4f39fa553d23"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Overage Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="62" width="540" height="1" forecolor="#999C9F" uuid="afc21f81-6ba7-400b-8198-8916cece4f8d"/>
+				<graphicElement>
+					<pen lineWidth="0.15"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="209" y="39" width="90" height="14" forecolor="#505861" uuid="b4bef42b-7d70-475d-bad1-8a55d634ded5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nick Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="114" y="39" width="90" height="14" forecolor="#505861" uuid="23ca4458-89b2-4cc5-8b69-a3e56668edc7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Call Type]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="17" splitType="Prevent">
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="368" y="2" width="70" height="13" forecolor="#505861" uuid="931607f8-ddff-4a4c-bea7-ee631aa92602"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="439" y="2" width="100" height="13" forecolor="#505861" uuid="3068f44c-3e0e-4223-957e-e1cfa2ce96fc">
+					<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($F{amount}.setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="298" y="2" width="70" height="13" forecolor="#505861" uuid="80e40169-dfb7-406b-9835-881d49841d80"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_counter}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="13" y="2" width="100" height="13" forecolor="#505861" uuid="77f9493a-88f9-4f73-bc31-d2425366cf0b"/>
+				<textElement textAlignment="Left">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{phone_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="207" y="2" width="90" height="13" forecolor="#505861" uuid="21d3fdb8-a0dd-404b-834d-accbc5d2b1e7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{asset_nick_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="116" y="2" width="90" height="13" forecolor="#505861" uuid="5b7bf239-b0f8-49b2-87d8-fc2295382a89"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_type}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<summary>
+		<band height="35" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="5" width="126" height="20" forecolor="#505861" uuid="e5857b29-ec67-4523-a81d-30e1c79cb158"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Usage Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="2" width="540" height="1" forecolor="#999C9F" uuid="c5c91f2c-3c54-456e-abd8-f6699a1bbf4d"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="439" y="5" width="100" height="20" forecolor="#505861" uuid="acf84873-cd8d-448e-a05f-50c7f431c1fc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{core.param.usage_charges}.compareTo( $V{total_amount} )  == 0  ?
+$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($V{total_amount}).setScale(2, RoundingMode.HALF_UP))):
+$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($P{core.param.usage_charges})))]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="10" y="30" width="538" height="1" forecolor="#999C9F" uuid="698404a5-46a4-497e-8d09-0d9531951895"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

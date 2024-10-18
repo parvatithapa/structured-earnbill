@@ -1,0 +1,2281 @@
+<test>
+    <records>
+        <!--KEY-->
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>KEY</default-value>
+                <outbound>M</outbound>
+                <inbound>M</inbound>
+                <comment>record identifier</comment>
+            </rec-id>
+
+            <fields>
+                <field>
+                    <field-name>SUPPLIER_DUNS</field-name>
+                    <max-size>15</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Supplier (CR, REP) DUNS or ID</comment>
+                </field>
+                <field>
+                    <field-name>UTILITY_DUNS</field-name>
+                    <max-size>15</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Utility DUNS or ID</comment>
+                </field>
+
+                <field>
+                    <field-name>TRANSACTION_SET</field-name>
+                    <max-size>10</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <default-value>814</default-value>
+                    <comment>transaction set</comment>
+                </field>
+
+                <field>
+                    <field-name>TRANSCTION_SUBSET</field-name>
+                    <max-size>10</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <possible-values>
+                        <option>
+                            <value>EQ</value>
+                            <comment>Customer Request</comment>
+                        </option>
+                        <option>
+                            <value>ES</value>
+                            <comment>Enrollment Response</comment>
+                        </option>
+                        <option>
+                            <value>NQ</value>
+                            <comment>Advance Notification Request</comment>
+                        </option>
+                        <option>
+                            <value>NS</value>
+                            <comment>Advance Notification Response</comment>
+                        </option>
+                        <option>
+                            <value>DQ</value>
+                            <comment>Drop Request</comment>
+                        </option>
+                        <option>
+                            <value>DS</value>
+                            <comment>Drop Response</comment>
+                        </option>
+                        <option>
+                            <value>CQ</value>
+                            <comment>Change Request</comment>
+                        </option>
+
+                        <option>
+                            <value>CS</value>
+                            <comment>Change Response</comment>
+                        </option>
+
+                        <option>
+                            <value>RQ</value>
+                            <comment>Reinstatement Request</comment>
+                        </option>
+
+                        <option>
+                            <value>RS</value>
+                            <comment>Reinstatement Response</comment>
+                        </option>
+
+                        <option>
+                            <value>HQ</value>
+                            <comment>Historical Usage Request</comment>
+                        </option>
+
+                        <option>
+                            <value>HS</value>
+                            <comment>Historical Usage Response</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>STATE</field-name>
+                    <max-size>3</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>state or country abbreviation</comment>
+                </field>
+
+                <field>
+                    <field-name>COMMODITY</field-name>
+                    <max-size>1</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <possible-values>
+                        <option>
+                            <value>E</value>
+                            <comment>Electric</comment>
+                        </option>
+                        <option>
+                            <value>G</value>
+                            <comment>Gas</comment>
+                        </option>
+                        <option>
+                            <value>W</value>
+                            <comment>Water</comment>
+                        </option>
+                        <option>
+                            <value>R</value>
+                            <comment>Refuse</comment>
+                        </option>
+                    </possible-values>
+                </field>
+            </fields>
+        </record>
+        <!--HDR-->
+
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>HDR</default-value>
+                <outbound>M</outbound>
+                <inbound>M</inbound>
+                <comment>HDR - Header Information</comment>
+            </rec-id>
+
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>TRANS_REF_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>alphanumeric unique reference id</comment>
+                </field>
+
+                <field>
+                    <field-name>LIFECYCLE_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>Refer to the original transaction number from the 814 that started the lifecycle</comment>
+                    <possible-values>
+                        <option>
+                            <value>IL</value>
+                            <comment>indicates a utility initiated enrollment request</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>13</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_NAME</field-name>
+                    <max-size>60</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Utility Name</comment>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>13</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>SUPPLIER_NAME</field-name>
+                    <max-size>60</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Supplier Name</comment>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>13</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>CREATE_DATE</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Date that this record was created.</comment>
+                </field>
+
+                <field>
+                    <field-name>CREATE_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Time that this record was created.</comment>
+                </field>
+
+                <field>
+                    <field-name>CREATE_TIMECODE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>Time zone that this record was created</comment>
+                </field>
+
+                <field>
+                    <field-name>RECV_DATETIME</field-name>
+                    <date-format>CCYYMMDDHHMMSS</date-format>
+                    <outbound>M</outbound>
+                    <inbound>X</inbound>
+                    <comment>System date/time when inbound transaction was processed.</comment>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>4</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>60</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>15</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+            </fields>
+        </record>
+
+        <!--NME-->
+
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>NME</default-value>
+                <outbound>O</outbound>
+                <inbound>M</inbound>
+                <comment>"NME" - Name Information</comment>
+            </rec-id>
+
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>NAME_TYPE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>BT</value>
+                            <comment>Bill To</comment>
+                        </option>
+                        <option>
+                            <value>8R</value>
+                            <comment>Customer</comment>
+                        </option>
+                        <option>
+                            <value>FE</value>
+                            <comment>Fowarding Address (Drop)</comment>
+                        </option>
+                        <option>
+                            <value>PK</value>
+                            <comment>Party to receive copy of notices</comment>
+                        </option>
+                        <option>
+                            <value>G7</value>
+                            <comment>Renewable Energy provider</comment>
+                        </option>
+                        <option>
+                            <value>2C</value>
+                            <comment>Party also responsible for bill (Receive a copy)</comment>
+                        </option>
+
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>NAME</field-name>
+                    <max-size>60</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>Name</comment>
+                </field>
+
+                <field>
+                    <field-name>MISC_NAME_DETAILS</field-name>
+                    <max-size>80</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>misc identifying information</comment>
+                </field>
+
+                <field>
+                    <field-name>NAME2</field-name>
+                    <max-size>60</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>NAME3</field-name>
+                    <max-size>60</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>ADDRESS1</field-name>
+                    <max-size>55</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>ADDRESS2</field-name>
+                    <max-size>55</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>CITY</field-name>
+                    <max-size>30</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>STATE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>ZIP_CODE</field-name>
+                    <max-size>10</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>Zip</comment>
+                </field>
+
+                <field>
+                    <field-name>COUNTRY</field-name>
+                    <max-size>3</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>COUNTY</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>County</comment>
+                </field>
+
+                <field>
+                    <field-name>TELEPHONE</field-name>
+                    <max-size>16</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>County</comment>
+                </field>
+
+                <field>
+                    <field-name>TELEPHONE2</field-name>
+                    <max-size>16</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>County</comment>
+                </field>
+
+                <field>
+                    <field-name>CONTACT_NAME</field-name>
+                    <max-size>60</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>Contact Name, always formatted as LAST NAME, FIRST NAME</comment>
+                </field>
+
+                <field>
+                    <field-name>MOBILE_NR</field-name>
+                    <max-size>16</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Cell number</comment>
+                </field>
+
+                <field>
+                    <field-name>EMAIL</field-name>
+                    <max-size>100</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>DRIVER_LICENSE_NR</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>DRIVER_LICENSE_STATE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>SSN</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>PYMT_AGREEMENT</field-name>
+                    <max-size>1</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>IL</comment>
+                    <possible-values>
+                        <option>
+                            <value>Y</value>
+                            <comment>Yes, Part of POR program/Customer has an active payment agreement</comment>
+                        </option>
+
+                        <option>
+                            <value>N</value>
+                            <comment>No, Not part of POR program/Customer does not have an active payment agreement
+                            </comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>FAX</field-name>
+                    <max-size>16</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Fax</comment>
+                </field>
+
+
+                <field>
+                    <not-used/>
+                    <max-size>6</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>50</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>8</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>1</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>TELEPHONE3</field-name>
+                    <max-size>16</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>ADDRESS3</field-name>
+                    <max-size>55</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>FRANCHISE_DISTRICT</field-name>
+                    <max-size>50</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+
+        <!--ACT-->
+
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>ACT</default-value>
+                <outbound>M</outbound>
+                <inbound>M</inbound>
+                <comment>"ACT" - Account Information</comment>
+            </rec-id>
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>3</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>3</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>SERVICE_REQUESTED</field-name>
+                    <max-size>5</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>HU</value>
+                            <comment>historical usage (Summary)</comment>
+                        </option>
+
+                        <option>
+                            <value>HI</value>
+                            <comment>interval Historical Usage</comment>
+                        </option>
+                        <option>
+                            <value>RC</value>
+                            <comment>renewable Energy Services</comment>
+                        </option>
+                        <option>
+                            <value>SW</value>
+                            <comment>off-cycle Enrollment or off-cycle Drop (Ameren only)</comment>
+                        </option>
+                        <option>
+                            <value>SI</value>
+                            <comment>Summary Interval Data</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>LINE_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <default-value>1</default-value>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>ACCEPT_REJ_FLAG</field-name>
+                    <max-size>2</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>A</value>
+                            <comment>Accept</comment>
+                        </option>
+
+                        <option>
+                            <value>R</value>
+                            <comment>Reject</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>814_INDICATOR</field-name>
+                    <max-size>2</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>C</value>
+                            <comment>Used to Cancel a Drop (IL)</comment>
+                        </option>
+
+                        <option>
+                            <value>A4</value>
+                            <comment>Temporary Drop</comment>
+                        </option>
+
+                        <option>
+                            <value>F</value>
+                            <comment>Final Drop</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_CUST_ACCT_NR</field-name>
+                    <max-size>80</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>utility customer account number</comment>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_OLD_CUST_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>old utility customer account number</comment>
+                </field>
+
+                <field>
+                    <field-name>SUPPLIER_UTILITY_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>old utility customer account number</comment>
+                </field>
+
+                <field>
+                    <field-name>SUPPLIER_CUST_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>supplier customer account number</comment>
+                </field>
+
+                <field>
+                    <field-name>SUPPLIER_TRANSACTION_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>CUSTOMER_CLASS</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>For IL only. IL - indicates a customers POR class</comment>
+
+                    <possible-values>
+                        <option>
+                            <value>GROUPA</value>
+                            <comment>GROUPA</comment>
+                        </option>
+
+                        <option>
+                            <value>GROUPB</value>
+                            <comment>GROUPB</comment>
+                        </option>
+
+                        <option>
+                            <value>GROUPC</value>
+                            <comment>GROUPC</comment>
+                        </option>
+
+                        <option>
+                            <value>GROUPC</value>
+                            <comment>GROUPC</comment>
+                        </option>
+
+                        <option>
+                            <value>GROUPD</value>
+                            <comment>GROUPD</comment>
+                        </option>
+
+                        <option>
+                            <value>NONPOR</value>
+                            <comment>NONPOR</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>ALTERNATE_SUPPLIER_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>OLD_SUPPLIER_CUST_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_SUPPLIER_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Account number assigned by utility to each Supplier</comment>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_NR</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Membership ID - MOU/EC Territory</comment>
+                </field>
+
+                <field>
+                    <field-name>PYMT_AGREEMENT</field-name>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>number of days an account is past due</comment>
+                </field>
+
+                <field>
+                    <field-name>PYMT_OPTION</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>LDC_UNMETER_IND</field-name>
+                    <max-size>1</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>U - indicates an unmetered account</comment>
+                </field>
+
+                <field>
+                    <field-name>CUST_AGREEMENT_IND</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>PERMIT_TYPE</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>PREMISE TENANT UNKNOWN</comment>
+                </field>
+
+                <field>
+                    <field-name>SWITCH_HOLD_IND</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>1</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>1</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_BILL_CYCLE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>BILL_FREQUENCY</field-name>
+                    <max-size>5</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Frequency of customer bill being produced BIM - Bi-monthly</comment>
+                </field>
+
+                <field>
+                    <field-name>BILL_DELIVER</field-name>
+                    <max-size>4</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>bill consolidator/render</comment>
+                    <possible-values>
+                        <option>
+                            <value>DUAL</value>
+                            <comment>DUAL</comment>
+                        </option>
+                        <option>
+                            <value>ESP</value>
+                            <comment>ESP</comment>
+                        </option>
+                        <option>
+                            <value>LDC</value>
+                            <comment>LDC</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>BILL_CALC</field-name>
+                    <max-size>4</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>bill calculator</comment>
+                    <possible-values>
+                        <option>
+                            <value>DUAL</value>
+                            <comment>DUAL</comment>
+                        </option>
+                        <option>
+                            <value>LDC</value>
+                            <comment>LDC</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>BUDGET_BILL_IND</field-name>
+                    <max-size>4</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Budget Billing status</comment>
+                    <possible-values>
+                        <option>
+                            <value>Y</value>
+                            <comment>On Budget Billing</comment>
+                        </option>
+                        <option>
+                            <value>N</value>
+                            <comment>No Budget Billing</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>STANDARD_POINT_LOC</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Ameren - Rate Zone</comment>
+                    <possible-values>
+                        <option>
+                            <value>PA</value>
+                            <comment>PA</comment>
+                        </option>
+                        <option>
+                            <value>NJ</value>
+                            <comment>NJ</comment>
+                        </option>
+                        <option>
+                            <value>DE</value>
+                            <comment>DE</comment>
+                        </option>
+                        <option>
+                            <value>MD</value>
+                            <comment>MD</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+
+                <field>
+                    <field-name>INTERVAL_LEVEL_REQUEST</field-name>
+                    <max-size>30</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>Budget Billing status</comment>
+                    <possible-values>
+                        <option>
+                            <value>DETAIL</value>
+                            <comment>DETAIL (default value)</comment>
+                        </option>
+                        <option>
+                            <value>SUMMARY</value>
+                            <comment>SUMMARY</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>AGGEGRATOR_CD</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>POWER_REGION</field-name>
+                    <max-size>50</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>IL - MISO CP Note</comment>
+                </field>
+
+                <field>
+                    <field-name>WEB_URL</field-name>
+                    <max-size>100</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>IL - MISO CP Note</comment>
+                </field>
+
+                <field>
+                    <field-name>INTERVAL_NUMBER</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>the number of intervals</comment>
+                </field>
+
+                <field>
+                    <field-name>SUPPLIER_OLD_CUST_ACCT_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>supplier old customer account number</comment>
+                </field>
+
+                <field>
+                    <field-name>SERVICE_DELIVERY_POINT</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Ameren</comment>
+                </field>
+
+                <field>
+                    <field-name>SERVICE_REQUESTED2</field-name>
+                    <max-size>2</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>Ameren</comment>
+                    <possible-values>
+                        <option>
+                            <value>HU</value>
+                            <comment>historical usage (Summary)</comment>
+                        </option>
+                        <option>
+                            <value>HI</value>
+                            <comment>interval Historical Usage</comment>
+                        </option>
+                        <option>
+                            <value>SW</value>
+                            <comment>off-cycle Read</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>DISTRIBUTION_LOSS_FACTOR_CD</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Each TDSP will define codess A,B,C,D, E T - Transmission Only
+                    </comment>
+                </field>
+
+                <field>
+                    <field-name>PRIORITY_CODE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Indicates Priority days for move-in - values -01 thru 99. Refer to TDSP website for
+                        defination
+                        of values default value for Move-In is 01;
+                    </comment>
+                </field>
+
+                <field>
+                    <field-name>PREMISE_STATUS</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <possible-values>
+                        <option>
+                            <value>D</value>
+                            <comment>De-Energized (814_24, indicate D to bypass CSA relationship)</comment>
+                        </option>
+
+                        <option>
+                            <value>E</value>
+                            <comment>Energized</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>PREMISE_TYPE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>01</value>
+                            <comment>Residential</comment>
+                        </option>
+
+                        <option>
+                            <value>02</value>
+                            <comment>Small Non-Residential</comment>
+                        </option>
+                        <option>
+                            <value>03</value>
+                            <comment>Large Non-residential</comment>
+                        </option>
+                        <option>
+                            <value>1L</value>
+                            <comment>Supply Group</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>PEAK_LOAD_CONTRIBUTION</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>TRANSMISSION_CONTRIBUTION</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>PEAK_DEMAND</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>TOTAL_KWH</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>NR_MONTHS</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>CUST_LIFE_SUPPORT</field-name>
+                    <max-size>1</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>Y</value>
+                            <comment>Yes</comment>
+                        </option>
+                        <option>
+                            <value>N</value>
+                            <comment>No</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>LIFE_SUPPORT_EQUIP_DESC</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <possible-values>
+                        <option>
+                            <value>CCC</value>
+                            <comment>Critical Care Residential Customer</comment>
+                        </option>
+                        <option>
+                            <value>CCCT</value>
+                            <comment>Critical Care Residential Customer</comment>
+                        </option>
+                        <option>
+                            <value>CLI</value>
+                            <comment>Critical Load Industrial Customer</comment>
+                        </option>
+                        <option>
+                            <value>CLP</value>
+                            <comment>Critical Load Public Safety Customer</comment>
+                        </option>
+                        <option>
+                            <value>CRC</value>
+                            <comment>Chronic Condition Residential Customer</comment>
+                        </option>
+                        <option>
+                            <value>CRCT</value>
+                            <comment>Chronic Condition Residential Customer</comment>
+                        </option>
+                    </possible-values>
+                </field>
+
+                <field>
+                    <field-name>PERCENT_PARTICPATE</field-name>
+                    <max-size>18</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <default-value>1</default-value>
+                    <comment>Percent of Load service by Supplier; Default to 1</comment>
+                </field>
+
+                <field>
+                    <field-name>LOAD_ELIGIBLE</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <default-value>1</default-value>
+                    <comment>Percent of Load Eligible for Choice</comment>
+                </field>
+
+                <field>
+                    <field-name>ACCESS_INSTRUCTIONS</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>TAX_EXEMPT_PERC</field-name>
+                    <max-size>18</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>Tax exempt Percent; 1 means 100% tax exempt; Used for MD sales tax exempt</comment>
+                </field>
+
+                <field>
+                    <field-name>NR_AIR_CONDITIONERS</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <default-value>1</default-value>
+                    <comment>MD/DE only - nr of air conditioners on load mgt program</comment>
+                </field>
+
+                <field>
+                    <field-name>NR_WATER_HEATERS</field-name>
+                    <max-size>18</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <default-value>1</default-value>
+                    <comment>MD/DE only - nr of water heaters on load mgt program</comment>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+
+        <!--DTE-->
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>DTE</default-value>
+                <outbound>M</outbound>>
+                <inbound>M</inbound>
+                <comment>"DTE" - Date Information</comment>
+            </rec-id>
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>CUST_ENROLL_AGREE_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>CUST_ENROLL_AGREE_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+
+                <field>
+                    <field-name>CUST_TIMEZONE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>CT</value>
+                            <comment>Central Time</comment>
+                        </option>
+                        <option>
+                            <value>ET</value>
+                            <comment>Eastern Time</comment>
+                        </option>
+                        <option>
+                            <value>MT</value>
+                            <comment>Mountain Time</comment>
+                        </option>
+                        <option>
+                            <value>PT</value>
+                            <comment>Pacific Time</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>START_SERVICE_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Service Start, Next Read, Restoration Date</comment>
+                </field>
+                <field>
+                    <field-name>START_SERVICE_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>END_SERVICE_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>Service End Date/Drop Date</comment>
+                </field>
+                <field>
+                    <field-name>END_SERVICE_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>PRORATE_READ_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>PRORATE_READ_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>OFFCYCLE_READ_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>O</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>OFFCYCLE_READ_TIME</field-name>
+                    <date-format>HHMMSS</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Optional for SR request; off-cycle read time for Maine</comment>
+                </field>
+                <field>
+                    <field-name>OFFCYCLE_READ_TIMEZONE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>COMPLETION_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>ESP to LDC</value>
+                            <comment>estimated meter read date that service with Supplier will end</comment>
+                        </option>
+                        <option>
+                            <value>Duq</value>
+                            <comment>anticipated drop date</comment>
+                        </option>
+                        <option>
+                            <value>PECO</value>
+                            <comment>estimated date of drop to be sent to Supplier</comment>
+                        </option>
+                        <option>
+                            <value>NJ</value>
+                            <comment>project date of 814 C to switch from UCB to DUAL</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>MOVEIN_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>MOVEOUT_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>ESI_ID_BEGIN_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>ESI_ID_END_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>ESI_ID_ELIGIBILITY_DT</field-name>
+                    <date-format>CCYYMMDD</date-format>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>Service End Date/Drop Date</comment>
+                    <possible-values>
+                        <option>
+                            <value>IL - DQ - OPTIONAL</value>
+                            <comment>allows you to request a future (up to 45 days) on-cycle drop date</comment>
+                        </option>
+                        <option>
+                            <value>IL - EQ - OPTIONAL</value>
+                            <comment>allows you to request a future (up to 45 days) on cycle enrollment</comment>
+                        </option>
+                        <option>
+                            <value>CQ/CS</value>
+                            <comment>estimated date of drop to be sent to Supplier</comment>
+                        </option>
+                        <option>
+                            <value>NJ</value>
+                            <comment>Effective Date of Change</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+
+        <!--MDT-->
+
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>MDT</default-value>
+                <outbound>X</outbound>
+                <inbound>O</inbound>
+                <comment>"MDT" - Meter Detail by meter type
+                </comment>
+            </rec-id>
+
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>5</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>5</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>METER_TYPE</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>MULTIPLIER</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>NR_OF_DIALS</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>TOU</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>41</value>
+                            <comment>off peak</comment>
+                        </option>
+                        <option>
+                            <value>42</value>
+                            <comment>on peak</comment>
+                        </option>
+                        <option>
+                            <value>43</value>
+                            <comment>intermediate peak (shoulder)</comment>
+                        </option>
+                        <option>
+                            <value>51</value>
+                            <comment>total</comment>
+                        </option>
+                        <option>
+                            <value>71</value>
+                            <comment>summer super on peak</comment>
+                        </option>
+                    </possible-values>
+                </field>
+            </fields>
+        </record>
+
+        <!--MTR-->
+
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>MTR</default-value>
+                <outbound>M</outbound>
+                <inbound>M</inbound>
+                <comment>"MTR" - meter information</comment>
+            </rec-id>
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_IDENTIFIER</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>OLD_METER_ID</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>utility old meter number</comment>
+                </field>
+                <field>
+                    <field-name>METER_ACTION</field-name>
+                    <max-size>1</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <default-value>Q</default-value>
+                    <comment>default to Q</comment>
+                    <possible-values>
+                        <option>
+                            <value>R</value>
+                            <comment>meter removed</comment>
+                        </option>
+                        <option>
+                            <value>A</value>
+                            <comment>meter added</comment>
+                        </option>
+                        <option>
+                            <value>X</value>
+                            <comment>meter exchanged</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>METER_TYPE</field-name>
+                    <max-size>6</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>usage and interval that a meter is read; i.e. KHMON, K1030</comment>
+                </field>
+                <field>
+                    <field-name>UTILITY_RATE_CLASS</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>utility rate class</comment>
+                </field>
+                <field>
+                    <field-name>UTILITY_RATE_SUBCLASS</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>utility rate subclass</comment>
+                </field>
+                <field>
+                    <field-name>LOAD_PROFILE</field-name>
+                    <max-size>6</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>corresponds to ERCOT defined load profiles</comment>
+                </field>
+                <field>
+                    <field-name>SUPPLIER_RATE_CD</field-name>
+                    <max-size>16</max-size>
+                    <outbound>M</outbound>
+                    <inbound>O</inbound>
+                    <comment>corresponds to ERCOT defined load profiles</comment>
+                </field>
+                <field>
+                    <field-name>METER_CYCLE</field-name>
+                    <max-size>6</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>the cycle number when meter is read; for unmetered the billing cycle will be sent</comment>
+                </field>
+                <field>
+                    <field-name>UNMETER_TYPE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>ADVANCE_METER_INFO</field-name>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>corresponds to ERCOT defined load profiles</comment>
+                    <possible-values>
+                        <option>
+                            <value>AMSR</value>
+                            <comment>AMS Remote</comment>
+                        </option>
+                        <option>
+                            <value>AMSM</value>
+                            <comment>AMS Manual</comment>
+                        </option>
+                        <option>
+                            <value>R</value>
+                            <comment>remove advance meter</comment>
+                        </option>
+                        <option>
+                            <value>SMART</value>
+                            <comment>designates AMI/Smart meter</comment>
+                        </option>
+                        <option>
+                            <value>I</value>
+                            <comment>Interval data available (PECO)</comment>
+                        </option>
+                        <option>
+                            <value>M</value>
+                            <comment>interval data NOT available (PECO)</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>UNMETER_QUANTITY</field-name>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Number of un-metered units</comment>
+                </field>
+                <field>
+                    <field-name>UNMETER_DESC</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>OLD_UNMETER_DESC</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_CONFIGURATION</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>designates configuration of Meter (including advance meter) - see values on codes tab
+                    </comment>
+                </field>
+                <field>
+                    <field-name>METER_ROLE</field-name>
+                    <max-size>1</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>corresponds to ERCOT defined load profiles</comment>
+                    <possible-values>
+                        <option>
+                            <value>A</value>
+                            <comment>additive</comment>
+                        </option>
+                        <option>
+                            <value>S</value>
+                            <comment>subtractive</comment>
+                        </option>
+                        <option>
+                            <value>I</value>
+                            <comment>ignore</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>METER_CONF_DESCRIPTION</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>description of meter configuration</comment>
+                </field>
+                <field>
+                    <field-name>SUPPLIER_PRICING_NR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>SERVICE_POINT_ID</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>LOSS_FACTOR</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Loss Factor - used by First Energy</comment>
+                </field>
+                <field>
+                    <field-name>CONGESTION_ZONE</field-name>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_OWNER_NAME</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Meter Owner Indicator</comment>
+                    <possible-values>
+                        <option>
+                            <value>1</value>
+                            <comment>Customer</comment>
+                        </option>
+                        <option>
+                            <value>2</value>
+                            <comment>CR</comment>
+                        </option>
+                        <option>
+                            <value>3</value>
+                            <comment>Third Party</comment>
+                        </option>
+                        <option>
+                            <value>4</value>
+                            <comment>TDSP</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>METER_OWNER_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>If REF(V9)02=OTHER</comment>
+                </field>
+                <field>
+                    <field-name>METER_MAINT_NAME</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_MAINT_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>If REF(VA)02=OTHER</comment>
+                </field>
+                <field>
+                    <field-name>MDMA</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>MDMA_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>If REF(VE)02=OTHER</comment>
+                </field>
+                <field>
+                    <field-name>METER_INSTALL_NAME</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_INSTALL_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>If REF(VR)02=OTHER</comment>
+                </field>
+                <field>
+                    <field-name>METER_READER_NAME</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Meter reading service provider</comment>
+                </field>
+                <field>
+                    <field-name>METER_READER_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>Meter reading service providers DUNS</comment>
+                </field>
+                <field>
+                    <field-name>SCHED_COORD_NAME</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>SCHED_COORD_DUNS</field-name>
+                    <max-size>9</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>READ_DAY</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                    <comment>day of month meter will be read</comment>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>80</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>UTILITY_RATE_DESC</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <comment>Description of Utility Rate</comment>
+                </field>
+                <field>
+                    <field-name>DELIVERY_VOLTAGE</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>ABOVE100KV</value>
+                            <comment>ABOVE100KV</comment>
+                        </option>
+                        <option>
+                            <value>HIGHVOLTAGE</value>
+                            <comment>HIGHVOLTAGE</comment>
+                        </option>
+                        <option>
+                            <value>PRIMARY</value>
+                            <comment>PRIMARY</comment>
+                        </option>
+                        <option>
+                            <value>SECONDARY</value>
+                            <comment>SECONDARY</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>SUPPLY_VOLTAGE</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>ABOVE100KV</value>
+                            <comment>ABOVE100KV</comment>
+                        </option>
+                        <option>
+                            <value>HIGHVOLTAGE</value>
+                            <comment>HIGHVOLTAGE</comment>
+                        </option>
+                        <option>
+                            <value>PRIMARY</value>
+                            <comment>PRIMARY</comment>
+                        </option>
+                        <option>
+                            <value>SECONDARY</value>
+                            <comment>SECONDARY or Actual Voltage</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>METER_ROLE</field-name>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>ABOVE100KV</value>
+                            <comment>ABOVE100KV</comment>
+                        </option>
+                        <option>
+                            <value>HIGHVOLTAGE</value>
+                            <comment>HIGHVOLTAGE</comment>
+                        </option>
+                        <option>
+                            <value>PRIMARY</value>
+                            <comment>PRIMARY</comment>
+                        </option>
+                        <option>
+                            <value>SECONDARY</value>
+                            <comment>SECONDARY</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>30</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+        <!--CDE-->
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>2</max-size>
+                <default-value>CDE</default-value>
+                <outbound>O</outbound>
+                <inbound>O</inbound>
+                <comment>"CDE" - record for reject, status, unexecutable, change codes</comment>
+            </rec-id>
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>REC_TYPE</field-name>
+                    <max-size>6</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <possible-values>
+                        <option>
+                            <value>R</value>
+                            <comment>Reject</comment>
+                        </option>
+                        <option>
+                            <value>S</value>
+                            <comment>Status</comment>
+                        </option>
+                        <option>
+                            <value>C</value>
+                            <comment>Change</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <field-name>CODE</field-name>
+                    <max-size>2</max-size>
+                    <outbound>M</outbound>
+                    <inbound>M</inbound>
+                    <comment>see code tab for valid codes</comment>
+                </field>
+                <field>
+                    <field-name>TEXT</field-name>
+                    <max-size>30</max-size>
+                    <outbound>O</outbound>
+                    <inbound>O</inbound>
+                    <comment>"see code tab for notes on when description is required</comment>
+                    <possible-values>
+                        <option>
+                            <value>A</value>
+                            <comment>ADD</comment>
+                        </option>
+                        <option>
+                            <value>D</value>
+                            <comment>DELETE</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+        <!--MDT-->
+        <record>
+            <rec-id>
+                <field-name>rec-id</field-name>
+                <max-size>5</max-size>
+                <default-value>MDT</default-value>
+                <outbound>X</outbound>
+                <inbound>O</inbound>
+                <comment>"MDT" - Meter Detail by meter type</comment>
+            </rec-id>
+            <fields>
+                <field>
+                    <not-used/>
+                    <max-size>24</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <field-name>METER_TYPE</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>MULTIPLIER</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>NR_OF_DIALS</field-name>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                </field>
+                <field>
+                    <field-name>TOU</field-name>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>O</inbound>
+                    <possible-values>
+                        <option>
+                            <value>41</value>
+                            <comment>off peak</comment>
+                        </option>
+                        <option>
+                            <value>42</value>
+                            <comment>on peak</comment>
+                        </option>
+                        <option>
+                            <value>43</value>
+                            <comment>intermediate peak (shoulder)</comment>
+                        </option>
+                        <option>
+                            <value>51</value>
+                            <comment>total</comment>
+                        </option>
+                        <option>
+                            <value>71</value>
+                            <comment>summer super on peak</comment>
+                        </option>
+                    </possible-values>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>START_METER_READ</field-name>
+                    <max-size>15</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <field-name>END_METER_READ</field-name>
+                    <max-size>15</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+
+                <field>
+                    <not-used/>
+                    <max-size>10</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>20</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>2</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>5</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+                <field>
+                    <not-used/>
+                    <max-size>5</max-size>
+                    <outbound>X</outbound>
+                    <inbound>X</inbound>
+                </field>
+            </fields>
+        </record>
+    </records>
+    <structure>
+        <KEY>
+            <HDR>
+                <ACT/>
+				<DTE/>
+				<MTR/>
+                <CDE loop="2"/>
+            </HDR>
+        </KEY>
+    </structure>
+</test>

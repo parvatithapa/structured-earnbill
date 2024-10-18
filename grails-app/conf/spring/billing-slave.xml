@@ -1,0 +1,106 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd"
+        profile = "billing.slave">
+
+    <import resource="billing-slave-integration.xml"/>
+
+    <!--
+      || N.B. In chunk oriented job on slave there can be only beans in scopes: 'singleton' or 'step'
+      ||      No 'job' scoped beans here !
+      || -->
+
+    <!--    first step of the job to generate invoices  -->
+    <batch:step id = "partitionGenerateInvoices">
+        <batch:tasklet transaction-manager = "transactionManager" task-executor = "taskExecutor" throttle-limit = "10">
+            <batch:chunk reader          = "billingProcessUserReader"
+                         processor       = "billingProcessUserProcessor"
+                         writer          = "noopWriter"
+                         commit-interval = "1"
+                         skip-policy     = "skipPolicy">
+                <batch:listeners>
+                    <batch:listener ref = "billingSkipListener" />
+                </batch:listeners>
+            </batch:chunk>
+        </batch:tasklet>
+    </batch:step>
+
+    <!--    reader of the chunk oriented step to read the ids of the users to be processed later    -->
+    <bean  id = "billingProcessUserReader"
+        class = "com.sapienter.jbilling.batch.billing.BillingItemReader"
+        scope = "step">
+        <property name = "dataSource" ref = "dataSource" />
+        <property name="sql">
+            <value>
+            <![CDATA[
+            SELECT user_id
+              FROM billing_batch_job_data
+             WHERE billing_process_id = ?
+               AND partition_num = ?
+               AND status = 0
+            ]]>
+            </value>
+        </property>
+    </bean>
+
+ 
+    <!--    processor of chunk oriented step to generate invoices   -->
+    <bean  id = "billingProcessUserProcessor"
+        class = "com.sapienter.jbilling.batch.billing.BillingProcessUserProcessor"
+        scope = "step" />
+
+    <!--    second step of the job to email and payment -->
+    <batch:step id="partitionEmailAndPayment">
+        <batch:tasklet transaction-manager="transactionManager" task-executor="taskExecutor" throttle-limit="10">
+            <batch:chunk reader          = "emailAndPaymentUserReader"
+                         processor       = "emailAndPaymentUserProcessor"
+                         writer          = "noopWriter"
+                         commit-interval = "1"
+                         skip-policy     = "skipPolicy">
+                <batch:listeners>
+                    <batch:listener ref = "emailSkipListener" />
+                </batch:listeners>
+            </batch:chunk>
+        </batch:tasklet>
+    </batch:step>
+
+    <bean  id = "emailAndPaymentUserReader"
+        class = "com.sapienter.jbilling.batch.billing.BillingItemReader"
+        scope = "step">
+        <property name = "dataSource" ref = "dataSource" />
+        <property name="sql">
+            <value>
+            <![CDATA[
+            SELECT user_id
+              FROM billing_batch_job_data
+             WHERE billing_process_id = ?
+               AND partition_num = ?
+               AND status = ?
+            ]]>
+            </value>
+        </property>
+    </bean>
+
+    <bean  id = "emailAndPaymentUserProcessor"
+        class = "com.sapienter.jbilling.batch.billing.EmailAndPaymentProcessor"
+        scope = "step"/>
+
+    <!--        spring batch listener to do processing on skipped items -->
+    <bean  id = "billingSkipListener"
+        class = "com.sapienter.jbilling.batch.billing.BillingSkipListener"
+        scope = "step">
+        <property name = "status" value = "-1"/>
+    </bean>
+    <bean  id = "emailSkipListener"
+        class = "com.sapienter.jbilling.batch.billing.BillingSkipListener"
+        scope = "step">
+        <property name = "status" value = "-2"/>
+    </bean>
+
+</beans>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_report_sub_report2_v2" language="groovy" pageWidth="555" pageHeight="100" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="812a8aa5-e8f8-491f-8cf0-54aa7f98fea4">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+TO_CHAR(i.create_datetime,'DD/MM/YYYY') AS invoice_date,
+ss.service_description,
+il.amount
+FROM service_summary ss LEFT OUTER JOIN rollup_codes rc ON ss.service_description = rc.item_type_description 
+INNER JOIN invoice i ON i.id = ss.invoice_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id AND il.id = ss.invoice_line_id
+WHERE i.id = $P{invoice_id}
+AND ss.plan_id IS NULL 
+ORDER BY rc.itemisation_order;]]>
+	</queryString>
+	<field name="invoice_date" class="java.lang.String"/>
+	<field name="service_description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="22" splitType="Stretch">
+			<rectangle radius="4">
+				<reportElement mode="Opaque" x="1" y="2" width="553" height="20" backcolor="#D6036C" uuid="476668a3-c7bd-496f-bf1c-171faebdb812"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="7" y="4" width="100" height="15" forecolor="#FFFFFF" uuid="7ecfb9cf-6353-417d-bf24-8931f3dd211b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Charges]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="22" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="185" height="20" uuid="1ddf6c42-5127-403c-991f-2f6715c17d97"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="185" y="0" width="185" height="20" uuid="83486e0d-4526-4693-8d77-3fba9ffddc63"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="370" y="0" width="185" height="20" uuid="55e9649c-68a9-49e8-8958-991073eba7ce"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<line>
+				<reportElement x="2" y="21" width="550" height="1" uuid="824ed0d4-b5ee-4696-b05b-3989e965dadd"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#FFCCCC"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="185" height="20" uuid="2926200f-765c-4947-a6ab-cec4847fbb08"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="185" y="0" width="185" height="20" uuid="d0702f70-329a-4d7c-84d0-749113624fc7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="370" y="0" width="185" height="20" uuid="b9e0009c-b96c-4927-ad79-b88ba30ed569"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

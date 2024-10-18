@@ -1,0 +1,9 @@
+<testdata>
+	<testdataset name="selectReportType" category="sra" testenv="develop|lab3">
+		<report>Invoice Reports</report>
+		<period>Day</period>
+		<view>View as HTML</view>
+		<view2>Adobe PDF</view2>
+		<view3>Excel</view3>
+	</testdataset>
+</testdata>

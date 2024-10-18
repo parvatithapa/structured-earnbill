@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_amount_of_last_statement_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4c394602-0e08-4188-baf0-f1e7c33bd739">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select case when
+((select coalesce((
+-- select payments linked to invoice
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+-- payment not in unlinked payments
+and p.id not in
+(select p.id
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1))
+),0))
++
+-- where payment linked to current invoice and previous invoice
+(select coalesce((
+select sum(pi.amount) as payments_received
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id in ($P{invoiceId}, $P{prevInvoiceId})
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+),0))
++
+(select coalesce((
+-- select unlinked payments
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1)
+),0))
+-
+(select coalesce((
+-- select refunds
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 1
+),0)))
+>= 0 then
+case when $P{invoiceId} != $P{prevInvoiceId}
+-- deduct credit payment amount linked on previous invoice
+then (select total - (select coalesce(sum(pi.amount),0)
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{prevInvoiceId}
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id = 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.is_refund = 0) as total
+from invoice
+where id = $P{prevInvoiceId})
+else 0 end
+else
+(select carried_balance from invoice where id = $P{invoiceId})
+end as amount_of_last_statement]]>
+	</queryString>
+	<field name="amount_of_last_statement" class="java.math.BigDecimal"/>
+	<title>
+		<band height="17">
+			<textField isBlankWhenNull="true">
+				<reportElement x="3" y="2" width="122" height="14" forecolor="#505861" uuid="82bb7782-50b4-4ad7-8f15-3fcf0949dbbc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount_of_last_statement} >= 0 ? $P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($F{amount_of_last_statement}.setScale(2, RoundingMode.HALF_UP))):
+"-"+$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($F{amount_of_last_statement}.negate().setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

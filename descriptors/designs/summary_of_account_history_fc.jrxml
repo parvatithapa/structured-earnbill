@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_of_account_history_fc" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c7988445-fc8a-4cb5-be84-bbb0269df086">
+	<property name="ireport.zoom" value="1.331000000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="userId" class="java.lang.Integer"/>
+	<parameter name="prevInvoiceTotalWithOutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="balanceForward" class="java.lang.String"/>
+	<parameter name="planOverageCharges" class="java.lang.String"/>
+	<parameter name="otherCharges" class="java.lang.String"/>
+	<parameter name="dateDue" class="java.lang.String"/>
+	<parameter name="lastPaymentDate" class="java.util.Date"/>
+	<parameter name="lastPaymentAmount" class="java.math.BigDecimal"/>
+	<parameter name="totalPaymentsReceived" class="java.lang.String"/>
+	<parameter name="entityId" class="java.lang.Integer"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="paymentCount" class="java.lang.Integer"/>
+	<parameter name="carriedBalanceWithoutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<parameter name="lateFeePercentage" class="java.math.BigDecimal"/>
+	<parameter name="sumOfpaymentsLinkedToCurrentInvoice" class="java.math.BigDecimal"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="feesProductCategoryId" class="java.lang.Integer"/>
+	<parameter name="taxDecimal" class="java.math.BigDecimal"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="adjustmentsProductCategoryId" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select(
+select
+	coalesce(sum(p.amount),0) as payment_received
+from
+	payment p
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and method_id != 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	-- where payment date between 1st day of previous month and last day of month
+	and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})
+	and p.payment_date <= (select create_datetime from invoice where id = $P{invoiceId})
+
+) -
+(
+select
+	coalesce(sum(p.amount),0) as payment_received
+from
+	payment p
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and method_id != 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 1
+	-- where payment date between 1st day of previous month and last day of month
+	and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})
+	and p.payment_date <= (select create_datetime from invoice where id = $P{invoiceId})
+) as payment_received]]>
+	</queryString>
+	<field name="payment_received" class="java.math.BigDecimal"/>
+	<variable name="paymentsReceived" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="separator1" class="java.lang.String"/>
+	<variable name="separator2" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<summary>
+		<band height="137">
+			<staticText>
+				<reportElement x="12" y="28" width="130" height="14" forecolor="#505861" uuid="a06f88b2-f0d3-4cf6-b5d7-403811197d1c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Amount of Last Statement]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="12" y="60" width="130" height="14" forecolor="#505861" uuid="ded92309-417f-40eb-b50f-205ae996b725"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[New Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="302" y="44" width="115" height="14" forecolor="#505861" uuid="1bc01b61-fe14-47a8-bc2c-dd8d61083ff7"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Usage Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="302" y="28" width="115" height="14" forecolor="#505861" uuid="bae55745-d5d4-4d56-a914-e0c07ddbf05c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Monthly Charges]]></text>
+			</staticText>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="420" y="44" width="125" height="14" forecolor="#505861" uuid="ac13dd8f-4a5b-436c-8745-7c0701224830"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(null != $P{planOverageCharges} ? new DecimalFormat("#,##0.00").format(new BigDecimal($P{planOverageCharges})) : "0.00")]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="420" y="28" width="125" height="14" forecolor="#505861" uuid="79175797-359c-428f-aa72-218e57d63d96"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{otherCharges}) >= 0 ? $P{currency_symbol}+(new DecimalFormat("#,##0.00").format(new BigDecimal($P{otherCharges}))):
+"-"+$P{currency_symbol}+(new DecimalFormat("#,##0.00").format(new BigDecimal($P{otherCharges}).negate()))]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="12" y="44" width="130" height="14" forecolor="#505861" uuid="cd499f3a-199e-4cb0-bbef-47ebc7664ea4"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Payments Received "]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="12" y="125" width="538" height="1" uuid="cf5a511d-58c8-4097-af63-d1b62342a01f"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#999C9F"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="302" y="60" width="115" height="14" forecolor="#505861" uuid="65b2ad60-52fd-40ff-80eb-7537850ba866"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Taxes & Fees]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="417" y="60" width="125" height="14" uuid="e0d661db-643e-446c-aafb-e55ce6162f2d"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="taxDecimal">
+					<subreportParameterExpression><![CDATA[$P{taxDecimal}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="feesProductCategoryId">
+					<subreportParameterExpression><![CDATA[$P{feesProductCategoryId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "summary_of_account_history_subreport_taxes_and_fees_fc.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="302" y="75" width="115" height="14" forecolor="#505861" uuid="c4a5564a-d45f-41f8-9e38-526c3a2749fa"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Adjustments]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="417" y="75" width="125" height="14" uuid="9506ff8d-c6f8-49ed-9f99-fa3ce0dacc68"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="adjustmentsProductCategoryId">
+					<subreportParameterExpression><![CDATA[$P{adjustmentsProductCategoryId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "summary_of_account_history_subreport_adjustements_total_fc.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="10" y="7" width="246" height="17" forecolor="#505861" uuid="dd5ecae0-b8bd-49f6-9a51-7c3769e27b0e"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Summary]]></text>
+			</staticText>
+			<line>
+				<reportElement x="274" y="11" width="1" height="100" uuid="b959e4d1-ff35-42a1-95c0-8d8f8d3729d8"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#999C9F"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="300" y="7" width="246" height="17" forecolor="#505861" uuid="c852a419-79c5-4705-af57-93d4ae6155c8"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[New Charges]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="132" y="60" width="115" height="14" uuid="4387e61e-c9f4-46d0-83b9-483ab5eb5d77"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="planOverageCharges">
+					<subreportParameterExpression><![CDATA[$P{planOverageCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="taxDecimal">
+					<subreportParameterExpression><![CDATA[$P{taxDecimal}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="otherCharges">
+					<subreportParameterExpression><![CDATA[$P{otherCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="adjustmentsProductCategoryId">
+					<subreportParameterExpression><![CDATA[$P{adjustmentsProductCategoryId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="feesProductCategoryId">
+					<subreportParameterExpression><![CDATA[$P{feesProductCategoryId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "summary_of_account_history_subreport_new_charges_fc.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="134" y="42" width="115" height="14" uuid="44de5178-e2ce-4970-bd4a-a683cb82aa12"/>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_payments_received_fc.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="134" y="24" width="115" height="15" uuid="5385b69c-01e6-4469-947a-664244c406bc"/>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_amount_of_last_statement_fc.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</summary>
+</jasperReport>

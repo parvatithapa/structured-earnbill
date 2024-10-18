@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_of_account_history_subreport_late_fees_fc" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="c7988445-fc8a-4cb5-be84-bbb0269df086">
+	<property name="ireport.zoom" value="1.331000000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<parameter name="feesProductCategoryId" class="java.lang.Integer"/>
+	<parameter name="adjustmentsProductCategoryId" class="java.lang.Integer"/>
+	<parameter name="otherCharges" class="java.lang.String"/>
+	<parameter name="planOverageCharges" class="java.lang.String"/>
+	<parameter name="taxDecimal" class="java.math.BigDecimal"/>
+	<parameter name="entityId" class="java.lang.Integer"/>
+	<parameter name="lateFeePercentage" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[select
+(case when
+((select coalesce((
+-- select payments linked to invoice
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+-- payment not in unlinked payments
+and p.id not in
+(select p.id
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1))
+),0))
++
+-- where payment linked to current invoice and previous invoice
+(select coalesce((
+select sum(pi.amount) as payments_received
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id in ($P{invoiceId}, $P{prevInvoiceId})
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+),0))
++
+(select coalesce((
+-- select unlinked payments
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1)
+),0))
+-
+(select coalesce((
+-- select refunds
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 1
+),0)))
+>= 0 then
+case when $P{invoiceId} != $P{prevInvoiceId}
+-- deduct credit payment amount linked on previous invoice
+then (select total - (select coalesce(sum(pi.amount),0)
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{prevInvoiceId}
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id = 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.is_refund = 0) as total
+from invoice
+where id = $P{prevInvoiceId})
+else 0 end
+else
+(select carried_balance from invoice where id = $P{invoiceId})
+end
+-- as amount_of_last_statement
+)+
+
+((
+select COALESCE(sum(amount),0) as new_charges
+from invoice_line
+where invoice_id = $P{invoiceId}
+and item_id in
+	(select item_id
+	from item_type_map
+	where type_id = $P{feesProductCategoryId})
+)+
+(
+select coalesce(sum(amount),0) as new_charges
+from invoice_line
+where invoice_id = $P{invoiceId}
+and item_id in
+	(select item_id
+	from item_type_map
+	where type_id = $P{adjustmentsProductCategoryId})
+)-
+(
+-- select credit payment linked on current invoice
+select
+	coalesce(sum(p.amount),0) as adjustment_total
+from
+	payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{invoiceId}
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and method_id = 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	-- where payment date between 1st day of previous month and last day of month
+	and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+)
+-
+(
+-- select unlinked credit payment
+select
+	coalesce(sum(p.amount),0) as adjustment_total
+from
+	payment p
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and method_id = 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.id not in
+		(select pi.payment_id
+		from payment_invoice pi
+		inner join payment p on p.id = pi.payment_id
+		where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+		and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+)
+-
+(select
+	coalesce(sum(pi.amount),0) as adjustment_total
+from
+	payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{invoiceId}
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and method_id = 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	-- where payment linked to current invoice but payment date less than previous invoice
+	and p.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+)
+-
+(
+-- credit with balance
+select
+-- sum of original credit payment amount minus sum of credit payment linked on invoice
+	coalesce(sum(p.amount)-
+	(select sum(pi.amount)
+	from payment_invoice pi
+	where pi.payment_id in (select p.id from
+	payment p
+	where p.deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and p.method_id = 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.id in
+		(select pi.payment_id
+		from payment_invoice pi
+		inner join payment p on p.id = pi.payment_id
+		where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+		and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})))),0) as adjustment_total
+from
+	payment p
+where p.deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	-- payment of type credit
+	and p.method_id = 15
+	and p.result_id in (1,4)
+	and p.deleted = 0
+	and p.is_refund = 0
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.id in
+		(select pi.payment_id
+		from payment_invoice pi
+		inner join payment p on p.id = pi.payment_id
+		where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+		and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+-- as new_charges
+))
+-
+(
+select
+(select coalesce((
+-- select payments linked to invoice
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+-- payment not in unlinked payments
+and p.id not in
+(select p.id
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1))
+),0))
++
+-- where payment linked to current invoice and previous invoice
+(select coalesce((
+select sum(pi.amount) as payments_received
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id in ($P{invoiceId}, $P{prevInvoiceId})
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.is_refund = 0
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+),0))
++
+(select coalesce((
+-- select unlinked payments
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1)
+),0))
+-
+(select coalesce((
+-- select refunds
+select sum(p.amount) as payments_received
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.method_id != 15
+and p.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p.is_refund = 1
+),0)) as payments_received
+-- as payments_received
+) as total_due]]>
+	</queryString>
+	<field name="total_due" class="java.math.BigDecimal"/>
+	<variable name="paymentsReceived" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="sub_total" class="java.lang.String"/>
+	<variable name="late_fees" class="java.lang.String">
+		<variableExpression><![CDATA[new BigDecimal($P{otherCharges}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{taxDecimal})).add($F{total_due}) >= 0 ?
+$P{currency_symbol}+new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($P{otherCharges}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{taxDecimal})).add($F{total_due}).multiply($P{lateFeePercentage}).divide(new BigDecimal(100)).setScale(2, BigDecimal.ROUND_HALF_UP)):
+$P{currency_symbol}+"0.00"]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<summary>
+		<band height="32" splitType="Prevent">
+			<textField>
+				<reportElement x="17" y="0" width="137" height="32" forecolor="#999C9F" uuid="52eb3f5f-77d1-4348-b531-a48d10f48f07"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="8" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["To avoid a late fee of up to "+$V{late_fees}+","+"\n"+"please pay by the due date"]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

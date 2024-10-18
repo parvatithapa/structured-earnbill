@@ -1,0 +1,110 @@
+pipeline {
+    agent any
+
+    environment {
+        JBILLING_DB_HOST = "192.168.1.98"
+        CRED_JBILLING_DB= credentials('jbilling-db-param')
+        JBILLING_DB_USERNAME = "$CRED_JBILLING_DB_USR"
+        JBILLING_DB_PASSWORD="$CRED_JBILLING_DB_PSW"
+        
+        CRED_DOCKER_REG= credentials('sarathi-docker-login')
+        DOCKER_REG_USERNAME= "$CRED_DOCKER_REG_USR"
+        DOCKER_REG_PASSWORD= "$CRED_DOCKER_REG_PSW"
+        
+
+        GRAILS_HOME = '/root/.sdkman/candidates/grails/2.4.3'
+        JAVA_HOME = '/root/.sdkman/candidates/java/current'
+
+        IMAGE_TAG = "sarathisoftech/earnbill-app:${env.BRANCH_NAME}"
+    }
+
+    tools {
+        // Install the Maven version configured as "MAVEN-3.6.3" and add it to the path.
+        maven "MAVEN-3.6.3"
+    }
+
+    stages {
+        stage('Verify Branch Name') {
+            steps {
+                script {
+
+                    sh "export JAVA_HOME=${JAVA_HOME}"
+
+                    sh "export PATH=$JAVA_HOME/bin:$PATH"
+			
+		    echo "Checked out Branch is ${env.BRANCH_NAME}"
+                }
+            }
+        }
+       stage('Modify upgrade db 4.1 xml File') {
+            steps {
+                script {
+                    dir('billinghub-jb-local/descriptors/database') {
+                        // Use sed command to replace the word
+                        sh 'sed -i "s/e0bebbb0f354ae62d8cff27feda4cddd/3ff1bfaa25c0b0c161b39304133f5f4a/g" jbilling-upgrade-4.1.xml'
+                    }
+                }
+            }
+        }
+        stage('build-service-module') {
+            steps {
+                dir('billinghub-jb-local/service-modules') {
+                    sh "mvn clean install"
+                }
+            }
+        }
+        stage('cleanAndcompile') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "${GRAILS_HOME}/bin/grails clean && ${GRAILS_HOME}/bin/grails prod compile"
+                }
+            }
+        }
+        stage('copyResources') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "${GRAILS_HOME}/bin/grails copy-resources && ${GRAILS_HOME}/bin/grails compile-reports && ${GRAILS_HOME}/bin/grails compile-designs"
+                }
+            }
+        }
+        stage('upgrade-db') {
+            when {
+                expression{
+                    env.BRANCH_NAME =~ /sprint/
+                }
+            }
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "${GRAILS_HOME}/bin/grails upgrade-db"
+                }
+            }
+        }
+        stage('package') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "${GRAILS_HOME}/bin/grails prod war"
+                }
+            }
+        }
+        stage('build-docker-image') {
+            steps {
+                dir('billinghub-jb-local/') {
+                    sh "docker login -u ${DOCKER_REG_USERNAME} -p ${DOCKER_REG_PASSWORD}"
+                    sh "docker build -t ${IMAGE_TAG} -f EarnBillDockerfile ."
+                }
+            }
+        }
+        stage('push-docker-image-sarathi-reg') {
+            steps {
+                sh "docker login -u ${DOCKER_REG_USERNAME} -p ${DOCKER_REG_PASSWORD}"
+                sh "docker push ${IMAGE_TAG}"
+                }
+            }
+        stage ('Prune images') {
+            steps {
+                echo 'Pruning all images without at least one container associated to them'
+                sh 'docker image prune -a --force --filter "until=480h"'
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Harshad</name>
+		<id>78606</id>
+		<subscription>6.5</subscription>
+		<count>10</count>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id> 
+		<billing-plan-name>Telstra Master Plan</billing-plan-name>
+		<billable>true</billable>
+	</org>
+</organizations>

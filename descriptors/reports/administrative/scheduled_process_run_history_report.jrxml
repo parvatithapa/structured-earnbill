@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="production_run_report" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="540" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="0e333773-717d-4a59-a629-510954b292c2">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT e.id as entity_id,e.description,sh.name,sh.start_date,sh.end_date,sh.status
+FROM scheduled_process_run_history sh
+INNER JOIN entity e ON e.id = sh.entity_id
+WHERE DATE(sh.start_date) >= $P{start_date}
+AND DATE(sh.end_date) <= $P{end_date}
+AND (sh.entity_id =$P{entity_id} OR $X{IN,sh.entity_id,child_entities})
+AND (sh.status = 'FINISHED')
+ORDER BY e.description,sh.name ASC, sh.start_date DESC]]>
+	</queryString>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="name" class="java.lang.String"/>
+	<field name="start_date" class="java.sql.Timestamp"/>
+	<field name="end_date" class="java.sql.Timestamp"/>
+	<field name="status" class="java.lang.String"/>
+	<group name="Name">
+		<groupExpression><![CDATA[$F{name}]]></groupExpression>
+		<groupHeader>
+			<band height="54">
+				<staticText>
+					<reportElement x="0" y="27" width="164" height="20" uuid="025546d4-5ce0-43d6-9f57-768f766d81ce"/>
+					<textElement textAlignment="Center">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Process Start Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="164" y="27" width="174" height="20" uuid="ec029813-34d0-4c46-96e4-5a9cbed80e82"/>
+					<textElement textAlignment="Center">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Process End Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="338" y="27" width="172" height="20" uuid="56123a9a-5980-4ebd-bccd-efa4d12f0500"/>
+					<textElement textAlignment="Center">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Status]]></text>
+				</staticText>
+				<textField pattern="" isBlankWhenNull="true">
+					<reportElement x="0" y="0" width="510" height="20" uuid="48cbd778-683c-492e-b5c1-9fe9c6ceecb8"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[null !=$F{name} ? $F{description} + " - " + $F{name} : ""]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="50" width="510" height="1" uuid="d4b67730-f4bb-41b8-81f9-15e9cc70095b"/>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="13">
+				<line>
+					<reportElement x="0" y="0" width="510" height="1" uuid="346c2200-b02f-43ad-bc34-1abe654e84a2">
+						<printWhenExpression><![CDATA[null!=$F{name}]]></printWhenExpression>
+					</reportElement>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="61" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="338" height="32" uuid="dede32ef-2569-4b02-b78e-8e72bda977c3"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Scheduled Process Run History]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="338" y="0" width="65" height="16" uuid="fc2dd232-58fd-44f4-8c49-a5c6b755c82b"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date: ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="338" y="16" width="65" height="16" uuid="2a087bf5-d3a3-49f2-8d0f-0a4b475bfea0"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Start Date: ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="338" y="32" width="65" height="16" uuid="5c7811f5-7b6f-4f10-b207-30583d920413"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[End Date: ]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="403" y="16" width="107" height="16" uuid="7736d99d-c5c7-43ba-9968-224f1cb9e8ce"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="403" y="32" width="107" height="16" uuid="ee446b5e-e984-49cb-8fec-cafd71fa8498"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="403" y="0" width="107" height="16" uuid="cd0d3bcc-7940-4732-b5db-e7db9b24861a"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField pattern="MM/dd/yyyy hh:mm:ss a">
+				<reportElement x="0" y="0" width="164" height="20" uuid="7d17b90e-d9d4-4965-91b4-7e26b732534c"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy hh:mm:ss a">
+				<reportElement x="164" y="0" width="174" height="20" uuid="9cb2bb80-86b4-4216-81b4-4d38ab17846a"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="338" y="0" width="172" height="20" uuid="79c52ec8-6794-409f-afc5-dd9587767777"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

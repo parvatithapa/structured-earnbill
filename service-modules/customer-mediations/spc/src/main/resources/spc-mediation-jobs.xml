@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <!-- CDR Mediation Reader -->
+	<bean id="spcMediationReader" class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCMediationReader" scope="step">
+            <property name="recordSeparatorPolicy" ref="spcRecordSeparatorPolicy"/>
+            <property name="lineMapper" ref="spcMediationRecordConverter"/>
+            <property name="linesToSkip" value="0"/>
+            <property name="strict" value="false"/>
+    </bean>
+
+    <bean id="spcMediationRecordConverter"
+        class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCPatternBasedCompositeRecordLineConverter" scope="step" >
+         <property name="fieldSetMapper" ref="spcRecordLineFieldSetMapper"/>
+         <constructor-arg name="lineTokenizer">
+            <map>
+                <entry key="ofl.50" value-ref="spcOptusFixedLineCDRType50Tokenizer"/>
+                <entry key="om.10" value-ref="spcOptusMobileCDRType10Tokenizer"/>
+                <entry key="om.20" value-ref="spcOptusMobileCDRType20Tokenizer"/>
+                <entry key="om.30" value-ref="spcOptusMobileCDRType30Tokenizer"/>
+                <entry key="om.40" value-ref="spcOptusMobileCDRType40Tokenizer"/>
+                <entry key="om.50" value-ref="spcOptusMobileCDRType50Tokenizer"/>
+                <entry key="aapvpct.PWTDET" value-ref="spcAaptVoipCTopTypePwtdetTokenizer"/>
+                <entry key="telstra.UIR" value-ref="spcTelstraFixedLineUIRTokenizer"/>
+            </map>
+        </constructor-arg>
+        <constructor-arg name="crdRecordFormat">
+            <map>
+                <entry key="eng" value-ref="enginSconnectRecordFormatContainer"/>
+                <entry key="scon" value-ref="enginSconnectRecordFormatContainer"/>
+                <entry key="telstraMobile4G" value-ref="telstraMobile4GRecordFormatContainer"/>
+                <entry key="sevoice" value-ref="serviceElementsVoiceRecordFormatContainer"/>
+                <entry key="sedata" value-ref="serviceElementsDataRecordFormatContainer"/>
+                <entry key="sConnect_data" value-ref="vocusInternetRecordFormatContainer"/>
+                <entry key="aaptiu" value-ref="aaptInternetUsageRecordFormatContainer"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <bean id="spcRecordLineFieldSetMapper"
+          class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCMediationRecordFieldSetMapper" scope="step"/>
+
+    <!-- Fixed Length Tokenizers -->
+    <!-- Optus Fixed Line -->
+    <bean id="spcOptusFixedLineCDRType50Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,POINT_TARGET,CDR_ID,JURISDICTION_CODE,TYPE_ID_USG,
+                             DURATION,EVENT_DATE" />
+            <property name="columns"
+                      value="1-2,29-52,83-106,3-14,107-112,133-138,145-154,113-126" />
+            <property name="strict" value="false"/>
+    </bean>
+    <!-- Optus Mobile -->
+    <bean id="spcOptusMobileCDRType10Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,EVENT_DATE,DURATION,POINT_TARGET,
+                             CALL_DIRECTION,CALLED_PLACE,PRODUCT_PLAN_CODE,TOTAL_CHARGES,CALL_TYPE" />
+            <property name="columns"
+                      value="1-2,3-20,75-88,89-94,115-135,136-136,193-207,266-270,286-296,297-297" />
+            <property name="strict" value="false"/>
+    </bean>
+    <bean id="spcOptusMobileCDRType20Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,EVENT_DATE,DURATION,POINT_TARGET,
+                             CALL_DIRECTION,CALLED_PLACE,TOTAL_CHARGES,CALL_TYPE" />
+            <property name="columns"
+                      value="1-2,3-20,75-88,89-94,115-135,136-136,193-207,286-296,297-297" />
+            <property name="strict" value="false"/>
+    </bean>
+    <bean id="spcOptusMobileCDRType30Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,EVENT_DATE,DURATION,POINT_TARGET,DIRECTION,
+                             TOTAL_CHARGES,EVENT_TYPE,PRODUCT_PLAN_CODE,SMS_RELAXED_RULE" />
+            <property name="columns"
+                      value="1-2,3-20,75-88,115-120,135-155,156-156,192-202,225-226,236-240,246-256" />
+            <property name="strict" value="false"/>
+    </bean>
+    <bean id="spcOptusMobileCDRType40Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,EVENT_DATE,CONTENT_TRANS_ID,
+                             CONTENT_CHARGE_TYPE,CONTENT_DELIVERY_METHOD,AUD_TOTAL_CHARGES" />
+            <property name="columns"
+                      value="1-2,3-20,75-88,99-113,218-219,222-223,225-235" />
+            <property name="strict" value="false"/>
+    </bean>
+    <bean id="spcOptusMobileCDRType50Tokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,SERVICE_NUMBER,EVENT_DATE,POINT_TARGET,
+                             DIRECTION_FLAG,PRODUCT_PLAN_CODE,TOTAL_CHARGES,USAGE_IDENTIFIER,
+                             DATA_CHARGING_METHOD,NETWORK_TYPE,PEAK_USAGE,OFF_PEAK_USAGE,
+                             OTHER_USAGE,CHARGE_OVERRIDE" />
+            <property name="columns"
+                      value="1-2,3-20,60-73,82-102,103-103,152-161,166-176,206-217,218-218,
+                             227-228,243-251,252-260,261-269,314-399" />
+            <property name="strict" value="false"/>
+    </bean>
+    <!-- Aapt Voip CTOP -->
+     <bean id="spcAaptVoipCTopTypePwtdetTokenizer"
+            class="org.springframework.batch.item.file.transform.FixedLengthTokenizer" lazy-init="true">
+            <property name="names"
+                      value="CDR_IDENTIFIER,TYPE_ID_USG,EVENT_DATE,POINT_TARGET,SERVICE_NUMBER,
+                             DURATION,AMOUNT_CHARGED,JURISDICTION_CODE,CDR_ID" />
+            <property name="columns"
+                      value="1-6,33-38,93-106,121-145,145-168,169-178,179-196,197-214,270-291" />
+            <property name="strict" value="false"/>
+    </bean>
+    
+    <!-- Telstra Fixed Line (UIR) -->
+     <bean id        = "spcTelstraFixedLineUIRTokenizer" 
+           class     = "org.springframework.batch.item.file.transform.FixedLengthTokenizer" 
+           lazy-init = "true">
+           
+            <property name  = "names"
+                      value = "Interface Record Type, Event File Instance Id, Event Record Sequence Number, Product Billing Identifier, 
+                               Billing Element Code, Full National Number, Originating Number, Destination Number, Originating Date, 
+                               Originating Time, Quantity, Call Duration, Unit of Measure Code, Distance Range Code" />
+                             
+            <property name  = "columns"
+                      value = "1-3, 7-14, 15-22, 31-38, 39-46, 69-79, 96-120, 121-145, 146-155, 156-163, 181-193, 194-202, 176-180, 222-225" />
+                      
+            <property name  = "strict"  value = "false"/>
+    </bean>
+
+    <!-- Comma Separated Tokenizers -->
+    <bean id="enginSconnectRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="enginSconnectMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-engin-sconnect-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "yyyy-MM-dd HH:mm:ss"/>
+    </bean>
+
+    <bean id="telstraMobile4GRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="telstraMobileMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-telstra-mobile-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "yyyy-MM-dd HH:mm:ss"/>
+    </bean>
+    
+     <bean id="vocusInternetRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="vocusInternetMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-vocus-internet-usage-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "dd/mm/yyyy HH:mm"/>
+    </bean>
+
+    <bean id="serviceElementsVoiceRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="enginSconnectMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-service-element-voice-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "dd/MM/yy HH:mm"/>
+    </bean>
+
+    <bean id="serviceElementsDataRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="enginSconnectMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-service-element-data-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "yyyy-MM-dd"/>
+    </bean>
+
+    <bean id="aaptInternetUsageRecordFormatContainer"
+            class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordFormatContainer">
+        <constructor-arg name="format">
+            <bean id="aaptInternetUsageMediationFormatFactory"
+                class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory">
+                <property name="formatFilename" value="/cdr-formats/spc-aapt-internet-usage-cdr-format.xml" />
+                <property name="tokenizer" ref="spcFieldSeparatorTokenizer" />
+            </bean>
+        </constructor-arg>
+        <constructor-arg name = "datePattern" value = "EEE MMM dd HH:mm:ss zzz yyyy"/>
+    </bean>
+
+    <!-- CDR to JMR Processor -->
+    <bean id     = "spcJMRProcessor" 
+          class  = "com.sapienter.jbilling.server.mediation.custommediation.spc.processor.SPCMediationProcessor"
+          scope  = "step"/>
+
+    <batch:job id="spcMediationJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="spcMediationStep" next="partionedSPCJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="spcMediationReader" processor="spcJMRProcessor"
+                             writer="jmrDefaultLogWriter" commit-interval="100" 
+                             skip-policy="spcSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+
+        <batch:step id="partionedSPCJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="spcPartitionHandler"/>
+        </batch:step> 
+
+        <batch:listeners>
+            <batch:listener ref="spcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    <!-- Recycle Job Launcher -->
+    <batch:job id="spcRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="spcRecycleStep" next="spcRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="spcRecycleReader" processor="spcJMRProcessor"
+                             writer="jmrDefaultLogWriter" commit-interval="100"
+                             skip-policy="spcSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+
+        <!--Partitioner Step-->
+        <batch:step id = "spcRecycleJMRProcessorStep" >
+            <batch:partition partitioner = "jmrDefaultProcessorModulePartitioner" handler = "spcPartitionHandler"/>
+        </batch:step>
+
+        <batch:listeners>
+            <batch:listener ref = "spcRecycleJobListener"/>
+            <batch:listener ref = "spcMediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    <bean id = "spcPartitionHandler" class = "org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name = "stepName"     value = "spcPartitionedJMRProcessorStep"/>
+        <property name = "gridSize"     value = "#{systemEnvironment['JBILLING_BATCH_GRID_SIZE']?:10}"/>
+        <property name = "jobExplorer"  ref   = "mediationJobExplorer"/>
+        <property name = "replyChannel" ref   = "spc-mediation-aggregated-reply"/>
+        <property name = "messagingOperations">
+            <bean class = "org.springframework.integration.core.MessagingTemplate">
+                <property name = "defaultChannel" ref   =  "spc-mediation-requests"/>
+                <property name = "receiveTimeout" value =  "100000"/>
+            </bean>
+        </property>
+    </bean>
+</beans>

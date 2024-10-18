@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="referral_promotion_disqualification" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="594" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20">
+    <property name="ireport.zoom" value="1.5"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="entity_id" class="java.lang.Integer"/>
+    <parameter name="child_entities" class="java.util.List"/>
+    <parameter name="required_referrals" class="java.lang.Integer"/>
+    <parameter name="SUBREPORT_DIR" class="java.lang.String">
+      <defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+    </parameter>
+  
+    <queryString>
+        <![CDATA[
+            SELECT candidate.id AS candidate_no,
+                   split_part(candidate.user_name, '_', 1) AS candidate_name,
+                   (SELECT count(*) AS total_referrals
+                      FROM base_user u
+                 LEFT JOIN customer c ON c.user_id = u.id
+                 LEFT JOIN customer_meta_field_map cmfm ON cmfm.customer_id = c.id
+                 LEFT JOIN meta_field_value mfv ON mfv.id = cmfm.meta_field_value_id
+                 LEFT JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                     WHERE mfn.name = 'Referred By'
+                       AND mfv.integer_value=candidate.id
+                  GROUP BY mfv.integer_value)
+              FROM base_user candidate
+        INNER JOIN (SELECT mfv.integer_value AS candidate_id,
+                           count(*) AS total_active_referrals
+                      FROM base_user u
+                 LEFT JOIN customer c ON c.user_id = u.id
+                 LEFT JOIN customer_meta_field_map cmfm ON cmfm.customer_id = c.id
+                 LEFT JOIN meta_field_value mfv ON mfv.id = cmfm.meta_field_value_id
+                 LEFT JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                     WHERE mfn.name = 'Referred By'
+                       AND u.status_id = 1
+                       AND EXISTS(SELECT 1
+                                    FROM purchase_order o
+                                   WHERE o.user_id = u.id
+                                     AND (o.active_since <= current_date
+                                     AND (o.active_until IS NULL OR o.active_until >= current_date)))
+                  GROUP BY mfv.integer_value) t ON t.candidate_id=candidate.id
+             WHERE (candidate.entity_id = $P{entity_id} OR $X{IN, candidate.entity_id, child_entities}) 
+               AND t.total_active_referrals <= $P{required_referrals} 
+          ORDER BY candidate.id
+        ]]>
+    </queryString>
+    <field name="candidate_no" class="java.lang.Integer"/>
+    <field name="candidate_name" class="java.lang.String"/>
+    <field name="total_referrals" class="java.lang.Integer"/>
+    <title>
+        <band height="100">
+            <staticText>
+                <reportElement x="0" y="1" width="350" height="20"/>
+                <textElement>
+                    <font size="14" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Referral Promotion Disqualification Report]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="516" y="21" width="75" height="20"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression class="java.lang.Integer"><![CDATA[$P{required_referrals}]]></textFieldExpression>
+            </textField>
+            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+                <reportElement x="516" y="1" width="76" height="20"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="332" y="21" width="180" height="20"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Required Referrals:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="392" y="1" width="120" height="20"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Report Date:]]></text>
+            </staticText>
+        </band>
+    </title>
+    <pageHeader>
+        <band>
+            <printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+        </band>
+    </pageHeader>
+    <columnHeader>
+        <band height="21">
+          <staticText>
+              <reportElement x="0" y="0" width="90" height="20"/>
+              <textElement verticalAlignment="Middle" textAlignment="Left">
+                  <font size="10" isBold="true"/>
+              </textElement>
+              <text><![CDATA[Candidate No.]]></text>
+          </staticText>
+          <staticText>
+              <reportElement x="90" y="0" width="200" height="20"/>
+              <textElement verticalAlignment="Middle" textAlignment="Left">
+                  <font size="10" isBold="true"/>
+              </textElement>
+              <text><![CDATA[Candidate Name]]></text>
+          </staticText>
+          <staticText>
+              <reportElement x="290" y="0" width="80" height="20"/>
+              <textElement verticalAlignment="Middle" textAlignment="Center">
+                  <font size="10" isBold="true"/>
+              </textElement>
+              <text><![CDATA[No. Referrals]]></text>
+          </staticText>
+          <staticText>
+              <reportElement x="370" y="0" width="80" height="20"/>
+              <textElement verticalAlignment="Middle" textAlignment="Center">
+                  <font size="10" isBold="true"/>
+              </textElement>
+              <text><![CDATA[Referrals]]></text>
+          </staticText>
+          <staticText>
+              <reportElement x="450" y="0" width="80" height="20"/>
+              <textElement verticalAlignment="Middle" textAlignment="Left">
+                  <font size="10" isBold="true"/>
+              </textElement>
+              <text><![CDATA[Status]]></text>
+          </staticText>
+          <line>
+            <reportElement x="0" y="20" width="530" height="1"/>
+            <graphicElement>
+              <pen lineWidth="2.0"/>
+            </graphicElement>
+          </line>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="20" >
+            <textField isBlankWhenNull="true" >
+                <reportElement x="0" y="0" width="90" height="20">
+                </reportElement>
+                <textElement verticalAlignment="Middle" textAlignment="Left">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{candidate_no}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="90" y="0" width="200" height="20">
+                </reportElement>
+                <textElement verticalAlignment="Middle" textAlignment="Left">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{candidate_name}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="290" y="0" width="80" height="20">
+                </reportElement>
+                <textElement verticalAlignment="Middle" textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{total_referrals}]]></textFieldExpression>
+            </textField>
+            <subreport>
+              <reportElement x="370" y="0" width="160" height="20"/>
+              <subreportParameter name="candidate_no">
+                <subreportParameterExpression><![CDATA[$F{candidate_no}]]></subreportParameterExpression>
+              </subreportParameter>
+              <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+              <subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "referral_promotion_disqualification_sub.jasper"]]></subreportExpression>
+            </subreport>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <textField>
+                <reportElement x="434" y="0" width="80" height="20"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="514" y="0" width="40" height="20"/>
+                <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

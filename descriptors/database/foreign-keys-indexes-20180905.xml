@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/foreign-keys-indexes-20180905.xml">
+
+    <changeSet context = "base" id = "distributel-report-indexes" author = "Igor Poteryaev">
+
+        <comment>Create missed constraint and indexes for foreign keys columns
+                 on tables identified as slow for Distributel report</comment>
+
+        <!-- order_line -->
+
+        <createIndex tableName = "order_line"
+                     indexName = "order_line_fk_item">
+            <column name = "item_id"/>
+        </createIndex>
+
+        <!-- asset -->
+
+        <createIndex tableName = "asset"
+                     indexName = "asset_fk_order_line">
+            <column name = "order_line_id"/>
+        </createIndex>
+
+        <!-- asset_meta_field_map -->
+
+        <createIndex tableName = "asset_meta_field_map"
+                     indexName = "asset_meta_field_map_fk_asset">
+            <column name = "asset_id"/>
+        </createIndex>
+
+        <createIndex tableName = "asset_meta_field_map"
+                     indexName = "asset_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id"/>
+        </createIndex>
+
+        <addPrimaryKey  tableName      = "asset_meta_field_map"
+                        columnNames    = "asset_id, meta_field_value_id" />
+
+    </changeSet>
+
+</databaseChangeLog>

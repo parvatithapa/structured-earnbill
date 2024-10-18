@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_of_account_history" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="c7988445-fc8a-4cb5-be84-bbb0269df086">
+	<property name="ireport.zoom" value="1.331000000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="userId" class="java.lang.Integer"/>
+	<parameter name="prevInvoiceTotalWithOutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="balanceForward" class="java.lang.String"/>
+	<parameter name="planOverageCharges" class="java.lang.String"/>
+	<parameter name="otherCharges" class="java.lang.String"/>
+	<parameter name="dateDue" class="java.lang.String"/>
+	<parameter name="lastPaymentDate" class="java.util.Date"/>
+	<parameter name="lastPaymentAmount" class="java.math.BigDecimal"/>
+	<parameter name="totalPaymentsReceived" class="java.lang.String"/>
+	<parameter name="entityId" class="java.lang.Integer"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="paymentCount" class="java.lang.Integer"/>
+	<parameter name="carriedBalanceWithoutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<parameter name="lateFeePercentage" class="java.math.BigDecimal"/>
+	<parameter name="sumOfpaymentsLinkedToCurrentInvoice" class="java.math.BigDecimal"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[-- select payments linked to previous invoice
+
+select p.payment_date as payment_date, pi.amount as amount, p.is_refund
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{prevInvoiceId}
+where p.deleted = 0
+and p.result_id in (1,4)
+
+union all
+
+-- select partial payments linked on invoice
+
+select p.payment_date as payment_date, p.balance as amount, p.is_refund
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = $P{userId}
+and p.is_refund = 0
+and p.balance > 0
+and p.id in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = $P{userId})
+
+union all
+
+-- select unlinked payments
+
+select p.payment_date as payment_date, p.amount as amount, p.is_refund
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = $P{userId}
+and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = $P{userId})
+
+union all
+
+-- select older unlinked payments with balance > 0
+
+select p.payment_date as payment_date, p.amount as amount, p.is_refund
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = $P{userId}
+and p.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+and p.is_refund = 0
+and p.balance > 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = $P{userId})
+
+union all
+
+-- select refunds
+
+select p.payment_date as payment_date, p.amount as amount, p.is_refund
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = $P{userId}
+and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})
+and p.is_refund = 1
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	where pi.invoice_id = $P{prevInvoiceId}
+	or pi.invoice_id = $P{invoiceId})
+
+union all
+
+-- select refund payments original payment minus payments linked to invoice
+
+select p.payment_date as payment_date,
+COALESCE(p.amount - (select sum(pi.amount) from payment_invoice pi where pi.payment_id in (select p.payment_id
+	from payment p
+	where p.user_id = $P{userId}
+	and p.is_refund = 1
+	and p.result_id in (1,4)
+	and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})))
+	-(select sum(balance) from payment where id in (select p.payment_id
+	from payment p
+	where p.user_id = $P{userId}
+	and p.is_refund = 1
+	and p.result_id in (1,4)
+	and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId})))
+,0) as amount,
+p.is_refund
+from payment p
+where p.id in
+	(select p.payment_id
+	from payment p
+	where p.user_id = $P{userId}
+	and p.is_refund = 1
+	and p.result_id in (1,4)
+	and p.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}));]]>
+	</queryString>
+	<field name="payment_date" class="java.sql.Date"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<variable name="paymentsReceived" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="separator1" class="java.lang.String"/>
+	<variable name="separator2" class="java.lang.String"/>
+	<variable name="paymentSum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} == 0 ? $F{amount} : 0]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="refundSum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} == 1 ? $F{amount} : 0]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="total_due" class="java.lang.String" resetType="None">
+		<variableExpression><![CDATA[new BigDecimal($P{prevInvoiceTotalWithOutCurrencySymbol}).
+subtract($V{paymentSum}.
+subtract($V{refundSum})).
+add(new BigDecimal($P{planOverageCharges}) > 0 ? new BigDecimal($P{planOverageCharges}) : 0).
+add(
+new BigDecimal($P{prevInvoiceTotalWithOutCurrencySymbol}).subtract($V{paymentSum}.subtract($V{refundSum}))
+!= 0 ? 0 : new BigDecimal($P{otherCharges})).
+subtract($P{sumOfpaymentsLinkedToCurrentInvoice})]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<summary>
+		<band height="15" splitType="Prevent">
+			<textField evaluationTime="Report" pattern="#,##0.00" isBlankWhenNull="true" hyperlinkType="Reference">
+				<reportElement x="0" y="1" width="156" height="13" forecolor="#0000FF" uuid="f5bfd3e8-3516-4754-8ff6-7105c835476b"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{prevInvoiceTotalWithOutCurrencySymbol}).
+subtract($V{paymentSum}.
+subtract($V{refundSum})).
+add(new BigDecimal($P{planOverageCharges}).
+add(new BigDecimal($P{otherCharges}))>0?
+new BigDecimal($P{planOverageCharges}).
+add(new BigDecimal($P{otherCharges})):0).
+subtract($P{sumOfpaymentsLinkedToCurrentInvoice})]]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA[$P{companyName} == "AnswerConnect" ? "https://access.answerconnect.com/login" :
+$P{companyName} == "AnswerForce" ? "https://access.answerforce.com/login" :
+$P{companyName} == "LexReception" ? "https://access.lexreception.com/login" :
+$P{companyName} == "Conversion Support" ? "https://access.conversionsupport.com/login" :
+"https://access.hellosells.com/login"]]></hyperlinkReferenceExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

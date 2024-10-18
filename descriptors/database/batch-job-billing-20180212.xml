@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/batch-job-billing-20180212.xml">
+
+    <changeSet context = "base" id = "spring-batch-billing-data" author = "Igor Poteryaev">
+        <comment>Create table for storing users Ids during spring batch billing jobs</comment>
+
+        <createTable tableName = "billing_batch_job_data">
+            <column name = "billing_process_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name="partition_num" type="java.sql.Types.INTEGER">
+                <constraints nullable = "true" />
+            </column>
+            <column name="status" type="java.sql.Types.INTEGER">
+                <constraints nullable = "false" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName      = "billing_batch_job_data"
+                       constraintName = "billing_batch_job_data_pk"
+                       columnNames    = "billing_process_id, user_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "billing_batch_job_data_fk_billing_process"
+                                 baseTableName   = "billing_batch_job_data" referencedTableName   = "billing_process"
+                                 baseColumnNames = "billing_process_id"     referencedColumnNames = "id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "billing_batch_job_data_fk_user"
+                                 baseTableName   = "billing_batch_job_data" referencedTableName   = "base_user"
+                                 baseColumnNames = "user_id"                referencedColumnNames = "id"
+        />
+
+        <createIndex tableName = "billing_batch_job_data"
+                     indexName = "billing_batch_job_data_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "billing_batch_job_data"
+                     indexName = "billing_batch_job_data_fk_billing_process" unique = "false">
+            <column name = "billing_process_id"/>
+        </createIndex>
+
+        <createIndex tableName = "billing_batch_job_data"
+                     indexName = "billing_batch_job_data_idx_partition" unique = "false">
+            <column name = "billing_process_id"/>
+            <column name = "partition_num"/>
+        </createIndex>
+
+        <createIndex tableName = "billing_batch_job_data"
+                     indexName = "billing_batch_job_data_idx_status" unique = "false">
+            <column name = "billing_process_id"/>
+            <column name = "status"/>
+        </createIndex>
+
+        <renameTable oldTableName = "batch_process_info"
+                     newTableName = "billing_process_info"/>
+        <update tableName = "jbilling_seqs">
+            <column name = "name" value = "billing_process_info" />
+            <where>name = 'batch_process_info'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context = "base" id = "spring-batch-collection-data" author = "Igor Poteryaev">
+        <comment>Create table for storing users Ids during spring batch collection jobs</comment>
+
+        <createTable tableName = "collection_batch_job_data">
+            <column name = "company_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name="partition_num" type="java.sql.Types.INTEGER">
+                <constraints nullable = "true" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName      = "collection_batch_job_data"
+                       constraintName = "collection_batch_job_data_pk"
+                       columnNames    = "company_id, user_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "collection_batch_job_data_fk_company"
+                                 baseTableName   = "collection_batch_job_data" referencedTableName   = "entity"
+                                 baseColumnNames = "company_id"                referencedColumnNames = "id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "collection_batch_job_data_fk_user"
+                                 baseTableName   = "collection_batch_job_data" referencedTableName   = "base_user"
+                                 baseColumnNames = "user_id"                   referencedColumnNames = "id"
+        />
+
+        <createIndex tableName = "collection_batch_job_data"
+                     indexName = "collection_batch_job_data_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "collection_batch_job_data"
+                     indexName = "collection_batch_job_data_fk_company" unique = "false">
+            <column name = "company_id"/>
+        </createIndex>
+
+        <createIndex tableName = "collection_batch_job_data"
+                     indexName = "collection_batch_job_data_idx_partition" unique = "false">
+            <column name = "company_id"/>
+            <column name = "partition_num"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

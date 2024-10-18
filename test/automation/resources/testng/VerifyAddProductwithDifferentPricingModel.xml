@@ -1,0 +1,26 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	
+	<test name="VerifyAddProductwithDifferentPricingModel" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyAddProductwithDifferentPricingModel">
+				<methods>
+					<include name="VerifyAddProductwithDifferentPricing"></include>
+					<include name="VerifyAddProductwithFlatPrice"></include>
+					<include name="VerifyAddProductwithGraduatePrice"></include>
+					<include name="VerifyAddProductwithGraduatedCapPrice"></include>
+					<include name="VerifyAddProductwithTimeOfDayPrice"></include>
+					<include name="VerifyAddProductwithTieredPricing"></include>
+					<include name="VerifyAddProductwithVolumePricing"></include>
+					<include name="VerifyAddwithPooledPricing"></include>
+					<include name="VerifyAddwithItemPercantageSelector"></include>
+					<include name="VerifyAddItemItemSelector"></include>
+					<include name="VerifyAddItemQuantityAdd"></include>
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

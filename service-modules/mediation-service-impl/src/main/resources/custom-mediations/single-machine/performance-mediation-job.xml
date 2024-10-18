@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <!-- CDR to JMR -->
+
+    <bean id="performanceMediationReader" class="com.sapienter.jbilling.server.mediation.converter.customMediations.performanceMediation.PerformanceMediationReader" scope="prototype"/>
+
+
+    <batch:job id="performanceMediationJob" job-repository="mediationJobRepository">
+
+        <!--CDR TO JMR STEP-->
+        <batch:step id="performanceMediationStep" next="performanceJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="performanceMediationReader" processor="sampleCDRToJMR"
+                             writer="jmrDefaultWriter" commit-interval="1"/>
+            </batch:tasklet>
+        </batch:step>
+        <!--Partitioner Step-->
+        <batch:step id="performanceJMRProcessorStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="jmrDefaultProcessorModulePartitionerHandler"/>
+        </batch:step>
+
+        <batch:listeners>
+            <batch:listener ref="mediationJobListener"/>
+        </batch:listeners>
+
+    </batch:job>
+
+</beans>

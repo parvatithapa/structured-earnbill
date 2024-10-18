@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+           http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <bean id="dt-init-jobs" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.MediationJobsInit" scope="singleton"></bean>
+
+    <!--
+    ######################
+        CDR to JMR
+    ######################
+    -->
+    <!-- Common Service Beans -->
+    <bean id="dtMediationHelperService" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.helper.MediationHelperServiceImpl">
+        <property name="jdbcTemplate" ref="jBillingJdbcTemplate" />
+    </bean>
+
+    <!-- Batch Step 1. Split CDR files-->
+    <bean id="dtCdrSplitterReader" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.reader.MediationInputFolderFileListReader" scope="step">
+        <property name="recursive" value="true" />
+        <property name="workFolder" value="#{jobExecutionContext['work_folder']}/cdr/" />
+        <property name="checkForFileUpload" value="true" />
+        <property name="mediationHelperService" ref="dtMediationHelperService" />
+    </bean>
+
+    <bean id="dtCdrSplitterProcessor" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.FileSplitProcessor" scope="step">
+        <property name="outputFolder" value="#{jobExecutionContext['work_folder']}/cdr_split/"/>
+    </bean>
+    <bean id="dtCdrSplitterWriter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.CombinedCdrProcessResultWriter" scope="step">
+        <property name="backup" value="false"/>
+        <property name="deleteError" value="true"/>
+        <property name="deleteSuccess" value="true"/>
+    </bean>
+
+    <bean id = "dtOrderService"
+          class = "com.sapienter.jbilling.server.order.dt.DtOrderServiceImpl" parent = "orderService"/>
+
+    <bean id = "dtMediationQuantityResolutionService"
+          class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.jmrProcess.DtMediationQuantityResolutionServiceImpl">
+        <property name="itemQuantityRatingService" ref="itemQuantityRatingService"></property>
+        <property name="errorRecordCache" ref = "dtRecycleErrorRecordCache" />
+    </bean>
+
+    <bean id="dtCdrInitJobListener"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrcopy.JobInitListener" >
+    </bean>
+
+
+    <bean id="emptyTask"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.EmptyTask" >
+    </bean>
+
+
+    <!-- Batch Step 2. Parse file to CDR -->
+
+    <bean id="dtMediationTokenizer" class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer" lazy-init="true">
+        <property name="fieldSeparator" value="[|]" />
+    </bean>
+
+    <!-- CDR Mediation Reader -->
+    <bean id="dtOfflineMediationMultiReader" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.reader.DtOfflineCdrMediationReader" scope="step">
+        <property name="delegate" ref="dtOfflineMediationReader" />
+        <property name="saveState" value="false" />
+        <property name="preserveProcessedFile" value="true" />
+        <property name="archiveFolder" value="#{jobExecutionContext['archive_folder']}/" />
+    </bean>
+
+    <bean id="dtOfflineMediationReader" class="org.springframework.batch.item.file.FlatFileItemReader" scope="prototype">
+        <property name="lineMapper" ref="dtOfflineMediationConverter"/>
+        <property name="linesToSkip" value="0"/>
+        <!--<property name="resource" value="file:#{jobExecutionContext['work_folder']}/cdr_split/#{stepExecutionContext['file']}"/>-->
+        <property name="strict" value="false"/>
+        <property name="comments" value="10,90"/>
+    </bean>
+    <bean id="dtOfflineMediationConverter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.reader.DtOfflineCdrMediationRecordLineConverter" lazy-init="true">
+        <property name="format" ref="dtOfflineCdrMediationFormatFactory" />
+        <property name="dateTimeFormatter" value="yyyyMMddHHmmss" />
+    </bean>
+    <bean id="dtOfflineCdrMediationFormatFactory" class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory" lazy-init="true">
+        <property name="formatFilename" value="/custom-mediations/multi-machine/deutsche-telekom/cdr-formats/offline-usage-record-format.xml" />
+        <property name="tokenizer" ref="dtMediationTokenizer" />
+    </bean>
+
+    <!-- CDR to JMR Processor -->
+    <bean id="dtOfflineCdrToJmr" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.DtOfflineCdrToConversionResult" scope="step">
+        <property name="mediationHelperService" ref="dtMediationHelperService"/>
+        <property name="resolver" ref="dtOfflineCdrResolver"></property>
+    </bean>
+    <!-- CDR Resolver Steps -->
+    <bean id="dtOfflineCdrResolver" class="com.sapienter.jbilling.server.mediation.converter.common.steps.JMRMediationCdrResolver" scope="step" >
+        <property name="steps" ref="dtOfflineMediationCdrResolverSteps" />
+        <property name="validationSteps" ref="dtOfflineMediationCdrValidationSteps" />
+        <property name="preProcessingSteps" ref="dtOfflineMediationPreprocessorSteps" />
+    </bean>
+
+    <bean id="dtOfflinePricingResolverStep" class="com.sapienter.jbilling.server.mediation.converter.common.steps.JMRFilteredPricingResolutionStep">
+        <property name="pricingFieldNames">
+            <util:set>
+                <value>ProductID</value>
+                <value>BSSParams</value>
+                <value>BeginTime</value>
+                <value>EndTime</value>
+                <value>ExtendParams</value>
+                <value>AccumulateFactorValue</value>
+                <value>ResourceID</value>
+            </util:set>
+        </property>
+    </bean>
+
+    <!-- Configuring cdr resolver steps for Offline usage -->
+    <util:map id="dtOfflineMediationCdrResolverSteps" map-class="java.util.LinkedHashMap">
+        <entry key="USER_ID_AND_CURRENCY" value-ref="dtOfflineUserCurrencyResolverStep" />
+        <entry key="EVENT_DATE" value-ref="dtOfflineEventDateResolverStep" />
+        <entry key="ITEM_RESOLUTION" value-ref="dtOfflineItemResolverStep" />
+        <entry key="RESOURCE" value-ref="dtOfflineResourceResolverStep" />
+        <entry key="DESCRIPTION" value-ref="dtOfflineDescriptionResolverStep" />
+        <entry key="QUANTITY" value-ref="dtQuantityResolverStep" />
+        <entry key="PRICING" value-ref="dtOfflinePricingResolverStep" />
+    </util:map>
+
+    <bean id="dtOfflineItemResolverStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.ItemByIdentifierResolutionStep" >
+        <property name="mediationHelperService" ref="dtMediationHelperService" />
+    </bean>
+
+    <bean id="dtOfflineUserCurrencyResolverStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.DtOfflineUserCurrencyResolutionStep" >
+        <property name="mediationHelperService" ref="dtMediationHelperService" />
+    </bean>
+
+    <bean id="dtOfflineResourceResolverStep"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.DtOfflineResourceResolutionStep" />
+
+    <bean id="dtQuantityResolverStep"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.DtOfflineQuantityResolutionStep" />
+
+    <bean id="dtOfflineDescriptionResolverStep" class="com.sapienter.jbilling.server.mediation.converter.common.steps.DescriptionFromFieldResolutionStep" >
+        <property name="fieldNames" value="ProductID,ExtendParams" />
+    </bean>
+
+    <bean id="dtOfflineEventDateResolverStep" class="com.sapienter.jbilling.server.mediation.converter.common.steps.BasicEventDateResolutionStep" >
+        <property name="dateFieldName" value="EndTime" />
+        <property name="dateFormat"  value="yyyyMMddHHmmss"/>
+    </bean>
+
+    <!-- Common CDR Validation Steps Beans -->
+    <util:map id="dtOfflineMediationCdrValidationSteps" map-class="java.util.LinkedHashMap">
+        <entry key="MEDIATION_RECORD_FORMAT_VALIDATION" value-ref="dtMediationRecordFormatValidation" />
+        <entry key="DUPLICATE_RECORD_VALIDATION" value-ref="dtOfflineDuplicateRecordValidationStep" />
+        <entry key="MEDIATION_RESULT_VALIDATION" value-ref="dtOfflineMediationResultValidationStep" />
+    </util:map>
+
+    <util:set id="dtOfflineMediationPreprocessorSteps" set-class="java.util.HashSet">
+        <ref bean="dtOfflineKeyGenPreprocessor" />
+    </util:set>
+
+
+    <util:set id="dtOfflineCdrProductsNoDuplicateCheck" set-class="java.util.HashSet">
+        <value>OTC_OBS</value>
+    </util:set>
+
+    <!-- Pre Processor Steps -->
+    <bean id="dtOfflineKeyGenPreprocessor"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.DtOfflineUpdateKeyStep" >
+        <property name="pricingFieldValuePrefixSet" ref="dtOfflineCdrProductsNoDuplicateCheck" />
+    </bean>
+
+    <!-- Validation steps -->
+    <bean id = "dtMediationRecordFormatValidation"
+          class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.validation.DtMediationRecordFormatValidation" />
+    <bean id="dtOfflineDuplicateRecordValidationStep"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.steps.validation.DtOfflineDuplicateRecordValidationStep" >
+        <property name="pricingFieldValuePrefixSet" ref="dtOfflineCdrProductsNoDuplicateCheck" />
+    </bean>
+    <bean id="dtOfflineMediationResultValidationStep"
+          class="com.sapienter.jbilling.server.mediation.converter.common.validation.MediationResultValidationStep" />
+
+    <!-- Listener -->
+
+    <bean id     = "dtMediationJobListener"
+          class  = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.listener.DtMediationJobListener"
+          parent = "mediationJobListener"/>
+
+    <bean id = "dtCdrToJmrSkipPolicy"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.DtCdrProcessSkipPolicy">
+    </bean>
+
+
+    <batch:job id="dtOfflineMediationJob" job-repository="mediationJobRepository">
+        <!-- Seems and empty step is required for the dtCdrInitJobListener to add work_folder -->
+        <batch:step id="dtOfflineCdrSplitterStep" next="dtOfflineCdrProcessorStep">
+            <batch:tasklet ref="emptyTask" />
+        </batch:step>
+        <batch:step id="dtOfflineCdrProcessorStep" next="dtOfflineJmrProcessorStep" >
+            <batch:partition partitioner="dtCdrProcessorPartitioner" handler="dtCdrPartitionerHandler">
+            </batch:partition>
+        </batch:step>
+        <batch:step id="dtOfflineJmrProcessorStep" >
+            <batch:partition partitioner="jmrDtProcessorModuloPartitioner" handler="jmrDtProcessorModuloPartitionerHandler">
+            </batch:partition>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="dtMediationJobListener"/>
+            <batch:listener ref="dtCdrInitJobListener"/>
+        </batch:listeners>
+    </batch:job>
+	
+    <batch:job id="dtOfflineCdrRecycleJobLauncher" job-repository="mediationJobRepository">
+        <batch:step id="dtOfflineCdrRecycleStep" next="dtOfflineCdrRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="dtOfflineCdrRecycleReader"  processor="dtOfflineCdrToJmr"
+                             writer="jmrDefaultLogWriter" commit-interval="100">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+         <batch:step id="dtOfflineCdrRecycleJMRProcessorStep" >
+            <batch:partition partitioner="jmrDtProcessorModuloPartitioner" handler="jmrDtProcessorModuloPartitionerHandler">
+            </batch:partition>
+        </batch:step> 
+        <batch:listeners>
+            <batch:listener ref="dtRecycleMediationJobListener"/>
+            <batch:listener ref="dtMediationJobListener"/>
+            <batch:listener ref="dtCdrInitJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    <bean id="jmrDtProcessorModuloPartitioner" scope="step"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.jmrProcess.partitioner.DtJMRModuloPartitioner"/>
+
+    <bean id="dtCdrProcessorPartitioner" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.cdrprocess.CdrProcessorPartitioner" lazy-init="true" scope="step">
+        <property name="folder" value="#{jobExecutionContext['work_folder']}/cdr/" />
+    </bean>
+
+    <bean id="dtCdrPartitionerHandler"
+          class="org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name="stepName" value="dtCdrProcessorStep"/>
+        <property name="gridSize" value="${springbatch.mediation.process.partition.count}"/>
+        <property name="jobExplorer" ref="mediationJobExplorer"/>
+        <property name="replyChannel" ref="dt-cdr-outbound-replies"/>
+        <property name="messagingOperations">
+            <bean class="org.springframework.integration.core.MessagingTemplate">
+                <property name="defaultChannel" ref="dt-cdr-outbound-requests"/>
+                <property name="receiveTimeout" value="100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="jmrDtProcessorModuloPartitionerHandler"
+          class="org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name="stepName" value="dtPartitionedJMRProcessorStep"/>
+        <property name="gridSize" value="${springbatch.mediation.process.partition.count}"/>
+        <property name="jobExplorer" ref="mediationJobExplorer"/>
+        <property name="replyChannel" ref="dt-jmr-outbound-replies"/>
+        <property name="messagingOperations">
+            <bean class="org.springframework.integration.core.MessagingTemplate">
+                <property name="defaultChannel" ref="dt-jmr-outbound-requests"/>
+                <property name="receiveTimeout" value="100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="dtPartitionedJMRReader"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.jmrProcess.reader.DtJMRReader" scope="step">
+        <property name="sendMetrics" value="${springbatch.mediation.jmr.sendMetrics}"/>
+    </bean>
+
+    <bean id="dtPartitionedJMRProcessorWriter" scope="step"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.jmrProcess.writer.DtJMRProcessorWriter">
+        <property name="batchSize" value="${springbatch.mediation.jmr.writer.batchSize}"/>
+        <property name="sendMetrics" value="${springbatch.mediation.jmr.sendMetrics}"/>
+    </bean>
+
+    <!--
+    ########################################
+        Recycler
+    ########################################
+    -->
+
+    <bean id="dtOfflineCdrRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.recycle.DtOfflineRecycleRowMapper"/>
+
+    <bean id="dtOfflineCdrRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+        <property name="dataSource" ref="jBillingMediationDataSource"/>
+        <property name="sql"
+                  value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED' AND mediation_cfg_id = ?"/>
+        <property name="rowMapper" ref="dtOfflineCdrRecycleRowMapper"/>
+        <property name="preparedStatementSetter" ref="dtRecyclePreparedStmtSetter" />
+    </bean>
+
+    <bean id="dtRecyclePreparedStmtSetter" scope="step"
+          class="com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.recycle.DtOfflineRecyclePreparedStmtSetter">
+        <property name="mediationCfgId" value="#{jobExecutionContext['mediationCfgId']}" />
+    </bean>
+
+    <bean id= "dtRecycleMediationJobListener" parent = "recycleMediationJobListener"
+          class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.recycle.listener.DtRecycleMediationJobListener">
+        <property name = "recycleMediationCacheProvider" ref = "dtRecycleErrorRecordCache" />
+    </bean>
+
+    <bean id = "dtRecycleErrorRecordDataProvider"
+          class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.recycle.cache.DtRecycleErrorRecordDataProvider">
+        <property name="jdbcTemplate" ref="jBillingJdbcTemplate" />
+    </bean>
+
+    <bean id = "dtRecycleErrorRecordCache"
+          class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.job.recycle.cache.DtRecycleErrorRecordCache">
+        <property name = "dataProvider" ref = "dtRecycleErrorRecordDataProvider" />
+    </bean>
+
+    <!--
+        ########################################
+            Master Integration
+        ########################################
+     -->
+
+    <int:channel id="dt-cdr-outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="master-dt-cdr-outbound-requests-adapter"
+                                      connection-factory="jmsConnectionFactory"
+                                      destination-name="dtCdrRequestsQueue"
+                                      channel="dt-cdr-outbound-requests"/>
+
+    <int:channel id="dt-cdr-inbound-staging"/>
+    <int-jms:message-driven-channel-adapter id="master-dt-cdr-inbound-staging-adapter"
+                                            destination-name="dtCdrStagingQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="dt-cdr-inbound-staging"/>
+
+    <int:aggregator id="master-dt-cdr-inbound-staging-aggregator"
+                    ref="dtCdrPartitionerHandler"
+                    input-channel="dt-cdr-inbound-staging"
+                    output-channel="dt-cdr-outbound-replies"/>
+
+    <int:channel id="dt-cdr-outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+    <int:channel id="dt-jmr-outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="master-dt-jmr-outbound-requests-adapter"
+                                      connection-factory="jmsConnectionFactory"
+                                      destination-name="dtJmrRequestsQueue"
+                                      channel="dt-jmr-outbound-requests"/>
+
+    <int:channel id="dt-jmr-inbound-staging"/>
+    <int-jms:message-driven-channel-adapter id="master-dt-jmr-inbound-staging-adapter"
+                                            destination-name="dtJmrStagingQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="dt-jmr-inbound-staging"/>
+
+    <int:aggregator id="master-dt-jmr-inbound-staging-aggregator"
+                    ref="jmrDtProcessorModuloPartitionerHandler"
+                    input-channel="dt-jmr-inbound-staging"
+                    output-channel="dt-jmr-outbound-replies"/>
+
+    <int:channel id="dt-jmr-outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+</beans>

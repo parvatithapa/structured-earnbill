@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <!-- generateIgnitionPaymentsJob -->
+
+    <!-- generateIgnitionPayments step. partitioned by user -->
+
+    <int:channel id = "payments-requests"/>
+    <int-jms:outbound-channel-adapter  id = "payments-requests-adapter"
+                                        connection-factory = "jmsConnectionFactory"
+                                        destination-name   = "payments.requests"
+                                        channel            = "payments-requests"/>
+
+    <int:channel id = "payments-reply"/>
+    <int-jms:message-driven-channel-adapter id                 = "payments-reply-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "payments.reply"
+                                            channel            = "payments-reply"/>
+
+    <int:channel id = "payments-aggregated-reply">
+        <int:queue />
+    </int:channel>
+
+    <int:aggregator id             = "payments-reply-aggregator"
+                    ref            = "generateIgnitionPaymentsPartitionHandler"
+                    input-channel  = "payments-reply"
+                    output-channel = "payments-aggregated-reply"
+                    send-timeout   = "3600000"/>
+
+    <!-- ignitionCustomerPaymentUpdate step. partitioned by payment -->
+
+    <int:channel id = "payment-update-requests"/>
+    <int-jms:outbound-channel-adapter  id = "payment-update-requests-adapter"
+                                        connection-factory = "jmsConnectionFactory"
+                                        destination-name   = "payment.update.requests"
+                                        channel            = "payment-update-requests"/>
+
+    <int:channel id = "payment-update-reply"/>
+    <int-jms:message-driven-channel-adapter id                 = "payment-update-reply-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "payment.update.reply"
+                                            channel            = "payment-update-reply"/>
+
+    <int:channel id = "payment-update-aggregated-reply">
+        <int:queue />
+    </int:channel>
+
+    <int:aggregator id             = "payment-update-reply-aggregator"
+                    ref            = "ignitionCustomerPaymentUpdatePartitionHandler"
+                    input-channel  = "payment-update-reply"
+                    output-channel = "payment-update-aggregated-reply"
+                    send-timeout   = "3600000"/>
+
+
+    <!-- updateIgnitionCustomerJob -->
+
+    <!-- updateCustomersNextActionDate step. partitioned by user -->
+
+    <int:channel id = "update-customer-requests"/>
+    <int-jms:outbound-channel-adapter  id = "update-customer-requests-adapter"
+                                        connection-factory = "jmsConnectionFactory"
+                                        destination-name   = "update.customer.requests"
+                                        channel            = "update-customer-requests"/>
+
+    <int:channel id = "update-customer-reply"/>
+    <int-jms:message-driven-channel-adapter id                 = "update-customer-reply-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "update.customer.reply"
+                                            channel            = "update-customer-reply"/>
+
+    <int:channel id = "update-customer-aggregated-reply">
+        <int:queue />
+    </int:channel>
+
+    <int:aggregator id             = "update-customer-reply-aggregator"
+                    ref            = "updateCustomerNextActionDatePartitionHandler"
+                    input-channel  = "update-customer-reply"
+                    output-channel = "update-customer-aggregated-reply"
+                    send-timeout   = "3600000"/>
+
+</beans>

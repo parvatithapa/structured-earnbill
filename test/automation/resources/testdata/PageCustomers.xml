@@ -1,0 +1,389 @@
+<testdata>
+
+	<testdataset name="customerInfo" category="ci" testenv="develop|lab3">
+		<customerName>Brian SmithHZQ</customerName>
+	</testdataset>
+
+	<testdataset name="customerInformation" category="ci" testenv="develop|lab3">
+		<customerName>Customer Y3</customerName>
+	</testdataset>
+
+	<testdataset name="customerInformationWithDifferentPeriods" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 2PAT</customerName>
+	</testdataset>
+
+	<testdataset name="customerInformationTwoWithDifferentPeriods" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 1VFD</customerName>
+	</testdataset>
+
+	<testdataset name="customerInformationForCollectionCycleOne_One" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 2GIT</customerName>
+		<customerStatus>Active</customerStatus>
+	</testdataset>
+
+	<testdataset name="customerInformationForCollectionCycleOne_Two" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 1SRW</customerName>
+		<customerStatus>Payment due</customerStatus>
+	</testdataset>
+
+	<testdataset name="customerInformationForCollectionCycleTwo_One" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 2GIT</customerName>
+		<customerStatus>Active</customerStatus>
+	</testdataset>
+
+	<testdataset name="customerInformationForCollectionTwo_Two" category="ci" testenv="develop|lab3">
+		<customerName>Billing Customer 1SRW</customerName>
+		<customerStatus>Grace Period</customerStatus>
+	</testdataset>
+
+	<testdataset name="customerDetails" category="cd" testenv="develop|lab3">
+		<!-- <accountType>Direct Customer</accountType> -->
+		<billingCycleDay>1</billingCycleDay>
+		<!-- <paymentMethod>Debit Card</paymentMethod> -->
+		<cardHolderName>Ashish</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+	</testdataset>
+
+	<testdataset name="loginNameOne" category="ln" testenv="develop|lab3">
+		<loginName>Ashish{RANDOM}</loginName>
+	</testdataset>
+
+	<testdataset name="Customer A" category="ca" testenv="develop|lab3">
+		<accountType>Residential</accountType>
+		<loginName>Customer uixy{RANDOM}</loginName>
+		<product>Flat 1 Priced Product</product>
+		<effectiveDate>01/01/2001</effectiveDate>
+		<setDate>01/01/{NEXTYEAR}</setDate>
+		<period>Monthly</period>
+		<quantity>2</quantity>
+		<type>pre paid</type>
+	</testdataset>
+
+	<testdataset name="Customer Random" category="cr" testenv="develop|lab3">
+		<accountType>Residential</accountType>
+		<loginName>CustomerXYZ{RANDOMNUM}</loginName>
+		<agent>204</agent>
+	</testdataset>
+
+	<testdataset name="new_customer" category="nc" testenv="develop|lab3">
+		<email>bsmith{RANDOM}@abc.com</email>
+		<loginName>CustomerAAXYZ{RANDOMNUM}</loginName>
+		<billingCycleDay>1</billingCycleDay>
+		<paymentMethod>Credit card</paymentMethod>
+		<paymentMethod2>Credit Card</paymentMethod2>
+		<cardHolderName>Ashish</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+		<allowSubAccount>true</allowSubAccount>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+	</testdataset>
+
+	<testdataset name="addCustomer" category="ac" testenv="develop|lab3">
+		<loginName>Brian SmithXYZ{RANDOM}</loginName>
+		<allowSubAccount>true</allowSubAccount>
+		<email>bsmith{RANDOM}@abc.com</email>
+		<paymentMethod>Debit card</paymentMethod>
+		<cardHolderName>Ashish</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+	</testdataset>
+
+	<testdataset name="TC115_ACH_Cusotmer_Type" category="achct" testenv="develop|lab3">
+		<loginName>FUP Customer{RANDOMNUM}</loginName>
+		<billingCycleDay>1</billingCycleDay>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+		<achroutingnumber>1234</achroutingnumber>
+		<achcustomername>FUP Customer{RANDOM}</achcustomername>
+		<achaccounnumber>{RANDOMNUM}</achaccounnumber>
+		<achbankname>Test Bank</achbankname>
+		<achaccounttype>SAVINGS</achaccounttype>
+	</testdataset>
+
+	<testdataset name="addSecondCustomer" category="ac" testenv="develop|lab3">
+		<loginName>Sarah WilsonXYZ{RANDOM}</loginName>
+		<email>swilson{RANDOM}@abc.com</email>
+		<paymentMethod>Debit card</paymentMethod>
+		<cardHolderName>Ashish</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+		<allowSubAccount>true</allowSubAccount>
+		<billingCycleDay>1</billingCycleDay>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+	</testdataset>
+
+	<testdataset name="addCustomerOneWithDifferentPeriods" category="ac" testenv="develop|lab3">
+		<loginName>Billing Customer 1XYZ{RANDOM}</loginName>
+		<billingCycleDay>1</billingCycleDay>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+	</testdataset>
+
+	<testdataset name="addCustomerTwoWithDifferentPeriods" category="ac" testenv="develop|lab3">
+		<loginName>Billing Customer 2XYZ{RANDOM}</loginName>
+		<billingCycleDay>1</billingCycleDay>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+	</testdataset>
+
+	<testdataset name="createOrderSecond" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<product>Date Service</product>
+		<product2>Flat 1 Priced Product</product2>
+		<quantity>3</quantity>
+		<effectiveDate>{CURRENTDATE}</effectiveDate>
+		<message>The order has an error in the hierarchy field: Mandatory dependency not satisfied</message>
+		<depandentProduct>Installation Fee</depandentProduct>
+	</testdataset>
+
+	<testdataset name="OrderWithDifferentPeriods" category="co" testenv="develop|lab3">
+		<period>One time</period>
+		<product>Flat 1 Priced Product</product>
+		<quantity>14</quantity>
+		<effectiveDate>{CURRENTDATE}</effectiveDate>
+	</testdataset>
+
+	<testdataset name="OrderTwoWithDifferentPeriods" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<product>Flat 1 Priced Product</product>
+		<quantity>3</quantity>
+		<effectiveDate>{CURRENTDATE}</effectiveDate>
+	</testdataset>
+
+	<testdataset name="TC115_Create_Order" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+	</testdataset>
+
+	<testdataset name="OrderThreeWithDifferentPeriods" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>post paid</type>
+		<product>Flat 1 Priced Product</product>
+		<quantity>14</quantity>
+		<effectiveDate>{CURRENTDATE}</effectiveDate>
+	</testdataset>
+
+	<testdataset name="OrderfourWithDifferentPeriods" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>post paid</type>
+		<product>Flat 1 Priced Product</product>
+		<quantity>2</quantity>
+		<effectiveDate>{CURRENTDATE}</effectiveDate>
+	</testdataset>
+
+	<testdataset name="createOrder" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<product>Test Code Description</product>
+		<discount>Test Discount1RFX - Test Discount1RFR</discount>
+		<discountItem>Test Code Description - Qty=1 - Percentage=10.0000% </discountItem>
+		<order>pre paid</order>
+		<quantity>2</quantity>
+		<product2>SIM CardsJYK</product2>
+		<sim>true</sim>
+	</testdataset>
+
+	<testdataset name="createOrderSecond" category="co" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<product>Date Service</product>
+		<message>The order has an error in the hierarchy field: Mandatory dependency not satisfied</message>
+		<quantity>2</quantity>
+		<depandentProduct>Installation Fee</depandentProduct>
+	</testdataset>
+
+	<testdataset name="addCustomerAccount" category="aca" testenv="develop|lab3">
+		<accountType>Residential</accountType>
+	</testdataset>
+
+	<testdataset name="addCustomerAccountWithDifferentPeriods" category="aca" testenv="develop|lab3">
+		<accountType>First Customer akh</accountType>
+	</testdataset>
+
+	<testdataset name="TC20_VerifyPayment" category="vp" testenv="develop|lab3">
+		<name>verify payment{RANDOM}</name>
+	</testdataset>
+
+	<testdataset name="verifyPayment" category="vp" testenv="develop|lab3">
+		<name>verify payment{RANDOM}</name>
+		<chequeHolderName>test</chequeHolderName>
+		<chequeNumber>101010101010</chequeNumber>
+		<chequeDate>9/30/2016</chequeDate>
+		<paymentAmount>5</paymentAmount>
+		<PaymentOrder>5</PaymentOrder>
+	</testdataset>
+
+	<testdataset name="Addorder" category="ao" testenv="develop|lab3">
+		<order>pre paid</order>
+		<period>Monthly</period>
+		<identifier1>Asset3{RANDOM}</identifier1>
+		<EffectiveDate>06/01/2000</EffectiveDate>
+		<Status>Available</Status>
+	</testdataset>
+
+	<testdataset name="customerCreate" category="cc" testenv="develop|lab3">
+		<name>testLogin{RANDOM}</name>
+	</testdataset>
+
+	<testdataset name="TC_102_NewCustomer" category="nc" testenv="develop|lab3">
+		<loginName>Customer{RANDOMNUM}</loginName>
+		<billingCycleDay>1</billingCycleDay>
+		<paymentMethod2>Credit Card</paymentMethod2>
+		<cardHolderName>Ashish</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+		<allowSubAccount>true</allowSubAccount>
+		<billingCycleUnit>Monthly</billingCycleUnit>
+	</testdataset>
+
+	<testdataset name="NewCustomerInfo" category="ldr" testenv="develop|lab3">
+		<loginName>Dependencies customer{RANDOM}</loginName>
+		<cardHolderName>TestData</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>02/2020</expiryDate>
+	</testdataset>
+
+	<testdataset name="EditCustomerInfo" category="ysk" testenv="develop|lab3">
+		<period>Monthly</period>
+		<order>pre paid</order>
+		<product>Lemonade</product>
+		<effectiveDate>01/01/2000</effectiveDate>
+		<secondProduct>Coffee</secondProduct>
+		<activeDate>01/01/2000</activeDate>
+	</testdataset>
+
+	<testdataset name="S_TC14.1_ReportForInvoices" category="rfi" testenv="develop|lab3">
+		<name>TestCustomer3{RANDOM}</name>
+	</testdataset>
+
+	<testdataset name="customerCreate" category="cc" testenv="develop|lab3">
+		<name>testLogin{RANDOM}</name>
+	</testdataset>
+
+	<testdataset name="AddorderPerOrder" category="ao" testenv="develop|lab3">
+		<startDate>08/02/2016</startDate>
+		<endDate>08/30/2026</endDate>
+		<EffectiveDate>08/02/2016</EffectiveDate>
+		<Status>Available</Status>
+	</testdataset>
+
+	<testdataset name="AddorderPerCustomer" category="aopc" testenv="develop|lab3">
+		<startDate>03/05/2014</startDate>
+		<endDate>03/30/2014</endDate>
+		<EffectiveDate>03/05/2014</EffectiveDate>
+		<globle>true</globle>
+		<quantity>2</quantity>
+		<quantity1>1</quantity1>
+	</testdataset>
+
+	<testdataset name="AddorderPerCustomer1" category="aopc" testenv="develop|lab3">
+		<startDate>03/02/2014</startDate>
+		<EffectiveDate>03/02/2014</EffectiveDate>
+	</testdataset>
+
+	<testdataset name="AddCustomerWithPaymentCard" category="acwpc" testenv="develop|lab3">
+		<customerName>New_Customer{RANDOM}</customerName>
+		<name>TestAccount_{RANDOM}</name>
+		<number>4111111111111152</number>
+		<date>12/2020</date>
+		<nextInvoiceDate>02/01/1999</nextInvoiceDate>
+	</testdataset>
+
+	<testdataset name="createOrderwithDiscount" category="cowd" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<startDate>07/02/2014</startDate>
+		<endDate>07/31/2014</endDate>
+		<discountableItem>-- Order Level Discount --</discountableItem>
+		<effectiveDate>07/02/2014</effectiveDate>
+	</testdataset>
+
+	<testdataset name="calculateDiscount" category="cd" testenv="develop|lab3">
+		<DiscountRate>10</DiscountRate>
+		<productRate>100</productRate>
+	</testdataset>
+
+	<testdataset name="createOrderMonthlyPrepaid" category="comp" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="createOrderMonthlyPostpaid" category="comp" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>post paid</type>
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="createOrderYearlyPostpaid" category="coyp" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>post paid</type>
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="createOrderYearlyPrepaid" category="coyp" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="addcuswithcurr" category="cuswithcurr" testenv="develop|lab3">
+		<loginname>CurrCustomer{RANDOM}</loginname>
+		<CrrencySelection>Euro</CrrencySelection>
+	</testdataset>
+
+	<testdataset name="OrderWithDifferentPeriodsCurr" category="curr4" testenv="develop|lab3">
+		<period>Monthly</period>
+		<type>pre paid</type>
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="TC98_OrderSpecialPricing" category="osp" testenv="develop|lab3">
+		<loginName>TestCustomerPrice1{RANDOM}</loginName>
+		<email>customer1@jbilling.com{RANDOM}</email>
+		<address>B-88</address>
+		<city>Noida</city>
+		<salary>1000</salary>
+		<cardHolderName>Akhilesh</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>12/2020</expiryDate>
+		<rate>90</rate>
+		<startDate>01/01/2000</startDate>
+		<priceExpiryDate>01/01/2001</priceExpiryDate>
+		<endDate>12/01/2000</endDate>
+	</testdataset>
+
+	<testdataset name="TC98_setPricing" category="osp" testenv="develop|lab3">
+		<rate>90</rate>
+		<startDate>01/01/2000</startDate>
+		<period>Monthly</period>
+		<order>post paid</order>
+	</testdataset>
+
+	<testdataset name="TC98_UpdateOrder" category="osp" testenv="develop|lab3">
+		<rate>100</rate>
+		<startDate>02/01/2000</startDate>
+		<period>Monthly</period>
+		<order>post paid</order>
+	</testdataset>
+
+	<testdataset name="TC99_NoSpecialPricing" category="osp" testenv="develop|lab3">
+		<startDate>01/02/2001</startDate>
+		<endDate>12/01/2002</endDate>
+	</testdataset>
+
+	<testdataset name="TC_126_GenerateInvoice" category="gi" testenv="develop|lab3">
+		<startDate>01/01/2000</startDate>
+	</testdataset>
+
+	<testdataset name="CreateCustomer_C" category="vp" testenv="develop|lab3">
+		<name>Cust_C{RANDOM}</name>
+		<allowSubAccount>true</allowSubAccount>
+	</testdataset>
+
+	<testdataset name="EditCustomerWithPaymentMethod" category="vp" testenv="develop|lab3">
+		<cardHolderName>test account</cardHolderName>
+		<cardNumber>4111111111111152</cardNumber>
+		<expiryDate>12/2020</expiryDate>
+	</testdataset>
+
+</testdata>

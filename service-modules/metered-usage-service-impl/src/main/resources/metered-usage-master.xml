@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+  <bean id="meteredUsagePartitioner" class="com.sapienter.jbilling.server.integration.common.job.partiotioners.MeteredUsageModuloPartitioner" scope="step" />
+  <bean id="meteredUsageJobListener" class="com.sapienter.jbilling.server.integration.common.job.listener.MeteredUsageJobListener"></bean>
+
+  <bean id="meteredUsagePartitionerHandler"
+        class="org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+    <property name="stepName" value="meteredUsageStep"/>
+    <property name="gridSize" value="4"/>
+    <property name="jobExplorer" ref="mediationJobExplorer"/>
+    <property name="replyChannel" ref="metered-usage-outbound-replies"/>
+    <property name="messagingOperations">
+      <bean class="org.springframework.integration.core.MessagingTemplate">
+        <property name="defaultChannel" ref="metered-usage-outbound-requests"/>
+        <property name="receiveTimeout" value="100000"/>
+      </bean>
+    </property>
+  </bean>
+
+  <int:channel id="metered-usage-outbound-requests"/>
+  <int-jms:outbound-channel-adapter id="master-metered-usage-outbound-requests-adapter"
+                                    connection-factory="jmsConnectionFactory"
+                                    destination-name="meteredUsageRequestsQueue"
+                                    channel="metered-usage-outbound-requests"/>
+
+  <int:channel id="metered-usage-inbound-staging"/>
+  <int-jms:message-driven-channel-adapter id="master-metered-usage-inbound-staging-adapter"
+                                          destination-name="meteredUsageStagingQueue"
+                                          connection-factory="jmsConnectionFactory"
+                                          channel="metered-usage-inbound-staging"/>
+
+  <int:aggregator id="master-metered-usage-inbound-staging-aggregator"
+                  ref="meteredUsagePartitionerHandler"
+                  input-channel="metered-usage-inbound-staging"
+                  output-channel="metered-usage-outbound-replies"/>
+
+  <int:channel id="metered-usage-outbound-replies">
+    <int:queue/>
+  </int:channel>
+
+  <batch:job id="meteredUsageUploadJob" xmlns="http://www.springframework.org/schema/batch" job-repository="mediationJobRepository">
+    <batch:step id="meteredUsageIntegrationStep" >
+      <batch:partition partitioner="meteredUsagePartitioner" handler="meteredUsagePartitionerHandler">
+      </batch:partition>
+    </batch:step>
+    <batch:listeners>
+      <listener ref="meteredUsageJobListener"/>
+    </batch:listeners>
+  </batch:job>
+</beans>

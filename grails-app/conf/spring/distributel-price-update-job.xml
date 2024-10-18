@@ -1,0 +1,80 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd">
+    
+    
+    <bean id = "distributelJobLauncher" class = "org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name = "jobRepository" ref = "jobRepository"/>
+    </bean>
+    
+    <bean id    = "distributelPriceProcessor"
+          class = "com.sapienter.jbilling.server.distributel.DistributelPriceProcessor"
+          scope = "step"/>
+          
+    <bean id    = "distributelPriceWriter"
+          class = "com.sapienter.jbilling.server.distributel.DistributelPriceWriter"
+          scope = "step"/>
+    
+    <bean  id = "distributelPriceReader"
+        class = "com.sapienter.jbilling.server.distributel.DistributelPriceReader"
+        scope = "step"/>
+
+    <bean id    = "customerNoteCreateProcessor"
+          class = "com.sapienter.jbilling.server.distributel.CustomerNoteCreateProcessor"
+          scope = "step"/>
+
+    <bean id    = "customerNoteWriter"
+          class = "com.sapienter.jbilling.server.distributel.CustomerNoteWriter"
+          scope = "step"/>
+
+    <bean id    = "distributelSkipPolicy"
+          class = "com.sapienter.jbilling.server.distributel.DistributelSkipPolicy"
+          scope = "step"/>
+
+    <bean id    = "distributelSkipListener"
+          class = "com.sapienter.jbilling.server.distributel.DistributelSkipListener"
+          scope = "step"/>
+
+    <bean id    = "recordValidator"
+          class = "com.sapienter.jbilling.server.distributel.PriceRecordValidator"/>
+
+    <bean id    = "distributelPriceJobListener"
+          class = "com.sapienter.jbilling.server.distributel.DistributelPriceJobListener"/>
+
+    <bean id    = "distributelPriceRowMapper"
+          class = "com.sapienter.jbilling.server.distributel.DistributelPriceRowMapper"/>
+    
+    <!-- Distributel Price Update Job -->
+    <batch:job id = "distributelPriceUpdateJob">
+            <batch:listeners>
+                <batch:listener ref = "distributelPriceJobListener"/>
+            </batch:listeners>
+        <batch:step id = "priceUpdateStep" next = "userNoteCreateStep">
+            <batch:tasklet>
+                <batch:chunk reader          = "distributelPriceReader"
+                             processor       = "distributelPriceProcessor"
+                             writer          = "distributelPriceWriter"
+                             commit-interval = "1"
+                             skip-policy     = "distributelSkipPolicy" />
+                <batch:listeners>
+                    <batch:listener ref = "distributelSkipListener" />
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+
+        <batch:step id="userNoteCreateStep">
+            <batch:tasklet>
+                <batch:chunk reader          = "distributelPriceReader"
+                             processor       = "customerNoteCreateProcessor"
+                             writer          = "customerNoteWriter"
+                             commit-interval = "1"
+                             skip-policy     = "distributelSkipPolicy" />
+                </batch:tasklet>
+        </batch:step>
+    </batch:job>
+  
+</beans>

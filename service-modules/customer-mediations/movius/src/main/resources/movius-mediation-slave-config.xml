@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/batch
+       http://www.springframework.org/schema/batch/spring-batch.xsd"
+    profile="mediation.slave">
+
+    <import resource = "classpath:movius-mediation-slave-integration-config.xml"/>
+
+    <bean id    = "moviusUserReader" 
+          class = "com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusJMRReader" 
+          scope = "step"/>
+          
+    <bean id    = "moviusJMRToOrderWriter" 
+          class = "com.sapienter.jbilling.server.mediation.customMediations.movius.writer.MoviusJMRToOrderWriter" 
+          scope = "step"/>
+    
+    <batch:step id = "moviusPartitionedJMRProcessorStep" job-repository="mediationJobRepository">
+        <!--TODO throttle-limit="${springbatch.executor.max.pool.size}"-->
+        <batch:tasklet  transaction-manager = "jbillingMediationTransactionManager"
+                        task-executor       = "taskExecutor" 
+                        throttle-limit      = "10">
+                        
+            <batch:chunk reader          = "moviusUserReader" 
+                         writer          = "moviusJMRToOrderWriter" 
+                         commit-interval = "1"
+                         skip-policy     = "moviusSkipPolicy"/>
+        </batch:tasklet>
+    </batch:step>
+
+</beans>

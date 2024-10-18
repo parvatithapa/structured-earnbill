@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="SanityTestScript"
+	annotations="JDK">
+	
+	<test name="debug" junit="false" preserve-order="true">
+		<classes>
+		
+			<class name="com.jbilling.test.TestAddAccountType"/>  
+			<class name="com.jbilling.test.TestAttachPaymentType"/> 
+			<class name="com.jbilling.test.TestCreateAndEditCustomer"/> 
+			<class name="com.jbilling.test.TestCreateParentChildRelationInCustomersTab"/>  
+			<class name="com.jbilling.test.TestCreateDiscount"/> 
+		</classes>
+	</test>
+</suite>

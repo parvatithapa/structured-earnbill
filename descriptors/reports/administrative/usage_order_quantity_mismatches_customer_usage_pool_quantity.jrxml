@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="usage_order_quantity_mismatches_customer_usage_pool_quantity" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="7633bd62-9ca2-427b-8a5d-7aab53593d8d">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean" isForPrompting="false"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT po.user_id,
+bu.entity_id,
+cup.initial_quantity,
+cup.quantity,
+e.description,
+SUM(olup.quantity) AS fup_utilized,
+SUM(ol.quantity) AS usage_quantity
+FROM order_line_usage_pool_map olup
+INNER JOIN customer_usage_pool_map cup
+ON olup.customer_usage_pool_id = cup.id
+INNER JOIN order_line ol ON olup.order_Line_id = ol.id
+INNER JOIN purchase_order po ON ol.order_id = po.id
+INNER JOIN base_user bu ON bu.id = po.user_id
+INNER JOIN order_status os ON os.id = po.status_id
+INNER JOIN entity e ON e.id = bu.entity_id
+WHERE po.deleted = 0
+AND DATE(po.active_since) >= DATE_TRUNC('month', current_date)
+AND po.period_id = 1
+AND os.order_status_flag = 0
+AND bu.deleted = 0
+AND ol.deleted = 0
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+GROUP BY bu.entity_id, e.description, po.user_id, cup.initial_quantity, cup.quantity
+HAVING (SUM(olup.quantity) - (cup.initial_quantity - cup.quantity)) > 0
+ORDER BY bu.entity_id;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="initial_quantity" class="java.math.BigDecimal"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="fup_utilized" class="java.math.BigDecimal"/>
+	<field name="usage_quantity" class="java.math.BigDecimal"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="86">
+				<staticText>
+					<reportElement x="335" y="57" width="111" height="20" uuid="00c1f5ed-5ba2-4b9c-8e16-b8f676a1bf82"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Fup Utilized]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="2" y="57" width="111" height="20" uuid="3d8c7ed8-56ec-4983-8636-c21bac8e18a7"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="224" y="57" width="111" height="20" uuid="f353f5c6-7387-483f-8dfb-f0c1abc467fc"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="446" y="57" width="111" height="20" uuid="e787a395-3a2e-4070-bafc-95ae6d77dd7d"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Usage quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="113" y="57" width="111" height="20" uuid="00515c6e-efc7-49a9-9764-319c0dc39441"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Initial quantity]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="115" y="5" width="100" height="20" uuid="2c9c4d5c-1cb9-49e2-b426-72cfcfc328a0"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="115" y="26" width="150" height="20" uuid="ad3b50d8-f7c1-450c-9749-a5f8b15cb1f4"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="8" y="26" width="100" height="20" uuid="ac81c47a-f54e-4e47-bef4-68b3f9398d1f"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="8" y="5" width="100" height="20" uuid="62861936-8276-4b1a-b3b1-ffb7965d0b2a"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<line>
+					<reportElement x="4" y="82" width="549" height="1" uuid="10be2029-635a-45b2-950d-20a78af85a1b"/>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="10">
+				<line>
+					<reportElement x="4" y="4" width="549" height="1" uuid="2bb5e43c-03b3-4f6c-9604-b8c9810a06cb"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="46" splitType="Stretch">
+			<staticText>
+				<reportElement x="25" y="15" width="512" height="20" uuid="ea6b501a-ea94-4639-93a3-b8365f410d63"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Usage order quantity mismatches customer usage pool quantity]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="29" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="111" height="20" uuid="a8b2c58b-e2bf-4c3b-956b-ef7f568389c1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="111" y="0" width="111" height="20" uuid="4db43bf8-3fae-4845-9a47-813404451448"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{initial_quantity}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="222" y="0" width="111" height="20" uuid="bee69998-909a-4dc2-991d-8980b7c23db6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="333" y="0" width="111" height="20" uuid="a9259280-b07d-4d31-ba4a-9179b2c7c6eb"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{fup_utilized}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="444" y="0" width="111" height="20" uuid="209d3577-0e89-4655-86d6-bc4fac032a51"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{usage_quantity}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

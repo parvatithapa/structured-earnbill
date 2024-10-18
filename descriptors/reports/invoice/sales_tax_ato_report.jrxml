@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="sales_tax_ato_report" language="groovy" pageWidth="700" pageHeight="842" whenNoDataType="NoDataSection" columnWidth="660" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7c20c210-222e-4681-aaea-eb87a8272da8">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Text Body"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="spc_column_before_tax" class="java.lang.String"/>
+	<parameter name="spc_column_tax" class="java.lang.String"/>
+	<parameter name="spc_column_after_tax" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT tax_table.tax_scheme, Date(tax_table.create_datetime) AS create_datetime,
+	COUNT(distinct tax_table.user_id) AS number_Of_users,
+	COUNT(distinct tax_table.invoice_id) AS number_Of_invoices,
+	SUM(tax_table.Before_Tax) AS Before_Tax,
+	SUM(tax_table.Tax) AS Tax,
+	SUM(tax_table.After_Tax) AS After_Tax
+FROM
+(
+SELECT * FROM(
+	SELECT (CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = il.item_id) THEN
+		(SELECT mfv.string_value
+		FROM plan p
+		INNER JOIN plan_meta_field_map pmfm ON pmfm.plan_id = p.id
+		INNER JOIN meta_field_value mfv ON mfv.id = pmfm.meta_field_value_id
+		INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+		     WHERE mfn.name = 'Tax Scheme' AND p.item_id = il.item_id)
+		ELSE
+		(SELECT mfv.string_value
+		FROM item i
+		INNER JOIN item_meta_field_map imfm ON imfm.item_id = i.id
+		INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+		INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+		     WHERE mfn.name = 'Tax Scheme' AND i.id = il.item_id ) END) AS  tax_scheme,
+	       Date(inv.create_datetime) AS create_datetime,
+			inv.user_id,
+			il.invoice_id,
+			(CASE WHEN il.gross_amount = 0 THEN  il.amount ELSE  il.gross_amount END) AS Before_Tax,
+			(CASE WHEN il.gross_amount = 0 THEN (il.amount*0.1) ELSE il.tax_amount  END) AS Tax,
+			(CASE WHEN il.gross_amount = 0 THEN (il.amount + (il.amount*0.1)) ELSE il.amount  END) AS After_Tax
+	FROM invoice inv
+	INNER JOIN invoice_line il ON il.invoice_id = inv.id
+                         WHERE date(inv.create_datetime) BETWEEN $P{start_date} AND $P{end_date}
+                              AND il.item_id  NOT IN (SELECT id FROM item WHERE internal_number = 'GST')
+    	            AND il.item_id IS NOT NULL) table1 WHERE  table1.tax_scheme IS NOT NULL
+	UNION ALL
+
+	SELECT 'Discount',
+	        Date(inv.create_datetime) AS create_datetime,
+	        inv.user_id,
+	        il.invoice_id,
+	       (CASE WHEN il.gross_amount = 0 THEN  il.amount ELSE  il.gross_amount END) AS Before_Tax,
+	       (CASE WHEN il.gross_amount = 0 THEN (il.amount*0.1) ELSE il.tax_amount  END) AS Tax,
+	       (CASE WHEN il.gross_amount = 0 THEN (il.amount + (il.amount*0.1)) ELSE il.amount  END) AS After_Ta
+	FROM invoice inv
+	INNER JOIN invoice_line il ON il.invoice_id = inv.id
+	INNER JOIN invoice_line_type ilt ON ilt.id = il.type_id
+	WHERE il.type_id != 3
+	AND il.item_id IS NULL
+	AND date(inv.create_datetime) BETWEEN $P{start_date} AND $P{end_date}
+
+	UNION ALL
+
+	SELECT 'Tax Free',
+	        Date(inv.create_datetime) AS create_datetime,
+	        inv.user_id,
+	        il.invoice_id,
+	    (CASE WHEN il.gross_amount = 0 THEN  il.amount ELSE  il.gross_amount END) AS Before_Tax,
+	    (CASE WHEN il.gross_amount = 0 THEN (il.amount*0.1) ELSE il.tax_amount  END) AS Tax,
+	    (CASE WHEN il.gross_amount = 0 THEN (il.amount + (il.amount*0.1)) ELSE il.amount  END) AS After_Ta
+	FROM invoice inv
+	INNER JOIN invoice_line il ON il.invoice_id = inv.id
+	WHERE il.item_id NOT IN
+	(SELECT i.id AS item_or_plan_id
+		FROM item i
+		INNER JOIN item_meta_field_map imfm ON imfm.item_id = i.id
+		INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+		INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+		WHERE
+			mfn.name = 'Tax Scheme'
+
+		UNION ALL
+
+		SELECT p.item_id AS item_or_plan_id
+		FROM plan p
+		INNER JOIN plan_meta_field_map pmfm ON pmfm.plan_id = p.id
+		INNER JOIN meta_field_value mfv ON mfv.id = pmfm.meta_field_value_id
+		INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+		WHERE
+			mfn.name = 'Tax Scheme'
+	)
+	AND date(inv.create_datetime) BETWEEN $P{start_date} AND $P{end_date}
+                  AND il.item_id  NOT IN (SELECT id FROM item WHERE internal_number = 'GST')
+) AS tax_table
+GROUP BY 1,2;]]>
+	</queryString>
+	<field name="tax_scheme" class="java.lang.String"/>
+	<field name="create_datetime" class="java.sql.Date"/>
+	<field name="number_of_users" class="java.lang.Long"/>
+	<field name="number_of_invoices" class="java.lang.Long"/>
+	<field name="before_tax" class="java.math.BigDecimal"/>
+	<field name="tax" class="java.math.BigDecimal"/>
+	<field name="after_tax" class="java.math.BigDecimal"/>
+	<variable name="total_before_tax" class="java.math.BigDecimal" resetType="Group" resetGroup="Tax Group" calculation="Sum">
+		<variableExpression><![CDATA[$F{before_tax}]]></variableExpression>
+	</variable>
+	<variable name="total_tax" class="java.math.BigDecimal" resetType="Group" resetGroup="Tax Group" calculation="Sum">
+		<variableExpression><![CDATA[$F{tax}]]></variableExpression>
+	</variable>
+	<variable name="total_after_tax" class="java.math.BigDecimal" resetType="Group" resetGroup="Tax Group" calculation="Sum">
+		<variableExpression><![CDATA[$F{after_tax}]]></variableExpression>
+	</variable>
+	<variable name="grand_before_tax" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{before_tax}]]></variableExpression>
+	</variable>
+	<variable name="grand_tax" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{tax}]]></variableExpression>
+	</variable>
+	<variable name="grand_after_tax" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{after_tax}]]></variableExpression>
+	</variable>
+	<group name="Tax Group">
+		<groupExpression><![CDATA[$F{tax_scheme}]]></groupExpression>
+		<groupHeader>
+			<band height="40">
+				<textField isBlankWhenNull="true">
+					<reportElement x="99" y="0" width="100" height="15" uuid="9c367ffc-9b48-4b2b-a432-062643f778ee"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{tax_scheme}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="27" y="0" width="72" height="15" uuid="8c807dda-2f22-4424-b867-0e39568d280f"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Tax Type:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="27" y="15" width="114" height="20" uuid="b0979846-884d-4dd5-8b5b-f4217522c1bf"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="141" y="15" width="100" height="20" uuid="3277902f-fb1d-406b-84d7-6baa1a866153"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[No. Customers]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="241" y="15" width="80" height="20" uuid="0cc1e6c4-cf98-4a28-bf74-2d8c1cf7dbe3"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[No. Invoices]]></text>
+				</staticText>
+				<line>
+					<reportElement x="27" y="38" width="604" height="1" uuid="1958dd21-44b4-4eaf-b2e1-40f1476b0410"/>
+				</line>
+				<textField pattern="" isBlankWhenNull="true">
+					<reportElement x="321" y="15" width="110" height="20" uuid="8bb71e89-5084-4a53-b419-e8a2116d807a"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{spc_column_before_tax}.isEmpty() ? "Before Tax" : $P{spc_column_before_tax}.toString()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="431" y="15" width="100" height="20" uuid="7f000c5e-5d61-4934-9ace-8cbafe2d2b72"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{spc_column_tax}.isEmpty() ? "Tax" : $P{spc_column_tax}.toString()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="531" y="15" width="100" height="20" uuid="5d9c298f-1193-4105-9883-1602f62cc964"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{spc_column_after_tax}.isEmpty() ? "After Tax" : $P{spc_column_after_tax}.toString()]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="30">
+				<line>
+					<reportElement x="41" y="0" width="590" height="1" uuid="7ec5c669-d0de-4e39-bc15-e5e614bfd0f6"/>
+				</line>
+				<textField pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="321" y="3" width="110" height="20" uuid="ebd1608a-a9d9-43c6-b3b9-cc20f9615a89"/>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$V{total_before_tax}]]></textFieldExpression>
+				</textField>
+				<textField pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="431" y="3" width="100" height="20" uuid="2b29e511-7642-4021-b09a-13c734ecfa94"/>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$V{total_tax}]]></textFieldExpression>
+				</textField>
+				<textField pattern="###0.00" isBlankWhenNull="true">
+					<reportElement x="531" y="3" width="100" height="20" uuid="7c8db416-1cda-4965-a95a-71ad39d490b2"/>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$V{total_after_tax}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="86" y="3" width="100" height="20" uuid="a3e800fa-a5b8-4b29-9d55-644f55c164f9"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{tax_scheme}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="27" y="3" width="59" height="20" uuid="ed2a111e-d9f1-4079-99b8-c7785b81fc6e"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="false"/>
+					</textElement>
+					<text><![CDATA[Total for ]]></text>
+				</staticText>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="90" splitType="Stretch">
+			<printWhenExpression><![CDATA[true]]></printWhenExpression>
+			<staticText>
+				<reportElement x="27" y="16" width="172" height="20" uuid="4abc0330-71dd-4814-9402-506266e931b6"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales Tax Collected]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="27" y="30" width="214" height="20" uuid="fe49b820-7ece-416a-b664-a2db353d3d30"/>
+				<text><![CDATA[(for invoice-line tax calculation)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="427" y="16" width="100" height="20" uuid="aa974eed-9d60-4a24-9d9a-cbf70da4b2dc"/>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="427" y="36" width="100" height="20" uuid="95e9f299-6449-4599-ab98-0e2d11edc661"/>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="427" y="56" width="100" height="20" uuid="09930ad7-bdd5-4d38-8214-b91dad4c4747"/>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="527" y="16" width="108" height="20" uuid="78f83ba3-ac7c-4833-a0c2-3679c286f9a2"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="527" y="36" width="108" height="20" uuid="d419a1c6-1483-43a4-b5d3-23df9ab379e9"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="527" y="56" width="108" height="20" uuid="f7f54a94-baaf-409c-a8e4-074139379426"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="27" y="0" width="114" height="20" uuid="1ad66231-d238-4210-9f26-99e8adc9fd03"/>
+				<textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="141" y="0" width="100" height="20" uuid="7f5d9d02-6b8c-45fc-bf51-5ea09cd8c5f2"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{number_of_users}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="241" y="0" width="80" height="20" uuid="97866c88-c52c-449d-9bc4-312b999cf4df"/>
+				<textElement textAlignment="Center" verticalAlignment="Top"/>
+				<textFieldExpression><![CDATA[$F{number_of_invoices}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="431" y="0" width="100" height="20" uuid="d66fb1e9-a04b-4de3-9f19-ce4220b5189a"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{tax}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00">
+				<reportElement x="531" y="0" width="100" height="20" uuid="c7cb17b4-c408-40a1-b4bf-5f09110d130b"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{after_tax}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="321" y="0" width="110" height="20" uuid="a6a1b063-7105-4ae5-b1ca-3913543b6ce1"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{before_tax}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<textField>
+				<reportElement x="611" y="0" width="49" height="20" uuid="5fcd5313-6348-4e2a-9499-0d2e85e28741"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="561" y="0" width="50" height="20" uuid="2d1ffded-06f0-40f1-98d9-1e4f85fdfe67"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<text><![CDATA[Page No. ]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="50">
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="321" y="0" width="110" height="20" uuid="a7933d9c-1869-4228-8393-caebbb1b3dd8"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_before_tax}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="431" y="0" width="100" height="20" uuid="497dc94c-e3cc-44d1-bd85-3286d0e3e922"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_tax}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="535" y="0" width="100" height="20" uuid="59cf62f6-14d8-455e-ae95-5308a12faf17"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_after_tax}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="27" y="0" width="172" height="20" uuid="f636328e-f4ee-407f-a539-537934e5f189"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Grand Total :]]></text>
+			</staticText>
+		</band>
+	</summary>
+	<noData>
+		<band height="104">
+			<staticText>
+				<reportElement x="260" y="84" width="113" height="20" uuid="45f61f3b-edc6-49a3-9b35-2db0442c5256"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[No Record Found]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="41" y="16" width="158" height="20" uuid="c1be5694-1043-426f-922a-f107f094dc2a"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales Tax Collected]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="41" y="30" width="200" height="20" uuid="1503ceff-47b5-4019-b7d5-a5803db71995"/>
+				<text><![CDATA[(for invoice-line tax calculation)]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="527" y="36" width="108" height="20" uuid="3d1ccc88-7b5c-4833-8a98-65268b338048"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="527" y="16" width="108" height="20" uuid="cc3686be-9fb9-40a3-baf5-b9310410c32b"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="427" y="36" width="100" height="20" uuid="0136608c-3bae-4495-8ccf-bd1d39b24cef"/>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="427" y="56" width="100" height="20" uuid="2eac0bc9-30f9-4c04-93ce-1fa3fd0ace47"/>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="527" y="56" width="108" height="20" uuid="2533f6a0-3464-426b-8050-855f5e735334"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="427" y="16" width="108" height="20" uuid="db92904d-7d20-4215-883f-46f379b387b4"/>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

@@ -1,0 +1,38 @@
+package com.jbilling.test;
+
+import org.testng.annotations.Test;
+
+import com.jbilling.framework.globals.GlobalEnumerations.TextComparators;
+import com.jbilling.framework.globals.GlobalEnumsPage.AddPlanField;
+import com.jbilling.framework.globals.GlobalEnumsPage.AddProductField;
+import com.jbilling.framework.utilities.browserutils.BrowserApp;
+
+public class VerifyCreateYearlyPrepaidOrder extends BrowserApp {
+
+    @Test(description = "TC 91 : Verify that user is able to Create 'Yearly Pre-paid' Order")
+    public void tc_0091_verifyCreateMonthlyPostpaidOrder () {
+
+        setTestRailsId("");
+
+        navPage.navigateToConfigurationPage();
+        String orderPeriod = confPage.createOrderPeriod("orderPeriod_Year", "opy");
+        navPage.navigateToProductsPage();
+        String categoryName = productsPage.addCategory("productCategory", "pcat");
+        navPage.navigateToProductsPage();
+        String description2 = productsPage.addProducts(AddProductField.FLAT, "addProductThreeToAddDependencies", "ap");
+        navPage.navigateToPlanPage();
+        String planName = plansPage.addPlanYearly(AddPlanField.BUNDLEDPERIOD, categoryName, description2,
+                "yearlyPrePaid", "ypp", orderPeriod);
+        msgsPage.verifyDisplayedMessageText("Saved new plan", "successfully", TextComparators.contains);
+        navPage.navigateToConfigurationPage();
+        confPage.clickOnPaymentMethodLink();
+        String methodName = confPage.addPaymentMethod("paymentTypeWithPaymentCard", "pt");
+        confPage.clickOnAccountTypeLink();
+        String accountType = confPage.createAccount(methodName, "accountCreate", "ac");
+        navPage.navigateToCustomersPage();
+        String customerName = newCustomersPage.addCustomerWithMakePayment("customerCreate", "cc", accountType);
+        newCustomersPage.createOrderYearly("createOrderYearlyPrepaid", "coyp", planName);
+
+        // ordersPage.verifyAppliedTotalOnOrder();
+    }
+}

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans    http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+       http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/tx       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/batch    http://www.springframework.org/schema/batch/spring-batch.xsd
+       http://www.springframework.org/schema/jdbc     http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
+
+    <bean id="jbillingMediationEntitiyManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="jBillingMediationDataSource" />
+        <property name="packagesToScan" value="com.sapienter.jbilling.server.mediation.converter.db,com.sapienter.jbilling.server.mediation.process.db,com.sapienter.jbilling.server.audit.db,com.sapienter.jbilling.server.sql.api.db"/>
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
+        </property>
+
+        <property name="jpaProperties">
+            <props>
+<!--
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+-->
+                <prop key="hibernate.dialect">org.hibernate.dialect.HSQLDialect</prop>
+            </props>
+        </property>
+
+    </bean>
+
+    <bean id="jBillingMediationDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="org.postgresql.Driver" />
+        <property name="jdbcUrl" value="jdbc:postgresql://#{
+        systemEnvironment['JBILLING_DB_HOST_MEDIATION4']?:
+        systemEnvironment['JBILLING_DB_HOST']?:
+        'localhost'
+        }:#{
+        systemEnvironment['JBILLING_DB_PORT_MEDIATION4']?:
+        systemEnvironment['JBILLING_DB_PORT']?:
+        '5432'
+        }/#{
+        systemEnvironment['JBILLING_DB_NAME_MEDIATION4']?:
+        systemEnvironment['JBILLING_DB_NAME']?:
+        'jbilling_test'
+        }" />
+        <property name="user" value="#{
+        systemEnvironment['JBILLING_DB_USER_MEDIATION4']?:
+        systemEnvironment['JBILLING_DB_USER']?:
+        'jbilling'
+        }" />
+        <property name="password" value="#{
+        systemEnvironment['JBILLING_DB_PASSWORD_MEDIATION4']?:
+        systemEnvironment['JBILLING_DB_PASSWORD']?:
+        ''
+        }" />
+
+        <property name="initialPoolSize" value="3" />
+        <property name="maxPoolSize" value="20" />
+        <property name="minPoolSize" value="1"></property>
+        <property name="acquireIncrement" value="1" />
+        <property name="maxIdleTime" value="300" />
+        <property name="checkoutTimeout" value="10000" />
+        <property name="testConnectionOnCheckout" value="false"></property>
+        <property name="idleConnectionTestPeriod" value="20" />
+
+        <!-- DEBUG - Temp to be removed in the next build -->
+        <!--<property name="unreturnedConnectionTimeout" value="120" />
+        <property name="debugUnreturnedConnectionStackTraces" value="true" />-->
+    </bean>
+
+    <bean id="jbillingMediationTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="jbillingMediationEntitiyManagerFactory" />
+        <qualifier value="jbillingMediationTransactionManager" />
+    </bean>
+
+    <batch:job-repository id="mediationJobRepository" data-source="jBillingMediationDataSource"
+                          transaction-manager="jbillingMediationTransactionManager"
+                          isolation-level-for-create="DEFAULT"/>
+
+    <bean id="mediationJobExplorer" class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean">
+        <property name="dataSource" ref="jBillingMediationDataSource" />
+    </bean>
+
+		<bean id="mediationJobRegistry" class="org.springframework.batch.core.configuration.support.MapJobRegistry" />
+
+    <bean id="mediationJobOperator" class="org.springframework.batch.core.launch.support.SimpleJobOperator">
+        <property name="jobRepository" ref="mediationJobRepository"/>
+        <property name="jobLauncher" ref="mediationJobLauncher" />
+        <property name="jobRegistry" ref="mediationJobRegistry" />
+        <property name="jobExplorer" ref="mediationJobExplorer" />
+    </bean>
+
+    <!--  Initialise the database if enabled, always try to inizialize it on start.
+    Failure are ignored because it means it was already inizialized -->
+    <jdbc:initialize-database data-source="jBillingMediationDataSource" ignore-failures="ALL">
+        <jdbc:script location="classpath:/org/springframework/batch/core/schema-postgresql.sql"/>
+    </jdbc:initialize-database>
+
+    <!--<tx:annotation-driven transaction-manager="jbillingMediationTransactionManager"/> THIS LINE BROKE SPRING SECURITY PLUGIN -->
+
+    <jpa:repositories base-package="com.sapienter.jbilling.server.mediation.converter.db,com.sapienter.jbilling.server.mediation.process.db,com.sapienter.jbilling.server.audit.db,com.sapienter.jbilling.server.sql.api.db"
+                      entity-manager-factory-ref="jbillingMediationEntitiyManagerFactory"
+                      transaction-manager-ref="jbillingMediationTransactionManager"/>
+</beans>

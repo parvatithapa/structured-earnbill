@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/movius-client-upgrade.xml">
+        
+    <changeSet context = "base" id = "JBMOV-16 Implementation of Mediation for Movius" author = "Krunal Bhavsar">
+        <validCheckSum>7:f4222e4728d995ba0a73c51aec218471</validCheckSum>
+        <comment>Movius Mediation Scheduled task</comment>
+        <insert tableName = "pluggable_task_type">
+	            <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+	            <column name = "category_id"    valueNumeric  = "22"/>
+	            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.movius.task.MoviusMediationProcessTask"/>
+	            <column name = "min_parameters" valueNumeric  = "0"/>
+	        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-24 Movius Origination Charges Create-Update Task" author = "Faizan Ahmad">
+        <validCheckSum>7:94372f55b9e1b0f6f9b22645dbc150d0</validCheckSum>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed  = "COALESCE((SELECT MAX(id)+1 FROM pluggable_task_type),1)"/>
+            <column name = "category_id"    valueNumeric   = "22"/>
+            <column name = "class_name"     value          = "com.sapienter.jbilling.server.order.task.MoviusOriginationChargesCreateUpdateTask"/>
+            <column name = "min_parameters" valueNumeric   = "0"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Movius Subscription and Origination Charges Create-Update Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is a scheduled plugin that creates and updates Origination Charges for Movius."/>
+        </insert>
+    </changeSet>
+        
+    <changeSet context = "base" id = "JBMOV-34 Added Monthly Termination Costs report" author = "Mahesh Shivarkar" >
+    	<validCheckSum>7:527a689a4fc4ba1cdc4abec522eec25e</validCheckSum>
+    	<comment>Added below delete sql query to fix failing prepare-test with duplicate key error</comment>
+    		
+    	<sql>DELETE FROM international_description WHERE table_id = 101 AND foreign_id = 7 AND content = 'Finances'</sql>
+    		
+    	<insert tableName="report_type">
+            <column name = "id"          valueComputed   = "COALESCE((SELECT MAX(t.id) + 1 FROM report_type t), 1)"/>
+            <column name = "name"        value           = "mediation"/>
+            <column name = "optlock"     valueNumeric    = "0"/>
+    	</insert>
+	
+    	<insert tableName="international_description">
+            <column name = "table_id"     valueNumeric   = "101"/>
+            <column name = "foreign_id"   valueComputed  = "(SELECT id FROM report_type WHERE name='mediation')"/>
+            <column name = "psudo_column" value          = "description"/>
+            <column name = "language_id"  valueNumeric   = "1"/>
+            <column name = "content"      value          = "Monthly Termination Costs"/>
+        </insert>
+
+        <insert tableName = "report">
+            <column name = "id"        valueComputed = "(SELECT MAX(id)+1 FROM report)" />
+            <column name = "type_id"   valueNumeric  = "(SELECT id FROM report_type WHERE name='mediation')" />
+            <column name = "name"      value         = "monthly_termination_costs" />
+            <column name = "file_name" value         = "monthly_termination_costs.jasper" />
+            <column name = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+                 SELECT (SELECT r.id
+                           FROM report r
+                          WHERE r.name = 'monthly_termination_costs'),
+                        id
+                  FROM entity
+                 WHERE deleted = 0
+        </sql>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'monthly_termination_costs')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "event_date_start" />
+        </insert>
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'monthly_termination_costs')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "event_date_end" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'monthly_termination_costs')" />
+            <column name = "dtype"     value         = "boolean" />
+            <column name = "name"      value         = "include_invoiceable" />
+        </insert>
+        
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'monthly_termination_costs')" />
+            <column name = "dtype"     value         = "integer" />
+            <column name = "name"      value         = "user_id" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'monthly_termination_costs')" />
+            <column name = "dtype"     value         = "string" />
+            <column name = "name"      value         = "cdrType" />
+        </insert>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-26 Added-MoviusOrganizationHierarchyExportTask-Plugin" author = "Manish Bansod">
+        <validCheckSum>7:5fce59b408d3aa383c6214b6274f03f9</validCheckSum>
+	        <insert tableName = "pluggable_task_type">
+	           <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+	           <column name = "category_id"    valueNumeric  = "22"/>
+	           <column name = "class_name"     value         = "com.sapienter.jbilling.server.process.task.MoviusOrgHierarchyMappingTask"/>
+	           <column name = "min_parameters" valueNumeric  = "2"/>
+	        </insert>
+	
+	        <insert tableName = "international_description">
+	            <column name = "table_id"     valueNumeric  = "24"/>
+	            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+	            <column name = "psudo_column" value         = "title"/>
+	            <column name = "language_id"  valueNumeric  = "1"/>
+	            <column name = "content"      value         = "Task for creating organization hierarchy export for Movius"/>
+	        </insert>
+	
+	        <insert tableName = "international_description">
+	            <column name = "table_id"     valueNumeric  = "24"/>
+	            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+	            <column name = "psudo_column" value         = "description"/>
+	            <column name = "language_id"  valueNumeric  = "1"/>
+	            <column name = "content"      value         = "This plug-in will create organization hierarchy for Movius."/>
+	        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-63 Change the plugin parameters" author = "Faizan Ahmad">
+        <delete tableName="pluggable_task_parameter">
+            <where>task_id IN (SELECT id FROM pluggable_task WHERE type_id IN (
+                SELECT id FROM pluggable_task_type WHERE
+                class_name ILIKE 'com.sapienter.jbilling.server.order.task.MoviusOriginationChargesCreateUpdateTask'))</where>
+        </delete>
+    </changeSet>
+  
+    <changeSet context = "base" id = "#JBMOV-34-Added Country Code MetaField" author = "Mahesh Shivarkar">
+        <validCheckSum>7:3274583660700e267345c122df0e7c31</validCheckSum>
+        <sql>
+            <![CDATA[
+               INSERT INTO meta_field_name (id, entity_id, name, optlock, entity_type, data_type, is_disabled, is_mandatory, display_order, is_primary, field_usage)
+               SELECT COALESCE( (SELECT MAX(id)+1 FROM meta_field_name),1)+e.id, e.id, 'Country Code', 1, 'PRODUCT', 'STRING', false, false, 5, true, 'COUNTRY_CODE' FROM entity e;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-119-Remove include invoiceable report parameter" author = "Mahesh Shivarkar">
+        <delete tableName="report_parameter">
+            <where>name = 'include_invoiceable' AND report_id = (SELECT id FROM report WHERE name = 'monthly_termination_costs')</where>
+        </delete>
+    </changeSet>
+
+	<changeSet context = "base" id = "JBMOV-155: Added MoviusInvoiceCompositionTask plugin" author = "Ashok Kale">
+        <comment>Create new task MoviusInvoiceCompositionTask to compose invoices on the basis of order prorate flag.
+                 Uses order changes for prorated charging, but uses order lines for charging last position of quantity and price
+                 for non-prorated charging.</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.MoviusInvoiceCompositionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Prorated Order - Create one invoice line per order change / Non-Prorated Order - Create one invoice line per order line."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Uses order changes for prorated charging, but uses order lines for charging last position of quantity and price for non-prorated charging."/>
+        </insert>
+    </changeSet>
+
+	<changeSet context = "base" id = "JBMOV-168 Added-UpdateMoviusOrgCountPositionTask-Plugin" author = "Manish Bansod">
+	        <insert tableName = "pluggable_task_type">
+	           <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+	           <column name = "category_id"    valueNumeric  = "17"/>
+	           <column name = "class_name"     value         = "com.sapienter.jbilling.server.movius.MoviusOrgCountUpdatePositionTask"/>
+	           <column name = "min_parameters" valueNumeric  = "0"/>
+	        </insert>
+
+	        <insert tableName = "international_description">
+	            <column name = "table_id"     valueNumeric  = "24"/>
+	            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+	            <column name = "psudo_column" value         = "title"/>
+	            <column name = "language_id"  valueNumeric  = "1"/>
+	            <column name = "content"      value         = "Task for updating count position of the order when
+	            createUpdateOrderChange API will trigger."/>
+	        </insert>
+
+	        <insert tableName = "international_description">
+	            <column name = "table_id"     valueNumeric  = "24"/>
+	            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+	            <column name = "psudo_column" value         = "description"/>
+	            <column name = "language_id"  valueNumeric  = "1"/>
+	            <column name = "content"      value         = "This plug-in will update count position of the order when
+	            createUpdateOrderChange API will trigger."/>
+	        </insert>
+    </changeSet>
+
+
+</databaseChangeLog>

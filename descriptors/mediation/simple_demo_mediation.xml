@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "mediation.dtd" >
+<format>
+    <field>
+        <name>eventId</name>
+        <type>string</type>
+        <isKey/>
+    </field>
+    <field>
+        <name>src</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>dst</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>userfield</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>start</name>
+        <type>date</type>
+    </field>
+    <field>
+        <name>duration</name>
+        <type>integer</type>
+    </field>
+    <field>
+        <name>disposition</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>productCode</name>
+        <type>string</type>
+    </field>
+</format>

@@ -1,0 +1,268 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration debug = "false" scan = "true" scanPeriod = "3 seconds">
+
+    <!--  ===================================== Properties ========================================================= -->
+
+    <property name  = "CONSOLE_COLOR_PATTERN"
+              value = '%yellow(%date{ISO8601,UTC}) %highlight(%-5level) %yellow(---) %white([%15.15thread]) %cyan(%-40.40logger{39}) %yellow(:) %green(%msg%n%ex)' />
+    <property name  = "CONSOLE_NOCOLOR_PATTERN"
+              value = '%date{ISO8601,UTC} %-5level --- [%15.15thread] %-40.40logger{39} : %msg%n%ex' />
+
+    <property name = "DEFAULT_PATTERN"  value = '%date{ISO8601,UTC} level="%level", class="%logger{40}", thread="%thread", message="%msg"%n%ex' />
+    <property name = "ADVANCED_PATTERN" value = '%date{ISO8601,UTC} level="%level", class="%logger{40}", thread="%thread", juser="%X{user}", jcompany="%X{company}", ip="%X{userIp}", jcontroller="%X{controller}", jaction="%X{action}", api="%X{apiMethod}", %X{msgKey}%X{quote}%msg%X{quote}%n%ex' />
+
+    <property name = "STACKTRACE_PATTERN" value = '%date{ISO8601,UTC} level="%level", class="%logger{40}", thread="%thread", message="%msg"%n%ex' />
+
+    <property name = "LOG_DIR"          value = "${logs.base.dir:-.}/logs" />
+    <property name = "LOG_ROLLOVER_DIR" value = "${logs.rollover.dir:-.}/logs/old" />
+
+    <property name = "ROLLOVER_DATE_PATTERN" value = "%d{yyyy-MM-dd}" />
+
+    <property name = "MAX_HISTORY"           value = "10" />
+    <property name = "MAX_HISTORY_100"       value = "100" />
+    <property name = "MAX_FILE_SIZE"         value = "10MB" />
+    <property name = "MAX_FILE_SIZE_30"      value = "30MB" />
+    <property name = "TOTALCAP_PER_APPENDER" value = "100MB" />
+
+    <property name = "IMMEDIATE_FLUSH"       value = "true" />
+
+    <!--  ===================================== Common Appenders =================================================== -->
+
+    <appender name  = "stdout"
+              class = "ch.qos.logback.core.ConsoleAppender">
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${CONSOLE_COLOR_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name  = "stacktraceLog"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/jbilling-stacktrace.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-stacktrace.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${STACKTRACE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name  = "jbilling"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class = "com.sapienter.jbilling.log.EnhancedLoggerFilter" />
+        <file>${LOG_DIR}/jbilling.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE_30}</maxFileSize>
+            <maxHistory>${MAX_HISTORY_100}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${ADVANCED_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "sql"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/sql.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/sql.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "diameter"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/diameter.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/diameter.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "jbilling-debug"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/jbilling-debug.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-debug.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "jbilling-mediation"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/jbilling-mediation.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-mediation.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "fc-mediation"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/fc-mediation.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/fc-mediation.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "jbilling-c3p0"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/jbilling-c3p0.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-c3p0.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${STACKTRACE_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <appender name  = "jbilling-web-flow"
+              class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/jbilling-web-flow.log</file>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-web-flow.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+        <immediateFlush>${IMMEDIATE_FLUSH}</immediateFlush>
+    </appender>
+
+    <!--  ================================ Frameworks/Components =================================================== -->
+
+    <logger level = "error" name = "org.codehaus.groovy.grails.web.servlet" />          <!-- controllers -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.web.pages" />            <!-- GSP         -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.web.sitemesh" />         <!-- layouts     -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.web.mapping.filter" />   <!-- URL mapping -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.web.mapping" />          <!-- URL mapping -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.commons" />              <!-- core / classloading    -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.plugins" />              <!-- plugins -->
+    <logger level = "error" name = "org.codehaus.groovy.grails.orm.hibernate" />        <!-- hibernate integration  -->
+    <logger level = "error" name = "grails.plugin.webxml" />
+    <logger level = "error" name = "org.hibernate" />
+    <logger level = "error" name = "org.springframework" />
+    <logger level = "error" name = "net.sf.ehcache.hibernate" />
+    <logger level = "error" name = "org.apache.zookeeper" />
+    <logger level = "error" name = "org.apache.hadoop.hbase" />
+
+
+    <logger level = "warn"  name = "org.apache.catalina" />
+
+
+    <logger level = "debug" additivity = "false" name = "com.mchange">
+        <appender-ref ref = "jbilling-c3p0" />
+    </logger>
+
+
+    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "debug" additivity = "false" name = "grails.app">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "debug" additivity = "false" name = "grails.app.service">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "error" additivity = "false" name = "grails.app.controller">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.processor">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.order.OrderServiceImpl">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation">
+        <appender-ref ref = "jbilling-mediation" />
+    </logger>
+    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative">
+        <appender-ref ref = "fc-mediation" />
+    </logger>
+
+
+    <logger level = "info"  additivity = "false" name = "grails.app.taglib">
+        <appender-ref ref = "jbilling" />
+    </logger>
+    <logger level = "info"  additivity = "false" name = "com.sapienter.jbilling.client.authentication.CompanyUserRememberMeFilter">
+        <appender-ref ref = "jbilling" />
+    </logger>
+
+
+    <logger level = "debug" additivity = "false" name = "org.jdiameter">
+        <appender-ref ref = "diameter" />
+    </logger>
+
+    <logger level = "info"  additivity = "false" name = "org.springframework.core.io.support.PropertiesLoaderSupport">
+        <appender-ref ref = "jbilling-debug" />
+    </logger>
+    <logger level = "info"  additivity = "false" name = "org.springframework">
+        <appender-ref ref = "jbilling-debug" />
+    </logger>
+
+    <logger level = "debug"  additivity = "false" name = "org.codehaus.groovy.grails.webflow">
+        <appender-ref ref = "jbilling-web-flow" />
+    </logger>
+
+    <logger level = "debug"  additivity = "false" name = "org.springframework.webflow.engine.impl.FlowExecutionImpl">
+        <appender-ref ref = "jbilling-web-flow" />
+    </logger>
+
+    <!--  ===================================== Other ============================================================== -->
+
+    <logger level = "error" additivity = "false" name = "StackTrace">
+        <appender-ref ref = "stacktraceLog" />
+    </logger>
+
+    <root level = "info">
+        <appender-ref ref = "stdout" />
+        <appender-ref ref = "jbilling" />
+    </root>
+
+</configuration>

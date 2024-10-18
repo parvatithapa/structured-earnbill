@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+    <import resource="classpath:baseContext.xml"/>
+    <import resource="classpath:database-test-context.xml"/>
+    <bean id="mediationProcessDAS" class="com.sapienter.jbilling.server.mediation.process.db.MediationProcessDASImpl"/>
+    <bean id="mediationProcessService" class="com.sapienter.jbilling.server.mediation.process.MediationProcessServiceImpl"
+          depends-on="mediationProcessDAS"/>
+    <bean id="mediationService" class="com.sapienter.jbilling.server.mediation.mocks.MockMediationService"/>
+</beans>

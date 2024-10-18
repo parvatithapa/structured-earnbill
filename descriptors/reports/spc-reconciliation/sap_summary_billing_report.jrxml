@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="sap_summary_billing_report" language="groovy" pageWidth="879" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="839" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="274b963f-896d-46db-84e5-44adf3315d43">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<queryString>
+		<![CDATA[SELECT ssbr.gl_code,
+						(SELECT gl_description
+						   FROM route_70_gl_description
+						  WHERE gl_code = ssbr.gl_code) AS gl_description,
+						ssbr.gst_code,
+						SUM(ssbr.sales_ex_gst) AS sales_ex_gst,
+						SUM(ssbr.gst) AS gst,
+						SUM(ssbr.sales_incl_gst) AS sales_incl_gst
+				   FROM (SELECT (SELECT CASE WHEN (SELECT COUNT(*) > 0
+											 FROM plan
+											WHERE item_id = il.item_id)
+									    THEN (SELECT string_value
+											 FROM meta_field_value mfv
+									   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+											  AND mfn.name = 'Plan GL'
+											  AND mfn.entity_type = 'PLAN'
+											  AND mfn.entity_id = base_user.entity_id
+									   INNER JOIN plan_meta_field_map pmm ON mfv.id = pmm.meta_field_value_id
+									   INNER JOIN plan p ON p.id = pmm.plan_id AND p.item_id = il.item_id)
+									    ELSE itm.gl_code
+									     END ) AS gl_code,
+								(SELECT tax_code
+								   FROM route_70_tax_scheme
+								  WHERE description =(	   CASE
+														   WHEN (SELECT COUNT(*) > 0
+														   		   FROM plan
+														   		  WHERE item_id = il.item_id)
+														   THEN
+														(SELECT mfv.string_value
+								  						   FROM plan p
+													 INNER JOIN plan_meta_field_map pmfm ON pmfm.plan_id = p.id
+													 INNER JOIN meta_field_value mfv ON mfv.id = pmfm.meta_field_value_id
+													 INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme'
+													 		AND mfv.meta_field_name_id = mfn.id
+															AND p.item_id = il.item_id)
+														   ELSE
+								  						(SELECT mfv.string_value
+								  						   FROM item itm
+													 INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+													 INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+													 INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme'
+													 		AND mfv.meta_field_name_id = mfn.id
+															AND itm.id = il.item_id)
+															END )) AS gst_code,
+								SUM(il.gross_amount) AS sales_ex_gst,
+								COALESCE( (CASE
+										   WHEN SUM(il.gross_amount) = 0
+										   THEN (SELECT SUM(amount) FROM invoice_line il
+										  WHERE il.invoice_id = i.id
+										    AND il.item_id IN (SELECT id
+										    					FROM item
+															   WHERE internal_number = 'GST')
+									   GROUP BY il.invoice_id)
+										   ELSE SUM(il.tax_amount)
+											END),0) AS gst,
+								SUM(il.amount) AS sales_incl_gst
+						FROM invoice i
+				  INNER JOIN invoice_line il ON i.id = il.invoice_id
+			 LEFT OUTER JOIN item itm ON itm.id = il.item_id
+			 LEFT OUTER JOIN base_user ON base_user.id = i.user_id
+					   WHERE il.type_id != 3
+						 AND i.id = il.invoice_id
+						 AND i.create_datetime BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+					GROUP BY i.id,
+							 base_user.entity_id,
+						     il.item_id,
+						     itm.gl_code
+					ORDER BY gl_code) AS ssbr
+				GROUP BY ssbr.gl_code,
+					 	 ssbr.gst_code,
+						 gl_description;]]>
+	</queryString>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="gl_description" class="java.lang.String"/>
+	<field name="gst_code" class="java.lang.String"/>
+	<field name="sales_ex_gst" class="java.math.BigDecimal"/>
+	<field name="gst" class="java.math.BigDecimal"/>
+	<field name="sales_incl_gst" class="java.math.BigDecimal"/>
+	<variable name="subtotal" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_symbol" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<variable name="total_incl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_incl_gst}]]></variableExpression>
+	</variable>
+	<variable name="total_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{gst}]]></variableExpression>
+	</variable>
+	<variable name="total_excl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_gst} !=0 ? $F{sales_ex_gst} : ($F{sales_incl_gst} - $F{gst})]]></variableExpression>
+	</variable>
+	<group name="currency_symbol">
+		<groupExpression><![CDATA[]]></groupExpression>
+		<groupFooter>
+			<band height="41">
+				<staticText>
+					<reportElement x="0" y="1" width="121" height="20" uuid="38592bfb-13b5-4d96-96d5-00b4ddf984a5"/>
+					<box rightPadding="5"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Amount:]]></text>
+				</staticText>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="733" y="1" width="106" height="20" uuid="09c7eb5d-a151-4d2b-b198-f0dc3fdb26ef"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_incl_gst}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="0" width="839" height="1" uuid="a28ac52c-754a-4d75-9bc2-6aa8c28a1a3a"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="628" y="1" width="105" height="20" uuid="17119e97-81ad-415a-9f73-f988c8befc7b"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_gst}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="523" y="1" width="105" height="20" uuid="b8f9a81c-f211-4ec1-8f2d-392a585a502c"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_excl_gst}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="71" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="301" height="20" uuid="dc7faf57-30cd-48f6-8256-624fd5cf19ac"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SAP Summary Billing Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="628" y="20" width="105" height="20" uuid="c2e946c0-dd0a-40f6-b727-6dca6d63b577"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="628" y="40" width="105" height="20" uuid="b0b37546-1a58-43a1-a20e-ebcb257d6e16"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="628" y="0" width="105" height="20" uuid="ee620154-1088-4cbf-bd93-042d86b6c633"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="733" y="20" width="106" height="20" uuid="ec10206d-5bcf-4b0d-ae49-5463329c81b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="733" y="40" width="106" height="20" uuid="6cc94766-977c-4095-9531-4a7d07e18bb9"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="733" y="0" width="106" height="20" uuid="92826d0c-85a5-4669-ab5d-286abb67896f"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="301" height="20" uuid="8b2974fb-a583-401c-ad4e-602405f76739"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[SAP Summary Billing Report]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="48">
+			<line>
+				<reportElement x="0" y="33" width="839" height="1" uuid="660096f0-983d-4df7-9c9a-aa95391d6f48"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="523" y="14" width="105" height="20" uuid="8fb2e554-1d25-482b-a14d-3b4641f256fa"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="628" y="14" width="105" height="20" uuid="c226c4a5-5516-4af8-a499-5f19424e99ac"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="733" y="14" width="106" height="20" uuid="d7a71e5c-5e36-49cf-bd38-176835b6960d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales incl GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1" y="14" width="120" height="20" uuid="81e21b49-9f06-4e26-94ec-01b09e96ed31"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="121" y="14" width="180" height="20" uuid="9487cbf9-7a35-4534-b732-9b2daeb3f1ad"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="423" y="14" width="100" height="20" uuid="b53c0700-a6bb-4f9a-b200-c36a879082ab"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="301" y="14" width="122" height="20" uuid="1ff828f7-94d2-410e-8052-bca3d42c7904"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Blank]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="29" splitType="Stretch">
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="523" y="1" width="105" height="20" uuid="7b0bd81d-e01e-4444-8f52-543a6fe8a20c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_gst} !=0 ? $F{sales_ex_gst} : ($F{sales_incl_gst} - $F{gst})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="628" y="1" width="105" height="20" uuid="4e95f7ae-64fa-4a4c-b302-6efd7f7fb21c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{gst}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="733" y="1" width="106" height="20" uuid="9aeab344-494e-42aa-b420-dabaa5e769b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_incl_gst}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="1" width="120" height="20" uuid="3e1262c4-3894-4c19-a19e-9c6bb42ddb0b"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="121" y="1" width="180" height="20" uuid="a06107ff-dd53-482e-80ba-a737f605192d"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{gl_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="423" y="1" width="100" height="20" uuid="0c65ab31-9b63-4132-8067-8fe0263accac"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gst_code}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="50">
+			<textField>
+				<reportElement x="798" y="0" width="42" height="20" uuid="bd5e22f6-3181-4b84-a504-57c0ab1aabbf"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="734" y="0" width="64" height="20" uuid="410e998e-630e-41a1-8115-d0b8e2f0a82e"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Page  ]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>

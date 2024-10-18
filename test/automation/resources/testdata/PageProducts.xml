@@ -1,0 +1,804 @@
+<testdata>
+	<testdataset name="productCategoryImpersonate" category="pc"
+		testenv="develop|lab">
+		<productCategory>Asset Category 1</productCategory>
+		<productName>SIM Cards</productName>
+		<assetName>SIM-002</assetName>
+	</testdataset>
+	<testdataset name="AssetNameImpersonate" category="pc"
+		testenv="develop|lab">
+		<assetName>SIM-001</assetName>
+	</testdataset>
+	<testdataset name="addProductOne" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Flat 1 Priced Product</englishDescription>
+		<productCode>Product Code1{RANDOM}</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+		<rate>500</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductTwo" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Line PCT Priced Product</englishDescription>
+		<productCode>Test Code{RANDOM}</productCode>
+		<standardAvailability>true</standardAvailability>
+		<assetManage>false</assetManage>
+		<pricingModel>Line Percentage</pricingModel>
+		<rate>10</rate>
+		<currency>United States Dollar</currency>
+		<agent>5</agent>
+		<master>10</master>
+	</testdataset>
+	<testdataset name="product.tc-3.4" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SIM Cards{RANDOM}</englishDescription>
+		<productCode>SIM{RANDOM}</productCode>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	
+	<testdataset name="addProductFour" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Flat 4 Priced Product</englishDescription>
+		<productCode>SIM{RANDOM}</productCode>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="editProduct" category="ap" testenv="develop|lab">
+		<englishDescription>New Test Code Description</englishDescription>
+		<productCode>New Test Code{RANDOM}</productCode>
+		<rate>15</rate>
+	</testdataset>
+	<testdataset name="CreateProductCategoryData" category="pcd"
+		testenv="develop|lab">
+		<name>Test category{RANDOM}</name>
+	</testdataset>
+	<testdataset name="NewProductCategoryData" category="pcd"
+		testenv="develop|lab">
+		<name>New Test category{RANDOM}</name>
+		<company>LDC Akhilesh</company>
+		<commision>Commision Products</commision>
+	</testdataset>
+	<testdataset name="addPlugin" category="ap" testenv="develop|lab">
+		<pluginType>AssetUpdatedTask</pluginType>
+		<pluginType2>OrderProvisioningTask</pluginType2>
+		<order>11{RANDOMNUM}</order>
+		<order2>099{RANDOMNUM}</order2>
+		<pluginType3>com.sapienter.jbilling.server.user.partner.task.BasicPartnerCommissionTask</pluginType3>
+		<order3>1{RANDOMNUM}</order3>
+		<order4>99{RANDOMNUM}</order4>
+    </testdataset>
+
+		<!-- Adding Test Data Specific To Plugin Scenario -->
+
+	<!-- Order Provisioning Task -->
+	<testdataset name="addPluginOPT" category="apOPT" testenv="develop|lab">
+		<pluginType>OrderProvisioningTask</pluginType>
+		<order>9{RANDOMNUM}</order>
+	</testdataset>
+
+	<!-- Order Provisioning Task Line -->
+	<testdataset name="addPluginOPTL" category="apOPTL"
+		testenv="develop|lab">
+		<pluginType>OrderLineProvisioningTask</pluginType>
+		<order>8{RANDOMNUM}</order>
+	</testdataset>
+
+	<!-- Asset Provisioning Task -->
+	<testdataset name="addPluginAPT" category="apAPT" testenv="develop|lab">
+		<pluginType>AssetProvisioningTask</pluginType>
+		<order>11{RANDOMNUM}</order>
+	</testdataset>
+
+	<!-- Payment Provisioning Task -->
+	<testdataset name="addPluginPPT" category="apPPT" testenv="develop|lab">
+		<pluginType>PaymentProvisioningTask</pluginType>
+		<order>12{RANDOMNUM}</order>
+	</testdataset>
+
+	<!-- Provisioning Command Status Update Task -->
+	<testdataset name="addPluginPCT" category="apPCT" testenv="develop|lab">
+		<pluginType>ProvisioningCommandStatusUpdateTask</pluginType>
+		<order>13{RANDOMNUM}</order>
+	</testdataset>
+
+	<testdataset name="addProduct" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SIM Cards{RANDOM}</englishDescription>
+		<productCode>SIM{RANDOM}</productCode>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+		<rate>2</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addAssetOne" category="ap" testenv="develop|lab">
+		<identifier>SIM-001{RANDOM}</identifier>
+		<taxID>T-001{RANDOM}</taxID>
+	</testdataset>
+	<testdataset name="addAssetTwo" category="ap" testenv="develop|lab">
+		<identifier>SIM-002{RANDOM}</identifier>
+		<taxID>T-002{RANDOM}</taxID>
+	</testdataset>
+	<testdataset name="CreateProductCategory" category="ac"
+		testenv="develop|lab">
+		<assetCategory>Asset Category 1{RANDOM}</assetCategory>
+		<assetCategory2>Test Category3{RANDOM}</assetCategory2>
+		<assetStatusName>Available</assetStatusName>
+		<assetStatusName2>available</assetStatusName2>
+		<assetStatusName2>available</assetStatusName2>
+		<assetStatusName3>Order Saved</assetStatusName3>
+		<assetStatusName4>Unavailable</assetStatusName4>
+		<assetStatusName5>Default</assetStatusName5>
+		<assetStatusName6>Pending</assetStatusName6>
+		<metaFieldName>Email</metaFieldName>
+		<metaFieldName2>Str3{RANDOM}</metaFieldName2>
+		<addAssetIdentifier>AIL 1{RANDOM}</addAssetIdentifier>
+		<Value>4</Value>
+		<newAssetCategory>Edit Category{RANDOM}</newAssetCategory>
+		<taxCategory>Tax{RANDOM}</taxCategory>
+		<productCategoryType>Tax</productCategoryType>
+		<productCategoryType2>Penalty</productCategoryType2>
+		<addAssetIdentifier2>AIL2{RANDOM}</addAssetIdentifier2>
+		<addAssetIdentifier3>AIL3{RANDOM}</addAssetIdentifier3>
+	</testdataset>
+	<testdataset name="SecondCreateProductCategory" category="ac"
+		testenv="develop|lab">
+		<assetStatusName>In Use</assetStatusName>
+		<metaFieldName>Tax</metaFieldName>
+	</testdataset>
+	<testdataset name="productCategory" category="pcat"
+		testenv="develop|lab3">
+		<name>Dependent Products{RANDOM}</name>
+	</testdataset>
+	<testdataset name="productCategoryWithDifferentPeriods"
+		category="pcat" testenv="develop|lab3">
+		<name>Billing Category{RANDOM}</name>
+	</testdataset>
+	
+	
+	<testdataset name="addProduct" category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Installation Fee</englishDescription>
+		<productCode>D-01</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>50</rate>
+	</testdataset>
+	
+	
+	
+	<testdataset name="productCategoryNationMobileCalls" category="pnmc" testenv="develop|lab3">
+		<name>National Mobile Calls{RANDOM}</name>
+	</testdataset>
+	
+	<testdataset name="addProductRomingCallRates" category="aprcr" testenv="develop|lab3">
+		<description></description>
+		<englishDescription>Roaming call rates</englishDescription>
+		<productCode>Roaming rates</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>0.50</rate>
+		<Category></Category>
+		<product></product>
+	</testdataset>
+	
+	<testdataset name="addProductTwo" category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Date Service</englishDescription>
+		<productCode>D-02</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<Category>Dependent Products</Category>
+		<product></product>
+	</testdataset>
+	
+	
+	<testdataset name="addProductOneWithDifferentPeriods"
+		category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Billing Flat</englishDescription>
+		<productCode>Billing Flat{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>20</rate>
+	</testdataset>
+	<testdataset name="addProductTwoWithDifferentPeriods"
+		category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Billing Graduated</englishDescription>
+		<productCode>Billing Graduated{RANDOM}</productCode>
+		<pricingModel>Graduated</pricingModel>
+		<includedQuantity>7</includedQuantity>
+		<rate>5</rate>
+	</testdataset>
+	<testdataset name="addProductOneToAddDependencies"
+		category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Billing Graduated</englishDescription>
+		<productCode>Billing Graduated{RANDOM}</productCode>
+		<pricingModel>Graduated</pricingModel>
+		<includedQuantity>100</includedQuantity>
+		<rate>18</rate>
+	</testdataset>
+	
+	
+	
+	<testdataset name="addProductTwoToAddDependencies"
+		category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Billing Flat First</englishDescription>
+		<productCode>Billing Flat{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>33</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductThreeToAddDependencies"
+		category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Billing Flat Second</englishDescription>
+		<productCode>Billing Flat{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="editFirstDependency" category="efd"
+		testenv="develop|lab3">
+
+		<Min1>1</Min1>
+		<Min0>0</Min0>
+	</testdataset>
+
+	<testdataset name="NewProductCategoryData2" category="pcd2"
+		testenv="develop|lab">
+		<name>New Test category{RANDOM}</name>
+		<company>LDC Akhilesh</company>
+
+	</testdataset>
+	<testdataset name="addProductOneToAddDependencies"	category="pou" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Cool Phone</englishDescription>
+		<productCode>CP{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>25.00</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductTwoToAddDependencies"
+		category="pok" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Fee</englishDescription>
+		<productCode>FP{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>1</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="product.tc-48" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SIMCard{RANDOMNUM}</englishDescription>
+		<productCode>SIM</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<global>true</global>
+		<pricingModel>Flat</pricingModel>
+		<rate>20</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="assetName" category="name" testenv="develop|lab">
+		<asserName1>Available</asserName1>
+		<asserName2>UnAvailable</asserName2>
+		<asserName3>Pending</asserName3>
+		<checkAssetManagement>true</checkAssetManagement>
+		<global>true</global>
+		<categoryName>Globle Item Category{RANDOM}</categoryName>
+	</testdataset>
+	<testdataset name="assetDetail" category="ad" testenv="develop|lab3">
+		<identifier1>SIM-001{RANDOM}</identifier1>
+		<identifier2>SIM-002{RANDOM}</identifier2>
+		<global>true</global>
+	</testdataset>
+	<testdataset name="addProductSamsung" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>English</englishDescription>
+		<productCode>Samsung</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<global>true</global>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="newassetDetail" category="ad" testenv="develop|lab3">
+		<identifier1>Asset1</identifier1>
+		<identifier2>Asset2</identifier2>
+		<global>true</global>
+	</testdataset>
+	<testdataset name="addProductCategoryOne" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Category One</englishDescription>
+		<productCode>Test Flat</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+</testdataset>
+
+	<testdataset name="productCategory" category="pcet"
+		testenv="develop|lab3">
+		<name>Fees {RANDOM}</name>
+	</testdataset>
+	 <testdataset name="addProductTwoToAddDependencies"
+		category="kol" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Lemonade Plan Setup Fee</englishDescription>
+		<productCode>Lemonade Plan Setup </productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductWithFlatPricing" category="ap"
+		testenv="develop|lab">
+
+		<description>English</description>
+		<englishDescription>Test Code Description 4</englishDescription>
+		<productCode>Flat Product</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Flat</pricingModel>
+		<rate>12</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithGraduatePricing" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 5</englishDescription>
+		<productCode>Test Code 5</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Graduated</pricingModel>
+		<rate>12</rate>
+		<includedQuantity>5</includedQuantity>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithGraduateCapPricing"
+		category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 6</englishDescription>
+		<productCode>Test Code 6</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Graduated Cap</pricingModel>
+		<rate>12</rate>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithTimeOfDayPricing"
+		category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 7</englishDescription>
+		<productCode>Test Code 7</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Time Of Day</pricingModel>
+		<Date>04-11-2011</Date>
+<Time>10</Time>
+		<rate>12</rate>
+	</testdataset>
+
+	<testdataset name="addProductWithTieredPricing" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 8</englishDescription>
+		<productCode>Test Code 8</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Tiered</pricingModel>
+		<Range>10</Range>
+		<From>10</From>
+		<Rate>18</Rate>
+		<From1>20</From1>
+		<Rate2>16</Rate2>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithVolumePricing" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 9</englishDescription>
+		<productCode>Test Code 9</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>
+		<pricingModel>Volume</pricingModel>
+		<Range>12</Range>
+		<From>10</From>
+		<Rate>10</Rate>
+		<From1>20</From1>
+		<Rate2>8</Rate2>
+		<From2>30</From2>
+		<Rate3>6</Rate3>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithPooledPricing" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 10</englishDescription>
+		<productCode>Test Code 10</productCode>
+		<pricingModel>Pooled</pricingModel>
+		<rate>12</rate>
+		<Multiplier>10</Multiplier>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithItemPercantageSelector"
+		category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 12</englishDescription>
+		<productCode>Test Code 12</productCode>
+		<pricingModel>Item Percentage Selector</pricingModel>
+		<rate>12</rate>
+		<Multiplier>10</Multiplier>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<categoryID>239 - Test categoryUKHZT</categoryID>
+		<CategoryPercentage>2</CategoryPercentage>
+		<Zero>10</Zero>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithItemSelector" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Test Code Description 11</englishDescription>
+		<productCode>Test Code 11</productCode>
+		<pricingModel>Item Selector</pricingModel>
+		<rate>12</rate>
+		<Multiplier>10</Multiplier>
+		<includedQuantity>5</includedQuantity>
+		<maximum>8</maximum>
+		<categoryID>239 - Test categoryUKHZT</categoryID>
+		<CategoryPercentage>2</CategoryPercentage>
+		<One>10</One>
+		<currency>United States Dollar</currency>
+	</testdataset>
+
+	<testdataset name="addProductWithQuantityAdOn" category="ap"
+		testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Quantity Add-on Description</englishDescription>
+		<productCode>Quantity Add-on</productCode>
+		<pricingModel>Quantity Addon</pricingModel>
+		<rate>12</rate>
+		<Multiplier>10</Multiplier>
+		<ProductID>101</ProductID>
+		<Quantity>1</Quantity>
+		<GraduateRate>7</GraduateRate>
+		<GraduateQuantity>5</GraduateQuantity>
+		<maximum>8</maximum>
+		<categoryID>239 - Test categoryUKHZT</categoryID>
+		<CategoryPercentage>2</CategoryPercentage>
+		<One>10</One>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addCategoryforOnePerOrder" category="acopo"
+		testenv="develop|lab">
+		<global>true</global>
+		<customerCheckBox>true</customerCheckBox>
+		<orderCheckBox>true</orderCheckBox>
+		<categoryName>categorePerOrder{RANDOM}</categoryName>
+	</testdataset>
+	<testdataset name="addProdutcforOnePerOrder" category="apopo"
+		testenv="develop|lab">
+		<englishDescription>product{RANDOM}</englishDescription>
+		<startDate>08/02/2016</startDate>
+		<endDate>08/30/2026</endDate>
+		<global>true</global>
+		<productCode>Pcode{RANDOMNUM}</productCode>
+	</testdataset>
+    <testdataset name="addProductOnePerOrder" category="ap"
+        testenv="develop|lab">
+        <englishDescription>product{RANDOM}</englishDescription>
+        <productCode>Pcode{RANDOMNUM}</productCode>
+    </testdataset>
+		<testdataset name="NewProductCategoryData" category="per"
+		testenv="develop|lab">
+		<name> Drink Passes{RANDOM}</name>
+	</testdataset>
+	 <testdataset name="addProductTwoToAddDependencies"
+		category="tgb" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Lemonade </englishDescription>
+		<productCode>Lemonade</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>15</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	 <testdataset name="addProductTwoToAddDependencies"
+		category="idj" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>Coffee</englishDescription>
+		<productCode>Coffee</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>20</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="OrderPluginPageInfo1"
+		category="oi" testenv="develop|lab3">
+		<Minimum>1</Minimum>
+		<Maximum>1</Maximum>
+		<Minimumboxes>0</Minimumboxes>
+		<Maximumboxes>0</Maximumboxes>
+	</testdataset>
+	<testdataset name="addProductOnePerCustomer"
+		category="apopc" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>CustomerProduct{RANDOM}</englishDescription>
+		<productCode>ProductCode{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>100</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+		<startDate>03/01/2014</startDate>
+		<endDate>03/25/2014</endDate>
+		<global>true</global>
+	</testdataset>
+	<testdataset name="addFirstProductOnePerCustomer"
+		category="apopc" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>CustomerProduct{RANDOM}</englishDescription>
+		<productCode>ProductCode{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>100</rate>
+		<standardAvailability>true</standardAvailability>
+		<currency>United States Dollar</currency>
+		<startDate>03/01/2014</startDate>
+		<endDate>03/30/2014</endDate>
+		<global>true</global>
+	</testdataset>	
+		<testdataset name="addCategoryOnePerCustomer" category="acopc"
+		testenv="develop|lab3">
+		<categoryName>Category One Per Customer{RANDOM}</categoryName>
+		<global>true</global>
+		<customerCheckBox>true</customerCheckBox>
+	</testdataset>
+	<testdataset name="addCategoryForMinimumTimePeriod" category="ac"
+		testenv="develop|lab3">
+		<categoryName>CategoryMinimumTime_{RANDOM}</categoryName>
+		<global>true</global>
+	</testdataset>
+		
+		<testdataset name="addProductForMinimumTime" category="ap" testenv="develop|lab3">
+		<description>English</description>
+		<englishDescription>CoolPhoneProduct_{RANDOM}</englishDescription>
+		<productCode>CoolPhoneProduct_{RANDOM}</productCode>
+		<pricingModel>Flat</pricingModel>
+		<rate>100</rate>	
+		<currency>United States Dollar</currency>	
+		<global>true</global>
+	</testdataset>	
+	
+	<testdataset name="OrderChangeStatus" category="ocs" testenv="develop|lab">
+		<OrderName>New OrderQauntity</OrderName>
+		<OrderQauntity>1</OrderQauntity>
+	
+	</testdataset>
+	
+	<testdataset name="CreateProductCategoryServices" category="pcd"
+		testenv="develop|lab">
+		<name>Services{RANDOM}</name>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameSMS" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS</englishDescription>
+		<productCode>SMS</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>15</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameGPRS" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>GPRS</englishDescription>
+		<productCode>SMS</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>20</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="CreateProductCategoryMSISDN" category="pcd"
+		testenv="develop|lab">
+		<name>MSISDN{RANDOM}</name>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameMSISDN" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>MSISDN-01</englishDescription>
+		<productCode>MSISDN-01</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>10</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameMSISDN_2" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>MSISDN-02</englishDescription>
+		<productCode>MSISDN-02</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>20</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameSMS1" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to New Delhi</englishDescription>
+		<productCode>SMS to New Delhi</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductWithNameSMS3" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to Delhi</englishDescription>
+		<productCode>SMS to Delhi</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="CreateProductCategoryTarrifPlans" category="pcd"
+		testenv="develop|lab">
+		<name>Tarrif Plan{RANDOM}</name>
+	</testdataset>
+	
+	<testdataset name="CreateProductCategoryRates" category="pcd"
+		testenv="develop|lab">
+		<name>Rate{RANDOM}</name>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameSMS2" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to North America</englishDescription>
+		<productCode>SMS to North America</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameEU" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>EU27</englishDescription>
+		<productCode>EU27</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="addProductWithNameSMS2" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to North America</englishDescription>
+		<productCode>SMS to North America</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductWithNameConnectionFee" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>Connection Fee</englishDescription>
+		<productCode>Connection Fee</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductWithNameSMS1" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to New Delhi</englishDescription>
+		<productCode>SMS to New Delhi</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	<testdataset name="addProductWithNameSMS3" category="ap" testenv="develop|lab">
+		<description>English</description>
+		<englishDescription>SMS to Delhi</englishDescription>
+		<productCode>SMS to Delhi</productCode>
+		<standardAvailability>false</standardAvailability>
+		<assetManage>true</assetManage>	
+		<pricingModel>Flat</pricingModel>
+		<rate>99.99</rate>
+		<currency>United States Dollar</currency>
+	</testdataset>
+	
+	<testdataset name="editProductWithDependency" category="ap" testenv="develop|lab">
+		<minimum>1</minimum>
+		<maximum>1</maximum>
+	</testdataset>
+
+    <testdataset name="addProductFresh" category="prod" testenv="develop|lab">
+        <description>Asset Category 1</description>
+        <productCode>First{RANDOM}</productCode>
+        <englishDescription>FirstTime{RANDOM}</englishDescription>
+        <pricingModel>Flat</pricingModel>
+        <rate>100</rate>
+    </testdataset>
+    <testdataset name="TC98_OrderSpecialPricing" category="osp" testenv="develop|lab3">
+        <name>TestCategory {RANDOM}</name>
+        <description>English</description>
+        <englishDescription>TestMeter {RANDOM}</englishDescription>
+        <productCode>12{RANDOMNUM}</productCode>
+        <pricingModel>Flat</pricingModel>
+        <rate>100</rate>
+        <currency>United States Dollar</currency>
+    </testdataset>
+    <testdataset name="CreateProductCategoryGlobal" category="pcd" testenv="develop|lab">
+        <categoryName>OPC{RANDOM}</categoryName>
+    </testdataset>
+    <testdataset name="addProductWithLinePercentage" category="ap" testenv="develop|lab">
+        <description>English</description>
+        <englishDescription>Line percentage</englishDescription>
+        <productCode>Test Product</productCode>
+        <standardAvailability>false</standardAvailability>
+        <assetManage>true</assetManage>
+        <pricingModel>Line Percentage</pricingModel>
+        <rate>15</rate>
+        <currency>United States Dollar</currency>
+    </testdataset>
+
+    <testdataset name="addProductWithTeaserPricing" category="ap" testenv="develop|lab">
+      <description>English</description>
+      <englishDescription>Teaser Product</englishDescription>
+      <productCode>TP001</productCode>
+      <pricingModel>Teaser Pricing</pricingModel>
+      <Rate2>50</Rate2>
+      <From2>3</From2>
+      <Rate3>60</Rate3>
+    </testdataset>
+</testdata>

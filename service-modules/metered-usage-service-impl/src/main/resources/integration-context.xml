@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+  <bean id="helperDataAccessService" class="com.sapienter.jbilling.server.integration.common.service.JdbcTemplateHelperDataAccessService">
+    <property name="jdbcTemplate" ref="jBillingJdbcTemplate"></property>
+  </bean>
+
+  <bean id="reservedInstanceHelper" class="com.sapienter.jbilling.server.integration.common.utility.ReservedInstanceHelper">
+    <property name="dataAccessService" ref="helperDataAccessService"></property>
+  </bean>
+
+  <bean id="usageItemHelper" class="com.sapienter.jbilling.server.integration.common.utility.UsageItemHelper">
+    <property name="dataAccessService" ref="helperDataAccessService"></property>
+  </bean>
+
+
+  <bean id="meteredUsageService" class="com.sapienter.jbilling.server.integration.MeteredUsageServiceImpl">
+    <property name="orderService" ref="orderService"></property>
+  </bean>
+
+
+
+
+  <import resource="classpath:metered-usage-master.xml"></import>
+  <import resource="classpath:metered-usage-slave.xml"></import>
+</beans>

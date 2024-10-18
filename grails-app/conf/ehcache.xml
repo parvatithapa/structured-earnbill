@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="ehcache.xsd" >
+    <cacheManagerPeerProviderFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheManagerPeerProviderFactory"
+            properties="initialContextFactoryName=com.sapienter.jbilling.tools.ActiveMqInitialContextFactory,
+ providerURL=vm://localhost,
+ replicationTopicConnectionFactoryBindingName=topicConnectionFactory,
+ replicationTopicBindingName=ehcache,
+ getQueueConnectionFactoryBindingName=queueConnectionFactory,
+ getQueueBindingName=ehcacheGetQueue"
+            propertySeparator=","
+            />
+
+    <!-- Default cache. Many classes use this, they are NONSTRICT_READ_WRITE -->
+    <defaultCache
+            maxElementsInMemory = "5000"
+            timeToIdleSeconds   =  "300"
+            timeToLiveSeconds   =  "600"
+            eternal             = "false"
+            overflowToDisk      = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </defaultCache>
+
+    <diskStore path = "java.io.tmpdir/jbilling-ehcache"/>
+    <cache name="BillingProcessRunning"
+           maxElementsInMemory = "5000"
+           timeToIdleSeconds   =  "300"
+           timeToLiveSeconds   =  "600"
+           eternal             = "false"
+           overflowToDisk      = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </cache>
+
+</ehcache>

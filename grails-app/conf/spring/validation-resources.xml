@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="validator"
+          class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+    </bean>
+
+    <bean id="securityValidator" class="com.sapienter.jbilling.server.util.SecurityValidator" depends-on="appContextInitializerBean">
+        <constructor-arg ref="springSecurityService" />
+    </bean>
+
+    <!-- Validation for WebServicesSessionBean -->
+    <!-- Validates any parameter that ends with *WS -->
+    <bean id="webServicesValidationAdvice" class="com.sapienter.jbilling.server.util.api.validation.APIValidator">
+        <property name="validator" ref="validator"/>
+        <property name="objectsToTest">
+            <set>
+                <!-- Enter here endings to match. This is not a regex, just a search of suffix -->
+                <value>WS</value>
+                <value>DTOEx</value>
+            </set>
+        </property>
+    </bean>
+    <bean id = "webServicesValidationAdvisor" class = "org.springframework.aop.support.RegexpMethodPointcutAdvisor">
+        <property name = "advice" ref = "webServicesValidationAdvice" />
+        <property name="patterns">
+            <list>
+                <value>com.sapienter.jbilling.server.util.WebServicesSessionSpringBean.*</value>
+                <value>com.sapienter.jbilling.server.item.AssetResourceHelperService.*</value>
+                <value>com.sapienter.jbilling.server.user.UserResourceHelperService.*</value>
+                <value>com.sapienter.jbilling.server.order.OrderResourceHelperService.*</value>
+                <value>com.sapienter.jbilling.auth.JwtAuthenticationService.*</value>
+                <value>com.sapienter.jbilling.twofactorauth.TwoFactorAuthenticationHelperService.*</value>
+            </list>
+        </property>
+        <property name = "order" value = "5" />
+    </bean>
+</beans>

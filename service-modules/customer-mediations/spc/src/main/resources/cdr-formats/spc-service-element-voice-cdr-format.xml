@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>SERVICE_NUMBER</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>POINT_TARGET</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>EVENT_DATE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>DURATION</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CALL_TYPE</name>
+        <type>string</type>
+    </field>
+</format>

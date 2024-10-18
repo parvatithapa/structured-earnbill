@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>CDR_ID</name>
+        <type>string</type>
+        <isKey />
+    </field>
+    <field>
+        <name>SERVICE_NUMBER</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>POINT_TARGET</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>COUNTRY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>START_DATETIME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>END_DATETIME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>DURATION</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CALL_TYPE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CALL_TYPE_DESC</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>PLAN_NAME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CHARGE_RATE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CHARGE_TYPE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>CALL_CHARGE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>BLANK_FIELD1</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>BLANK_FIELD2</name>
+        <type>string</type>
+    </field>
+</format>

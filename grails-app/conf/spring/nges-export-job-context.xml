@@ -1,0 +1,121 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+
+    <!--skip policy-->
+    <bean id="ngesExportSkipPolicy" class="com.sapienter.jbilling.server.nges.export.batch.skip.ExceptionSkipPolicy">
+        <constructor-arg value="com.sapienter.jbilling.common.SessionInternalError"/>
+    </bean>
+
+    <!--listener's-->
+    <bean id="ngesExportSkipListener" class="com.sapienter.jbilling.server.nges.export.batch.listener.NGESExportSkipListener" scope="step"/>
+
+    <!--reader's-->
+    <bean id="ngesExportCustomerReader" class="com.sapienter.jbilling.server.nges.export.batch.reader.NGESExportCustomerReader" scope="step"/>
+    <bean id="ngesExportPaymentReader" class="com.sapienter.jbilling.server.nges.export.batch.reader.NGESExportPaymentReader" scope="step"/>
+    <bean id="ngesExportInvoiceReader" class="com.sapienter.jbilling.server.nges.export.batch.reader.NGESExportInvoiceReader" scope="step"/>
+    <bean id="ngesExportProductReader" class="com.sapienter.jbilling.server.nges.export.batch.reader.NGESExportProductReader" scope="step"/>
+    <bean id="ngesExportEnrollmentReader" class="com.sapienter.jbilling.server.nges.export.batch.reader.NGESExportEnrollmentReader" scope="step"/>
+
+    <!--processor's-->
+    <bean id="exportCustomerProcessor" class="com.sapienter.jbilling.server.nges.export.batch.processor.NGESExportCustomerProcessor" scope="step"/>
+    <bean id="exportInvoiceProcessor" class="com.sapienter.jbilling.server.nges.export.batch.processor.NGESExportInvoiceProcessor" scope="step"/>
+    <bean id="exportPaymentProcessor" class="com.sapienter.jbilling.server.nges.export.batch.processor.NGESExportPaymentProcessor" scope="step"/>
+    <bean id="exportProductProcessor" class="com.sapienter.jbilling.server.nges.export.batch.processor.NGESExportProductProcessor" scope="step"/>
+    <bean id="exportEnrollmentProcessor" class="com.sapienter.jbilling.server.nges.export.batch.processor.NGESExportEnrollmentProcessor" scope="step"/>
+
+    <!--writer-->
+    <bean id="cvsFileItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <!-- write to this csv file -->
+        <property name="resource" value="file:#{jobParameters['fileName']}"/>
+        <property name="appendAllowed" value="true"/>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+                <property name="delimiter" value=","/>
+                <property name="fieldExtractor">
+                    <bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+                        <property name="names" value="row"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <!--customer job-->
+    <batch:job id="customerExportJob">
+        <batch:step id="customer-Export-Job-1">
+            <batch:tasklet>
+                <batch:chunk reader="ngesExportCustomerReader"
+                             processor="exportCustomerProcessor"
+                             writer="cvsFileItemWriter"
+                             commit-interval="1" skip-policy="ngesExportSkipPolicy"/>
+                <batch:listeners>
+                    <batch:listener ref="ngesExportSkipListener"/>
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!--payment job-->
+    <batch:job id="paymentExportJob">
+        <batch:step id="payment-Export-Job-1">
+            <batch:tasklet>
+                <batch:chunk reader="ngesExportPaymentReader"
+                             processor="exportPaymentProcessor"
+                             writer="cvsFileItemWriter"
+                             commit-interval="1" skip-policy="ngesExportSkipPolicy"/>
+                <batch:listeners>
+                    <batch:listener ref="ngesExportSkipListener"/>
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!--invoice job-->
+    <batch:job id="invoiceExportJob">
+        <batch:step id="invoice-Export-Job-1">
+            <batch:tasklet>
+                <batch:chunk reader="ngesExportInvoiceReader"
+                             processor="exportInvoiceProcessor"
+                             writer="cvsFileItemWriter"
+                             commit-interval="1" skip-policy="ngesExportSkipPolicy"/>
+                <batch:listeners>
+                    <batch:listener ref="ngesExportSkipListener"/>
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!--product job-->
+    <batch:job id="productExportJob">
+        <batch:step id="product-Export-Job-1">
+            <batch:tasklet>
+                <batch:chunk reader="ngesExportProductReader"
+                             processor="exportProductProcessor"
+                             writer="cvsFileItemWriter"
+                             commit-interval="1" skip-policy="ngesExportSkipPolicy"/>
+                <batch:listeners>
+                    <batch:listener ref="ngesExportSkipListener"/>
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!--enrollment job-->
+    <batch:job id="enrollmentExportJob">
+        <batch:step id="enrollment-Export-Job-1">
+            <batch:tasklet>
+                <batch:chunk reader="ngesExportEnrollmentReader"
+                             processor="exportEnrollmentProcessor"
+                             writer="cvsFileItemWriter"
+                             commit-interval="1" skip-policy="ngesExportSkipPolicy"/>
+                <batch:listeners>
+                    <batch:listener ref="ngesExportSkipListener"/>
+                </batch:listeners>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+</beans>

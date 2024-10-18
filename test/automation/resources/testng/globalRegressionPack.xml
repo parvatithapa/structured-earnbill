@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="globalRegressionPack" parallel="methods">
+	<suite-files>
+		<suite-file path="VerifyUserAbleGetMandatoryFieldMessageForAccountType.xml"></suite-file>
+		<suite-file path="VerifyUserAbleToAddPaymentMethod.xml"></suite-file>
+		<suite-file path="VerifyUserAbleToEditCompanyDetails.xml" />
+		<suite-file path="VerifyUserAbleToEditDeletePaymentMethod.xml"></suite-file>
+		<suite-file path="VerifyUserAbleToLoginUsingValidCred.xml"></suite-file>
+	</suite-files>
+</suite>

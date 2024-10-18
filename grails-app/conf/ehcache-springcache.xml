@@ -1,0 +1,150 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<ehcache xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:beans ="http://www.springframework.org/schema/beans"
+    xsi:noNamespaceSchemaLocation = "ehcache.xsd"
+    updateCheck = "false" name = "jbilling-springcache">
+
+<!--
+    jBilling - The Enterprise Open Source Billing System
+    Copyright (C) 2003-2009 Enterprise jBilling Software Ltd. and Emiliano Conde
+
+    This file is part of jbilling.
+
+    jbilling is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    jbilling is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with jbilling.  If not, see <http://www.gnu.org/licenses/>.
+-->
+    <!-- The Active MQ URL will be overridden if the system environment variable JBILLING_ACTIVE_MQ_BROKER_URL is set -->
+    <cacheManagerPeerProviderFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheManagerPeerProviderFactory"
+            properties="initialContextFactoryName=com.sapienter.jbilling.tools.ActiveMqInitialContextFactory,
+ providerURL=vm://localhost,
+ replicationTopicConnectionFactoryBindingName=topicConnectionFactorySpring,
+ replicationTopicBindingName=ehcacheSpring,
+ getQueueConnectionFactoryBindingName=queueConnectionFactorySpring,
+ getQueueBindingName=ehcacheGetQueueSpring"
+            propertySeparator=","
+            />
+
+     <!-- Default cache. Many classes use this, they are NONSTRICT_READ_WRITE -->
+    <defaultCache
+            maxElementsInMemory = "5000"
+            timeToIdleSeconds   =  "300"
+            timeToLiveSeconds   =  "600"
+            eternal             = "false"
+            overflowToDisk      = "false">
+        <cacheEventListenerFactory
+                class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+                properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+                propertySeparator=","/>
+    </defaultCache>
+
+    <diskStore path="java.io.tmpdir/jbilling-springcache"/>
+
+
+    <!-- Thrid level cache -->
+    <cache name = "thirdLevel-RO"
+            maxElementsInMemory = "100"
+            eternal             = "true"
+            overflowToDisk      = "false"
+    />
+
+    <cache name = "thirdLevel-RW"
+            maxElementsInMemory =  "500"
+            timeToIdleSeconds   =  "300"
+            timeToLiveSeconds   = "3600"
+            eternal             = "false"
+            overflowToDisk      = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </cache>
+
+    <!-- Item price cache -->
+    <cache name = "itemPriceCache"
+            maxElementsInMemory =  "500"
+            timeToIdleSeconds   =  "300"
+            timeToLiveSeconds   = "3600"
+            eternal             = "false"
+            overflowToDisk      = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </cache>
+
+    <!-- Daily Currency cache -->
+    <cache name = "currencyCache"
+           maxElementsInMemory  =   "500"
+           timeToIdleSeconds    = "86500"
+           timeToLiveSeconds    = "86500"
+           eternal              = "false"
+           overflowToDisk       = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </cache>
+
+    <!-- Preference cache -->
+    <cache name = "preferenceCache"
+           maxElementsInMemory  =   "500"
+           timeToIdleSeconds    = "86500"
+           timeToLiveSeconds    = "86500"
+           eternal              = "false"
+           overflowToDisk       = "false"
+            ><cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jms.JMSCacheReplicatorFactory"
+            properties="replicateAsynchronously=false,
+                  replicatePuts=true,
+                  replicateUpdates=true,
+                  replicateUpdatesViaCopy=false,
+                  replicateRemovals=true"
+            propertySeparator=","/>
+    </cache>
+
+    <cache name = "mediationCache"
+            maxElementsInMemory  = "500"
+            timeToIdleSeconds    = "6000"
+            timeToLiveSeconds    = "6000"
+            eternal              = "false"
+            overflowToDisk       = "false"
+            >
+    </cache>
+
+    <cache name = "reservedInstanceCache"
+           maxElementsInMemory  =   "1000"
+           timeToIdleSeconds    = "6000"
+           timeToLiveSeconds    = "6000"
+           eternal              = "false"
+           overflowToDisk       = "false"
+    >
+    </cache>
+
+</ehcache>

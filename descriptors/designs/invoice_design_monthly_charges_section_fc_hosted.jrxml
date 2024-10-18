@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_monthly_charges_section_fc_hosted" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="5663e8cf-1921-423c-ab1f-ff02799c4783">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{invoiceId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="core.param.companyLogo" class="java.lang.String"/>
+	<parameter name="core.param.currency_symbol" class="java.lang.String"/>
+	<parameter name="core.param.feesProductCategoryId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{core.param.feesProductCategoryId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="core.param.adjustmentsProductCategoryId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{core.param.adjustmentsProductCategoryId}]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select il.description, COALESCE(il.quantity,0) as quantity, COALESCE(il.amount,0) as amount
+from invoice_line il
+where il.invoice_id =$P{invoiceId}
+and il.type_id in (select id from invoice_line_type where description = 'item recurring')
+and il.deleted = 0
+order by il.amount desc;]]>
+	</queryString>
+	<field name="description" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="core.var.total.quantity" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{quantity}]]></variableExpression>
+	</variable>
+	<variable name="core.var.total.amount" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="19" width="527" height="21" forecolor="#505861" uuid="5a26f99d-5651-4266-bb97-34d2e77a6ebe"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Monthly Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="3" y="8" width="545" height="1" forecolor="#999C9F" uuid="c7a65516-0102-4f22-a7d3-505946e54f42"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Prevent">
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="436" y="2" width="100" height="13" forecolor="#505861" uuid="95ed6816-cb80-4447-8f5d-b153996a0b79"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount} >= 0 ? $P{core.param.currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($F{amount}).setScale(2, BigDecimal.ROUND_HALF_UP))) :
+"-"+$P{core.param.currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($F{amount}.negate()).setScale(2, BigDecimal.ROUND_HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="13" y="2" width="284" height="13" forecolor="#505861" uuid="59a4090a-dd1f-440f-929c-5f5c941e67bc"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<summary>
+		<band height="38" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="7" width="180" height="18" forecolor="#505861" uuid="2320346b-9095-42ee-802b-2d4a60645ada"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Monthly Charges]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="436" y="7" width="100" height="20" forecolor="#505861" uuid="55f9dd02-78a6-44d9-89d8-bc81054d090d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{core.var.total.amount} >= 0 ? $P{core.param.currency_symbol}+(new DecimalFormat("#,##0.00").format($V{core.var.total.amount})):
+"-"+$P{core.param.currency_symbol}+(new DecimalFormat("#,##0.00").format($V{core.var.total.amount}.negate()))]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="3" y="32" width="545" height="1" forecolor="#999C9F" uuid="3b9875d1-4d58-4fe3-8a10-e9520f00a65d"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

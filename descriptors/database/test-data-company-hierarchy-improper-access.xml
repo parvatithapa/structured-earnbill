@@ -1,0 +1,135 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/test-data-company-hierarchy-improper-access.xml">
+
+	<changeSet author="ameyp" id="assign-payment-method">
+		<insert tableName="payment_method_account_type_map">
+			<column name="payment_method_id" valueNumeric="6" />
+			<column name="account_type_id" valueNumeric="2" />
+		</insert>
+		<insert tableName="payment_method_account_type_map">
+			<column name="payment_method_id" valueNumeric="5" />
+			<column name="account_type_id" valueNumeric="2" />
+		</insert>
+	</changeSet>
+	
+	<changeSet id="delete-duplicate-permission" author="ameyp">
+	<!-- Correct incorrect permission name -->
+		<sql>
+			update international_description  set content = 'View all orders' where table_id = 59 and foreign_id = 28
+		</sql>
+		
+		<sql>
+			update international_description  set content = 'View all payments' where table_id = 59 and foreign_id = 36
+		</sql>
+
+		<sql>
+			update international_description  set content = 'View all invoices' where table_id = 59 and foreign_id = 74
+		</sql>
+		
+		<!-- delete existing permission "View all customers" with existing role -->
+		<sql>
+			delete from permission_role_map prm where prm.permission_id = 17 and role_id in ( select role_id from permission_role_map where permission_id in (28,36,74))
+		</sql>
+		<!-- insert permission "View all customers" with existing role that has permissions "View all invoices", "View all orders", and "View all payments"  -->
+		<sql>
+			insert into permission_role_map select distinct 17 as permission_id, role_id from permission_role_map where permission_id in (28, 36, 74)			
+		</sql>
+		<!-- Inserting Payment for user id 13 		 -->
+		<insert tableName="payment">
+            <column name="id" valueNumeric="1801"/>
+            <column name="user_id" valueNumeric="13"/>
+            <column name="attempt" valueNumeric="1"/>
+            <column name="result_id" valueNumeric="4"/>
+            <column name="amount" valueNumeric="20.0000000000"/>
+            <column name="create_datetime" valueDate="2021-06-26T09:44:49.443"/>
+            <column name="update_datetime" valueDate="2021-06-26T09:44:49.443"/>
+            <column name="payment_date" valueDate="2021-06-26"/>
+            <column name="method_id" valueNumeric="2"/>
+            <column name="credit_card_id"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="is_refund" valueNumeric="0"/>
+            <column name="is_preauth" valueNumeric="0"/>
+            <column name="payment_id"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="payout_id"/>
+            <column name="balance" valueNumeric="0E-10"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="payment_period"/>
+            <column name="payment_notes"/>
+            <column name="provisioning_status"/>
+        </insert>
+        
+        <insert tableName="payment_information">
+            <column name="id" valueNumeric="1017"/>
+            <column name="user_id" valueNumeric="13"/>
+			<column name="payment_method_id" valueNumeric="6" ></column>
+			<column name="processing_order" valueNumeric="1" ></column>
+			<column name="deleted" valueNumeric="0" ></column>
+			<column name="optlock" valueNumeric="1" ></column>
+			<column name="payment_method" valueNumeric="2" ></column>            
+
+        </insert>
+        
+        <insert tableName="payment_instrument_info">
+            <column name="id" valueNumeric="11"/>
+            <column name="result_id" valueNumeric="4" ></column>
+			<column name="method_id" valueNumeric="2" ></column>
+			<column name="instrument_id" valueNumeric="1017" ></column>
+			<column name="payment_id" valueNumeric="1801" ></column>
+        </insert>
+        
+        
+        <!-- Inserting Payment for user id 10750 -->
+        
+		<insert tableName="payment">
+            <column name="id" valueNumeric="1802"/>
+            <column name="user_id" valueNumeric="10750"/>
+            <column name="attempt" valueNumeric="1"/>
+            <column name="result_id" valueNumeric="4"/>
+            <column name="amount" valueNumeric="20.0000000000"/>
+            <column name="create_datetime" valueDate="2021-06-26T09:44:49.443"/>
+            <column name="update_datetime" valueDate="2021-06-26T09:44:49.443"/>
+            <column name="payment_date" valueDate="2021-06-26"/>
+            <column name="method_id" valueNumeric="2"/>
+            <column name="credit_card_id"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="is_refund" valueNumeric="0"/>
+            <column name="is_preauth" valueNumeric="0"/>
+            <column name="payment_id"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="payout_id"/>
+            <column name="balance" valueNumeric="0E-10"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="payment_period"/>
+            <column name="payment_notes"/>
+            <column name="provisioning_status"/>
+        </insert>
+        
+        <insert tableName="payment_information">
+            <column name="id" valueNumeric="1018"/>
+            <column name="user_id" valueNumeric="10750"/>
+			<column name="payment_method_id" valueNumeric="5" ></column>
+			<column name="processing_order" valueNumeric="1" ></column>
+			<column name="deleted" valueNumeric="0" ></column>
+			<column name="optlock" valueNumeric="1" ></column>
+			<column name="payment_method" valueNumeric="2" ></column>            
+
+        </insert>
+        
+        <insert tableName="payment_instrument_info">
+            <column name="id" valueNumeric="12"/>
+            <column name="result_id" valueNumeric="4" ></column>
+			<column name="method_id" valueNumeric="2" ></column>
+			<column name="instrument_id" valueNumeric="1018" ></column>
+			<column name="payment_id" valueNumeric="1802" ></column>
+        </insert>
+        
+        <sql>
+			update customer set parent_id = null where user_id = 10750
+		</sql>
+		
+	</changeSet>
+</databaseChangeLog>

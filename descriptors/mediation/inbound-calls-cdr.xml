@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "mediation.dtd" >
+<format>
+    <field>
+    	<name>Connid_Value</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>FirstPhone_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Account_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Product_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>DNIS_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>PST_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>PST_Value2</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Duration_Value</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>DestinationNumber_Value</name>
+    	<type>string</type>
+    </field>
+</format>

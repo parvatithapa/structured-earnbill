@@ -1,0 +1,30 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Top Org-15</name>
+		<id>15190</id>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id>
+		<billing-plan-name>Master Plan</billing-plan-name>
+		<billable>true</billable>
+		<sub-orgs>
+			<org>
+				<name>Child Org 1st level</name>
+				<id>15191</id>
+				<subscription>10.51</subscription>
+				<count>30</count>
+				<timezone>Europe/London</timezone>
+				<billable>true</billable>
+				<billing-plan-id>10</billing-plan-id>
+				<billing-plan-name>ABC Plan</billing-plan-name>
+			</org>
+			<org>
+				<name>XYZ Org 1st level</name>
+				<id>15192</id>
+				<timezone>Australia/Melbourne</timezone>
+			 	<count>30</count>
+				<billable>false</billable>
+			</org>
+		</sub-orgs>
+	</org>
+</organizations>
+

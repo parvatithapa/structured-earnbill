@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="basic" type="basicField"/>
+
+  <xs:element name="specific" type="specificField"/>
+
+  <xs:element name="column" type="column"/>
+
+  <xs:element name="customerInformation" type="customerInformation"/>
+
+  <xs:element name="list" type="listField"/>
+
+  <xs:element name="metaField" type="metaFieldField"/>
+
+  <xs:element name="metaFieldType" type="metaFieldTypeField"/>
+
+  <xs:element name="row" type="row"/>
+
+  <xs:element name="static" type="staticField"/>
+
+  <xs:complexType name="customerInformation">
+    <xs:sequence>
+      <xs:element ref="row" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="row">
+    <xs:sequence>
+      <xs:element ref="column" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="style" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="column">
+    <xs:sequence>
+      <xs:choice minOccurs="0">
+        <xs:element ref="basic"/>
+        <xs:element ref="metaField"/>
+        <xs:element ref="metaFieldType"/>
+        <xs:element ref="static"/>
+        <xs:element ref="list"/>
+        <xs:element ref="specific"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="style" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="basicField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="entity" type="entity"/>
+        <xs:attribute name="label" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="specificField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="specificType" use="required"/>
+        <xs:attribute name="label" type="xs:string" use="required"/>
+        <xs:attribute name="target" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="abstractField" abstract="true">
+    <xs:sequence/>
+    <xs:attribute name="style" type="xs:string"/>
+    <xs:attribute name="moneyProperty" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="metaFieldField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="accountInformationType" type="xs:string"/>
+        <xs:attribute name="metaFieldType" type="xs:string"/>
+        <xs:attribute name="label" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="metaFieldTypeField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+          <xs:attribute name="name" type="xs:string" use="required"/>
+          <xs:attribute name="label" type="xs:string" use="required"/>
+        </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="staticField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="header" type="xs:boolean"/>
+        <xs:attribute name="label" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="listField">
+    <xs:complexContent>
+      <xs:extension base="abstractField">
+        <xs:sequence/>
+        <xs:attribute name="name" type="type"/>
+        <xs:attribute name="type" type="type" use="required"/>
+        <xs:attribute name="properties" type="xs:string" use="required"/>
+        <xs:attribute name="limit" type="xs:int"/>
+        <xs:attribute name="sort" type="xs:string"/>
+        <xs:attribute name="order" type="order"/>
+        <xs:attribute name="labels" type="xs:string"/>
+        <xs:attribute name="widths" type="xs:string"/>
+        <xs:attribute name="title" type="xs:string"/>
+        <xs:attribute name="comment" type="xs:string"/>
+        <xs:attribute name="moneyProperties" type="xs:string"/>
+        <xs:attribute name="links" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:simpleType name="entity">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="CUSTOMER"/>
+      <xs:enumeration value="USER"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="PAYMENT"/>
+      <xs:enumeration value="ORDER"/>
+      <xs:enumeration value="INVOICE"/>
+      <xs:enumeration value="DIST_ORDER_LINE"/>
+      <xs:enumeration value="DIST_INVOICE_LINE"/>
+      <xs:enumeration value="DIST_PAYMENT"/>
+      <xs:enumeration value="DIST_ASSET"/>
+      <xs:enumeration value="SAPP_ORDER_LINE"/>
+      <xs:enumeration value="SAPP_INVOICE_LINE"/>
+      <xs:enumeration value="SAPP_PAYMENT"/>
+      <xs:enumeration value="SAPP_ASSET"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="specificType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TEXT"/>
+      <xs:enumeration value="BUTTON"/>
+      <xs:enumeration value="LINK"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="order">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="DESC"/>
+      <xs:enumeration value="ASC"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
+

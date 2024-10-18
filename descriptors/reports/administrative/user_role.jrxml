@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2017-10-17T13:07:17 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="user_role" pageWidth="612" pageHeight="792" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="0d463801-de03-4878-bd16-302cc447ceef">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Postgres-jbilling_test"/>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[61]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[ SELECT rd.content AS role, u.id AS user_id, u.user_name
+                    FROM base_user u
+                    JOIN user_role_map urm ON urm.user_id=u.id
+                    JOIN role r ON r.id=urm.role_id AND r.entity_id=$P{entity_id} AND r.role_type_id IN (-1,2,3,4)
+                    JOIN international_description rd ON rd.foreign_id=r.id AND rd.table_id=60 AND rd.language_id=1 AND rd.psudo_column='title'
+                ORDER BY rd.content]]>
+	</queryString>
+	<field name="role" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<variable name="users" class="java.lang.String" resetType="Group" resetGroup="roleGroup">
+		<variableExpression><![CDATA[$V{users}.isEmpty() ? ($F{user_name} + " ("+$F{user_id}+")") : $V{users} + (", "+$F{user_name} + " ("+$F{user_id}+")")]]></variableExpression>
+		<initialValueExpression><![CDATA[""]]></initialValueExpression>
+	</variable>
+	<group name="roleGroup">
+		<groupExpression><![CDATA[$F{role}]]></groupExpression>
+		<groupHeader>
+			<band height="45">
+				<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				<staticText>
+					<reportElement x="0" y="14" width="40" height="20" uuid="d341298b-d76e-48fd-a0d0-44aa4d373070"/>
+					<textElement>
+						<font size="14" isBold="true"/>
+						<paragraph lineSpacing="1_1_2"/>
+					</textElement>
+					<text><![CDATA[Role:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="50" y="14" width="516" height="21" uuid="8c23039b-0886-4582-ae1e-6bf865e5ee2a"/>
+					<textElement>
+						<font size="14"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{role}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="40" width="570" height="1" uuid="ba6e3686-e562-4f55-9cf6-d2e910eeb98e"/>
+					<graphicElement>
+						<pen lineStyle="Solid"/>
+					</graphicElement>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="58" splitType="Stretch">
+				<textField isStretchWithOverflow="true">
+					<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="570" height="58" isPrintWhenDetailOverflows="true" uuid="f355502e-dfa0-418a-aba1-a3ce53046c1f"/>
+					<textFieldExpression><![CDATA[$V{users}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="6" y="10" width="140" height="20" uuid="4c93be5e-6372-4aba-9bea-09569c30a4e7"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Users per Role]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="366" y="10" width="120" height="20" uuid="58aac502-94fb-4fa9-bc9f-de1119ccd8e0"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="490" y="10" width="76" height="20" uuid="095e8b77-4998-4bb2-8f72-a5b9524d2bd6"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageFooter>
+		<band height="40" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<textField>
+				<reportElement x="434" y="0" width="80" height="20" uuid="2d865f2d-95c6-4f2c-ac15-0d425cf259f6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="514" y="0" width="40" height="20" uuid="3ef96738-24ca-4da4-8b1d-6e228aa66166"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

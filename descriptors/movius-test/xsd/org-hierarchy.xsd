@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="org" type="organization"/>
+
+  <xs:element name="organizations" type="organizations"/>
+
+  <xs:complexType name="main">
+    <xs:sequence/>
+  </xs:complexType>
+
+  <xs:complexType name="organization">
+    <xs:all>
+      <xs:element name="billable" type="xs:boolean" minOccurs="1"/>
+      <xs:element name="billing-plan-id" type="xs:int" minOccurs="0"/>
+      <xs:element name="billing-plan-name" type="xs:string" minOccurs="0"/>
+      <xs:element name="id" type="xs:string" minOccurs="1"/>
+      <xs:element name="name" type="xs:string" minOccurs="1"/>
+      <xs:element name="sub-orgs" type="organizations" minOccurs="0"/>
+      <xs:element name="subscription" type="xs:string" minOccurs="0"/>
+      <xs:element name="count" type="xs:string" minOccurs="0"/>
+      <xs:element name="timezone" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="organizations">
+    <xs:sequence>
+      <xs:element ref="org" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="system-id" type="xs:string"/>
+  </xs:complexType>
+</xs:schema>
+

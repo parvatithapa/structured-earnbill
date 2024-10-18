@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+    	<name>Timestamp</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>session id</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>application name</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>org id</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>cos id</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>primary number</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>callplan name</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>cdr-type</name>
+    	<type>string</type>
+    	<isKey/>
+    </field>
+    <field>
+    	<name>To Number</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Cost</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Recipient Org Id</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Incoming Mode</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Calling Billing Id</name>
+    	<type>string</type>
+    </field>
+    <field>
+    	<name>Called Billing Id</name>
+    	<type>string</type>
+    </field>
+</format>

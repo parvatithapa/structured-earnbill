@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <!-- ProductLoad: Job loads file containing new product definitions -->
+    <batch:job id="productDefaultPriceLoadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="loadFileAndSaveDefaultPriceProducts" >
+            <batch:tasklet>
+                <batch:chunk reader="productDefaultPriceFileReader"
+                       writer="productDefaultPriceWriter"
+                       commit-interval="1" skip-limit="1000">
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="productErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <bean id="productDefaultPriceFileReader" class="com.sapienter.jbilling.server.dt.ProductDefaultPriceFileReader" scope="step">
+        <property name="delegate">
+            <bean class="org.springframework.batch.item.support.SingleItemPeekableItemReader">
+                <property name="delegate">
+                    <bean class="org.springframework.batch.item.file.FlatFileItemReader">
+                        <property name="lineMapper">
+                            <bean class="com.sapienter.jbilling.server.item.batch.WrappingLineMapper" >
+                                <property name="delegate">
+                                    <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                                        <property name="lineTokenizer" ref="defaultPriceFileTokenizer" />
+                                        <property name="fieldSetMapper">
+                                            <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" />
+                                        </property>
+                                    </bean>
+                                </property>
+                            </bean>
+                        </property>
+                        <property name="resource">
+                            <bean class="org.springframework.core.io.FileSystemResource">
+                                <constructor-arg value="#{jobParameters['input_file']}" />
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="errorWriter" ref="productErrorWriter" />
+        <property name="validator" ref="ProductValidator" />
+    </bean>
+
+    <!-- ProductLoad: Validates product definitions -->
+    <bean id="productDefaultPriceProcessor" class="com.sapienter.jbilling.server.dt.ProductProcessor" scope="step">
+        <property name="errorWriter" ref="productErrorWriter" />
+    </bean>
+
+    <!-- ProductLoad: File contains error lines -->
+    <bean id="productErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- ProductLoad: Persist Products in DB -->
+    <bean id="productDefaultPriceWriter" class="com.sapienter.jbilling.server.dt.ProductDefaultPriceFileWriter" >
+        <property name="errorWriter" ref="productErrorWriter"/>
+    </bean>
+
+    <!-- ProductAccountTypePriceLoad: Job loads file containing new product definitions -->
+    <batch:job id="productAccountPriceLoadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="loadFileAndSaveAccountTypePriceProducts" >
+            <batch:tasklet>
+                <batch:chunk reader="productAccountTypePriceFileReader"
+                       writer="productAccountTypePriceWriter" commit-interval="1" skip-limit="1000" >
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="productAccountTypePriceErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- ProductAccountTypePriceLoad: Load input files-->
+    <bean id="productAccountTypePriceFileReader" class="com.sapienter.jbilling.server.dt.ProductAccountPriceFileReader" scope="step">
+        <property name="delegate">
+            <bean class="org.springframework.batch.item.support.SingleItemPeekableItemReader">
+                <property name="delegate">
+                    <bean class="org.springframework.batch.item.file.FlatFileItemReader" scope="step">
+                        <property name="lineMapper">
+                            <bean class="com.sapienter.jbilling.server.item.batch.WrappingLineMapper" >
+                                <property name="delegate">
+                                    <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                                        <property name="lineTokenizer" ref="accountPriceFileTokenizer" />
+                                        <property name="fieldSetMapper">
+                                            <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" />
+                                        </property>
+                                    </bean>
+                                </property>
+                            </bean>
+                        </property>
+                        <property name="resource">
+                            <bean class="org.springframework.core.io.FileSystemResource">
+                                <constructor-arg value="#{jobParameters['input_file']}" />
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="errorWriter" ref="productAccountTypePriceErrorWriter" />
+        <property name="validator" ref="ProductValidator" />
+    </bean>
+
+    <!-- ProductAccountTypePriceLoad: File contains error lines -->
+    <bean id="productAccountTypePriceErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- ProductAccountTypePriceLoad: Persist Products in DB -->
+    <bean id="productAccountTypePriceWriter" class="com.sapienter.jbilling.server.dt.ProductAccountPriceFileWriter" >
+        <property name="errorWriter" ref="productAccountTypePriceErrorWriter" />
+    </bean>
+
+    <!-- ProductCustomerTypePriceLoad: Job loads file containing new product definitions -->
+    <batch:job id="productCustomerPriceLoadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="loadFileAndSaveCustomerTypePriceProducts" >
+            <batch:tasklet>
+                <batch:chunk reader="productCustomerTypePriceFileReader"
+                       writer="productCustomerTypePriceWriter" commit-interval="1" skip-limit="1000" >
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="productCustomerTypePriceErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- ProductCustomerTypePriceLoad: Load input files-->
+    <bean id="productCustomerTypePriceFileReader" class="com.sapienter.jbilling.server.dt.ProductCustomerPriceFileReader" scope="step">
+        <property name="delegate">
+            <bean class="org.springframework.batch.item.support.SingleItemPeekableItemReader">
+                <property name="delegate">
+                    <bean class="org.springframework.batch.item.file.FlatFileItemReader" scope="step">
+                        <property name="lineMapper">
+                            <bean class="com.sapienter.jbilling.server.item.batch.WrappingLineMapper" >
+                                <property name="delegate">
+                                    <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                                        <property name="lineTokenizer" ref="customerPriceFileTokenizer" />
+                                        <property name="fieldSetMapper">
+                                            <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" />
+                                        </property>
+                                    </bean>
+                                </property>
+                            </bean>
+                        </property>
+                        <property name="resource">
+                            <bean class="org.springframework.core.io.FileSystemResource">
+                                <constructor-arg value="#{jobParameters['input_file']}" />
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="errorWriter" ref="productCustomerTypePriceErrorWriter" />
+        <property name="validator" ref="ProductValidator" />
+    </bean>
+
+    <!-- ProductCustomerTypePriceLoad: File contains error lines -->
+    <bean id="productCustomerTypePriceErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- ProductCustomerTypePriceLoad: Persist Products in DB -->
+    <bean id="productCustomerTypePriceWriter" class="com.sapienter.jbilling.server.dt.ProductCustomerPriceFileWriter" >
+        <property name="errorWriter" ref="productCustomerTypePriceErrorWriter" />
+    </bean>
+
+    <!-- PlanPriceLoad: Job loads file containing new product definitions -->
+    <batch:job id="planPriceLoadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="loadFileAndSavePlanPrices" >
+            <batch:tasklet>
+                <batch:chunk reader="planPriceFileReader"
+                             writer="planPriceWriter" commit-interval="1" skip-limit="1000" >
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="planPriceErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- PlanPriceLoad: Load input files-->
+    <bean id="planPriceFileReader" class="com.sapienter.jbilling.server.dt.PlanPriceFileReader" scope="step">
+        <property name="delegate">
+            <bean class="org.springframework.batch.item.support.SingleItemPeekableItemReader">
+                <property name="delegate">
+                    <bean class="org.springframework.batch.item.file.FlatFileItemReader" scope="step">
+                        <property name="lineMapper">
+                            <bean class="com.sapienter.jbilling.server.item.batch.WrappingLineMapper" >
+                                <property name="delegate">
+                                    <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                                        <property name="lineTokenizer" ref="planPriceFileTokenizer" />
+                                        <property name="fieldSetMapper">
+                                            <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" />
+                                        </property>
+                                    </bean>
+                                </property>
+                            </bean>
+                        </property>
+                        <property name="resource">
+                            <bean class="org.springframework.core.io.FileSystemResource">
+                                <constructor-arg value="#{jobParameters['input_file']}" />
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="errorWriter" ref="planPriceErrorWriter" />
+    </bean>
+
+    <!-- PlanPriceLoad: File contains error lines -->
+    <bean id="planPriceErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- PlanPriceLoad: Persist Products in DB -->
+    <bean id="planPriceWriter" class="com.sapienter.jbilling.server.dt.PlanPriceFileWriter" >
+        <property name="errorWriter" ref="planPriceErrorWriter" />
+    </bean>
+
+    <bean id="ProductValidator" class="com.sapienter.jbilling.server.dt.ProductPriceFileValidator" />
+
+    <!--Default Price File Tokenizer -->
+    <bean id="defaultPriceFileTokenizer" class="org.springframework.batch.item.file.transform.PatternMatchingCompositeLineTokenizer">
+        <property name="tokenizers">
+            <map>
+                <entry key="PROD*" value-ref="productLineTokenizer" />
+                <entry key="PRICE*" value-ref="priceLineTokenizer" />
+                <entry key="FLAT*" value-ref="flatPriceLineTokenizer" />
+                <entry key="TIER*" value-ref="tierPriceLineTokenizer" />
+                <entry key="RATING*" value-ref="ratingUnitLineTokenizer" />
+                <entry key="META*" value-ref="metaFieldsLineTokenizer" />
+                <entry key="*" value-ref="defaultLineTokenizer" />
+            </map>
+        </property>
+    </bean>
+
+    <!--Account Price File Tokenizer -->
+    <bean id="accountPriceFileTokenizer" class="org.springframework.batch.item.file.transform.PatternMatchingCompositeLineTokenizer">
+        <property name="tokenizers">
+            <map>
+                <entry key="PRICE*" value-ref="accountPriceLineTokenizer" />
+                <entry key="FLAT*" value-ref="flatPriceLineTokenizer" />
+                <entry key="TIER*" value-ref="tierPriceLineTokenizer" />
+                <entry key="*" value-ref="defaultLineTokenizer" />
+            </map>
+        </property>
+    </bean>
+
+    <!--Customer Price File Tokenizer -->
+    <bean id="customerPriceFileTokenizer" class="org.springframework.batch.item.file.transform.PatternMatchingCompositeLineTokenizer">
+        <property name="tokenizers">
+            <map>
+                <entry key="PRICE*" value-ref="customerPriceLineTokenizer" />
+                <entry key="FLAT*" value-ref="flatPriceLineTokenizer" />
+                <entry key="TIER*" value-ref="tierPriceLineTokenizer" />
+                <entry key="*" value-ref="defaultLineTokenizer" />
+            </map>
+        </property>
+    </bean>
+
+    <!--Plan Price File Tokenizer -->
+    <bean id="planPriceFileTokenizer" class="org.springframework.batch.item.file.transform.PatternMatchingCompositeLineTokenizer">
+        <property name="tokenizers">
+            <map>
+                <entry key="PLAN*" value-ref="planPriceLineTokenizer" />
+                <entry key="FUP*" value-ref="planUsagePoolLineTokenizer" />
+                <entry key="ITEM*" value-ref="planItemLineTokenizer" />
+                <entry key="FLAT*" value-ref="flatPriceLineTokenizer" />
+                <entry key="TIER*" value-ref="tierPriceLineTokenizer" />
+                <entry key="*" value-ref="defaultLineTokenizer" />
+            </map>
+        </property>
+    </bean>
+
+    <!--File Tokenizers -->
+    <bean id="parentLineTokenizer" class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer" abstract="true">
+        <property name="delimiter" value=","/>
+        <property name="strict" value="false" />
+    </bean>
+
+    <bean id="productLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, product_code, product_description, allow_decimal_quantity, product_categories, availability_startdate, availability_enddate, company" />
+    </bean>
+
+    <bean id="priceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, availability_startdate, currency, company, chained" />
+    </bean>
+
+    <bean id="accountPriceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, product_code, account_type_id, price_start_date, price_expiry_date, currency, chained" />
+    </bean>
+
+    <bean id="flatPriceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, flat_rate" />
+    </bean>
+
+    <bean id="defaultLineTokenizer" parent="parentLineTokenizer">
+    </bean>
+
+    <bean id="customerPriceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, product_code, customer_id, price_start_date, price_expiry_date, currency, chained" />
+    </bean>
+
+    <bean id="tierPriceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, from, tier_rate" />
+    </bean>
+
+    <bean id="ratingUnitLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, availability_startdate, rating_unit_name, rating_scheme_name, price_unit" />
+    </bean>
+
+    <bean id="metaFieldsLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, meta_field_features" />
+    </bean>
+
+    <bean id="planPriceLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, plan_number, plan_description, plan_period, currency, plan_rate, availability_startdate, availability_enddate,plan_category,plan_payment_option,plan_duration" />
+    </bean>
+
+    <bean id="planUsagePoolLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, free_usage_pool_name" />
+    </bean>
+
+    <bean id="planItemLineTokenizer" parent="parentLineTokenizer">
+        <property name="names" value="type, bundle_qty, bundle_period, bundle_item" />
+    </bean>
+
+    <!-- ProductDownload: Job downloads file containing new product definitions -->
+    <batch:job id="productDefaultPriceDownloadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="saveDefaultPriceProducts" >
+            <batch:tasklet>
+                <batch:chunk reader="productDefaultPriceDownloadReader"
+                             processor="productDefaultPriceDownloadProcessor"
+                             writer="productDefaultPriceDownloadWriter"
+                             commit-interval="1" skip-limit="1000">
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="productDownloadErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- ProductDownload: File contains error lines -->
+    <bean id="productDownloadErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- ProductDownload: Read Product information from DB -->
+    <bean id="productDefaultPriceDownloadReader" class="com.sapienter.jbilling.server.dt.ProductDefaultPriceDownloadReader" scope="step">
+        <property name="errorWriter" ref="productDownloadErrorWriter"/>
+    </bean>
+
+    <!-- ProductDownload: Prepares data to be Persisted in CSV file -->
+    <bean id="productDefaultPriceDownloadProcessor" class="com.sapienter.jbilling.server.dt.ProductDefaultPriceDownloadProcessor" scope="step">
+        <property name="errorWriter" ref="productDownloadErrorWriter"/>
+    </bean>
+
+    <!-- ProductDownload: File contains error lines -->
+    <bean id="productDefaultPriceDownloadWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['output_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- ProductDownload: Job downloads file containing new product definitions -->
+    <batch:job id="productAccountPriceDownloadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="saveAccountLevelPrices" >
+            <batch:tasklet>
+                <batch:chunk reader="accountLevelPriceDownloadReader"
+                             processor="accountLevelPriceDownloadProcessor"
+                             writer="accountLevelPriceDownloadWriter"
+                             commit-interval="1" skip-limit="1000">
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="accountLevelDownloadErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- AccountPriceDownload: File contains error lines -->
+    <bean id="accountLevelDownloadErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- AccountPriceDownload: Read Product information from DB -->
+    <bean id="accountLevelPriceDownloadReader" class="com.sapienter.jbilling.server.dt.AccountLevelPriceDownloadReader" scope="step">
+        <property name="errorWriter" ref="accountLevelDownloadErrorWriter"/>
+    </bean>
+
+    <!-- AccountPriceDownload: Prepares data to be Persisted in CSV file -->
+    <bean id="accountLevelPriceDownloadProcessor" class="com.sapienter.jbilling.server.dt.AccountLevelPriceDownloadProcessor" scope="step">
+        <property name="errorWriter" ref="accountLevelDownloadErrorWriter"/>
+    </bean>
+
+    <!-- AccountPriceDownload: File contains error lines -->
+    <bean id="accountLevelPriceDownloadWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['output_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <batch:job id="productCustomerPriceDownloadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="saveCustomerPrices" >
+            <batch:tasklet>
+                <batch:chunk reader="customerPriceDownloadReader"
+                             processor="customerPriceDownloadProcessor"
+                             writer="customerPriceDownloadWriter"
+                             commit-interval="1" skip-limit="1000">
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="customerDownloadErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- CustomerPriceDownload: File contains error lines -->
+    <bean id="customerDownloadErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- CustomerPriceDownload: Read Product information from DB -->
+    <bean id="customerPriceDownloadReader" class="com.sapienter.jbilling.server.dt.CustomerPriceDownloadReader" scope="step">
+        <property name="errorWriter" ref="customerDownloadErrorWriter"/>
+    </bean>
+
+    <!-- CustomerPriceDownload: Prepares data to be Persisted in CSV file -->
+    <bean id="customerPriceDownloadProcessor" class="com.sapienter.jbilling.server.dt.CustomerPriceDownloadProcessor" scope="step">
+        <property name="errorWriter" ref="customerDownloadErrorWriter"/>
+    </bean>
+
+    <!-- CustomerPriceDownload: File contains error lines -->
+    <bean id="customerPriceDownloadWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['output_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <batch:job id="plansDownloadJob" restartable="true" xmlns="http://www.springframework.org/schema/batch">
+        <batch:step id="savePlans" >
+            <batch:tasklet>
+                <batch:chunk reader="planDownloadReader"
+                             processor="planDownloadProcessor"
+                             writer="planDownloadWriter"
+                             commit-interval="1" skip-limit="1000">
+
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.validator.ValidationException"/>
+                    </skippable-exception-classes>
+                    <streams>
+                        <stream ref="planDownloadErrorWriter" />
+                    </streams>
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- PlanPriceDownload: File contains error lines -->
+    <bean id="planDownloadErrorWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['error_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+
+    <!-- PlanPriceDownload: Read Product information from DB -->
+    <bean id="planDownloadReader" class="com.sapienter.jbilling.server.dt.PlanDownloadReader" scope="step">
+        <property name="errorWriter" ref="planDownloadErrorWriter"/>
+    </bean>
+
+    <!-- PlanPriceDownload: Prepares data to be Persisted in CSV file -->
+    <bean id="planDownloadProcessor" class="com.sapienter.jbilling.server.dt.PlanDownloadProcessor" scope="step">
+        <property name="errorWriter" ref="planDownloadErrorWriter"/>
+    </bean>
+
+    <!-- PlanPriceDownload: File contains error lines -->
+    <bean id="planDownloadWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" scope="step">
+        <property name="resource">
+            <bean class="org.springframework.core.io.FileSystemResource">
+                <constructor-arg value="#{jobParameters['output_file']}" />
+            </bean>
+        </property>
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.PassThroughLineAggregator" />
+        </property>
+        <property name="transactional" value="false" />
+    </bean>
+</beans>
+

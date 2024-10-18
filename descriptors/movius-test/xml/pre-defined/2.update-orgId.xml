@@ -1,0 +1,30 @@
+<organizations system-id="Prancing Pony">
+	<org>
+		<name>Beeans-Updated</name>
+		<id>5000</id>
+		<subscription>5</subscription>
+		<count>1</count>
+		<timezone>Europe/London</timezone>
+		<billing-plan-id>1</billing-plan-id>
+		<billing-plan-name>Telstra Master Plan</billing-plan-name>
+		<billable>true</billable>
+		<sub-orgs>
+			<org>
+				<name>ABC Org</name>
+				<id>1001</id>
+				<subscription>2</subscription>
+				<count>1</count>
+				<timezone>Europe/London</timezone>
+				<billable>true</billable>
+				<billing-plan-id>10</billing-plan-id>
+				<billing-plan-name>Telstra ABC Plan</billing-plan-name>
+			</org>
+			<org>
+				<name>XYZ Org</name>
+				<id>1002</id>
+				<timezone>Australia/Melbourne</timezone>
+				<billable>false</billable>
+			</org>
+		</sub-orgs>
+	</org>
+</organizations>

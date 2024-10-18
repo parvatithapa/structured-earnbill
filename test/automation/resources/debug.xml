@@ -1,0 +1,18 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="1" name="debug">
+    <test name="debug">
+        <classes>
+            <class name="com.jbilling.test.VerifyAccountTypeNotification" />
+            <class name="com.jbilling.test.VerifyCreateCurrencyPlan" />
+            <class name="com.jbilling.test.VerifyCreateOrderDifferentCurrency" />
+            <class name="com.jbilling.test.VerifyCreatePluginData" />
+            <class name="com.jbilling.test.VerifyCreateSellerRootCompany" />
+            <class name="com.jbilling.test.VerifyCurrencyChangeRate" />
+            <class name="com.jbilling.test.VerifyDefaultCurrency" />
+            <class name="com.jbilling.test.VerifyDeleteAITType" />
+            <class name="com.jbilling.test.VerifyEditNotificationPayment" />
+            <class name="com.jbilling.test.VerifySettingUpCurrencies" />
+        </classes>
+    </test>
+</suite>

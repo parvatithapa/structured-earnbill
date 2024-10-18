@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.13.xml">
+
+    <changeSet context="base" id="JB-1906 - Specific NGES reports should be removed from core or other clients databases" author="Leandro Zoi">
+        <sql>
+            DELETE
+              FROM entity_report_map erm
+             USING entity e,
+                    report r
+             WHERE erm.entity_id = e.id
+               AND erm.report_id = r.id
+               AND (e.type IS NULL OR e.type NOT IN ('ESCO', 'LDC'))
+               AND r.name IN ('billing_register_summary',
+                              'billing_register_detail',
+                              'purchase_of_receivables');
+        </sql>
+    </changeSet>
+
+	<changeSet id="JB-2028 - notification_message_type sequence should be updated to avoid id conflicts with custom notifications" author="Leandro Zoi" context="base">
+		<update tableName="jbilling_seqs">
+			<column name="next_id" valueNumeric="1000" />
+			<where> name='notification_message_type' </where>
+		</update>
+	</changeSet>
+
+    <changeSet id="JB-2111 - No notification email to notify overdue customer." author="Leandro Zoi" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM preference_type WHERE id = 85
+            </sqlCheck>
+        </preConditions>
+        <comment>This preference will allow to include ageing chronologically</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="85" />
+            <column name="def_value" value="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="85" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Enable Chronological Processing for Collections" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="85" />
+            <column name="psudo_column" value="instruction" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Enabling this option overrides the default sequential logic for Collections. An account in Collections will change its status based on the overdue time of the oldest unpaid invoice and not how long the account has been in Collections. " />
+        </insert>
+    </changeSet>
+
+    <changeSet id="JB-2115 - 500 error page is displayed during user edit process after changing the language from English to other. (Portuguese)" author="Leandro Zoi" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*)
+                  FROM language
+                 WHERE id = 2
+            </sqlCheck>
+        </preConditions>
+
+        <!--Add the description for Portuguese language-->
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="9"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="2"/>
+            <column name="content" value="Cancelado no pedido"/>
+            <column name="foreign_id" valueComputed="(SELECT id
+                                                        FROM user_status AS us
+                                                       WHERE EXISTS(SELECT *
+                                                                      FROM international_description AS i
+                                                                     WHERE i.table_id = 9
+                                                                       AND i.foreign_id = us.id
+                                                                       AND i.psudo_column = 'description'
+                                                                       AND i.language_id = 1
+                                                                       AND i.content = 'Cancelled on Request'))"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="JB-2115 - 500 error page is displayed during user edit process after changing the language from English to other. (Deutsch)" author="Leandro Zoi" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*)
+                  FROM language
+                 WHERE id = 3
+            </sqlCheck>
+        </preConditions>
+
+        <!--Add the description for Deutsch language-->
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="9"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="3"/>
+            <column name="content" value="Abgebrochen auf Anfrage"/>
+            <column name="foreign_id" valueComputed="(SELECT id
+                                                        FROM user_status AS us
+                                                       WHERE EXISTS(SELECT *
+                                                                      FROM international_description AS i
+                                                                     WHERE i.table_id = 9
+                                                                       AND i.foreign_id = us.id
+                                                                       AND i.psudo_column = 'description'
+                                                                       AND i.language_id = 1
+                                                                       AND i.content = 'Cancelled on Request'))"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="JB-2115 - 500 error page is displayed during user edit process after changing the language from French to other. (French)" author="Leandro Zoi" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*)
+                  FROM language
+                 WHERE id = 4
+            </sqlCheck>
+        </preConditions>
+
+        <!--Add the description for French language-->
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="9"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="4"/>
+            <column name="content" value="Annulé sur demande"/>
+            <column name="foreign_id" valueComputed="(SELECT id
+                                                        FROM user_status AS us
+                                                       WHERE EXISTS(SELECT *
+                                                                      FROM international_description AS i
+                                                                     WHERE i.table_id = 9
+                                                                       AND i.foreign_id = us.id
+                                                                       AND i.psudo_column = 'description'
+                                                                       AND i.language_id = 1
+                                                                       AND i.content = 'Cancelled on Request'))"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

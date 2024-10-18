@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+                   logicalFilePath="descriptors/database/jbilling-upgrade-4.18.xml">
+
+    <include file = "jbilling-upgrade-4.16-patches.xml" relativeToChangelogFile = "true"/>
+    <changeSet context="base" id="JB-2786 Rename Report Types for User Reports" author="Andres Canevaro">
+
+        <comment> Update System Health Check Reports type name to Administrative Reports </comment>
+        <update tableName="international_description">
+            <column name="content" value="Administrative Reports"/>
+            <where> content = 'System Health Check Reports' </where>
+        </update>
+        <update tableName="report_type">
+            <column name="name" value="administrative"/>
+            <where> name = 'data_consistency_checks' </where>
+        </update>
+
+        <comment> Update reports type </comment>
+        <update tableName="report">
+            <column name="type_id" value="6"/>
+            <where> name = 'user_role' OR  name = 'role_permissions' OR name = 'user_activity'</where>
+        </update>
+
+        <comment> Update reports name </comment>
+        <update tableName="international_description">
+            <column name="content" value="Permissions by Role"/>
+            <where> content = 'List the permissions by role' </where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Users by Role"/>
+            <where> content = 'List the users by role' </where>
+        </update>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBFC-784 - Suspension and Activation" author="Leandro Zoi">
+        <createTable tableName="customer_status_change_history">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="collections_step_status" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_status" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_at" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames    = "id"
+                       constraintName = "customer_status_change_history_pkey"
+                       tableName      = "customer_status_change_history"/>
+
+        <addForeignKeyConstraint baseColumnNames        = "user_id"
+                                 baseTableName          = "customer_status_change_history"
+                                 constraintName         = "customer_status_change_history_map_user_id_fk"
+                                 deferrable             = "false"
+                                 initiallyDeferred      = "false"
+                                 onDelete               = "NO ACTION"
+                                 onUpdate               = "NO ACTION"
+                                 referencedColumnNames  = "id"
+                                 referencedTableName    = "base_user"
+                                 referencesUniqueColumn = "false"/>
+
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="customer_status_change_history"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type AS p), 1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.ActivePeriodChargingTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Active Period Charging Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task will manage the suspended/activation of users and the cycles of suspension"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBFC-820 - Add new Column in customer_usage_pool_map table" author = "Krunal Bhavsar">
+        <comment>Adding new last remaining quantity column</comment>
+        <addColumn tableName = "customer_usage_pool_map">
+            <column name = "last_remaining_quantity" type = "java.sql.Types.NUMERIC(22,10)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-2700: Notify to all email addresses" author = "Pranay G. Raherkar">
+        <addColumn tableName = "meta_field_group">
+            <column name = "use_for_notifications" type = "java.sql.Types.BOOLEAN" defaultValue = "false">
+                <constraints  nullable = "false" />
+            </column>
+        </addColumn>
+        <update tableName = "meta_field_group">
+            <column name = "use_for_notifications" valueBoolean = "true"/>
+            <where> id IN (SELECT notification_ait_id FROM account_type WHERE notification_ait_id IS NOT null) </where>
+        </update>
+        <dropColumn tableName = "account_type" columnName = "notification_ait_id"/>
+        <sql>
+         <![CDATA[
+          ALTER TABLE contact ALTER COLUMN email TYPE varchar(1000);
+         ]]>
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

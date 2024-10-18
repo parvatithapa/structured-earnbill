@@ -1,0 +1,1669 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+                   logicalFilePath="descriptors/database/distributel-client-upgrade.xml">
+
+  <changeSet context="base" id="Quote Tax Plugin" author="Fernando Sivila">
+    <validCheckSum>7:ba2d7a29f14ca0af7c1865bb3a02d8f2</validCheckSum>
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*)
+        FROM pluggable_task_type_category
+        WHERE interface_name = 'com.sapienter.jbilling.server.pluggableTask.QuoteTaxCalculationTask';
+      </sqlCheck>
+    </preConditions>
+
+    <insert tableName="pluggable_task_type_category">
+      <column name="id" valueComputed="27"/>
+      <column name="interface_name" value="com.sapienter.jbilling.server.pluggableTask.QuoteTaxCalculationTask"/>
+    </insert>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(t.id)+1 FROM pluggable_task_type t)"/>
+      <column name="category_id" valueNumeric="27"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.CanadianQuoteTaxCalculationTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(COALESCE( (SELECT MAX(t.id)+1 FROM pluggable_task_type t), 1))"/>
+      <where>name = 'pluggable_task_type'</where>
+    </update>
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="23"/>
+      <column name="foreign_id" valueNumeric="27"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Calculate taxes  according to the parameter"/>
+    </insert>
+
+  </changeSet>
+
+  <changeSet context="test" id="Quote Tax Plugin test" author="Fernando Sivila">
+    <insert tableName="pluggable_task">
+      <column name="id" valueComputed="(SELECT MAX(pt.id)+1 FROM pluggable_task pt)"/>
+      <column name="entity_id" valueNumeric="1"/>
+      <column name="type_id"
+              valueComputed="(SELECT p.id FROM pluggable_task_type p
+            					WHERE p.class_name = 'com.sapienter.jbilling.server.pluggableTask.CanadianQuoteTaxCalculationTask')"/>
+      <column name="processing_order" valueNumeric="1"/>
+      <column name="optlock" valueNumeric="0"/>
+      <column name="notes"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(SELECT MAX(t.id)+1 FROM pluggable_task t)"/>
+      <where>name = 'pluggable_task'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-55 DistributelTaxComposition plugin" author="Pablo Galera">
+    <validCheckSum>7:f8cbaabbf1f614d0beba784f9ef7a551</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueNumeric="(SELECT MAX(ptt.id)+1 FROM pluggable_task_type ptt)"/>
+      <column name="category_id" valueNumeric="4"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.process.task.DistributelTaxComposition"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(SELECT MAX(ptt.id)+1 FROM pluggable_task_type ptt)"/>
+      <where>name='pluggable_task_type'</where>
+    </update>
+
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-69 MCF" author="Pablo Galera">
+    <validCheckSum>7:bc7fc74ecc5f1c43446197dfd546b1e3</validCheckSum>
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.provisioning.task.MCFExternalProvisioningTask';
+      </sqlCheck>
+    </preConditions>
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="18"/>
+      <column name="class_name"
+              value="com.sapienter.jbilling.server.provisioning.task.MCFExternalProvisioningTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="MCF External Provisioning Plugin"/>
+    </insert>
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.provisioning.task.MCFRatedPlansProvisioningTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="MCR Rated Plans Provisioning Plugin"/>
+    </insert>
+
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="(SELECT COALESCE(MAX(id)+1, 1) FROM pluggable_task_type)"/>
+      <where>name='pluggable_task_type'</where>
+    </update>
+
+  </changeSet>
+  <changeSet context="base" id="JBDIST-161 - Sales Tax Report" author="Mahesh Shivarkar">
+    <validCheckSum>7:52ff016db10f24d1cc1f11d3036b4102</validCheckSum>
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM report WHERE name = 'sales_tax_report';
+      </sqlCheck>
+    </preConditions>
+    <insert tableName="report_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(t.id) + 1 FROM report_type t), 1)"/>
+      <column name="name" value="finances"/>
+      <column name="optlock" valueNumeric="0"/>
+    </insert>
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(r.id), 1)+1 FROM report r)"/>
+      <column name="type_id" valueComputed="(SELECT id FROM report_type rt WHERE rt.name = 'finances')"/>
+      <column name="name" value="sales_tax_report"/>
+      <column name="file_name" value="sales_tax_report.jasper"/>
+      <column name="optlock" valueNumeric="1"/>
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'sales_tax_report')"/>
+      <column name="dtype" value="date"/>
+      <column name="name" value="start_date"/>
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'sales_tax_report')"/>
+      <column name="dtype" value="date"/>
+      <column name="name" value="end_date"/>
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'sales_tax_report')"/>
+      <column name="dtype" value="string"/>
+      <column name="name" value="entityNames"/>
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report_type')"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM report_type)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Finances"/>
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'sales_tax_report')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Sales Tax Report"/>
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id FROM report r WHERE r.name = 'sales_tax_report'), id
+      FROM entity
+    </sql>
+    <sql>
+      <![CDATA[
+            INSERT INTO meta_field_name (id, entity_id, name, optlock, entity_type, data_type, is_disabled, is_mandatory, display_order, is_primary)
+            SELECT COALESCE( (SELECT MAX(id)+1 FROM meta_field_name),1)+e.id, e.id, 'Sales Tax Report Address', 1, 'COMPANY', 'STRING', false, false, 5, true FROM entity e;
+            ]]>
+    </sql>
+
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(SELECT COALESCE(MAX(rt.id)+1, 1) FROM report_type rt)"/>
+      <where>name='report_type'</where>
+    </update>
+
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="(SELECT COALESCE(MAX(id)+1, 1) FROM report)"/>
+      <where>name='report'</where>
+    </update>
+
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="(SELECT COALESCE(MAX(id)+1, 1) FROM report_parameter)"/>
+      <where>name='report_parameter'</where>
+    </update>
+
+  </changeSet>
+  <changeSet id="Modify DataType provisioning" author="Ivan Gutierrez">
+    <modifyDataType
+      columnName="submit"
+      newDataType="varchar(500)"
+      tableName="provisioning_request"/>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-267: Invoice - Language Selection" author="Ivan Gutierrez">
+    <validCheckSum>7:2e100ec670354509a7db003571139b72</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.customer.task.UpdateDistributelCustomerTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Update Distributel Customer Task"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-298: Distributel welcome emails according to type of service" author="Pablo Galera">
+    <validCheckSum>7:9c86a46be7daf1491d23487fe2fde7e4</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.customer.task.DistributelWelcomeEmailTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task),1)"/>
+      <where>name='pluggable_task'</where>
+    </update>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Distributel Welcome Customer Task"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-218: Typo in 'MCF Rated Plans Provisioning Plugin' description" author="Fernando Sivila">
+    <validCheckSum>7:00b651dc94879c0330ef7dd41218cf23</validCheckSum>
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM international_description WHERE content = 'This plugin handle provisioning for updated assets in order to send commands with the information required by MCF.';
+      </sqlCheck>
+    </preConditions>
+    <comment>Add description to MCF Rated Plans Provisioning Plugin</comment>
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT ptt.id FROM pluggable_task_type ptt WHERE ptt.class_name = 'com.sapienter.jbilling.server.provisioning.task.MCFRatedPlansProvisioningTask')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="This plugin handle provisioning for updated assets in order to send commands with the information required by MCF."/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-314: Distributel Emergency 911 address handler Task" author="Wajeeha Ahmed">
+    <validCheckSum>7:4f3841e47c382060a00a2c1f46200093</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.spa.DistributelEmergencyAddressUpdateTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task),1)"/>
+      <where>name='pluggable_task'</where>
+    </update>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Distributel Emergency address update Task"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Events related to Distributel Emergency address update service"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-314: Emergency Address Northern911 Update Task" author="Wajeeha Ahmed">
+    <validCheckSum>7:7b268159d8be2a9851c59dfe2012ac7f</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.user.tasks.EmergencyAddressUpdateNorthern911Task"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task),1)"/>
+      <where>name='pluggable_task'</where>
+    </update>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Northern 911 Internal Task"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Events related to Northern 911 service"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-314: Emergency Address Fake Update Task" author="Wajeeha Ahmed">
+    <validCheckSum>7:c55d54975e95af71405c164051464834</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.user.tasks.EmergencyAddressUpdateNorthern911FakeTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task),1)"/>
+      <where>name='pluggable_task'</where>
+    </update>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Northern 911 Fake Internal Task"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Events related to Northern 911 Fake service"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-382:Incorrect invoice template is set for French customers in enrollment" author="Fernando Sivila">
+    <validCheckSum>7:25fde78fd501bb179cbfc3ac71cd2cbe</validCheckSum>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.customer.task.UpdateDistributelCustomersInvoiceTemplateTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Update Distributel Customers InvoiceTemplate Task"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-218: Typo in 'MCF Rated Plans Provisioning Plugin' description - Reopen" author="Pablo Galera">
+    <update tableName="international_description">
+      <column name="content" value="MCF Rated Plans Provisioning Plugin"/>
+      <where>content='MCR Rated Plans Provisioning Plugin'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JB-2038: Code Review for Distributel Features" author="Leandro Bagur">
+    <update tableName="jbilling_seqs">
+      <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task_type),1)"/>
+      <where>name='pluggable_task_type'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-Testing" author="Leandro Bagur">
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueNumeric="(SELECT MAX(ptt.id)+1 FROM pluggable_task_type ptt)"/>
+      <column name="category_id" valueNumeric="4"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.process.task.TestingTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(SELECT MAX(ptt.id)+1 FROM pluggable_task_type ptt)"/>
+      <where>name='pluggable_task_type'</where>
+    </update>
+
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-429 Development - Billing Register Report" author="Fernando Sivila">
+    <validCheckSum>7:140b81ea90e7eabfce5e9c46a1a072e5</validCheckSum>
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) from report r WHERE r.name = 'billing_register'
+      </sqlCheck>
+    </preConditions>
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="1" />
+      <column name="name" value="billing_register" />
+      <column name="file_name" value="billing_register.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id 
+                    FROM report r 
+                   WHERE r.name = 'billing_register'),
+                  id 
+             FROM entity 
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(select id from report r where r.name = 'billing_register')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(select id from report r where r.name = 'billing_register')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-398 Customers are Incorrectly Moving in Collections After Payment Applied" author="Fernando Sivila">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM preference_type WHERE id = '85'
+      </sqlCheck>
+    </preConditions>
+    <comment>This preference will allow to include ageing chronologically</comment>
+
+    <insert tableName="preference_type">
+      <column name="ID" valueComputed="85" />
+      <column name="DEF_VALUE" value="0" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="TABLE_ID" valueNumeric="50" />
+      <column name="FOREIGN_ID" valueComputed="85" />
+      <column name="PSUDO_COLUMN" value="description" />
+      <column name="LANGUAGE_ID" valueNumeric="1" />
+      <column name="CONTENT" value="Enable Chronological Processing for Collections" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="TABLE_ID" valueNumeric="50" />
+      <column name="FOREIGN_ID" valueComputed="85" />
+      <column name="PSUDO_COLUMN" value="instruction" />
+      <column name="LANGUAGE_ID" valueNumeric="1" />
+      <column name="CONTENT" value="Enabling this option overrides the default sequential logic for Collections. An account in Collections will change its status based on the overdue time of the oldest unpaid invoice and not how long the account has been in Collections. " />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-429 Development - Billing Forecast Report" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) from report r WHERE r.name = 'billing_forecast'
+      </sqlCheck>
+    </preConditions>
+    
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="1" />
+      <column name="name" value="billing_forecast" />
+      <column name="file_name" value="billing_forecast.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'billing_forecast'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'billing_forecast')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'billing_forecast')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-436: Rejected Payments Report" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM report r WHERE r.name = 'rejected_payments'
+      </sqlCheck>
+    </preConditions>
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="3" />
+      <column name="name" value="rejected_payments" />
+      <column name="file_name" value="rejected_payments.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'rejected_payments'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'rejected_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'rejected_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-551 Move Sales Tax Report to the Invoice Reports reports section" author="Pablo Galera">
+    <update tableName="report">
+      <column name="type_id" value="1"/>
+      <where> name = 'sales_tax_report' </where>
+    </update>
+    <delete tableName="report_type">
+      <where> name = 'finances' </where>
+    </delete>
+  </changeSet>
+  
+  <changeSet context="base" id="JBDIST-525: Development - Churn Report" author="Fernando Sivila">
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="4" />
+      <column name="name" value="churn_report" />
+      <column name="file_name" value="churn_report.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'churn_report'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'churn_report')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'churn_report')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-580 Development - Deferred Revenue Report" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) from report r WHERE r.name = 'deferred_revenue_summary' OR r.name = 'deferred_revenue_detailed'
+      </sqlCheck>
+    </preConditions>
+
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="1" />
+      <column name="name" value="deferred_revenue_summary" />
+      <column name="file_name" value="deferred_revenue_summary.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'deferred_revenue_summary'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_summary')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="month" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_summary')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="year" />
+    </insert>
+
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="1" />
+      <column name="name" value="deferred_revenue_detailed" />
+      <column name="file_name" value="deferred_revenue_detailed.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'deferred_revenue_detailed'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_detailed')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="month" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_detailed')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="year" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_detailed')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="invoice_entered" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_detailed')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="revenue_type" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'deferred_revenue_detailed')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="group" />
+    </insert>
+  </changeSet>
+  
+  <changeSet context="base" id="JBDIST-737 Development - PaySafe Failed Payments Report" author="Matias Cabezas">
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="3" />
+      <column name="name" value="failed_payments" />
+      <column name="file_name" value="failed_payments.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'failed_payments'),
+      id FROM entity where deleted = 0
+    </sql>
+    
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'failed_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'failed_payments')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-743 Development - Referral Promotion Disqualification Report" author="Matias Cabezas">
+    <insert tableName="report">
+      <column name="id" valueComputed="(select max(id)+1 from report)" />
+      <column name="type_id" valueNumeric="4" />
+      <column name="name" value="referral_promotion_disqualification" />
+      <column name="file_name" value="referral_promotion_disqualification.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id from report r WHERE r.name = 'referral_promotion_disqualification'),
+      id FROM entity where deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)" />
+      <column name="report_id" valueComputed="(select id from report r where r.name = 'referral_promotion_disqualification')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="required_referrals" />
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-758 Development - New Sales Report (018-12)" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM report WHERE name = 'activity_report_full';
+      </sqlCheck>
+    </preConditions>
+
+    <delete tableName="international_description">
+      <where>table_id IN (SELECT id FROM jbilling_table WHERE name='report_type') AND content ='Finances' AND language_id = 1 AND psudo_column='description'</where>
+    </delete>
+    
+    <insert tableName="report_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(t.id) + 1 FROM report_type t), 1)"/>
+      <column name="name" value="enrollment"/>
+      <column name="optlock" valueNumeric="0"/>
+    </insert>
+    
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name='report_type')"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM report_type)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Enrollment"/>
+    </insert>
+
+    <!-- Activity full report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_full" />
+      <column name="file_name" value="activity_full.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_full'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_full')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_full')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_full')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_full')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity Full Report"/>
+    </insert>
+
+    <!-- Activity by date report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_date" />
+      <column name="file_name" value="activity_date.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_date'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Date Report"/>
+    </insert>
+
+    <!-- Activity by date and product group report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_date_group" />
+      <column name="file_name" value="activity_date_group.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_date_group'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_group')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_group')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_group')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_group')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Date, Product Group Report"/>
+    </insert>
+
+    <!-- Activity by staff and date report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_staff_date" />
+      <column name="file_name" value="activity_staff_date.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_staff_date'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Staff, Date Report"/>
+    </insert>
+
+    <!-- Activity by staff, date and term report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_staff_date_term" />
+      <column name="file_name" value="activity_staff_date_term.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_staff_date_term'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date_term')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_date_term')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Staff, Date, Term Report"/>
+    </insert>
+
+    <!-- Activity by staff and term report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_staff_term" />
+      <column name="file_name" value="activity_staff_term.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_staff_term'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Staff, Term Report"/>
+    </insert>
+
+    <!-- Activity by staff, term and category report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_staff_term_category" />
+      <column name="file_name" value="activity_staff_term_category.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_staff_term_category'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term_category')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term_category')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term_category')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_term_category')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Staff, Term, Category Report"/>
+    </insert>
+
+    <!-- Activity by staff and product report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_staff_product" />
+      <column name="file_name" value="activity_staff_product.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_staff_product'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_product')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_product')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_product')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_staff_product')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Staff, Product Report"/>
+    </insert>
+
+    <!-- Activity by date and term report -->
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'enrollment')" />
+      <column name="name" value="activity_date_term" />
+      <column name="file_name" value="activity_date_term.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'activity_date_term'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_term')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_term')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="type" />
+    </insert>
+    <insert tableName="international_description">
+      <column name="table_id" valueComputed="(SELECT id FROM jbilling_table WHERE name = 'report')"/>
+      <column name="foreign_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'activity_date_term')"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Activity by Date, Term Report"/>
+    </insert>
+    
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-763 CR13 - Development - Operational Dashboard (042)" author="Matias Cabezas">
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(t.id)+1 FROM pluggable_task_type t)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.spa.operationaldashboard.OperationalDashboardTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(COALESCE( (SELECT MAX(t.id)+1 FROM pluggable_task_type t), 1))"/>
+      <where>name = 'pluggable_task_type'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-789 Development - Supplemental Tax Report (018-15)" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM report r WHERE r.name = 'supplemental_tax'
+      </sqlCheck>
+    </preConditions>
+
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'invoice')" />
+      <column name="name" value="supplemental_tax" />
+      <column name="file_name" value="supplemental_tax.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'supplemental_tax'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-875 Supplemental Tax Report is located Invoice reports section instead of customer reports section" author="Leandro Bagur">
+    <update tableName="report">
+      <column name="type_id" valueComputed="(SELECT id FROM report_type rt WHERE rt.name = 'user')"/>
+      <where>name = 'supplemental_tax'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-852 Development - Northern 911 Exception Reporting (033)" author="Leandro Bagur">
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.spa.Northern911FailureProcessorTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(COALESCE( (SELECT MAX(t.id)+1 FROM pluggable_task_type t), 1))"/>
+      <where>name = 'pluggable_task_type'</where>
+    </update>
+  </changeSet>
+  
+
+  <changeSet context="base" id="JBDIST-782 Development - Overdue Account Summary Report (018-8)" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) 
+          FROM report r 
+         WHERE r.name = 'overdue_account_summary'
+      </sqlCheck>
+    </preConditions>
+    
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueComputed="(SELECT id FROM report_type rt WHERE rt.name = 'user')"/>
+      <column name="name" value="overdue_account_summary" />
+      <column name="file_name" value="overdue_account_summary.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id 
+                FROM report r 
+               WHERE r.name = 'overdue_account_summary'),
+             id 
+        FROM entity 
+       WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'overdue_account_summary')" />
+      <column name="dtype" value="integer" />
+      <column name="name" value="customer_status" />
+    </insert>
+  </changeSet>
+  
+  <changeSet context="base" id="JBDIST-921 Development - Payment Notifications (011)" author="Matias Cabezas">
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(t.id)+1 FROM pluggable_task_type t)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.paysafe.PaySafePaymentNotificationTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+    <update tableName="jbilling_seqs">
+      <column name="next_id"  valueComputed="(COALESCE( (SELECT MAX(t.id)+1 FROM pluggable_task_type t), 1))"/>
+      <where>name = 'pluggable_task_type'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-969 Development - Customer Packages Report" author="Matias Cabezas">
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id) + 1 FROM report)" />
+      <column name="type_id" valueNumeric="7" />
+      <column name="name" value="customer_packages" />
+      <column name="file_name" value="customer_packages.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id FROM report r WHERE r.name = 'customer_packages'),
+                  id 
+             FROM entity 
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_packages')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_packages')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_packages')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="scope" />
+    </insert>
+  </changeSet>
+  
+  <changeSet context="base" id="Development - CR-029 - 911 Address Change Effective Date" author="Leandro Bagur">
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+      <column name="category_id" valueNumeric="22"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.spa.EmergencyAddressUpdateCurrent"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-1165 Development - CR-029 - 911 Address Change Effective Date" author="Leandro Bagur">
+    <update tableName="pluggable_task_type">
+      <column name="class_name" value="com.sapienter.jbilling.server.spa.EmergencyAddressUpdateCurrentTask"/>
+      <where>class_name='com.sapienter.jbilling.server.spa.EmergencyAddressUpdateCurrent'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDIST-1360 CR-049 - Customer Product Activity Report" author="Pablo Galera">
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id) + 1 FROM report)" />
+      <column name="type_id" valueNumeric="2" />
+      <column name="name" value="customer_product_activity" />
+      <column name="file_name" value="customer_product_activity.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+      SELECT (SELECT r.id FROM report r WHERE r.name = 'customer_product_activity'),
+      id
+      FROM entity
+      WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_product_activity')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_product_activity')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+
+    <insert tableName="report_parameter">
+      <column name="id"
+              valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+      <column name="report_id"
+              valueComputed="(SELECT id FROM report r WHERE r.name = 'customer_product_activity')" />
+      <column name="dtype" value="string" />
+      <column name="name" value="scope" />
+    </insert>
+  </changeSet>
+
+     <changeSet context = "base" id = "JBDIST-1436 - Active VoIP Customers" author = "Dipak D. Kardel">
+
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "(SELECT MAX(id)+1 FROM report)" />
+            <column name  = "type_id"   valueNumeric  = "(SELECT id FROM report_type rt WHERE rt.name = 'user')" />
+            <column name  = "name"      value         = "active_voip_customers" />
+            <column name  = "file_name" value         = "active_voip_customers.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+          INSERT INTO entity_report_map(report_id, entity_id)
+               SELECT (SELECT r.id
+                       FROM report r
+                       WHERE r.name = 'active_voip_customers'),
+                       id
+               FROM entity
+               WHERE deleted = 0
+        </sql>
+ </changeSet>
+    <changeSet context = "base" id="JBDIST-1423 Customer Product Activity Report" author="Pranay G. Raherkar">
+        <sql splitStatements="false" >
+            <![CDATA[
+      CREATE OR REPLACE FUNCTION getstaffName(orderId integer)
+                         RETURNS text AS $$
+                         DECLARE
+                                 staffName text := (SELECT mfv.string_value
+                            FROM meta_field_value mfv
+                      INNER JOIN order_meta_field_map pom ON pom.meta_field_value_id = mfv.id AND pom.order_id = orderId
+                      INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                             AND mfn.name = 'Staff Identifier');
+                 BEGIN
+                    IF (staffName is null) THEN
+                         SELECT user_name INTO staffName 
+                           FROM base_user 
+                          WHERE id = (SELECT user_id FROM event_log WHERE foreign_id = orderId 
+                            AND message_id = 25 ORDER BY create_datetime LIMIT 1);
+                END IF;
+                RETURN staffName;
+                END;
+                $$ LANGUAGE plpgsql;
+            ]]>
+  </sql>
+  <sql splitStatements="false">
+  <![CDATA[
+     CREATE OR REPLACE FUNCTION getAddress(userid integer, mf_name text)
+                        RETURNS text AS $$
+                        DECLARE
+                                address text;
+                                provided boolean := (SELECT  mfv.boolean_value FROM meta_field_value mfv
+                     INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                     INNER JOIN customer_account_info_type_timeline cai ON cai.meta_field_value_id = mfv.id
+                     INNER JOIN customer c ON c.id = cai.customer_id
+                     INNER JOIN meta_field_group mfg ON cai.account_info_type_id = mfg.id
+                          WHERE mfn.name = 'Provided' 
+                            AND  c.user_id = userid 
+                            AND mfg.account_type_id = c.account_type_id 
+                            AND mfg.name = 'Emergency 911 Address'
+                            AND cai.effective_date =(SELECT MAX(effective_date) 
+                                                     FROM customer_account_info_type_timeline 
+                                                     WHERE customer_id = (SELECT id 
+                                                                            FROM customer 
+                                                                           WHERE user_id =userid) 
+                                                                             AND account_info_type_id = mfg.id AND date(effective_date) <= date(CURRENT_DATE)));
+                BEGIN
+                   IF (NOT ('Customer Name' = mf_name OR 'Phone Number 1' = mf_name  OR 'Phone Number 2' = mf_name OR 'Email Address' = mf_name)  AND (provided)) THEN
+                   IF ('address_type' = mf_name) THEN
+                        SELECT 'Emergency 911 Address' INTO address;
+                 ELSE
+                       SELECT mfv.string_value INTO address FROM meta_field_value mfv
+                   INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name = mf_name
+                   INNER JOIN customer_account_info_type_timeline cai ON cai.meta_field_value_id = mfv.id
+                   INNER JOIN customer c ON c.id = cai.customer_id
+                   INNER JOIN meta_field_group mfg ON cai.account_info_type_id = mfg.id
+                        WHERE c.user_id =userid 
+                          AND mfg.account_type_id = c.account_type_id 
+                          AND mfg.name = 'Emergency 911 Address'
+                          AND cai.effective_date = (SELECT MAX(effective_date) 
+                                                      FROM customer_account_info_type_timeline 
+                                                     WHERE customer_id = (SELECT id 
+                                                                            FROM customer 
+                                                                           WHERE user_id =userid) 
+                                                                             AND account_info_type_id = mfg.id AND date(effective_date) <= date(CURRENT_DATE));
+              END IF;
+                ELSE
+                  IF ('address_type' = mf_name) THEN
+                       SELECT 'Contact Information' INTO address;
+                ELSE
+                       SELECT mfv.string_value INTO address FROM meta_field_value mfv
+                   INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name = mf_name
+                   INNER JOIN customer_account_info_type_timeline cai ON cai.meta_field_value_id = mfv.id
+                   INNER JOIN customer c ON c.id = cai.customer_id
+                   INNER JOIN meta_field_group mfg ON cai.account_info_type_id = mfg.id
+                        WHERE c.user_id =userid AND mfg.account_type_id = c.account_type_id AND mfg.name = 'Contact Information'
+                          AND cai.effective_date =(SELECT MAX(effective_date) 
+                                                     FROM customer_account_info_type_timeline 
+                                                    WHERE customer_id = (SELECT id 
+                                                                           FROM customer 
+                                                                          WHERE user_id =userid) 
+                                                                             AND account_info_type_id = mfg.id AND date(effective_date) <= date(CURRENT_DATE));
+              END IF;
+              END IF;
+           RETURN address;
+              END;
+              $$ LANGUAGE plpgsql;
+             ]]>
+        </sql>
+    </changeSet>
+    <include file = "foreign-keys-indexes-20180905.xml" relativeToChangelogFile = "true"/>
+
+    <changeSet context = "test" id="JBDIST-1368 Add new metafield Paysafe Profile Id " author="Pranay G. Raherkar">
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="COALESCE((SELECT max(mfn.id)+1 FROM meta_field_name mfn),1)"/>
+            <column name="name" value="Paysafe Profile Id"/>
+            <column name="entity_type" value="PAYMENT"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="8"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="data_table_id"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name = "next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM meta_field_name),1)"/>
+            <where> name = 'meta_field_name' </where>
+        </update>
+    </changeSet>
+	<changeSet context = "base" id = "JBDIST-1447 -  Active Customers vs. Billing Report" author = "Dipak D Kardel">
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "(SELECT MAX(id)+1 FROM report)" />
+            <column name  = "type_id"   valueNumeric  = "(SELECT id FROM report_type rt WHERE rt.name = 'invoice')" />
+            <column name  = "name"      value         = "active_customers_vs_billing_report" />
+            <column name  = "file_name" value         = "active_customers_vs_billing_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <sql>
+          INSERT INTO entity_report_map(report_id, entity_id)
+               SELECT (SELECT r.id
+                       FROM report r
+                       WHERE r.name = 'active_customers_vs_billing_report'),
+                       id
+               FROM entity
+               WHERE deleted = 0
+        </sql>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'active_customers_vs_billing_report')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+            <column name = "report_id" valueComputed = "(SELECT id FROM report r WHERE r.name = 'active_customers_vs_billing_report')" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "end_date" />
+        </insert>
+    </changeSet>
+
+	<changeSet context="base" id="JBDIST-1443 - Transaction Details Report creation" author="Nitisha Sahay">
+		<insert tableName="report">
+			<column name="id" valueComputed="(SELECT MAX(id) + 1 FROM report)" />
+			<column name="type_id" valueNumeric="1" />
+			<column name="name" value="transaction_details" />
+			<column name="file_name" value="transaction_details.jasper" />
+			<column name="optlock" valueNumeric="0" />
+		</insert>
+
+		<sql>
+			INSERT INTO entity_report_map(report_id, entity_id)
+			     SELECT (SELECT r.id
+			               FROM report r
+			              WHERE r.name = 'transaction_details'), id
+			       FROM entity
+			      WHERE deleted = 0
+		</sql>
+
+		<insert tableName="report_parameter">
+			<column name="id"
+				valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+			<column name="report_id"
+				valueComputed="(SELECT id FROM report r WHERE r.name = 'transaction_details')" />
+			<column name="dtype" value="date" />
+			<column name="name" value="start_date" />
+		</insert>
+
+		<insert tableName="report_parameter">
+			<column name="id"
+				valueComputed="(SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp)" />
+			<column name="report_id"
+				valueComputed="(SELECT id FROM report r WHERE r.name = 'transaction_details')" />
+			<column name="dtype" value="date" />
+			<column name="name" value="end_date" />
+		</insert>
+	</changeSet>
+
+	<changeSet context = "base"  id ="JBDIST-1524 Price Increase Part II with Invoice Changes." author = "Krunal Bhavsar">
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type AS p), 1)"/>
+            <column name = "category_id"    valueNumeric  = "4"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.distributel.DistributelOrderChangeBasedCompositionTask"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Distributel OrderChange Based Composition Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Task will append order level invoice note meta field on invoice and compose invoice."/>
+        </insert>
+    </changeSet>
+    
+    <changeSet context = "base" id = "JBDIST-1617 Implementation of DistributelPriceIncreaseAndReversalTask" author = "Deepti">
+        <comment>DistributelPriceIncreaseAndReversalTask for updating customer subscription order price.</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "22"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.distributel.DistributelPriceIncreaseAndReversalTask"/>
+                <column name = "min_parameters" valueNumeric  = "1"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Distributel Price Increase And Reversal Task"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(p.id) FROM pluggable_task_type p),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin is used for price increase/reversal on the customer subscription order on the basis data table. During the price increase use-case system will add new order with increase price and for price reversal case system will delete the price increase line from the order."/>
+        </insert>
+    </changeSet>  
+
+</databaseChangeLog>

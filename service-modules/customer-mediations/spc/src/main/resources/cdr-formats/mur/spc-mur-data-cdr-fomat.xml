@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>Switch Type</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Billable Number</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Service Class</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Session ID</name>
+        <type>string</type>
+        <isKey />
+    </field>
+    <field>
+        <name>Start Date and Time</name>
+        <type>string</type>
+        <isKey />
+    </field>
+    <field>
+        <name>End Date and Time</name>
+        <type>string</type>
+        <isKey />
+    </field>
+    <field>
+        <name>Volume Downlink</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Volume Uplink</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>APN</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>GGSN IP Address</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Outbound Roaming Indicator</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Optus Use</name>
+        <type>string</type>
+    </field>
+</format>

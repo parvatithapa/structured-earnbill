@@ -1,0 +1,2346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="${parent.entity.id}|fc-client-global-data.xml">
+
+	<changeSet author="Ashok Kale" id="Full-Creative-Product Categories-and-Products-configuration">	
+		<insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Number Assets"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="1"/>
+            <column name="asset_identifier_label" value="DID Number"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+        
+        <!-- Asset Status -->
+        <insert tableName="asset_status">
+            <column name="id" valueComputed="coalesce((select max(ast.id)+1 from asset_status ast),1)"/>
+            <column name="item_type_id" valueComputed="(select max(it.id) from item_type it)"/>
+            <column name="is_default" valueNumeric="0"/>
+            <column name="is_order_saved" valueNumeric="1"/>
+            <column name="is_available" valueNumeric="0"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="is_internal" valueNumeric="0"/>
+        </insert>
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="108"/>
+            <column name="foreign_id" valueComputed="(select max(ast.id) from asset_status ast)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Assigned"/>
+        </insert>
+        
+        <insert tableName="asset_status">
+            <column name="id" valueComputed="coalesce((select max(ast.id)+1 from asset_status ast),1)"/>
+            <column name="item_type_id" valueComputed="(select max(it.id) from item_type it)"/>
+            <column name="is_default" valueNumeric="1"/>
+            <column name="is_order_saved" valueNumeric="0"/>
+            <column name="is_available" valueNumeric="1"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="is_internal" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="108"/>
+            <column name="foreign_id" valueComputed="(select max(ast.id) from asset_status ast)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Available"/>
+        </insert>
+                
+        <insert tableName="asset_status">
+            <column name="id" valueComputed="coalesce((select max(ast.id)+1 from asset_status ast),1)"/>
+            <column name="item_type_id" valueComputed="(select max(it.id) from item_type it)"/>
+            <column name="is_default" valueNumeric="0"/>
+            <column name="is_order_saved" valueNumeric="0"/>
+            <column name="is_available" valueNumeric="0"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="is_internal" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="108"/>
+            <column name="foreign_id" valueComputed="(select max(ast.id) from asset_status ast)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="RESPORG Out"/>
+        </insert>
+                
+        <insert tableName="asset_status">
+            <column name="id" valueComputed="coalesce((select max(ast.id)+1 from asset_status ast),1)"/>
+            <column name="item_type_id" valueComputed="(select max(it.id) from item_type it)"/>
+            <column name="is_default" valueNumeric="0"/>
+            <column name="is_order_saved" valueNumeric="0"/>
+            <column name="is_available" valueNumeric="0"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="is_internal" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="108"/>
+            <column name="foreign_id" valueComputed="(select max(ast.id) from asset_status ast)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Cancelled With Carrier"/>
+        </insert>        
+        
+        <!-- Number Assets Products -->
+		<insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="8XX"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="8XX Toll-Free Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="4.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+        
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="800"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="800 Toll-Free Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="9.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="Local-ECF"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Local ECF Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+		<insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="9.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+        
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="AR"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="2"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Active Response Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0E-10"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+        
+		<insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CHAT"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="4"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>       
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Chat Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0E-10"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+       
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="IVRK"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="1"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>         
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="IVR Number"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="1.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="VAN"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="false"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Vanity Numbers"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="9.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<!-- Mediated Usage -->
+		<insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Mediated Usage"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CDR-INBOUND"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Inbound Voice"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="1.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CDR-CHAT"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>        
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Chat"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="2.5000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+      
+		<insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CDR-AR"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Active Response"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="2.5000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+                
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CDR-IVR-I"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>       
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="IVR Inbound"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="0.5000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+ 
+ 		<!-- Adjustments -->
+		<insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Adjustments"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+   
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="ADJ-DEBIT"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Account Adjustment (Debit)"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+                
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="ADJ-CREDIT"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Account Adjustment (Credit)"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CREDIT"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="NGO Credit"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="LINE_PERCENTAGE"/>
+            <column name="rate" valueNumeric="10.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="SD"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>        
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Sales Credit"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+       
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="CB"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+       <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Refund to Card"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+       
+        <!--  Item type - Fees-->
+        <insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Fees"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>        
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="Setup-Free"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>        
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Set Up Fee Waived"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="AC-SET-UP"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Set Up Fee"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="49.9900000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="MFP01"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>        
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Migration Fee Product"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="1.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="LF"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Late Fees"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="LINE_PERCENTAGE"/>
+            <column name="rate" valueNumeric="1.5000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="LFC"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Late Fee Charges"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="FLAT"/>
+            <column name="rate" valueNumeric="2.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<!-- Additional Services -->
+        <insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Additional Services"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+        
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="WC"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Web Chat"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="ZERO"/>
+            <column name="rate" valueNumeric="0.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<!-- Discount -->
+        <insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="Discount"/>
+            <column name="order_line_type_id" valueNumeric="4"/>
+            <column name="optlock" valueNumeric="2"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="false"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="NGO"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="NGO Credit"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="LINE_PERCENTAGE"/>
+            <column name="rate" valueNumeric="10.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="DIS-20"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Promotion Discount"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="LINE_PERCENTAGE"/>
+            <column name="rate" valueNumeric="20.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+         <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<!-- VAT-->
+         <insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="VAT"/>
+            <column name="order_line_type_id" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="true"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+      
+        <insert tableName="item">
+            <column name="id" valueComputed="coalesce((select max(i.id)+1 from item i),1)"/>
+            <column name="internal_number" value="VAT # (220358344)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="standard_partner_percentage"/>
+            <column name="master_partner_percentage"/>
+            <column name="active_since"/>
+            <column name="active_until"/>
+            <column name="reservation_duration" valueNumeric="600000"/>
+        </insert>
+        <insert tableName="item_type_map">
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="type_id" valueComputed="(select max(it.id) from item_type it)"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueComputed="(select max(i.id) from item i)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="VAT # 220358344"/>
+        </insert>
+		<insert tableName="entity_item_price_map">
+            <column name="id" valueComputed="coalesce((select max(ip.id)+1 from entity_item_price_map ip),1)"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueComputed="(select max(i.id) from item i)"/>
+        </insert>
+        <insert tableName="price_model">
+            <column name="id" valueComputed="coalesce((select max(pm.id)+1 from price_model pm),1)"/>
+            <column name="strategy_type" value="LINE_PERCENTAGE"/>
+            <column name="rate" valueNumeric="20.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueComputed="(select max(pm.id) from price_model pm)"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueComputed="(select max(eipm.id) from entity_item_price_map eipm)"/>
+        </insert>
+
+		<!-- AC - Live Answer Plans -->
+        <insert tableName="item_type">
+            <column name="id" valueComputed="coalesce((select max(it.id)+1 from item_type it),1)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="description" value="AC - Live Answer Plans"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="parent_id"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="global" valueBoolean="false"/>
+            <column name="one_per_order" valueBoolean="false"/>
+            <column name="one_per_customer" valueBoolean="false"/>
+        </insert>
+		<insert tableName="item_type_entity_map">
+            <column name="item_type_id" valueComputed="(select max(it.id) from item_type it)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+        </insert>
+	</changeSet>
+	
+	<changeSet author="Ashok Kale" id="JBFC-622-Global rating scheme">
+        <insert tableName="rating_scheme">
+            <column name="id" valueComputed="(select COALESCE(max(rc.id),0)+1 from rating_scheme rc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="name" value="Global Rating Scheme"/>
+            <column name="initial_increment" valueNumeric="30"/>
+            <column name="initial_rounding_mode" valueNumeric="0"/>
+            <column name="main_increment" valueNumeric="6"/>
+            <column name="main_rounding_mode" valueNumeric="0"/>
+            <column name="global" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+    
+	<changeSet author="Ashok Kale" id="JBFC-622-Global Mediation Configuration">
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Test Mediation"/>
+            <column name="order_value" valueNumeric="1"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="sampleMediationJob"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="false"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Inbound Calls"/>
+            <column name="order_value" valueNumeric="1"/>
+            <column name="pluggable_task_id"/>
+			<column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="inboundCallsMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Active Response"/>
+            <column name="order_value" valueNumeric="2"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="activeResponseMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Chat"/>
+            <column name="order_value" valueNumeric="3"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="chatMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="IVR"/>
+            <column name="order_value" valueNumeric="4"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="ivrMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Spanish"/>
+            <column name="order_value" valueNumeric="5"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="spanishMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Supervisor"/>
+            <column name="order_value" valueNumeric="6"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="supervisorMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Call Relay"/>
+            <column name="order_value" valueNumeric="7"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="callRelayMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+        <insert tableName="mediation_cfg">
+            <column name="id" valueComputed="(select COALESCE(max(mc.id),0)+1 from mediation_cfg mc)"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="create_datetime" valueDate="2016-09-23 14:14:57.218"/>
+            <column name="name" value="Live Reception"/>
+            <column name="order_value" valueNumeric="8"/>
+            <column name="pluggable_task_id"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="mediation_process_task_id"/>
+            <column name="mediation_job_launcher" value="liveReceptionMediationJobLauncher"/>
+            <column name="root_route"/>
+            <column name="global" valueBoolean="true"/>
+            <column name="local_input_directory" value=""/>
+        </insert>
+    </changeSet>
+ 
+ 	<changeSet author="Ashok Kale" id="JBFC-622-Update-billing-configuration-prorating-type">   
+		<update tableName="billing_process_configuration">
+            <column name="prorating_type" value="PRORATING_AUTO_ON"/>
+            <where>entity_id = ${parent.entity.id}</where>
+        </update>
+    </changeSet>
+
+	<changeSet author="Ashok Kale" id="Configure-Full-Creative-Company-Level-Meta-Fields">	
+		<!-- Company Level Meta fields -->
+		<insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Set ItemId For InBound Calls"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(i.id) from item i where i.internal_number = 'CDR-INBOUND' and i.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Set ItemId For Active Response"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(i.id) from item i where i.internal_number = 'CDR-AR' and i.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Set ItemId For Chat"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(i.id) from item i where i.internal_number = 'CDR-CHAT' and i.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Set ItemId For IVR"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(i.id) from item i where i.internal_number = 'CDR-IVR-I' and i.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Billing Contact Info Group Name"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Credit Card Billing Address"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Inbound Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Inbound"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Chat Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Chat"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Active Response Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="AR"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Spanish (Inbound) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Spanish (Inbound)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Supervisor (Inbound) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Supervisor (Inbound)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Call Relay (Inbound) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Call Relay (Inbound)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Live Reception Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Live Reception"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="IVR (Incoming) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="IVR (Inbound)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+          <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Mobile App (Outbound) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Mobile App (Outbound)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Voicemail Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Voicemail"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Webform to Call (IVR) Call Type"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Webform to Call (IVR)"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+        
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Mailing Contact Info Group Name"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING" />
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Communication Address"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+	
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Fees Product Category ID"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(it.id) from item_type it where it.description = 'Fees' and it.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+
+         <insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn),1)"/>
+            <column name="name" value="Adjustments Product Category ID"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="INTEGER"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueComputed="coalesce((select max(it.id) from item_type it where it.description = 'Adjustments' and it.global = 'true'),1)"/>
+            <column name="string_value" />
+        </insert>
+        <insert tableName="entity_meta_field_map">
+            <column name="entity_id" valueNumeric="${parent.entity.id}"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+   </changeSet>    
+
+    <changeSet id="Updating jbilling seqs" author="Ashok Kale">
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(it.id)+1 from item_type it)"/>
+            <where>name='item_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(i.id)+1 from item i)"/>
+            <where>name='item'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(eipm.id)+1 from entity_item_price_map eipm)"/>
+            <where>name='entity_item_price_map'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(pm.id)+1 from price_model pm)"/>
+            <where>name='price_model'</where>
+        </update>
+         <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(rc.id)+1 from rating_scheme rc)"/>
+            <where>name='rating_scheme'</where>
+        </update>
+         <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(mfn.id)+1 from meta_field_name mfn)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+         <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(mfv.id)+1 from meta_field_value mfv)"/>
+            <where>name='meta_field_value'</where>
+        </update>
+    </changeSet>
+    
+     <changeSet author="Pranay G. Raherkar"  id="Fullcreative Usage Consumption Internal Event Listener">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.fullcreative.event.FullCreativeUsagePoolConsumptionEventListener"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Usage Consumption Internal Event Listener"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Usage Consumption Internal Event Listener"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Pranay G. Raherkar" id="Fullcreative Excess Usage Internal Event Listener">
+		<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.fullcreative.event.FullCreativeExcessUsageListener"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Excess Usage Event Listener"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Excess Usage Event Listener"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Pranay G. Raherkar"  id="Fullcreative Payment Processor Internal Event Listener">
+		<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.fullcreative.event.FullCreativeEndPaymentProcessorEventListener"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Payment Processor Internal Event Listener"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Fullcreative Payment Processor Internal Event Listener"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
+

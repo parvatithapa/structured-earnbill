@@ -1,0 +1,186 @@
+{
+    "id": "0",
+    "name": "New Invoice Design",
+    "format": "A4",
+    "sections": [
+        {
+            "id": 1,
+            "name": "main Section",
+            "pageBreakBefore": false,
+            "kind": "Section",
+            "header": {
+                "elements": [
+                    {
+                        "id": 2,
+                        "expr": "PO Box 8482  Ottawa, Ontario, K1G 3H9  Canada",
+                        "thickness": 1,
+                        "roundCornerRadius": 10,
+                        "left": 10,
+                        "top": 70,
+                        "height": 60,
+                        "width": 500,
+                        "font": {
+                            "size": 10,
+                            "face": "SansSerif",
+                            "color": "#000000",
+                            "bold": false,
+                            "italic": false
+                        },
+                        "color": "#808080",
+                        "kind": "TextBox",
+                        "name": "Invoice",
+                        "borderColor": "#000000",
+                        "padding": "10",
+                        "transparent": false,
+                        "bgColor": "#FFFFFF",
+                        "entityId": 3
+                    },
+                    {
+                        "imageUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAIAAADajyQQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpDNzRGRDRDOUYxOTcxMUUyQThGM0I4RjhGMTFGM0JFNyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpDNzRGRDRDQUYxOTcxMUUyQThGM0I4RjhGMTFGM0JFNyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkM3NEZENEM3RjE5NzExRTJBOEYzQjhGOEYxMUYzQkU3IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkM3NEZENEM4RjE5NzExRTJBOEYzQjhGOEYxMUYzQkU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+iGOXbgAACNpJREFUeNrUW2tQ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\u003d",
+                        "background": true,
+                        "name": "Logo",
+                        "left": 20,
+                        "top": 10,
+                        "width": 140,
+                        "height": 50,
+                        "kind": "Image"
+                    },
+                    {
+                        "thickness": 0,
+                        "font": {
+                            "face": "SansSerif",
+                            "size": 10,
+                            "bold": false,
+                            "italic": false,
+                            "color": "#000000"
+                        },
+                        "roundCornerRadius": 10,
+                        "borderColor": "#FFFFFF",
+                        "bgColor": "#A0A0A0",
+                        "transparent": true,
+                        "left": 10,
+                        "top": 90,
+                        "width": 500,
+                        "height": 50,
+                        "kind": "TextBox",
+                        "id": "",
+                        "name": "Address",
+                        "expr": "1 (866) 920-4348  appdirect.com",
+                        "padding": "10",
+                        "entityId": "3"
+                    },
+                    {
+                        "thickness": "1",
+                        "font": {
+                            "face": "SansSerif",
+                            "size": "16",
+                            "bold": false,
+                            "italic": false,
+                            "color": "#000000"
+                        },
+                        "roundCornerRadius": "10",
+                        "borderColor": "#FFFFFF",
+                        "bgColor": "#A0A0A0",
+                        "transparent": true,
+                        "left": "10",
+                        "top": "180",
+                        "width": "500",
+                        "height": "10",
+                        "kind": "TextBox",
+                        "id": "",
+                        "name": "Address1",
+                        "expr": "",
+                        "padding": 10,
+                        "entityId": 3
+                    }
+                ]
+            },
+            "footer": {
+                "elements": [
+                    {
+                        "name": "New Text Box",
+                        "thickness": 1,
+                        "font": {
+                            "face": "SansSerif",
+                            "size": 10,
+                            "bold": false,
+                            "italic": false,
+                            "color": "#000000"
+                        },
+                        "roundCornerRadius": 5,
+                        "borderColor": "#808080",
+                        "bgColor": "#A0A0A0",
+                        "transparent": true,
+                        "left": 10,
+                        "top": 300,
+                        "width": 500,
+                        "height": 50,
+                        "kind": "TextBox",
+                        "id": "",
+                        "expr": "Payment Terms: Nullam quis risus eget urna mollis ornare vel eu leo. Maecenas sed diam eget risus varius blandit sit amet non magna.   Nulla vitae elit libero, a pharetra augue.",
+                        "padding": 10,
+                        "entityId": 3
+                    }
+                ]
+            },
+            "content": {
+                "id": 4,
+                "font": {
+                    "face": "SansSerif",
+                    "color": "#404040",
+                    "size": 14,
+                    "bold": false,
+                    "italic": false
+                },
+                "contentBgColor": "#ffffff",
+                "contentCellStyle": {
+                    "horizontalBorderThickness": 0,
+                    "verticalBorderThickness": 0,
+                    "horizontalBorderColor": "#ffffff",
+                    "verticalBorderColor": "#ffffff"
+                },
+                "headerFont": {
+                    "face": "Serif",
+                    "color": "#FFFFFF",
+                    "size": 16,
+                    "bold": true,
+                    "italic": false
+                },
+                "headerBgColor": "#050580",
+                "headerCellStyle": {
+                    "horizontalBorderThickness": 0,
+                    "verticalBorderThickness": 0,
+                    "horizontalBorderColor": "#ffffff",
+                    "verticalBorderColor": "#ffffff"
+                },
+                "groupHeaderFont": {
+                    "face": "Monospaced",
+                    "color": "#000000",
+                    "size": 14,
+                    "bold": true,
+                    "italic": false
+                },
+                "groupBgColor": "#000000",
+                "sortCriterion": null,
+                "groupCriteria": null,
+                "columns": [],
+                "recordSeparation": "Line",
+                "recordSeparationThickness": 2,
+                "recordSeparationColor": "#030340",
+                "kind": "InvoiceLines",
+                "name": "Main table"
+            }
+        }
+    ],
+    "pageHeader": {
+        "elements": []
+    },
+    "pageFooter": {
+        "elements": []
+    },
+    "marginLeft": 30,
+    "marginRight": 30,
+    "marginTop": 30,
+    "marginBottom": 30,
+    "entityId": 3
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	
+	<test name="VerifyStatusofPreExistingandNewOrder" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyStatusofPreExistingandNewOrder">
+				<methods>
+					<include name="VerifyStatusofPreExistingandNewOrder"></include>
+					
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

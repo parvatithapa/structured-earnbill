@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="accounts_receivable_ageing_summary_sub" language="groovy" pageWidth="200" pageHeight="40" whenNoDataType="AllSectionsNoDetail" columnWidth="200" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="division" class="java.lang.String"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="start_days" class="java.lang.Integer"/>
+	<parameter name="start_date" class="java.util.Date" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new Date(System.currentTimeMillis() - ($P{start_days} * 1000L * 60 * 60 * 24))]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_days" class="java.lang.Integer"/>
+	<parameter name="end_date" class="java.util.Date" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new Date(System.currentTimeMillis() - ($P{end_days} * 1000L * 60 * 60 * 24))]]></defaultValueExpression>
+	</parameter>	
+	<parameter name="as_of" class="java.util.Date"/>
+	<queryString>
+		<![CDATA[SELECT
+					SUM(
+						(
+							SELECT COALESCE(SUM(i.balance), 0)
+							FROM invoice i
+							WHERE i.deleted = 0
+								AND i.status_id != 26
+								AND i.is_review != 1
+								AND i.user_id = u.id
+								AND i.create_datetime <= $P{start_date}
+								AND i.create_datetime > $P{end_date}
+	   							AND date_trunc('day', i.create_datetime) <= $P{as_of}
+						)
+						-
+						(
+							SELECT COALESCE(SUM(p.balance), 0)
+							FROM payment p
+							WHERE p.deleted = 0
+								AND p.user_id = u.id
+								AND p.payment_date <= $P{start_date}
+								AND p.payment_date > $P{end_date}
+						        AND p.payment_date <= $P{as_of}
+						)
+						-
+						(
+							SELECT COALESCE(SUM(cn.balance), 0)
+							FROM credit_note cn
+							INNER JOIN invoice cni ON cni.id = cn.creation_invoice_id
+							WHERE cn.deleted = 0
+								AND cni.user_id = u.id
+								AND cn.create_datetime <= $P{start_date}
+								AND cn.create_datetime > $P{end_date}
+								AND cn.create_datetime <= $P{as_of}
+						)
+					) AS balance
+					FROM
+						base_user u
+					INNER JOIN
+						entity e ON e.id = u.entity_id
+					INNER JOIN
+						customer c ON c.user_id = u.id
+					LEFT JOIN
+						(
+						   SELECT caitt.customer_id, mfv.string_value
+						   FROM customer c
+						   INNER JOIN customer_account_info_type_timeline caitt ON c.id = caitt.customer_id
+						   INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+						   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+						   WHERE mfn.name = 'DIVISION'
+						)
+					division_mf ON division_mf.customer_id = c.id
+					WHERE
+						e.id = $P{entity_id}
+						AND division_mf.string_value = $P{division}]]>
+	</queryString>
+	<field name="balance" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal">
+		<variableExpression><![CDATA[$F{balance}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<detail>
+		<band height="40" splitType="Stretch">
+			<textField pattern="###0.00">
+				<reportElement x="0" y="0" width="100" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($F{balance}.compareTo(new BigDecimal("0")) != 0)]]></printWhenExpression>
+				</reportElement>
+				<textElement/>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{balance}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="20">
+					<printWhenExpression><![CDATA[Boolean.valueOf($F{balance}.compareTo(new BigDecimal("0")) == 0)]]></printWhenExpression>
+				</reportElement>
+				<textElement/>
+				<text><![CDATA[-]]></text>
+			</staticText>
+		</band>
+	</detail>
+</jasperReport>

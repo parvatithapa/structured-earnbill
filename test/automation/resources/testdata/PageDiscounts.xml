@@ -1,0 +1,23 @@
+<testdata>
+	<testdataset name="addDiscount" category="ad" testenv="develop|lab3">
+		<discountCode>Test Discount1{RANDOM}</discountCode>
+		<descriptionLanguage>English</descriptionLanguage>
+		<description>Test Discount1{RANDOM}</description>
+		<discountType>ONE_TIME_AMOUNT</discountType>
+		<DiscountRate>5</DiscountRate>
+		<user>Brian SmithHZQ </user>
+	</testdataset>
+	<testdataset name="addDiscountWithPercentage" category="adwp" testenv="develop|lab3">
+		<discountCode>Test Discount{RANDOM}</discountCode>
+		<descriptionLanguage>English</descriptionLanguage>
+		<description>Test Discount{RANDOM}</description>
+		<discountType>RECURRING_PERIODBASED</discountType>
+		<DiscountRate>10</DiscountRate>
+		<startDate>07/01/2014</startDate>
+		<endDate>07/31/2014</endDate>
+		<isPercentage>true</isPercentage>
+		<periodValue>1</periodValue>
+		<startDate>07/01/2014</startDate>
+		<endDate>07/31/2014</endDate>
+		</testdataset>
+</testdata>

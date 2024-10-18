@@ -1,0 +1,1310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/jbilling-upgrade-4.5.xml">
+
+	<changeSet id="#customer-usage-pool-add-order" author="Ashok Kale" context="base">
+        <addColumn tableName="customer_usage_pool_map">
+			<column name="order_id" type="java.sql.Types.INTEGER" defaultValueNumeric="0">
+			<constraints nullable="false" />
+        </column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="#Add-new-task-to-prorate-customer-usage-pool" author="Ashok Kale" context="base">
+	 <!-- ProrateCustomerUsagePoolTask: New internal events pluggable task -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.usagePool.task.ProrateCustomerUsagePoolTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Prorate customer usage pool quantity and calculate cycle end date."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plug-in will prorate Customer Usage Pool Quantity and calculate cycle end date when order active until date is updated."/>
+        </insert>
+
+        <sql>
+            <![CDATA[
+                   INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+                   select (select max(p.id)+1 from pluggable_task p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                          e1.id,
+                          (select max(p.id) from pluggable_task_type p),
+                          7,
+                          1
+                   from entity e1
+                   order by e1.id
+               ]]>
+        </sql>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base" id="#8469-Add-Prorate_adjustment_Flag">
+		<addColumn tableName="purchase_order">
+		          <column name="prorate_adjustment_flag" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false">
+		          <constraints nullable="false"/>
+		      </column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet author="Mazhar Shaukat" context="base" id="Payment Process Auto Payments Task">
+        <validCheckSum>7:4ca623d466459fc827deffd6e193ef2c</validCheckSum>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.billing.task.PaymentProcessTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="title"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Payment Process Auto Payments Task"/>
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Process Auto Payments Task"/>
+        </insert>
+		<addColumn tableName="billing_process_configuration" >
+            <column name="auto_payment" type="int" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+	    <column name="interval" type="int" defaultValue="0">
+                <constraints nullable="true"/>
+            </column>
+	    <column name="retry_count" type="int" defaultValue="0">
+                <constraints nullable="true"/>
+            </column>
+	    <column name="start_time" type="varchar(10)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+		<createTable tableName="payment_process_run">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="billing_process_id" type="java.sql.Types.INTEGER"/>
+            <column name="billing_date" type="java.sql.Types.DATE"/>
+            <column name="run_count" type="int"/>
+        </createTable>
+        <addForeignKeyConstraint constraintName="billing_process_id_FK"
+                                 baseTableName="payment_process_run" baseColumnNames="billing_process_id"
+                                 referencedTableName="billing_process" referencedColumnNames="id"/>
+		<insert tableName="jbilling_seqs">
+            <column name="name" value="payment_process_run"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="jbilling_table">
+            <column name="id"  valueComputed="(select max(jt.id)+1 from jbilling_table jt)"/>
+            <column name="name" value="payment_process_run"/>
+        </insert>
+    </changeSet>
+
+	<changeSet author="Usman Malik" context="base" id="paypal IPN ">
+        <validCheckSum>7:5b2d005954764ce6fccd363a83a0302d</validCheckSum>
+        <comment>Tables used for managing Paypal IPN </comment>
+        <createTable tableName="paypal_ipn">
+            <column name="id" type="java.sql.Types.INTEGER" />
+            <column name="item_number" type="java.sql.Types.VARCHAR(100)" />
+            <column name="verify_sign" type="java.sql.Types.VARCHAR(100)" />
+            <column name="business" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payment_status" type="java.sql.Types.VARCHAR(100)" />
+            <column name="transaction_subject" type="java.sql.Types.VARCHAR(100)" />
+            <column name="protection_eligibilty" type="java.sql.Types.VARCHAR(100)" />
+            <column name="first_name" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payer_id" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payer_email" type="java.sql.Types.VARCHAR(100)" />
+            <column name="mc_fee" type="java.sql.Types.VARCHAR(100)" />
+            <column name="txn_id" type="java.sql.Types.VARCHAR(100)" />
+            <column name="parent_txn_id" type="java.sql.Types.VARCHAR(100)" />
+            <column name="quantity" type="java.sql.Types.VARCHAR(100)" />
+            <column name="reciever_email" type="java.sql.Types.VARCHAR(100)" />
+            <column name="notify_version" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payer_status" type="java.sql.Types.VARCHAR(100)" />
+            <column name="mc_gross" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payment_date" type="java.sql.Types.TIMESTAMP" />
+            <column name="payment_gross" type="java.sql.Types.VARCHAR(100)" />
+            <column name="ipn_track_id" type="java.sql.Types.VARCHAR(100)" />
+            <column name="receipt_id" type="java.sql.Types.VARCHAR(100)" />
+            <column name="last_name" type="java.sql.Types.VARCHAR(100)" />
+            <column name="payment_type" type="java.sql.Types.VARCHAR(100)" />
+            <column defaultValueNumeric="0" name="verified" type="java.sql.Types.INTEGER"/>
+        </createTable>
+
+        <insert tableName="jbilling_table">
+            <column name="id" valueComputed="(select max(t.id)+1 from jbilling_table t)"/>
+            <column name="name" value="paypal_ipn"/>
+        </insert>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="paypal_ipn"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+
+	<changeSet id="adding new fail payment method" author="Usman" context="base">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from payment_result where id = 5;
+			</sqlCheck>
+		</preConditions>
+        <insert tableName="payment_result">
+            <column name="id" valueNumeric="5"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="41"/>
+            <column name="foreign_id" valueNumeric="5"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payer Billing Information not found."/>
+        </insert>
+    </changeSet>
+
+	<changeSet author="Manish Bansod" context="base" id="Added-penalty-cancellation-Plugin">
+        <validCheckSum>7:3da1cc4a0ba7c3b3fdec2b83c3c4c0ac</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.pluggableTask.PenaltyCancellationTask';
+			</sqlCheck>
+		</preConditions>
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+			<column name="category_id" valueNumeric="17"/>
+			<column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.PenaltyCancellationTask"/>
+			<column name="min_parameters" valueNumeric="0"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="title"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="User Penalty Cancellation Task"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="This plugin changes the user's suspended status to active."/>
+		</insert>
+	</changeSet>
+
+	<changeSet author="Mahesh Shivarkar" context="base" id="Added-CustomerUsagePoolEvaluationCronTask-Plugin">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationCronTask';
+			</sqlCheck>
+		</preConditions>
+   		<insert tableName="pluggable_task_type">
+	       <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+	       <column name="category_id" valueNumeric="22"/>
+	       <column name="class_name" value="com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationCronTask"/>
+	       <column name="min_parameters" valueNumeric="0"/>
+	    </insert>
+
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Customer Usage Pool Evaluation and Update Task using cron"/>
+        </insert>
+
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plug-in will evaluate and update Customer Usage Pools to set the Cycle End Dates as per Usage Pool Period and resets the quantitites on them as per Usage Pool definition parameter."/>
+        </insert>
+	</changeSet>
+
+	<changeSet author="Mahesh Shivarkar" context="base" id="Swap-Plan-FUP-Transfer-Plugin">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.usagePool.task.SwapPlanFUPTransferTask';
+			</sqlCheck>
+		</preConditions>
+		<comment>This plugin transfers FUP utilised from old plan to new plan.</comment>
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+			<column name="category_id" valueNumeric="17"/>
+			<column name="class_name" value="com.sapienter.jbilling.server.usagePool.task.SwapPlanFUPTransferTask"/>
+			<column name="min_parameters" valueNumeric="0"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="title"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Swap Plan FUP Transfer Task"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24"/>
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="This plugin transfers FUP utilised from old plan to new plan."/>
+		</insert>
+		<sql>
+			<![CDATA[
+				INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+				select (select max(p.id)+1 from pluggable_task p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+						e1.id,
+						(select max(p.id) from pluggable_task_type p),
+						14,
+						1
+				from entity e1
+				order by e1.id
+			]]>
+		</sql>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base" id="#11699-Add-Cycle_Start_Date">
+		<addColumn tableName="customer_usage_pool_map">
+                  <column name="cycle_start_date" type="TIMESTAMP WITH TIME ZONE"/>
+		</addColumn>
+	</changeSet>
+
+	<changeSet author="Manish Bansod" context="base" id="Changed timestamp">
+    <comment>Timestamp 'TIMESTAMP WITH TIME ZONE' has been changed to 'TIMESTAMP WITHOUT TIME ZONE'</comment>
+        <sql>
+        	ALTER TABLE customer_usage_pool_map ALTER COLUMN cycle_start_date TYPE TIMESTAMP WITHOUT TIME ZONE;
+        </sql>
+    </changeSet>
+
+    <changeSet author="Ashok Kale" context="base" id="#11699-Add-effective-date">
+		<addColumn tableName="order_line_usage_pool_map">
+                  <column name="effective_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+		</addColumn>
+	</changeSet>
+	
+	<changeSet author="Mahesh Shivarkar" context="base" id="#System-Health-Check-Reports">
+    	<insert tableName="report_type">
+		    <column name="id" valueComputed="coalesce((select max(t.id) + 1 from report_type t), 1)"/>
+		    <column name="name" value="data_consistency_checks"/>
+		    <column name="optlock" valueNumeric="0"/>
+		</insert>
+    	<insert tableName="international_description">
+            <column name="table_id" valueNumeric="101"/>
+            <column name="foreign_id" valueComputed="(select id from report_type where name='data_consistency_checks')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="System Health Check Reports"/>
+        </insert>
+        <insert tableName="report">
+        	<column name="id" valueComputed="(select max(id)+1 from report)"/>
+        	<column name="type_id" valueComputed="(select id from report_type where name='data_consistency_checks')"/>
+        	<column name="name" value="data_consistency_checks"/>
+        	<column name="file_name" value="data_consistency_checks.jasper"/>
+        	<column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id from report r WHERE r.name = 'data_consistency_checks'), id FROM entity where parent_id is null
+        </sql>
+    </changeSet>
+    
+	<changeSet id="JBFC-186 - Added preference for adjustment order creation" author="Manish B" context="base">
+	 	<insert tableName="preference_type">
+	           <column name="id" valueComputed="(select max(id) + 1 from preference_type)"/>
+	           <column name="def_value" value="0"/>
+		</insert>
+	       
+		<insert tableName="international_description">
+	           <column name="table_id" valueNumeric="50"/>
+	           <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+	           <column name="psudo_column" value="description"/>
+	           <column name="language_id" valueNumeric="1"/>
+	           <column name="content" value="Create Adjustment Orders in case of FUP Proration and Plan Swap"/>
+		</insert>
+	       
+        <insert tableName="international_description">
+           <column name="table_id" valueNumeric="50"/>
+           <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+           <column name="psudo_column" value="instruction"/>
+           <column name="language_id" valueNumeric="1"/>
+           <column name="content" value="This preference if set to 1 would create overage adjustment orders in case of FUP proration and plan swap.
+							           		 If set to zero, it would not create any overage adjustment orders,
+							           		  instead rerate the existing usage orders as per the new free quantity on the usage pools."/>
+		</insert>
+	</changeSet>
+	
+	<changeSet  id="JBFC-186 - Swap Plan History" author="Manish B" context="base">
+        <comment>Tables used to keep swap plan history</comment>
+        <createTable tableName="swap_plan_history">
+            <column name="id" type="java.sql.Types.INTEGER">
+            <constraints nullable="false" primaryKey="true" primaryKeyName="swap_plan_history_pkey"/>
+            </column>
+            <column name="old_plan_id" type="java.sql.Types.INTEGER"/>
+            <column name="new_plan_id" type="java.sql.Types.INTEGER"/>
+            <column name="swap_date" type="java.sql.Types.TIMESTAMP"/>
+            <column name="old_plan_overage_quantity" type="java.sql.Types.NUMERIC(22,10)" />
+            <column name="old_plan_overage_amount" type="java.sql.Types.NUMERIC(22,10)" />
+            <column name="old_plan_used_free_quantity" type="java.sql.Types.NUMERIC(22,10)" />
+            <column name="order_id" type="java.sql.Types.INTEGER" />
+        </createTable>
+	</changeSet>
+	
+	<changeSet id="JBFC 237 - Add preference for Product Internal Number(Product Code)" author="Harshad Pathan" context="base">
+		<insert tableName="preference_type">
+			<column name="id" valueComputed="(select max(id) + 1 from preference_type)" />
+			<column name="def_value" value="IVR" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="50" />
+			<column name="foreign_id" valueComputed="(select max(id) from preference_type)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Product Code to skip while calculating left free usage minute." />
+		</insert>
+
+		 <insert tableName="international_description">
+           <column name="table_id" valueNumeric="50"/>
+           <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+           <column name="psudo_column" value="instruction"/>
+           <column name="language_id" valueNumeric="1"/>
+           <column name="content" value="This preference is used to skip a product while calculating remaining free usage units for a user to be shared on email notifications."/>
+		</insert>
+	</changeSet>
+
+	<changeSet id="JBFC-113 Mediation Rating Increment Management" author="Andres Canevaro" context="base">
+        <createTable tableName="rating_scheme">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="rating_scheme_pkey"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER"/>
+            <column name="name" type="VARCHAR(100)"/>
+            <column name="initial_increment" type="java.sql.Types.INTEGER"/>
+            <column name="initial_rounding_mode" type="java.sql.Types.INTEGER"/>
+            <column name="main_increment" type="java.sql.Types.INTEGER"/>
+            <column name="main_rounding_mode" type="java.sql.Types.INTEGER"/>
+            <column name="global" type="java.sql.Types.BOOLEAN" defaultValue="false"/>
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="rating_cheme_entity_FK"
+                                 baseTableName="rating_scheme"
+                                 baseColumnNames="entity_id"
+                                 referencedTableName="entity"
+                                 referencedColumnNames="id"/>
+
+        <createTable tableName="rating_scheme_association">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="rating_scheme_association_pkey"/>
+            </column>
+            <column name="rating_scheme" type="java.sql.Types.INTEGER"/>
+            <column name="mediation" type="java.sql.Types.INTEGER"/>
+            <column name="entity" type="java.sql.Types.INTEGER"/>
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="rating_scheme_FK"
+                                 baseTableName="rating_scheme_association" baseColumnNames="rating_scheme"
+                                 referencedTableName="rating_scheme" referencedColumnNames="id"/>
+    </changeSet>
+
+	<changeSet author="Mahesh Shivarkar" id="add-asset-identifier" context="base">
+        <comment>Asset Identifier column added to display identifiers in download invoices csv</comment>
+        <addColumn tableName="invoice_line">
+            <column name="asset_identifier" type="java.sql.Types.VARCHAR(50)"/>
+        </addColumn>
+    </changeSet>
+    
+	<changeSet id="#13622 call-counter-add-in-order-line" author="Ashok Kale" context="base"> 
+		<addColumn tableName="order_line">
+        	<column name="call_counter" type="java.sql.Types.BIGINT" defaultValueNumeric="0" >
+        		<constraints nullable="false" />
+        	</column>
+		</addColumn>
+	</changeSet>
+	
+	<changeSet id="#13622 call-counter-add-in-invoice-line" author="Ashok Kale" context="base"> 
+		<addColumn tableName="invoice_line">
+        	<column name="call_counter" type="java.sql.Types.BIGINT" defaultValueNumeric="0" >
+        		<constraints nullable="false" />
+        	</column>
+		</addColumn>
+	</changeSet>
+	
+	<changeSet author="Ashok Kale" context="base" id="Added new column payment method id">
+       <addColumn tableName="payment_information">
+            <column name="payment_method" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+    </changeSet>
+    
+    <!-- Newly added for fc-hosted -->
+	<changeSet author="Harshad Pathan" context="base" id="JBFC-283 add boolean paramter to DCR to check for include parent">
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="is_parent_inculde"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Harshad Pathan" context="base" id="JBFC-283 add boolean paramter to DCR to check for SubReport">
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_negative_invoices_reports"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_mediated_orders_without_usage_pool"/>
+        </insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_one_time_orders_with_active_since_date_as_1st_Of_the_month_and_status_as_finished"/>
+        </insert>
+
+ 		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_mediated_orders_with_active_since_date_in_future"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_mediated_orders_with_active_since_date_before_1st.of_current_month_and_status_not_finished"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_customer_usage_pools_with_cycle_start_date_or_cycle_end_date_in_past_month"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_payments_with_pre_auth"/>
+		</insert>  
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="customer_usage_pools_with_cycle_start_date_and_cycle_end_date_in_future_month"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="incude_customer_usage_pools_with_cycle_start_date_or_cycle_end_date_in_past_month"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="subscription_orders_that_dont_have_associated_customer_usage_pool"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_next_billable_date_mismatch_between_orders_and_order_changes"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="include_plan_customer_usage_pool_mismatch"/>
+		</insert>
+
+		<insert tableName="report_parameter">
+            <column name="id" valueComputed="(select coalesce(max(rp.id), 1)+1 from report_parameter rp)"/>
+            <column name="report_id" valueComputed="(select id from report r where r.name = 'data_consistency_checks')"/>
+            <column name="dtype" value="boolean"/>
+            <column name="name" value="mediated_orders_with_negative_amounts"/>
+		</insert>
+    </changeSet>
+    
+	<changeSet id="JBFC-392 Added Fullcreative specific Invoice Composition Task" author="Krunal Bhavsar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeOrderLineBasedCompositionTask';
+			</sqlCheck>
+		</preConditions>
+		<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.FullCreativeOrderLineBasedCompositionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+	</changeSet>
+	
+	<changeSet id="JBFC-390 Rating Scheme Permission" author="Ashok Kale" context="base">
+		<insert tableName="permission">
+            <column name="id" valueComputed="(select (pt.id*100)+5 from permission_type pt where pt.description='Configuration')"/>
+            <column name="type_id" valueComputed="(select max(pt.id) from permission_type pt)"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueComputed="(select max(t.id) from permission t)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Rating Schemes" />
+        </insert>
+    </changeSet>
+
+     <changeSet id="JBFC-390 Add Column Dialed Number" author="Ashok Kale" context="base">
+        <addColumn tableName="invoice_line">
+            <column name="dialed_number" type="java.sql.Types.VARCHAR(50)"/>
+        </addColumn>
+     </changeSet>
+ 
+	<changeSet id="JBFC-391 Added Pre_evalauted_sql Table" author="Krunal Bhavsar" context="base"> 
+     	<createTable tableName="pre_evaluated_sql">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="query_code" type="java.sql.Types.VARCHAR(100)">
+            <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="sql_query" type="java.sql.Types.CLOB">
+            <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="functional_description" type="java.sql.Types.CLOB"/>
+            <column name="parent_entity_id" type="java.sql.Types.INTEGER"/>
+        </createTable>
+        
+        <createTable tableName="pre_evaluated_sql_parameter">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="parameter_type" type="VARCHAR(25)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parameter_name" type="java.sql.Types.VARCHAR(250)">
+            <constraints unique="false" nullable="false"/>
+            </column>
+            <column name="pre_evaluated_sql_id" type="java.sql.Types.INTEGER">
+            	<constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="pre_evaluated_sql_id" baseTableName="pre_evaluated_sql_parameter" baseTableSchemaName="public" constraintName="pre_evaluated_sql_parameter_fk_1" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="pre_evaluated_sql" referencedTableSchemaName="public" referencesUniqueColumn="false"/>
+    </changeSet>
+
+	<changeSet id="Added Pre Evaluated Query " author="Krunal Bhavsar" context="test">
+		<insert tableName="pre_evaluated_sql">
+			<column name="id" value="1" />
+			<column name="query_code " value="Test-01" />
+			<column name="sql_query"
+				value="select id ,user_name from base_user where user_name LIKE CONCAT('%',:userName,'%')"></column>
+			<column name="functional_description"
+				value="Query fecthes id and user name from base_user table"></column>
+			<column name="parent_entity_id" value="1"></column>
+		</insert>
+		<insert tableName="pre_evaluated_sql_parameter">
+			<column name="id" value="1" />
+			<column name="parameter_type " value="STRING" />
+			<column name="parameter_name" value="userName"></column>
+			<column name="pre_evaluated_sql_id" value="1"></column>
+		</insert>
+	</changeSet>
+
+	<changeSet author="Krunal Bhavsar" id="Added UniqueConstraint" context="base">
+        <addUniqueConstraint columnNames="parameter_name, pre_evaluated_sql_id" constraintName="parameter_name_pre_evaluated_sql_id" 
+        deferrable="false" disabled="false" initiallyDeferred="false" tableName="pre_evaluated_sql_parameter"/>
+   	</changeSet>
+
+	<changeSet id="#JBFC-359 add preference background csv generation" context="base" author="Harshad Pathan">
+        <comment>This prefernce will manage the csv generation mechanism. If set 0, It will work on browser download else csv will be generated on server. </comment>
+
+        <insert tableName="preference_type">
+            <column name="ID" valueComputed="(select max(id) + 1 from preference_type)" />
+            <column name="DEF_VALUE" value="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueComputed="(SELECT MAX(pt.id) FROM preference_type pt)" />
+            <column name="PSUDO_COLUMN" value="description" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="Background Generation of CSV Exports" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueComputed="(SELECT MAX(pt.id) FROM preference_type pt)" />
+            <column name="PSUDO_COLUMN" value="instruction" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="If preference is set 0, It will work on browser download else csv will be generated on server. " />
+        </insert>
+    </changeSet>
+
+	<changeSet author="Harshad Pathan" context="base" id="JBFC-359 - Email notification when csv generated succesgully.">
+       <insert tableName="notification_message_type">
+            <column name="id" valueComputed="(select max(nmt.id)+1 from notification_message_type nmt)"/>
+            <column name="category_id" valueNumeric="5"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52"/>
+            <column name="foreign_id" valueComputed="(select max(nmt.id) from notification_message_type nmt)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Background Generation of CSV Exports"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(mt.id)+1 from notification_message_type mt)"/>
+            <where>name='notification_message_type'</where>
+        </update>
+
+         <comment>id = maxMessageId + count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message (entity_id, id, language_id, notify_admin, notify_all_parents, notify_parent, notify_partner, optlock, type_id, use_flag)
+                select e1.id, (select max(p.id)+1 from notification_message p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id), 1, 0, 0, 0, 0, 1, (select max(nmt.id) from notification_message_type nmt), 1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(p.id)+1 from notification_message p), 1)"/>
+            <where>name='notification_message'</where>
+        </update>
+        <comment>message_id = maxMessageId - count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_section (id, message_id, section, optlock)
+                select (select max(p.id)+1 from notification_message_section p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id) from notification_message p) - (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       1,
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+
+        <comment>message_id = maxMessageId - count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_section (id, message_id, section, optlock)
+                select (select max(p.id)+1 from notification_message_section p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id) from notification_message p) - (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       2,
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+
+         <comment>message_id = maxMessageId - count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_section (id, message_id, section, optlock)
+                select (select max(p.id)+1 from notification_message_section p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id) from notification_message p) - (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       3,
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql> 
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(p.id)+1 from notification_message_section p), 1)"/>
+            <where>name='notification_message_section'</where>
+        </update>
+        <comment>message_section_id = (maxSectionId + 1 - (3 * entityCant)) + count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_line (id, message_section_id, content, optlock)
+                select (select max(p.id)+1 from notification_message_line p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id)+1 from notification_message_section p) - (select count(*) * 3 from entity ecant) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       'Background Csv Generation',
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+
+        <comment>message_section_id = (maxSectionId + 1 - (2 * entityCant)) + count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_line (id, message_section_id, content, optlock)
+                select (select max(p.id)+1 from notification_message_line p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id)+1 from notification_message_section p) - (select count(*) * 2 from entity ecant) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       '',
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+
+        <comment>message_section_id = (maxSectionId + 1 - (1 * entityCant)) + count</comment>
+        <sql>
+            <![CDATA[
+                INSERT INTO notification_message_line (id, message_section_id, content, optlock)
+                select (select max(p.id)+1 from notification_message_line p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       (select max(p.id)+1 from notification_message_section p) - (select count(*) * 1 from entity ecant) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       '<!DOCTYPE html>
+						<html>
+						  <head>
+						    <title>80%_warning</title>
+						    <meta charset="UTF-8">
+						  </head>
+						  <body style=" margin:0px; padding:0px;">
+						    <table border="0" bgcolor="#ffffff" align="center" width="650px"style="border:1px solid #f7f7f7;margin:40px auto;border-collapse:collapse;">
+						     <p><strong>Hello $adminUser</strong></p>
+						<p>CSV you are looking for is generated on following FTP path. &nbsp;<a href=$filePath>Click for FTP</a>.</p>
+						<p>Your file name is : $fileName.&nbsp;<br /><br />Thanks.</p>
+						    </table>
+						  </body>
+						</html>',
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+      </changeSet>
+  
+	<changeSet author="Ashok Kale" context="test" id="JBFC-499 - User Deleted email notification for Reseller Company.">
+        <insert tableName="notification_message">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message p)"/>
+            <column name="type_id" valueNumeric="9"/>
+            <column name="entity_id" valueNumeric="3"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="use_flag" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="attachment_type" value="pdf"/>
+            <column name="include_attachment" valueNumeric="0"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(nm.id) from notification_message nm)"/>
+            <where>name = 'notification_message'</where>
+        </update>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_line">
+            <column name="id" valueComputed="(select max(nml.id)+1 from notification_message_line nml)"/>
+            <column name="message_section_id" valueComputed="(select max(id) from notification_message_section)"/>
+            <column name="content" value="User deleted"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_line">
+            <column name="id" valueComputed="(select max(nml.id)+1 from notification_message_line nml)"/>
+            <column name="message_section_id" valueComputed="(select max(id) from notification_message_section)"/>
+            <column name="content" value="Dear $userSalutation,\r\n\r\nYour user has been deleted"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(nml.id)+1 from notification_message_section nml)"/>
+            <where>name = 'notification_message_section'</where>
+        </update>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(nml.id)+1 from notification_message_line nml)"/>
+            <where>name = 'notification_message_line'</where>
+        </update>
+    </changeSet>
+
+	<changeSet id="Preference for allowing duplicate metafields in copy company" author="Pranay G. Raherkar" context="base">
+		<insert tableName="preference_type">
+			<column name="id" valueComputed="(select max(id) + 1 from preference_type)"/>
+            <column name="def_value" value="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)" />
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Allow Duplicate AIT Meta Fields in Copy Company"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)" />
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="If the value is 1 then allow duplicate AIT meta fields during copy company operation else do not allow."/>
+        </insert>
+     </changeSet>
+
+	<changeSet id="JBFC-512 Resolved not-null constraint violation at prepare-test --init" author="Harshad Pathan" context="base">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="1">
+				select count(*) from preference ;
+			</sqlCheck>
+		</preConditions>
+	     <update tableName="jbilling_seqs">
+			<column name="next_id" valueComputed="(select max(p.id)+1 from preference p)"/>
+			<where>name='preference'</where>
+		</update>
+     </changeSet>
+
+	<changeSet id="JB-830: Signup_Issue_Fix_Payment_Process_Auto_Payments_Task" author="Neelabh Dubey" context="test">
+		<insert tableName="meta_field_name">
+            <column name="id" valueComputed="coalesce((select max(t.id)+1 from meta_field_name t),1)"/>
+            <column name="name" value="autopayment.limit"/>
+            <column name="entity_type" value="PAYMENT_METHOD_TEMPLATE"/>
+            <column name="data_type" value="DECIMAL"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="field_usage" value="AUTO_PAYMENT_LIMIT"/>
+            <column name="entity_id" valueComputed="(select min(t.id) from entity t)"/>
+        </insert>
+		<insert tableName="payment_method_template_meta_fields_map">
+	            <column name="method_template_id" valueComputed="(select min(t.id) from payment_method_template t where t.template_name = 'Payment Card')"/>
+	            <column name="meta_field_id" valueComputed="(select max(t.id) from meta_field_name t)"/>
+	        </insert>
+		<insert tableName="payment_method_template_meta_fields_map">
+	            <column name="method_template_id" valueComputed="(select min(t.id) from payment_method_template t where t.template_name = 'ACH')"/>
+	            <column name="meta_field_id" valueComputed="(select max(t.id) from meta_field_name t)"/>
+        </insert>
+		<sql>
+            <![CDATA[
+		        insert into payment_method_meta_fields_map(meta_field_id, payment_method_id)
+				select (select id from meta_field_name where name ='autopayment.limit'), id
+				from payment_method_type where template_id in (1,2);
+			]]>
+        </sql>
+	 </changeSet>
+
+	 <changeSet id="JB-830: Signup_Issue_Fix_Preference not found" author="Harshad Pathan" context="test">
+		 <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM meta_field_name)"/>
+            <column name="name" value="Billing Contact Info Group Name"/>
+            <column name="entity_type" value="COMPANY"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="default_value_id"/>
+            <column name="optlock" valueNumeric="0"/>
+              <column name="entity_id" valueNumeric="1"/>
+            <column name="error_message"/>
+            <column name="is_primary" valueBoolean="true"/>
+            <column name="validation_rule_id"/>
+            <column name="filename"/>
+            <column name="field_usage"/>
+            <column name="help_description"/>
+            <column name="help_content_url"/>
+		</insert>
+		
+       <insert tableName="meta_field_value">
+            <column name="id" valueComputed="(select COALESCE(max(mv.id),0)+1 from meta_field_value mv)"/>
+            <column name="meta_field_name_id" valueComputed="(SELECT max(id) FROM meta_field_name)"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Billing Address"/>
+        </insert>
+        
+        <insert tableName="entity_meta_field_map">
+              <column name="entity_id" valueNumeric="1"/>
+            <column name="meta_field_value_id" valueComputed="(SELECT max(id) FROM meta_field_value)"/>
+        </insert>
+	 </changeSet>      
+	 
+	<changeSet author="Mazhar Shaukat" context="base" id="JB-871: Added Full-Creative-Specific-UpdateCustomerAccountNumberTask-Plugin">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.order.task.UpdateCustomerAccountNumberTask';
+			</sqlCheck>
+		</preConditions>
+		<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.UpdateCustomerAccountNumberTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Set Primary Phone Number Plugin"/>
+        </insert>
+	</changeSet>
+	
+	<changeSet author="Mahesh Shivarkar" context="base" id="Billing-Process-Cron-Plugin">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessCronTask';
+			</sqlCheck>
+		</preConditions>
+        <comment>This cron task will trigger as per configuration of cron expression.</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.billing.task.BillingProcessCronTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Billing process cron task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Schedule Billing process using cron expression."/>
+        </insert>
+    </changeSet>
+
+	<changeSet author="Mahesh Shivarkar" context="base" id="Added-Paypal-Express-Checkout-Plugin">
+        <validCheckSum>7:eb9394112a44f645d8f9e86bd65355db</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.payment.tasks.paypal.PaymentPaypalExpressCheckoutTask';
+			</sqlCheck>
+		</preConditions>
+        <comment>Added plugin to do payment using Paypal account.</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="6"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.paypal.PaymentPaypalExpressCheckoutTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Paypal Express Checkout Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin perform the 'Do Express Checkout' step of the Express Checkout workflow. It has been developed with intention of supporting external systems or portals using Express Checkout workflow, and using jBilling to actually perform the payment using the 'Do Express Checkout' step. The plugin in its present form does not support all steps of an express checkout."/>
+        </insert>
+    </changeSet>
+    
+	<changeSet author="Mazhar Shaukat" context="base" id="PayPal Payflow ACH Plugin">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.payment.tasks.paypal.PayflowExternalACHTask';
+			</sqlCheck>
+		</preConditions>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="6"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.paypal.PayflowExternalACHTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="PayPal Payflow ACH Plugin"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="PayPal Payflow ACH Plugin"/>
+        </insert>
+
+    </changeSet>
+    
+	<changeSet id="JBFC-417-Full-Creative-Custom-Email-Token-Task" author="Mahesh Shivarkar" context="base">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomEmailTokenTask';
+			</sqlCheck>
+		</preConditions>
+        <comment>Full Creative's Task for Population of Custom Email Tokens</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomEmailTokenTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomEmailTokenTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Full Creative's Task for Population of Custom Email Tokens"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomEmailTokenTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is specific to Full Creative's implementation. It is used for populating custom email tokens that include Full Creative specific meta fields such as Primary Account Number of a customer. This plugin handles the CustomEmailToken event."/>
+        </insert>
+    </changeSet>
+    
+	<changeSet author="Harshad Pathan" context="base" id="JBFC-416-Full-Creative-Item-Manager-Task">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask';
+			</sqlCheck>
+		</preConditions>
+        <comment>This FullCreative specific Item Manager.</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="13"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Full Creative's Item Management Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is specific to Full Creative's Item Management Functionality. Just like the Basic plugin, it also adds items to an order.If the item is already in the order, it only updates the quantity. But it also uses some Full Creative specific meta fields and changes to populate those meta fields at order line level."/>
+        </insert>
+    </changeSet>
+    
+    <changeSet id="JBFC-460-Full-Creative-Custom-Invoice-Field-Tokens-Task" author="Mahesh Shivarkar" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+				select count(*) from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask';
+            </sqlCheck>
+        </preConditions>
+        <comment>Full Creative's Task to populate of custom invoice parameters</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Full Creative's task to populate custom invoice parameters"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select ptt.id from pluggable_task_type ptt where ptt.class_name = 'com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is specific to Full Creative's implementation. It is used for populating invoice parameters that include Full Creative specific parameters for invoice generation. This plugin handles the CustomInvoiceFieldsEvent event."/>
+        </insert>
+     </changeSet>
+     
+     <changeSet id="#JB-932 Migrate Payment Instrument" author="Krunal Bhavsar" context="base">
+     	<preConditions onFail="MARK_RAN">
+           <tableExists tableName="credit_card"/>
+           <columnExists tableName="payment" columnName="ach_id"/>
+        </preConditions>
+     	<customChange class="com.sapienter.jbilling.server.migrations.MigrateOldPaymentInstruments" />
+     	<update tableName="payment">
+        	<column name="credit_card_id" value="null"></column>
+        	<where>credit_card_id not in (select id from payment_information) 
+        	and user_id in (select id from base_user where deleted = 1)</where>
+        </update>
+     </changeSet>
+     
+	<changeSet author="Amol Gadre" context="base" id="JB-871-CC-Payments-Failing-Missing-Schema-Changes">
+        <validCheckSum>7:015c2e62196905320efa712dbc0f7206</validCheckSum>
+     	<preConditions onFail="MARK_RAN">
+			<tableExists tableName="credit_card"/>
+			<columnExists tableName="payment" columnName="ach_id"/>
+        </preConditions>
+     	<dropForeignKeyConstraint baseTableName="payment" constraintName="payment_fk_4"/>
+     	<addForeignKeyConstraint baseColumnNames="credit_card_id"
+                                 baseTableName="payment" constraintName="payment_fk_7"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="payment_information"
+                                 referencesUniqueColumn="false" />
+
+        <dropForeignKeyConstraint baseTableName="payment" constraintName="payment_fk_1"/>
+        <dropColumn columnName="ach_id" tableName="payment"/>
+        <!-- TODO:: We are not dropping these table because it required for Migration-->
+        <!--<dropTable tableName="credit_card"/>
+        <dropTable tableName="ach"/>
+        <dropTable tableName="payment_info_cheque"/>-->
+	</changeSet>
+	 <changeSet author="Ashok Kale" context="base" id="JB-907-Update-Jbilling-Seqs">
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(bu.id)+1 from base_user bu), 1)"/>
+	            <where>name='base_user'</where>
+	      </update>
+	       <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn), 1)"/>
+	            <where>name='meta_field_name'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(pmt.id)+1 from payment_method_type pmt), 1)"/>
+	            <where>name='payment_method_type'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(nml.id)+1 from notification_message_line nml), 1)"/>
+	            <where>name='notification_message_line'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(pty.id)+1 from pluggable_task_type pty), 1)"/>
+	            <where>name='pluggable_task_type'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(pt.id)+1 from pluggable_task pt), 1)"/>
+	            <where>name='pluggable_task'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(pi.id)+1 from payment_information pi), 1)"/>
+	            <where>name='payment_information'</where>
+	      </update>
+	      <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(pii.id)+1 from payment_instrument_info pii), 1)"/>
+	            <where>name='payment_instrument_info'</where>
+	      </update>
+	 </changeSet>
+	 <changeSet id="JB-907 - Deleting preference with wrong ids" author="Ashok Kale" context="base">
+		<comment>Deleting wrongs ids preferences </comment>
+        <sql>
+			<![CDATA[
+				delete from preference where type_id = (select id from preference_type where id = 
+				(select foreign_id from international_description where table_id = 50 and content = 'Background Generation of CSV Exports'));
+				delete from preference_type where id = (select foreign_id from international_description where table_id = 50 and content = 'Background Generation of CSV Exports');
+				delete from international_description where table_id= 50 and content = 'Background Generation of CSV Exports';
+				delete from international_description where table_id= 50 and content = 'If preference is set 0, It will work on browser download else csv will be generated on server. ';
+			]]>
+		</sql>
+		<sql>
+			<![CDATA[
+				delete from preference where type_id = (select id from preference_type where id = 
+				(select foreign_id from international_description where table_id = 50 and content = 'Allow Duplicate AIT Meta Fields in Copy Company'));
+				delete from preference_type where id = (select foreign_id from international_description where table_id = 50 and content = 'Allow Duplicate AIT Meta Fields in Copy Company');
+				delete from international_description where table_id= 50 and content = 'Allow Duplicate AIT Meta Fields in Copy Company';
+				delete from international_description where table_id= 50 and content = 'If the value is 1 then allow duplicate AIT meta fields during copy company operation else do not allow.';
+			]]>
+		</sql>
+		<update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn), 1)"/>
+	            <where>name='meta_field_name'</where>
+	      </update>
+	</changeSet>
+
+	<changeSet id="#JB-907 add preference background csv generation" context="base" author="Harshad Pathan">
+        <comment>This prefernce will manage the csv generation mechanism. If set 0, It will work on browser download else csv will be generated on server. </comment>
+
+        <insert tableName="preference_type">
+            <column name="ID" valueNumeric="82"/>
+            <column name="DEF_VALUE" value="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueNumeric="82"/>
+            <column name="PSUDO_COLUMN" value="description" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="Background Generation of CSV Exports" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="TABLE_ID" valueNumeric="50" />
+            <column name="FOREIGN_ID" valueNumeric="82"/>
+            <column name="PSUDO_COLUMN" value="instruction" />
+            <column name="LANGUAGE_ID" valueNumeric="1" />
+            <column name="CONTENT" value="If preference is set 0, It will work on browser download else csv will be generated on server. " />
+        </insert>
+    </changeSet>
+
+	<changeSet id="JB-907 - Preference for allowing duplicate metafields in copy company" author="Pranay G. Raherkar" context="base">
+        <insert tableName="preference_type">
+            <column name="id" valueNumeric="83"/>
+            <column name="def_value" value="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="83"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Allow Duplicate AIT Meta Fields in Copy Company"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueNumeric="83"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="If the value is 1 then allow duplicate AIT meta fields during copy company operation else do not allow."/>
+        </insert>
+     </changeSet>
+</databaseChangeLog>

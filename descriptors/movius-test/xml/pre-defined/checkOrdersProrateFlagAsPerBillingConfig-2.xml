@@ -1,0 +1,12 @@
+<organizations system-id="Prancing Pony">
+    <org>
+        <name>Beans</name>
+        <id>7556</id>
+        <subscription>5</subscription>
+        <count>1</count>
+        <timezone>Europe/London</timezone>
+        <billing-plan-id>1</billing-plan-id>
+        <billing-plan-name>Telstra Master Plan</billing-plan-name>
+        <billable>true</billable>
+    </org>
+</organizations>

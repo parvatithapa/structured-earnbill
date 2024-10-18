@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rejected_payment_methods" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isFloatColumnFooter="true">
+  <property name="ireport.zoom" value="1.5"/>
+  <property name="ireport.x" value="0"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="currency_code" class="java.lang.String"/>
+  <parameter name="payment_date" class="java.util.Date"/>
+  <parameter name="payment_method" class="java.lang.Integer"/>
+  <parameter name="entity_id" class="java.lang.Integer"/>
+  <parameter name="child_entities" class="java.util.List"/>
+  <queryString>
+    <![CDATA[
+              SELECT i18n.content AS payment_result,
+                     u.id AS customer_id,
+                     u.user_name AS customer_name,
+                     p.amount AS amount,
+                     c.symbol AS currency_symbol
+                FROM payment p
+           LEFT JOIN base_user u ON u.id=p.user_id
+           LEFT JOIN currency c ON p.currency_id=c.id
+           LEFT JOIN international_description i18n ON i18n.table_id=41
+                 AND i18n.psudo_column='description'
+                 AND i18n.language_id=1
+                 AND i18n.foreign_id=p.result_id
+               WHERE (u.entity_id = $P{entity_id} OR $X{IN, u.entity_id, child_entities})
+                 AND p.payment_date=$P{payment_date}
+                 AND c.code=$P{currency_code}
+                 AND (p.result_id=2 OR p.result_id=3)
+                 AND p.method_id=$P{payment_method}
+            ORDER BY u.id
+        ]]>
+  </queryString>
+  <field name="payment_result" class="java.lang.String"/>
+  <field name="customer_id" class="java.lang.Long"/>
+  <field name="customer_name" class="java.lang.String"/>
+  <field name="currency_symbol" class="java.lang.String"/>
+  <field name="amount" class="java.math.BigDecimal"/>
+  <detail>
+    <band height="20">
+      <textField>
+        <reportElement x="160" y="0" width="130" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression>
+          <![CDATA[$F{payment_result}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="290" y="0" width="80" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression>
+          <![CDATA[$F{customer_id}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="370" y="0" width="120" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression>
+          <![CDATA[$F{customer_name}.indexOf("_")!=-1 ? $F{customer_name}.substring( 0, $F{customer_name}.indexOf("_")) : $F{customer_name}]]>
+        </textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="490" y="0" width="60" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression>
+          <![CDATA[$P{currency_code}]]>
+        </textFieldExpression>
+      </textField>
+      <textField pattern="###0.00">
+        <reportElement x="550" y="0" width="80" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.math.BigDecimal">
+          <![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}, false) + new java.text.DecimalFormat("#,##0.00").format($F{amount})]]>
+        </textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+</jasperReport>
+
+

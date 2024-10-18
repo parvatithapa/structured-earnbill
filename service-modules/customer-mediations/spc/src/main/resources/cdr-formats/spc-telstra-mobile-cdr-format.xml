@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format> 
+<!-- p1 1 -->
+    <field>
+        <name>PART_TYPE</name>
+        <type>string</type>
+    </field>
+    <!-- p1 2 -->
+    <field>
+        <name>P1_S_P_NUMBER_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 3 -->
+    <field>
+        <name>P1_S_P_NUMBER_EC_NETWORK_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 4 -->
+    <field>
+        <name>P1_S_P_NUMBER_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 5 -->
+    <field>
+        <name>P1_S_P_NUMBER_EC_TYPE_OF_NUMBER</name>
+        <type>string</type>
+    </field>
+    <!-- p1 6 -->
+    <field>
+        <name>P1_S_P_NUMBER_EC_USER_PROFILE_ID</name>
+        <type>string</type>
+    </field>
+    <!-- p1 7 -->
+    <field>
+        <name>P1_S_P_PORT_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 8 -->
+    <field>
+        <name>P1_S_P_PORT_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 9 -->
+    <field>
+        <name>P1_NET_ELEMENT_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 10 -->
+    <field>
+        <name>P1_NET_ELEMENT_EC_NETWORK_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 11 -->
+    <field>
+        <name>P1_NET_ELEMENT_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 12 -->
+    <field>
+        <name>P1_O_P_NUMBER_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 13 -->
+    <field>
+       <name>P1_O_P_NUMBER_EC_NUMBERING_PLAN_PKEY</name>
+       <type>string</type>
+    </field>
+    <!-- p1 14 -->
+    <field>
+       <name>P1_O_P_NUMBER_EC_TYPE_OF_NUMBER</name>
+       <type>string</type>
+    </field>
+    <!-- p1 15 -->
+    <field>
+        <name>P1_O_P_NUMBER_EC_USER_PROFILE_ID</name>
+        <type>string</type>
+    </field>
+    <!-- p1 16 -->
+    <field>
+       <name>P1_RECORD_IDENTIFICATION_EC_EXT_ORIGIN</name>
+       <type>string</type>
+    </field>
+    <!-- p1 17 -->
+    <field>
+       <name>P1_CALL_DEST_EC_CALL_DEST</name>
+       <type>string</type>
+    </field>
+    <!-- p1 18 -->
+    <field>
+      <name>P1_HOME_NETWORK_EC_COUNTRY_CODE</name>
+      <type>string</type>
+    </field>
+    <!-- p1 19 -->
+    <field>
+      <name>P1_HOME_NETWORK_EC_NETWORK_CODE</name>
+      <type>string</type>
+    </field>
+    <!-- p1 20 -->
+    <field>
+      <name>P1_HOME_NETWORK_EC_NETWORK_PKEY</name>
+      <type>string</type>
+    </field>
+    <!-- p1 21 -->
+    <field>
+        <name>P1_O_P_NORMED_NUMBER_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 22 -->
+    <field>
+        <name>P1_O_P_NORMED_NUMBER_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 23 -->
+    <field>
+        <name>P1_BASIC_CALL_TYPE_INFO_EC_CALL_TYPE</name>
+        <type>string</type>
+    </field>
+    <!-- p1 24 -->
+    <field>
+        <name>P1_BASIC_CALL_TYPE_INFO_EC_CHARGING_CHARACTERISTICS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 25 -->
+    <field>
+        <name>P1_ROUTING_INFO_EC_IMPORT_EXPORT_MODE</name>
+        <type>string</type>
+    </field>
+    <!-- p1 26 -->
+    <field>
+        <name>P1_ROUTING_INFO_EC_ROUTING_PRIORITY</name>
+        <type>string</type>
+    </field>
+    <!-- p1 27 -->
+    <field>
+        <name>P1_INITIAL_START_TIME_EC_TIME_OFFSET</name>
+        <type>string</type>
+    </field>
+    <!-- p1 28 -->
+    <field>
+        <name>P1_INITIAL_START_TIME_EC_TIMESTAMP</name>
+        <type>string</type>
+    </field>
+    <!-- p1 29 -->
+    <field>
+        <name>P1_SERVICE_CLASS</name>
+        <type>string</type>
+    </field>
+    <!-- p1 30 -->
+    <field>
+        <name>P1_UDR_REF_NUM</name>
+        <type>string</type>
+    </field>
+    <!-- p1 31 -->
+    <field>
+        <name>P1_RECORD_IDENTIFICATIONRERATE_ID</name>
+        <type>string</type>
+    </field>
+    <!-- p1 32 -->
+    <field>
+        <name>For future Use P1 32</name>
+        <type>string</type>
+    </field>
+    <!-- p1 33 -->
+    <field>
+      <name>For future Use P1 33</name>
+      <type>string</type>
+    </field>
+    <!-- p1 34 -->
+    <field>
+        <name>For future Use P1 34</name>
+        <type>string</type>
+    </field>
+    <!-- p1 35 -->
+    <field>
+        <name>For future Use P1 35</name>
+        <type>string</type>
+    </field>
+    <!-- p1 36 -->
+    <field>
+      <name>For future Use P1 36</name>
+      <type>string</type>
+    </field>
+    <!-- p1 37 -->
+    <field>
+        <name>For future Use P1 37</name>
+        <type>string</type>
+    </field>
+    <!-- p1 38 -->
+    <field>
+        <name>For future Use P1 38</name>
+        <type>string</type>
+    </field>
+    <!-- p1 39 -->
+    <field>
+        <name>For future Use P1 39</name>
+        <type>string</type>
+    </field>
+    <!-- p1 40 -->
+    <field>
+        <name>End of P1</name>
+        <type>string</type>
+    </field>
+    <!-- p2 01 -->
+        <field>
+        <name>Start Of P2</name>
+        <type>string</type>
+    </field>
+    <!-- p2 02 -->
+    <field>
+        <name>P2_CALL_TYPE_INFO_EC_CALL_TYPE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 03 -->
+    <field>
+        <name>P2_CALL_TYPE_INFO_EC_FOLLOW_UP_CALL_TYPE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 04 -->
+    <field>
+        <name>P2_CALL_TYPE_INFO_EC_XFILE_IND</name>
+        <type>string</type>
+    </field>
+    <!-- p2 05 -->
+    <field>
+        <name>P2_CAMEL_DESTINATION_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p2 06 -->
+    <field>
+        <name>P2_CAMEL_DESTINATION_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 07-->
+    <field>
+        <name>P2_CAMEL_DESTINATION_EC_TYPE_OF_NUMBER</name>
+        <type>string</type>
+    </field>
+    <!-- p2 08 -->
+    <field>
+        <name>P2_CAMEL_SERVER_ADDRESS_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p2 09 -->
+    <field>
+        <name>P2_CAMEL_SERVER_ADDRESS_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 10 -->
+    <field>
+        <name>P2_CAMEL_SERVER_ADDRESS_EC_TYPE_OF_NUMBER</name>
+        <type>string</type>
+    </field>
+    <!-- p2 11-->
+    <field>
+        <name>P2_CAUSE_FOR_FORWARD_EC_CAUSE_FOR_FORWARD</name>
+        <type>string</type>
+    </field>
+    <!-- p2 12-->
+    <field>
+        <name>P2_DATA_VOLUME_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <!-- p2 13-->
+    <field>
+        <name>P2_DATA_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 14-->
+    <field>
+        <name>P2_DURATION_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <!-- p2 15-->
+    <field>
+        <name>P2_DURATION_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 16-->
+    <field>
+        <name>P2_MESSAGES_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <!-- p2 17-->
+    <field>
+        <name>P2_MESSAGES_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 18-->
+    <field>
+        <name>P2_REMARK_EC_REMARK</name>
+        <type>string</type>
+    </field>
+    <!-- p2 19-->
+    <field>
+        <name>P2_ROUTING_NUMBER_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p2 20-->
+    <field>
+        <name>P2_ROUTING_NUMBER_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 21-->
+    <field>
+        <name>P2_S_P_LOCATION_EC_ADDRESS</name>
+        <type>string</type>
+    </field>
+    <!-- p2 22-->
+    <field>
+        <name>P2_S_P_LOCATION_EC_NUMBERING_PLAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 23-->
+    <field>
+        <name>P2_SERVICE_EC_ACTION_CODE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 24-->
+     <field>
+        <name>P2_SERVICE_EC_VAS_CODE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 25-->
+    <field>
+        <name>P2_START_TIME_EC_TIME_OFFSET</name>
+        <type>string</type>
+    </field>
+    <!-- p2 26-->
+    <field>
+        <name>P2_START_TIME_EC_TIMESTAMP</name>
+        <type>string</type>
+    </field>
+    <!-- p2 27-->
+    <field>
+        <name>P2_TARIFF_INFO_EC_SN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 28-->
+    <field>
+        <name>P2_TARIFF_INFO_EC_USAGE_IND_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 29-->
+     <field>
+        <name>P2_TARIFF_INFO_EC_ZN_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 30-->
+    <field>
+        <name>P2_TARIFF_INFO_EC_ZP_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 31-->
+    <field>
+        <name>P2_TECHNICAL_INFO_EC_PARTIAL_REC_TYPE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 32-->
+    <field>
+        <name>P2_TECHNICAL_INFO_EC_PREPAY_IND</name>
+        <type>string</type>
+    </field>
+    <!-- p2 33-->
+    <field>
+        <name>P2_TECHNICAL_INFO_EC_SC_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 34-->
+    <field>
+        <name>P2_TECHNICAL_INFO_EC_SCCODE</name>
+        <type>string</type>
+    </field>
+    <!-- p2 35-->
+    <field>
+        <name>P2_TECHNICAL_INFO_EC_TERMINATION_IND</name>
+        <type>string</type>
+    </field>
+    <!-- p2 36-->
+    <field>
+        <name>P2_TECHNICAL_INFO_WS_PREPAY_IND</name>
+        <type>string</type>
+    </field>
+    <!-- p2 37-->
+    <field>
+        <name>P2_TARIFF_INFO_EC_ZN_WHLSL_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 38-->
+    <field>
+        <name>P2_TARIFF_INFO_EC_ZP_WHLSL_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 39-->
+    <field>
+        <name>For future use P2 40</name>
+        <type>string</type>
+    </field>
+    <!-- p2 40-->
+    <field>
+        <name>P2_REMARK_EC_REMARK_REASON_ID</name>
+        <type>string</type>
+    </field>
+    <!-- p2 41-->
+    <field>
+        <name>P2_REMARK_EC_REMARK_REASON_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p2 42-->
+    <field>
+        <name>End of P2</name>
+        <type>string</type>
+    </field>
+    <!-- p3 1-->
+    <field>
+        <name>Start of P3</name>
+        <type>string</type>
+    </field>
+    <!-- p3 2-->
+    <field>
+        <name>P3_RATED_VOLUME_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p3 3-->
+    <field>
+        <name>P3_RATED_VOLUME_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <!-- p3 4-->
+    <field>
+        <name>P3_ROUNDED_VOLUME_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <!-- p3 5-->
+    <field>
+        <name>P3_ROUNDED_VOLUME_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <!-- p3 6-->
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_EC_AMOUNT</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_EC_CURRENCY_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_EC_DISCOUNTED_AMOUNT</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_EC_GROSS_IND</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_CHARGEABLE_QUANTITY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_INTERCONNECT_IND</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_LOGICAL_QUAN_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_RATE_TYPE_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_RTX_CHARGE_TYPE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_DETAIL_EC_TT_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_START_TIME_CHARGE_EC_TIME_OFFSET</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_START_TIME_CHARGE_EC_TIMESTAMP</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_ORIG_EC_AMOUNT</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_ORIG_EC_DISCOUNTED_AMOUNT</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_RATED_FLAT_AMOUNT_ORIG_EC_GROSS_IND</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_CHARGE_INFO_EC_CASH_FLOW_DIRECTION</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_CHARGE_INFO_EC_DISABLE_TAX</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P3_TARIFF_INFO_EC_ZN_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 2</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 3</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 4</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 5</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 5</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 6</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Spare 7</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>End of P3</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Start Of P4</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_UNITS_INFO_EC_DISCOUNT_TYPE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_UNITS_INFO_EC_PART_CREATOR</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_ROUNDED_VOLUME_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_ROUNDED_VOLUME_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_RATED_VOLUME_EC_UOM_PKEY</name>
+        <type>string</type>
+    </field>
+
+    <field>
+        <name>P4_FREE_RATED_VOLUME_EC_VOLUME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_CHARGE_EC_AMOUNT</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_CHARGE_EC_CURRENCY_PKEY</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_FREE_CHARGE_EC_TAX</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_BALANCE_AUDIT_DATA_EC_ACCOUNT_ID</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_BALANCE_AUDIT_DATA_EC_ACCOUNT_TYPE</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>P4_BALANCE_AUDIT_DATA_EC_PURCHASE_SEQ_NO</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>NA</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>End of P4</name>
+        <type>string</type>
+    </field>
+</format>

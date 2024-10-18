@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.6.xml">
+
+	<changeSet author="Ashok Kale" context="base"
+		id="JBFC-505 - Added new plugin to pick up suspended users in billing process.">
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)" />
+			<column name="category_id" valueNumeric="20" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.process.task.SuspendedUsersBillingProcessFilterTask" />
+			<column name="min_parameters" valueNumeric="0" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Suspended Users Billing Process Filter Task" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content"
+				value="Called when the billing process runs to select which users to evaluate.This implementation simply returns all users except the ones in the last stage of collection." />
+		</insert>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base"
+		id="JBFC-504-TelcoUsageManagerTask-asset-wise-breakup-of-mediated-usage">
+		<comment>This is Telco specific Item Usage Manager.</comment>
+		<insert tableName="pluggable_task_type">
+			<column name="id"
+				valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)" />
+			<column name="category_id" valueNumeric="13" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.item.tasks.TelcoUsageManagerTask" />
+			<column name="min_parameters" valueNumeric="0" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Telco Usage Management Task" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content"
+				value="This plugin is uses for asset-wise breakup of mediated usage. it also adds items to an order.If the item is already in the order, it only updates the quantity. But it also update asset number into order line 'Call Identifier' column." />
+		</insert>
+	</changeSet>
+
+	<changeSet id="JBFC-504 Add Column Call Identifier" author="Ashok Kale"
+		context="base">
+		<addColumn tableName="order_line">
+			<column name="call_identifier" type="java.sql.Types.VARCHAR(50)" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base"
+		id="JBFC-504-Rename-invoice-line-dialed-number-column">
+		<comment>Renamed 'dialed_number' column to 'call_identifier'</comment>
+		<sql>
+			ALTER TABLE invoice_line RENAME COLUMN dialed_number TO call_identifier;
+		</sql>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base"
+		id="JBFC-504- Delete FullCreativeOrderLineBasedCompositionTask">
+		<delete tableName="pluggable_task">
+			<where>
+				type_id in
+				(select p.id from pluggable_task_type p where p.class_name =
+				'com.sapienter.jbilling.server.pluggableTask.FullCreativeOrderLineBasedCompositionTask')
+			</where>
+		</delete>
+		<delete tableName="pluggable_task_type">
+			<where>
+				class_name =
+				'com.sapienter.jbilling.server.pluggableTask.FullCreativeOrderLineBasedCompositionTask'
+			</where>
+		</delete>
+	</changeSet>
+
+	<changeSet author="Ashok Kale" context="base"
+		id="JBFC-504-TelcoOrderLineBasedCompositionTask-add-phone-number-on-invoice-line">
+		<comment>This is Telco specific Item Usage Manager.</comment>
+		<insert tableName="pluggable_task_type">
+			<column name="id"
+				valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)" />
+			<column name="category_id" valueNumeric="4" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.pluggableTask.TelcoOrderLineBasedCompositionTask" />
+			<column name="min_parameters" valueNumeric="0" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Telco Order Line Based Composition Task" />
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content"
+				value="This plugin is uses to update order line dailed number into invoice line 'Dailed Number' column." />
+		</insert>
+	</changeSet>
+
+	<changeSet id="adding new Aging steps" author="Pranay G. Raherkar"
+		context="test">
+		<sql>INSERT INTO user_status VALUES
+			(18,1),(19,1)
+		</sql>
+
+		<sql>INSERT INTO ageing_entity_step VALUES
+			(18,1,18,190,1,1,1,1),
+			(19,1,19,200,1,0,0,0)
+		</sql>
+
+		<sql>INSERT INTO international_description VALUES
+			(9,18,'description',1,'Ageing Day 190'),
+			(9,19,'description',1,'Ageing Day 200')
+		</sql>
+	</changeSet>
+
+	<changeSet author="Manish Bansod" context="base"
+		id="Braintree Payment External Task">
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)" />
+			<column name="category_id" valueNumeric="6" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.payment.tasks.braintree.BrainTreePaymentExternalTask" />
+			<column name="min_parameters" valueNumeric="3" />
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Braintree Payment External Task" />
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Braintree Payment External Task" />
+		</insert>
+	</changeSet>
+	<changeSet author="Manish Bansod" context="base"
+		id="Braintree Payment Migration External Task">
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)" />
+			<column name="category_id" valueNumeric="6" />
+			<column name="class_name"
+				value="com.sapienter.jbilling.server.payment.tasks.braintree.BrainTreePaymentMigrationExternalTask" />
+			<column name="min_parameters" valueNumeric="3" />
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="title" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Braintree Payment Migration External Task" />
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="24" />
+			<column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Braintree Payment Migration External Task" />
+		</insert>
+	</changeSet>
+
+    <changeSet id="JBIAS-3 - Credit Notes" author="Amol Gadre" context="base">
+           <comment>Creating a credit note table to to handle negative invoice</comment>
+           <createTable tableName="credit_note">
+                   <column name="id" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false" primaryKey="true" primaryKeyName="credit_note_pkey"/>
+                   </column>
+                   <column name="entity_id" type="java.sql.Types.INTEGER"/>
+                   <column name="credit_type" type="java.sql.Types.VARCHAR(50)"/>
+                   <column name="balance" type="java.sql.Types.NUMERIC(22,10)"/>
+                   <column name="amount" type="java.sql.Types.NUMERIC(22,10)"/>
+                   <column name="creation_invoice_id" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false"/>
+                   </column>
+                   <column defaultValueNumeric="0" name="deleted" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false"/>
+                   </column>
+                   <column name="create_datetime" type="java.sql.Types.TIMESTAMP">
+                           <constraints nullable="false"/>
+                   </column>
+           </createTable>
+           <addForeignKeyConstraint baseColumnNames="creation_invoice_id"
+                                    baseTableName="credit_note"
+                                    constraintName="credit_note_creation_invoice_id_FK"
+                                    deferrable="false"
+                                    initiallyDeferred="false"
+                                    onDelete="NO ACTION"
+                                    onUpdate="NO ACTION"
+                                    referencedColumnNames="id"
+                                    referencedTableName="invoice"
+                                    referencesUniqueColumn="false"/>
+
+           <createTable tableName="credit_note_invoice_map">
+                   <column name="id" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false" primaryKey="true" primaryKeyName="credit_note_invoice_pkey"/>
+                   </column>
+                   <column name="credit_note_id" type="java.sql.Types.INTEGER"/>
+                   <column name="invoice_id" type="java.sql.Types.INTEGER"/>
+                   <column name="amount" type="java.sql.Types.NUMERIC(22,10)"/>
+                   <column name="create_datetime" type="java.sql.Types.TIMESTAMP">
+                           <constraints nullable="false"/>
+                   </column>
+                   <column name="optlock" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false"/>
+                   </column>
+           </createTable>
+           <addForeignKeyConstraint baseColumnNames="credit_note_id"
+                                    baseTableName="credit_note_invoice_map"
+                                    constraintName="credit_note_invoice_map_note_id_FK"
+                                    deferrable="false"
+                                    initiallyDeferred="false"
+                                    onDelete="NO ACTION"
+                                    onUpdate="NO ACTION"
+                                    referencedColumnNames="id"
+                                    referencedTableName="credit_note"
+                                    referencesUniqueColumn="false"/>
+           <addForeignKeyConstraint baseColumnNames="invoice_id"
+                                    baseTableName="credit_note_invoice_map"
+                                    constraintName="credit_note_invoice_map_invoice_id_FK"
+                                    deferrable="false"
+                                    initiallyDeferred="false"
+                                    onDelete="NO ACTION"
+                                    onUpdate="NO ACTION"
+                                    referencedColumnNames="id"
+                                    referencedTableName="invoice"
+                                    referencesUniqueColumn="false"/>
+
+           <createTable tableName="credit_note_line">
+                   <column name="id" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false" primaryKey="true" primaryKeyName="credit_note_line_pkey"/>
+                   </column>
+                   <column name="description" type="java.sql.Types.VARCHAR(500)"/>
+                   <column name="invoice_line_id" type="java.sql.Types.INTEGER"/>
+                   <column name="credit_note_id" type="java.sql.Types.INTEGER"/>
+                   <column defaultValueNumeric="0" name="deleted" type="java.sql.Types.INTEGER">
+                           <constraints nullable="false"/>
+                   </column>
+           </createTable>
+           <addForeignKeyConstraint baseColumnNames="credit_note_id"
+                                    baseTableName="credit_note_line"
+                                    constraintName="credit_note_line_note_id_FK"
+                                    deferrable="false"
+                                    initiallyDeferred="false"
+                                    onDelete="NO ACTION"
+                                    onUpdate="NO ACTION"
+                                    referencedColumnNames="id"
+                                    referencedTableName="credit_note"
+                                    referencesUniqueColumn="false"/>
+           <addForeignKeyConstraint baseColumnNames="invoice_line_id"
+                                    baseTableName="credit_note_line"
+                                    constraintName="credit_note_line_invoice_line_id_FK"
+                                    deferrable="false"
+                                    initiallyDeferred="false"
+                                    onDelete="NO ACTION"
+                                    onUpdate="NO ACTION"
+                                    referencedColumnNames="id"
+                                    referencedTableName="invoice_line"
+                                    referencesUniqueColumn="false"/>
+
+           <insert tableName="pluggable_task_type">
+                   <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+                   <column name="category_id" valueNumeric="17"/>
+                   <column name="class_name" value="com.sapienter.jbilling.server.invoice.task.ApplyNegativeInvoiceToCreditNoteTask"/>
+                   <column name="min_parameters" valueNumeric="0"/>
+           </insert>
+
+           <insert tableName="international_description">
+                   <column name="table_id" valueNumeric="24"/>
+                   <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+                   <column name="psudo_column" value="title"/>
+                   <column name="language_id" valueNumeric="1"/>
+                   <column name="content" value="Auto Generate and Apply Credit Note"/>
+           </insert>
+
+           <insert tableName="international_description">
+                   <column name="table_id" valueNumeric="24"/>
+                   <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+                   <column name="psudo_column" value="description"/>
+                   <column name="language_id" valueNumeric="1"/>
+                   <column name="content" value="This plug-in auto generates credit note(s) from any credit invoice(s)
+					generated in the billing process. It fixes the negative invoices by setting the total and amount of
+					such invoices to zero, generates a credit note and applies it to pending unpaid debit invoices for the user."/>
+           </insert>
+           <sql>
+                   <![CDATA[
+				     INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+				            select (select max(p.id)+1 from pluggable_task p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+				                   e1.id,
+				                   (select max(p.id) from pluggable_task_type p),
+				                   7,
+				                   1
+				            from entity e1
+				            order by e1.id
+				 ]]>
+         </sql>
+
+         <comment>Deletes configured ApplyNegativeInvoiceToPaymentTask</comment>
+         <sql>
+                 DELETE
+                 FROM pluggable_task
+                 WHERE type_id = (
+                 SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.invoice.task.ApplyNegativeInvoiceToPaymentTask'
+                 )
+         </sql>
+
+         <addColumn tableName="billing_process_configuration">
+                 <column name="auto_credit_note_application" type="java.sql.Types.INTEGER" defaultValueNumeric="1">
+                         <constraints nullable="false"/>
+                 </column>
+         </addColumn>
+
+         <addColumn tableName="billing_process_configuration">
+                 <column name="apply_credit_notes_before_payments" type="java.sql.Types.INTEGER" defaultValueNumeric="1">
+                         <constraints nullable="false"/>
+                 </column>
+         </addColumn>
+
+         <update tableName="tab">
+                 <column name="default_order" valueNumeric="14"/>
+                 <where>controller_name = 'config'</where>
+         </update>
+         <insert tableName="tab">
+                 <column name="id" valueNumeric="19"/>
+                 <column name="message_code" value="menu.link.creditNotes"/>
+                 <column name="controller_name" value="creditNote"/>
+                 <column name="access_url" value="/creditNote/list"/>
+                 <column name="required_role" value=""/>
+                 <column name="version" valueNumeric="1"/>
+                 <column name="default_order" valueNumeric="13"/>
+         </insert>
+
+         <update tableName="jbilling_seqs">
+                 <column name="next_id" valueComputed="(select max(id)+1 from pluggable_task_type)"/>
+                 <where>name='pluggable_task_type'</where>
+         </update>
+         <update tableName="jbilling_seqs">
+                 <column name="next_id" valueComputed="coalesce((select max(id)+1 from pluggable_task),1)"/>
+                 <where>name='pluggable_task'</where>
+         </update>
+    </changeSet>
+
+    <changeSet author="Marco Manzi" context="base" id="JBDO-60 Fix for scheduled tasks">
+        <sql>
+            CREATE SEQUENCE temp START 1;
+
+            UPDATE pluggable_task SET processing_order=nextval('temp') where type_id in (SELECT id FROM pluggable_task_type where category_id = 22) and entity_id = 1;
+
+            DROP SEQUENCE temp;
+
+            CREATE SEQUENCE temp START 1;
+
+            UPDATE pluggable_task SET processing_order=nextval('temp') where type_id in (SELECT id FROM pluggable_task_type where category_id = 17) and entity_id = 1;
+
+            DROP SEQUENCE temp;
+        </sql>
+    </changeSet>
+
+    <changeSet author="Marco Manzi" context="base" id="JBDO-60 Fix for category 19">
+        <sql>
+            CREATE SEQUENCE temp START 1;
+            UPDATE pluggable_task SET processing_order=nextval('temp') where type_id in (SELECT id FROM pluggable_task_type where category_id = 19 order by id) and entity_id = 1;
+            DROP SEQUENCE temp;
+        </sql>
+    </changeSet>
+
+    <changeSet author="Marco Manzi" context="base" id="JBDO-60 Fix for create date on Customer Usege Pool">
+        <addColumn tableName="customer_usage_pool_map">
+            <column name="create_date" type="java.sql.Types.DATE"></column>
+        </addColumn>
+    </changeSet>
+    
+    <changeSet author="Harshad Pathan" context="base" id="Update-Jbilling-Seqs to resolve copy company issue">
+	       <update tableName="jbilling_seqs">
+	            <column name="next_id"  valueComputed="coalesce((select max(mfn.id)+1 from meta_field_name mfn), 1)"/>
+	            <where>name='meta_field_name'</where>
+	      </update>
+	 </changeSet>
+
+	<changeSet author="Ashok Kale" context="base" id="JBFC-504-Delete-FullCreativeItemManagerTask-Plugin">
+        <delete tableName="international_description">
+            <where>content like 'Full Creative%s Item Management Task' AND foreign_id=(select ptt.id from pluggable_task_type ptt where
+                ptt.class_name='com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask') AND
+                table_id=(select
+                jt.id from jbilling_table jt where jt.name='pluggable_task_type') AND
+                psudo_column='title'
+            </where>
+        </delete>
+
+        <delete tableName="international_description">
+            <where>content like 'This plugin is specific to Full Creative%s Item Management Functionality.
+            	 Just like the Basic plugin, it also adds items to an order.If the item is already in the order, 
+            	 it only updates the quantity. But it also uses some Full Creative specific meta fields and 
+            	 changes to populate those meta fields at order line level.' 
+            	 AND foreign_id=(select ptt.id from pluggable_task_type ptt where
+                 ptt.class_name='com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask') AND
+                 table_id=(select
+                 jt.id from jbilling_table jt where jt.name='pluggable_task_type') AND
+                 psudo_column='description'
+            </where>
+        </delete>
+
+        <delete tableName="pluggable_task">
+            <where>
+                type_id in
+                (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask')
+            </where>
+        </delete>
+
+        <delete tableName="pluggable_task_type">
+            <where>
+                class_name = 'com.sapienter.jbilling.server.item.tasks.FullCreativeItemManagerTask'
+            </where>
+        </delete>
+    </changeSet>
+	<changeSet author="Leandro" id="JB-912 - Suscriber URI metafield is not being created for -init database">
+		<preConditions onFail="MARK_RAN">
+			<and>
+				<sqlCheck expectedResult="t">SELECT COUNT(*) > 0 FROM entity</sqlCheck>
+			</and>
+		</preConditions>
+
+		<update tableName="jbilling_seqs">
+			<column name="next_id" valueComputed="(select max(id)+1 from meta_field_name)"/>
+			<where>name='meta_field_name'</where>
+		</update>
+	</changeSet>
+	<changeSet author="Leandro" id="JB-923 - Deleting deprecated task">
+		<delete tableName="pluggable_task_type">
+			<where>class_name='com.sapienter.jbilling.server.pluggableTask.GSTTaxTask'</where>
+		</delete>
+
+		<delete tableName="pluggable_task_type">
+			<where>class_name='com.sapienter.jbilling.server.order.task.RulesLineTotalTask'</where>
+		</delete>
+
+		<delete tableName="pluggable_task_type">
+			<where>class_name='com.sapienter.jbilling.server.order.task.RulesLineTotalTask2'</where>
+		</delete>
+	</changeSet>
+	<changeSet id="JB-993 Removed unused fields" author="Pranay G. Raherkar" context="base">
+		<dropColumn tableName="billing_process_configuration" columnName="interval"/>
+		<dropColumn tableName="billing_process_configuration" columnName="start_time"/>
+	</changeSet>
+</databaseChangeLog>

@@ -1,0 +1,1294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jb-3286-maps-tables.xml">
+
+    <changeSet context = "base" id = "JB-3286 - asset_entity_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_entity_map
+        RENAME CONSTRAINT asset_entity_map_fk1
+                       TO asset_entity_map_fk_entity;
+
+              ALTER TABLE asset_entity_map
+        RENAME CONSTRAINT asset_entity_map_fk2
+                       TO asset_entity_map_fk_asset;
+        </sql>
+
+        <createIndex tableName = "asset_entity_map"
+                     indexName = "asset_entity_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_meta_field_map
+        RENAME CONSTRAINT asset_meta_field_map_fk_1
+                       TO asset_meta_field_map_fk_asset;
+
+              ALTER TABLE asset_meta_field_map
+        RENAME CONSTRAINT asset_meta_field_map_fk_2
+                       TO asset_meta_field_map_fk_meta_field_value;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - asset_provisioning_command_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE asset_provisioning_command_map
+        RENAME CONSTRAINT asset_provisioning_command_map_fk_1
+                       TO asset_provisioning_command_map_fk_provisioning_command;
+
+              ALTER TABLE asset_provisioning_command_map
+        RENAME CONSTRAINT asset_provisioning_command_map_fk_2
+                       TO asset_provisioning_command_map_fk_asset;
+
+        ALTER INDEX ix_asset_provisioning_command_map
+          RENAME TO asset_provisioning_command_map_fk_asset;
+        </sql>
+
+        <addPrimaryKey tableName    = "asset_provisioning_command_map"
+                       columnNames  = "provisioning_command_id, asset_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - associated_edi_status_edi_status_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE associated_edi_status_edi_status_map
+        RENAME CONSTRAINT associated_edi_status_edi_status_map_associated_meta_field_id_f
+                       TO associated_edi_status_edi_status_map_fk_associated_edi_status;
+
+              ALTER TABLE associated_edi_status_edi_status_map
+        RENAME CONSTRAINT associated_edi_status_edi_status_map_edi_status_id_fk
+                       TO associated_edi_status_edi_status_map_fk_edi_status;
+        </sql>
+
+        <addPrimaryKey tableName    = "associated_edi_status_edi_status_map"
+                       columnNames  = "edi_status_id, associated_edi_status_id" />
+
+        <createIndex tableName = "associated_edi_status_edi_status_map"
+                     indexName = "associated_edi_status_edi_status_map_fk_edi_file_status">
+            <column name="associated_edi_status_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - contact_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE contact_map
+        RENAME CONSTRAINT contact_map_fk_1
+                       TO contact_map_fk_jbilling_table;
+
+              ALTER TABLE contact_map
+        RENAME CONSTRAINT contact_map_fk_3
+                       TO contact_map_fk_contact;
+
+        ALTER INDEX contact_map_i_2
+          RENAME TO contact_map_idx_table_foreign_id;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - credit_note_invoice_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE credit_note_invoice_map
+        RENAME CONSTRAINT credit_note_invoice_pkey
+                       TO credit_note_invoice_map_pkey;
+
+              ALTER TABLE credit_note_invoice_map
+        RENAME CONSTRAINT "credit_note_invoice_map_invoice_id_FK"
+                       TO credit_note_invoice_map_fk_invoice;
+
+              ALTER TABLE credit_note_invoice_map
+        RENAME CONSTRAINT "credit_note_invoice_map_note_id_FK"
+                       TO credit_note_invoice_map_fk_credit_note;
+        </sql>
+
+        <createIndex tableName = "credit_note_invoice_map"
+                     indexName = "credit_note_invoice_map_fk_invoice">
+            <column name = "invoice_id" />
+        </createIndex>
+
+        <createIndex tableName = "credit_note_invoice_map"
+                     indexName = "credit_note_invoice_map_fk_credit_note">
+            <column name = "credit_note_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - currency_entity_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE currency_entity_map
+        RENAME CONSTRAINT currency_entity_map_fk_1
+                       TO currency_entity_map_fk_entity;
+
+              ALTER TABLE currency_entity_map
+        RENAME CONSTRAINT currency_entity_map_fk_2
+                       TO currency_entity_map_fk_currency;
+
+              ALTER TABLE currency_entity_map
+        RENAME CONSTRAINT currency_entity_map_compositekey
+                       TO currency_entity_map_pkey;
+
+        DROP INDEX currency_entity_map_i_2;
+        </sql>
+
+        <createIndex tableName = "currency_entity_map"
+                     indexName = "currency_entity_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_enrollment_meta_field_map" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "customer_enrollment_meta_field_map"
+                       columnNames  = "customer_enrollment_id, meta_field_value_id" />
+
+        <addForeignKeyConstraint constraintName         = "customer_enrollment_meta_field_map_fk_customer_enrollment"
+                                 baseTableName          = "customer_enrollment_meta_field_map"
+                                 referencedTableName    = "customer_enrollment"
+                                 baseColumnNames        = "customer_enrollment_id"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "customer_enrollment_meta_field_map"
+                     indexName = "customer_enrollment_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "customer_enrollment_meta_field_map_fk_meta_field_value"
+                                 baseTableName          = "customer_enrollment_meta_field_map"
+                                 baseColumnNames        = "meta_field_value_id"
+                                 referencedTableName    = "meta_field_value"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_meta_field_map
+        RENAME CONSTRAINT customer_meta_field_map_compositekey
+                       TO customer_meta_field_map_pkey;
+
+              ALTER TABLE customer_meta_field_map
+        RENAME CONSTRAINT customer_meta_field_map_fk_1
+                       TO customer_meta_field_map_fk_customer;
+
+              ALTER TABLE customer_meta_field_map
+        RENAME CONSTRAINT customer_meta_field_map_fk_2
+                       TO customer_meta_field_map_fk_meta_field_value;
+
+        DROP INDEX customer_mf_map_fk_customer;
+
+        ALTER INDEX customer_mf_map_fk_mf_value
+          RENAME TO customer_meta_field_map_fk_meta_field_value;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_partner_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_partner_map
+        RENAME CONSTRAINT customer_prtnr_map_fk_cstmr
+                       TO customer_partner_map_fk_customer;
+
+              ALTER TABLE customer_partner_map
+        RENAME CONSTRAINT customer_prtnr_map_fk_prtnr
+                       TO customer_partner_map_fk_partner;
+
+        DROP INDEX customer_prtnr_map_fk_cstmr;
+
+        ALTER INDEX customer_prtnr_map_fk_prtnr
+          RENAME TO customer_partner_map_fk_partner;
+        </sql>
+
+        <addPrimaryKey tableName    = "customer_partner_map"
+                       columnNames  = "customer_id, partner_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - customer_usage_pool_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE customer_usage_pool_map
+        RENAME CONSTRAINT customer_usage_pool_map_fk_1
+                       TO customer_usage_pool_map_fk_customer;
+
+              ALTER TABLE customer_usage_pool_map
+        RENAME CONSTRAINT customer_usage_pool_map_fk_2
+                       TO customer_usage_pool_map_fk_usage_pool;
+        </sql>
+
+        <createIndex tableName = "customer_usage_pool_map"
+                     indexName = "customer_usage_pool_map_fk_usage_pool">
+            <column name = "usage_pool_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_type_edi_status_map" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "edi_type_edi_status_map"
+                       columnNames  = "edi_type_id, edi_status_id" />
+
+        <addForeignKeyConstraint constraintName         = "edi_type_edi_status_map_fk_edi_type"
+                                 baseTableName          = "edi_type_edi_status_map"
+                                 baseColumnNames        = "edi_type_id"
+                                 referencedTableName    = "edi_type"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "edi_type_edi_status_map"
+                     indexName = "edi_type_edi_status_map_fk_edi_file_status">
+            <column name = "edi_status_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "edi_type_edi_status_map_fk_edi_file_status"
+                                 baseTableName          = "edi_type_edi_status_map"
+                                 baseColumnNames        = "edi_status_id"
+                                 referencedTableName    = "edi_file_status"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - edi_type_entity_map" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "edi_type_entity_map" 
+                       columnNames  = "edi_type_id, entity_id" />
+
+        <addForeignKeyConstraint constraintName         = "edi_type_entity_map_fk_edi_type"
+                                 baseTableName          = "edi_type_entity_map"
+                                 baseColumnNames        = "edi_type_id"
+                                 referencedTableName    = "edi_type"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "edi_type_entity_map"
+                     indexName = "edi_type_entity_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "edi_type_entity_map_fk_entity"
+                                 baseTableName          = "edi_type_entity_map"
+                                 baseColumnNames        = "entity_id"
+                                 referencedTableName    = "entity"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - entity_delivery_method_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE entity_delivery_method_map
+        RENAME CONSTRAINT entity_delivery_method_map_compositekey
+                       TO entity_delivery_method_map_pkey;
+
+              ALTER TABLE entity_delivery_method_map
+        RENAME CONSTRAINT entity_delivry_methd_map_fk1
+                       TO entity_delivery_method_map_fk_entity;
+
+              ALTER TABLE entity_delivery_method_map
+        RENAME CONSTRAINT entity_delivry_methd_map_fk2
+                       TO entity_delivery_method_map_fk_invoice_delivery_method;
+        </sql>
+
+        <createIndex tableName = "entity_delivery_method_map"
+                     indexName = "entity_delivery_method_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - entity_item_price_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE entity_item_price_map
+        RENAME CONSTRAINT item_price_model_map_pkey
+                       TO entity_item_price_map_pkey;
+
+              ALTER TABLE entity_item_price_map
+        RENAME CONSTRAINT item_price_model_map_fk1
+                       TO entity_item_price_map_fk_entity;
+
+              ALTER TABLE entity_item_price_map
+        RENAME CONSTRAINT item_price_model_map_fk2
+                       TO entity_item_price_map_fk_item;
+        </sql>
+
+        <createIndex tableName = "entity_item_price_map"
+                     indexName = "entity_item_price_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+
+        <createIndex tableName = "entity_item_price_map"
+                     indexName = "entity_item_price_map_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - entity_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE entity_meta_field_map
+        RENAME CONSTRAINT entity_meta_field_map_entity_id_fk
+                       TO entity_meta_field_map_fk_entity;
+
+              ALTER TABLE entity_meta_field_map
+        RENAME CONSTRAINT entity_meta_field_map_meta_field_id_fk
+                       TO entity_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <addPrimaryKey tableName    = "entity_meta_field_map"
+                       columnNames  = "entity_id, meta_field_value_id" />
+
+        <createIndex tableName = "entity_meta_field_map"
+                     indexName = "entity_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - entity_report_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE entity_report_map
+        RENAME CONSTRAINT entity_report_map_compositekey
+                       TO entity_report_map_pkey;
+
+              ALTER TABLE entity_report_map
+        RENAME CONSTRAINT report_map_entity_id_fk
+                       TO entity_report_map_fk_entity;
+
+              ALTER TABLE entity_report_map
+        RENAME CONSTRAINT report_map_report_id_fk
+                       TO entity_report_map_fk_report;
+        </sql>
+
+        <createIndex tableName = "entity_report_map"
+                     indexName = "entity_report_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - invoice_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE invoice_meta_field_map
+        RENAME CONSTRAINT invoice_meta_field_map_compositekey
+                       TO invoice_meta_field_map_pkey;
+
+              ALTER TABLE invoice_meta_field_map
+        RENAME CONSTRAINT invoice_meta_field_map_fk_1
+                       TO invoice_meta_field_map_fk_invoice;
+
+              ALTER TABLE invoice_meta_field_map
+        RENAME CONSTRAINT invoice_meta_field_map_fk_2
+                       TO invoice_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <createIndex tableName = "invoice_meta_field_map"
+                     indexName = "nvoice_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_account_type_availability" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "item_account_type_availability"
+                       columnNames  = "item_id, account_type_id" />
+
+        <addForeignKeyConstraint constraintName         = "item_account_type_availability_fk_item"
+                                 baseTableName          = "item_account_type_availability"
+                                 baseColumnNames        = "item_id"
+                                 referencedTableName    = "item"
+                                 referencedColumnNames  = "id" />
+
+        <createIndex tableName = "item_account_type_availability"
+                     indexName = "item_account_type_availability_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "item_account_type_availability_fk_account_type"
+                                 baseTableName          = "item_account_type_availability"
+                                 baseColumnNames        = "account_type_id"
+                                 referencedTableName    = "account_type"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_entity_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_entity_map
+        RENAME CONSTRAINT item_entity_map_fk1
+                       TO item_entity_map_fk_entity;
+
+              ALTER TABLE item_entity_map
+        RENAME CONSTRAINT item_entity_map_fk2
+                       TO item_entity_map_fk_item;
+
+            ALTER TABLE item_entity_map
+        DROP CONSTRAINT item_entity_map_uc_1;
+        </sql>
+
+        <addPrimaryKey tableName    = "item_entity_map"
+                       columnNames  = "entity_id, item_id" />
+
+        <createIndex tableName = "item_entity_map"
+                     indexName = "item_entity_map_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_meta_field_map
+        RENAME CONSTRAINT item_meta_field_map_compositekey
+                       TO item_meta_field_map_pkey;
+
+              ALTER TABLE item_meta_field_map
+        RENAME CONSTRAINT item_meta_field_map_fk_1
+                       TO item_meta_field_map_fk_item;
+
+              ALTER TABLE item_meta_field_map
+        RENAME CONSTRAINT item_meta_field_map_fk_2
+                       TO item_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <createIndex tableName = "item_meta_field_map"
+                     indexName = "item_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type_entity_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type_entity_map
+        RENAME CONSTRAINT item_type_entity_map_fk1
+                       TO item_type_entity_map_fk_entity;
+
+              ALTER TABLE item_type_entity_map
+        RENAME CONSTRAINT item_type_entity_map_fk2
+                       TO item_type_entity_map_fk_item_type;
+        </sql>
+
+        <addPrimaryKey tableName    = "item_type_entity_map"
+                       columnNames  = "item_type_id, entity_id" />
+
+        <createIndex tableName = "item_type_entity_map"
+                     indexName = "item_type_entity_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type_exclude_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type_exclude_map
+        RENAME CONSTRAINT item_type_exclude_item_id_fk
+                       TO item_type_exclude_map_fk_item;
+
+              ALTER TABLE item_type_exclude_map
+        RENAME CONSTRAINT item_type_exclude_type_id_fk
+                       TO item_type_exclude_map_fk_item_type;
+        </sql>
+
+        <createIndex tableName = "item_type_exclude_map"
+                     indexName = "item_type_exclude_map_fk_item_type">
+            <column name = "type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type_map
+        RENAME CONSTRAINT item_type_map_compositekey
+                       TO item_type_map_pkey;
+
+              ALTER TABLE item_type_map
+        RENAME CONSTRAINT item_type_map_fk_1
+                       TO item_type_map_fk_item;
+
+              ALTER TABLE item_type_map
+        RENAME CONSTRAINT item_type_map_fk_2
+                       TO item_type_map_fk_item_type;
+        </sql>
+
+        <createIndex tableName = "item_type_map"
+                     indexName = "item_type_map_fk_item_type">
+            <column name = "type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type_meta_field_def_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type_meta_field_def_map
+        RENAME CONSTRAINT item_type_meta_field_def_map_fk_1
+                       TO item_type_meta_field_def_map_fk_item_type;
+
+              ALTER TABLE item_type_meta_field_def_map
+        RENAME CONSTRAINT item_type_meta_field_def_map_fk_2
+                       TO item_type_meta_field_def_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "item_type_meta_field_def_map"
+                       columnNames  = "item_type_id, meta_field_id" />
+
+        <createIndex tableName = "item_type_meta_field_def_map"
+                     indexName = "item_type_meta_field_def_map_fk_meta_field_name">
+            <column name = "meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - item_type_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE item_type_meta_field_map
+        RENAME CONSTRAINT item_type_meta_field_type_fk
+                       TO item_type_meta_field_map_fk_item_type;
+
+              ALTER TABLE item_type_meta_field_map
+        RENAME CONSTRAINT item_type_meta_field_value_fk
+                       TO item_type_meta_field_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "item_type_meta_field_map"
+                       columnNames  = "item_type_id, meta_field_value_id" />
+
+        <createIndex tableName = "item_type_meta_field_map"
+                     indexName = "item_type_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - mediation_order_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE mediation_order_map
+        RENAME CONSTRAINT mediation_order_map_compositekey
+                       TO mediation_order_map_pkey;
+
+              ALTER TABLE mediation_order_map
+        RENAME CONSTRAINT mediation_order_map_fk_1
+                       TO mediation_order_map_fk_mediation_process;
+
+              ALTER TABLE mediation_order_map
+        RENAME CONSTRAINT mediation_order_map_fk_2
+                       TO mediation_order_map_fk_purchase_order;
+        </sql>
+
+        <createIndex tableName = "mediation_order_map"
+                     indexName = "mediation_order_map_fk_purchase_order">
+            <column name = "order_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - meta_field_dependency_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE meta_field_dependency_map
+        RENAME CONSTRAINT meta_field_dependency_map_dependent_meta_field_id_fk
+                       TO meta_field_dependency_map_fk_dependent_meta_field;
+
+              ALTER TABLE meta_field_dependency_map
+        RENAME CONSTRAINT meta_field_dependency_map_meta_field_id_fk
+                       TO meta_field_dependency_map_fk_meta_field;
+        </sql>
+
+        <addPrimaryKey tableName    = "meta_field_dependency_map"
+                       columnNames  = "meta_field_id, dependent_meta_field_id" />
+
+        <createIndex tableName = "meta_field_dependency_map"
+                     indexName = "meta_field_dependency_map_fk_dependent_meta_field">
+            <column name = "dependent_meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - metafield_group_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE metafield_group_meta_field_map
+        RENAME CONSTRAINT mf_group_mf_map_fk_mf_group
+                       TO metafield_group_meta_field_map_fk_meta_field_group;
+
+              ALTER TABLE metafield_group_meta_field_map
+        RENAME CONSTRAINT mf_group_mf_map_fk_mf_value
+                       TO metafield_group_meta_field_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "metafield_group_meta_field_map"
+                       columnNames  = "metafield_group_id, meta_field_value_id" />
+
+        <createIndex tableName = "metafield_group_meta_field_map"
+                     indexName = "metafield_group_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - nested_plan" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE nested_plan
+        RENAME CONSTRAINT nested_plan_parent_plan_id_fk
+                       TO nested_plan_fk_parent_plan;
+
+              ALTER TABLE nested_plan
+        RENAME CONSTRAINT nested_plan_plan_id_fk
+                       TO nested_plan_fk_plan;
+        </sql>
+
+        <addPrimaryKey tableName    = "nested_plan"
+                       columnNames  = "plan_id, parent_plan_id" />
+
+        <createIndex tableName = "nested_plan"
+                     indexName = "nested_plan_fk_parent_plan">
+            <column name = "parent_plan_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_asset_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_asset_map
+        RENAME CONSTRAINT order_change_asset_map_asset_id_fk
+                       TO order_change_asset_map_fk_asset;
+
+              ALTER TABLE order_change_asset_map
+        RENAME CONSTRAINT order_change_asset_map_change_id_fk
+                       TO order_change_asset_map_fk_order_change;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_asset_map"
+                       columnNames  = "order_change_id, asset_id" />
+
+        <createIndex tableName = "order_change_asset_map"
+                     indexName = "order_change_asset_map_fk_asset">
+            <column name = "asset_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_meta_field_map
+        RENAME CONSTRAINT order_change_meta_field_map_fk_1
+                       TO order_change_meta_field_map_fk_order_change;
+
+              ALTER TABLE order_change_meta_field_map
+        RENAME CONSTRAINT order_change_meta_field_map_fk_2
+                       TO order_change_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_meta_field_map"
+                       columnNames  = "order_change_id, meta_field_value_id" />
+
+        <createIndex tableName = "order_change_meta_field_map"
+                     indexName = "order_change_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_plan_item_asset_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_plan_item_asset_map
+        RENAME CONSTRAINT order_change_plan_item_asset_map_fk1
+                       TO order_change_plan_item_asset_map_fk_order_change_plan_item;
+
+              ALTER TABLE order_change_plan_item_asset_map
+        RENAME CONSTRAINT order_change_plan_item_asset_map_fk2
+                       TO order_change_plan_item_asset_map_fk_asset;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_plan_item_asset_map"
+                       columnNames  = "order_change_plan_item_id, asset_id" />
+
+        <createIndex tableName = "order_change_plan_item_asset_map"
+                     indexName = "order_change_plan_item_asset_map_fk_asset">
+            <column name = "asset_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_plan_item_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_plan_item_meta_field_map
+        RENAME CONSTRAINT order_change_plan_item_meta_field_map_fk1
+                       TO order_change_plan_item_meta_field_map_fk_order_change_plan_item;
+
+              ALTER TABLE order_change_plan_item_meta_field_map
+        RENAME CONSTRAINT order_change_plan_item_meta_field_map_fk2
+                       TO order_change_plan_item_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_plan_item_meta_field_map"
+                       columnNames  = "order_change_plan_item_id, meta_field_value_id" />
+
+        <createIndex tableName = "order_change_plan_item_meta_field_map"
+                     indexName = "order_change_plan_item_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_type_item_type_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_type_item_type_map
+        RENAME CONSTRAINT order_change_type_item_type_map_change_type_id_fk
+                       TO order_change_type_item_type_map_fk_order_change_type;
+
+              ALTER TABLE order_change_type_item_type_map
+        RENAME CONSTRAINT order_change_type_item_type_map_item_type_id_fk
+                       TO order_change_type_item_type_map_fk_item_type;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_type_item_type_map"
+                       columnNames  = "order_change_type_id, item_type_id" />
+
+        <createIndex tableName = "order_change_type_item_type_map"
+                     indexName = "order_change_type_item_type_map_fk_item_type">
+            <column name = "item_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_change_type_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_change_type_meta_field_map
+        RENAME CONSTRAINT order_change_type_meta_field_map_change_type_id_fk
+                       TO order_change_type_meta_field_map_fk_order_change_type;
+
+              ALTER TABLE order_change_type_meta_field_map
+        RENAME CONSTRAINT order_change_type_meta_field_map_meta_field_id_fk
+                       TO order_change_type_meta_field_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_change_type_meta_field_map"
+                       columnNames  = "order_change_type_id, meta_field_id" />
+
+        <createIndex tableName = "order_change_type_meta_field_map"
+                     indexName = "order_change_type_meta_field_map_fk_meta_field_name">
+            <column name = "meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_line_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_line_meta_field_map
+        RENAME CONSTRAINT ol_meta_field_map_fk_1
+                       TO order_line_meta_field_map_fk_order_line;
+
+              ALTER TABLE order_line_meta_field_map
+        RENAME CONSTRAINT ol_meta_field_map_fk_2
+                       TO order_line_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_line_meta_field_map"
+                       columnNames  = "order_line_id, meta_field_value_id" />
+
+        <createIndex tableName = "order_line_meta_field_map"
+                     indexName = "order_line_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_line_meta_fields_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_line_meta_fields_map
+        RENAME CONSTRAINT ol_meta_fields_map_fk_1
+                       TO order_line_meta_fields_map_fk_item;
+
+              ALTER TABLE order_line_meta_fields_map
+        RENAME CONSTRAINT ol_meta_fields_map_fk_2
+                       TO order_line_meta_fields_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_line_meta_fields_map"
+                       columnNames  = "item_id, meta_field_id" />
+
+        <createIndex tableName = "order_line_meta_fields_map"
+                     indexName = "order_line_meta_fields_map_fk_meta_field_name">
+            <column name = "meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_line_provisioning_command_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_line_provisioning_command_map
+        RENAME CONSTRAINT order_line_provisioning_command_map_fk_1
+                       TO order_line_provisioning_command_map_fk_provisioning_command;
+
+              ALTER TABLE order_line_provisioning_command_map
+        RENAME CONSTRAINT order_line_provisioning_command_map_fk_2
+                       TO order_line_provisioning_command_map_fk_order_change;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_line_provisioning_command_map"
+                       columnNames  = "provisioning_command_id, order_change_id" />
+
+        <createIndex tableName = "order_line_provisioning_command_map"
+                     indexName = "order_line_provisioning_command_map_fk_order_change">
+            <column name = "order_change_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_line_usage_pool_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_line_usage_pool_map
+        RENAME CONSTRAINT order_line_usage_pool_map_fk_1
+                       TO order_line_usage_pool_map_fk_order_line;
+
+              ALTER TABLE order_line_usage_pool_map
+        RENAME CONSTRAINT order_line_usage_pool_map_fk_2
+                       TO order_line_usage_pool_map_fk_customer_usage_pool_map;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_meta_field_map
+        RENAME CONSTRAINT order_meta_field_map_compositekey
+                       TO order_meta_field_map_pkey;
+
+              ALTER TABLE order_meta_field_map
+        RENAME CONSTRAINT order_meta_field_map_fk_1
+                       TO order_meta_field_map_fk_purchase_order;
+
+              ALTER TABLE order_meta_field_map
+        RENAME CONSTRAINT order_meta_field_map_fk_2
+                       TO order_meta_field_map_fk_meta_field_value;
+
+        ALTER INDEX order_mf_map_fk_mf_value
+          RENAME TO order_meta_field_map_fk_meta_field_value;
+
+        ALTER INDEX order_mf_map_fk_order
+          RENAME TO order_meta_field_map_fk_purchase_order;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - order_provisioning_command_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE order_provisioning_command_map
+        RENAME CONSTRAINT order_provisioning_command_map_fk_1
+                       TO order_provisioning_command_map_fk_provisioning_command;
+
+              ALTER TABLE order_provisioning_command_map
+        RENAME CONSTRAINT order_provisioning_command_map_fk_2
+                       TO order_provisioning_command_map_fk_purchase_order;
+
+        ALTER INDEX ix_order_provisioning_command_map
+          RENAME TO order_provisioning_command_map_fk_purchase_order;
+        </sql>
+
+        <addPrimaryKey tableName    = "order_provisioning_command_map"
+                       columnNames  = "provisioning_command_id, order_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - partner_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE partner_meta_field_map
+        RENAME CONSTRAINT partner_meta_field_map_compositekey
+                       TO partner_meta_field_map_pkey;
+
+              ALTER TABLE partner_meta_field_map
+        RENAME CONSTRAINT partner_meta_field_map_fk_1
+                       TO partner_meta_field_map_fk_partner;
+
+              ALTER TABLE partner_meta_field_map
+        RENAME CONSTRAINT partner_meta_field_map_fk_2
+                       TO partner_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <createIndex tableName = "partner_meta_field_map"
+                     indexName = "partner_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+    <changeSet id = "JB-3286 - payment_information_meta_fields_map(duplicate data cleanup)" author = "Nitisha Sahay">
+    <validCheckSum>7:a9844fd4a6b4f57c4d8908db7df62c85</validCheckSum>
+        <dropNotNullConstraint tableName = "payment_information_meta_fields_map" columnName = "payment_information_id"/>
+        <dropNotNullConstraint tableName = "payment_information_meta_fields_map" columnName = "meta_field_value_id"/>
+            <sql>
+                    CREATE TABLE backup_payment_information_meta_fields_map
+                       AS SELECT *
+                            FROM payment_information_meta_fields_map
+                        GROUP BY payment_information_id, meta_field_value_id
+                          HAVING COUNT(*) > 1;
+
+                     DELETE FROM payment_information_meta_fields_map
+                           WHERE CONCAT(payment_information_id,'|', meta_field_value_id)
+                              IN (SELECT CONCAT(payment_information_id,'|', meta_field_value_id)
+                                    FROM payment_information_meta_fields_map
+                                GROUP BY payment_information_id, meta_field_value_id
+                                  HAVING COUNT(*) > 1);
+
+                     INSERT INTO payment_information_meta_fields_map
+                          SELECT *
+                            FROM backup_payment_information_meta_fields_map;
+
+                     DROP TABLE backup_payment_information_meta_fields_map;
+            </sql>
+        <addNotNullConstraint tableName="payment_information_meta_fields_map" columnName="payment_information_id"/>
+        <addNotNullConstraint tableName="payment_information_meta_fields_map" columnName="meta_field_value_id"/>
+    </changeSet>
+    <changeSet context = "base" id = "JB-3286 - payment_information_meta_fields_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_information_meta_fields_map
+        RENAME CONSTRAINT "payment_information_meta_fields_map_FK1"
+                       TO payment_information_meta_fields_map_fk_payment_information;
+
+              ALTER TABLE payment_information_meta_fields_map
+        RENAME CONSTRAINT "payment_information_meta_fields_map_FK2"
+                       TO payment_information_meta_fields_map_fk_meta_field_value;
+
+        ALTER INDEX payment_info_mf_map_mfv
+          RENAME TO payment_information_meta_fields_map_fk_meta_field_value;
+
+        DROP INDEX payment_information_mf_map_fk_pi;
+        </sql>
+
+        <addPrimaryKey tableName    = "payment_information_meta_fields_map"
+                       columnNames  = "payment_information_id, meta_field_value_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_invoice" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_invoice
+        RENAME CONSTRAINT payment_invoice_fk_1
+                       TO payment_invoice_fk_invoice;
+
+              ALTER TABLE payment_invoice
+        RENAME CONSTRAINT payment_invoice_fk_2
+                       TO payment_invoice_fk_payment;
+
+        DROP INDEX ix_uq_payment_inv_map_pa_in;
+
+        </sql>
+<!-- Commenting this for the time being as this part of the changeset is under discussion between Igor and Ashok Kale. -->
+<!--         <addUniqueConstraint tableName      = "payment_invoice"
+                             constraintName = "payment_invoice_uq_payment_invoice"
+                             columnNames    = "payment_id, invoice_id" /> -->
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_meta_field_map
+        RENAME CONSTRAINT payment_meta_field_map_compositekey
+                       TO payment_meta_field_map_pkey;
+
+              ALTER TABLE payment_meta_field_map
+        RENAME CONSTRAINT payment_meta_field_map_fk_1
+                       TO payment_meta_field_map_fk_payment;
+
+              ALTER TABLE payment_meta_field_map
+        RENAME CONSTRAINT payment_meta_field_map_fk_2
+                       TO payment_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <createIndex tableName = "payment_meta_field_map"
+                     indexName = "payment_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_method_account_type_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_method_account_type_map
+        RENAME CONSTRAINT "payment_method_account_type_map_FK1"
+                       TO payment_method_account_type_map_fk_payment_method_type;
+
+              ALTER TABLE payment_method_account_type_map
+        RENAME CONSTRAINT "payment_method_account_type_map_FK2"
+                       TO payment_method_account_type_map_fk_account_type;
+        </sql>
+
+        <addPrimaryKey tableName    = "payment_method_account_type_map"
+                       columnNames  = "payment_method_id, account_type_id" />
+
+        <createIndex tableName = "payment_method_account_type_map"
+                     indexName = "payment_method_account_type_map_fk_account_type">
+            <column name = "account_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_method_meta_fields_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_method_meta_fields_map
+        RENAME CONSTRAINT "payment_method_meta_fields_map_FK1"
+                       TO payment_method_meta_fields_map_fk_payment_method_type;
+
+              ALTER TABLE payment_method_meta_fields_map
+        RENAME CONSTRAINT "payment_method_meta_fields_map_FK2"
+                       TO payment_method_meta_fields_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "payment_method_meta_fields_map"
+                       columnNames  = "payment_method_id, meta_field_id" />
+
+        <createIndex tableName = "payment_method_meta_fields_map"
+                     indexName = "payment_method_meta_fields_map_fk_meta_field_name">
+            <column name = "meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_method_template_meta_fields_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_method_template_meta_fields_map
+        RENAME CONSTRAINT "payment_method_template_meta_fields_map_FK1"
+                       TO payment_method_template_meta_fields_map_fk_method_template;
+
+              ALTER TABLE payment_method_template_meta_fields_map
+        RENAME CONSTRAINT "payment_method_template_meta_fields_map_FK2"
+                       TO payment_method_template_meta_fields_map_fk_meta_field_name;
+        </sql>
+
+        <addPrimaryKey tableName    = "payment_method_template_meta_fields_map"
+                       columnNames  = "method_template_id, meta_field_id" />
+
+        <createIndex tableName = "payment_method_template_meta_fields_map"
+                     indexName = "payment_method_template_meta_fields_map_fk_meta_field_name">
+            <column name = "meta_field_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - payment_provisioning_command_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE payment_provisioning_command_map
+        RENAME CONSTRAINT payment_provisioning_command_map_fk_1
+                       TO payment_provisioning_command_map_fk_provisioning_command;
+
+              ALTER TABLE payment_provisioning_command_map
+        RENAME CONSTRAINT payment_provisioning_command_map_fk_2
+                       TO payment_provisioning_command_map_fk_payment;
+
+        ALTER INDEX ix_payment_provisioning_command_map
+          RENAME TO payment_provisioning_command_map_fk_payment;
+        </sql>
+
+        <addPrimaryKey tableName    = "payment_provisioning_command_map"
+                       columnNames  = "provisioning_command_id, payment_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - permission_implied_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE permission_implied_map
+        RENAME CONSTRAINT permission_implied_map_impl_permission_id_fk
+                       TO permission_implied_map_fk_implied_permission;
+
+              ALTER TABLE permission_implied_map
+        RENAME CONSTRAINT permission_implied_map_permission_id_fk
+                       TO permission_implied_map_fk_permission;
+        </sql>
+
+        <addPrimaryKey tableName    = "permission_implied_map"
+                       columnNames  = "permission_id, implied_permission_id" />
+
+        <sql>
+              ALTER TABLE permission_implied_map
+          DROP CONSTRAINT permission_implied_map_uk;
+        </sql>
+
+        <createIndex tableName = "permission_implied_map"
+                     indexName = "permission_implied_map_fk_permission">
+            <column name = "implied_permission_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - permission_role_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE permission_role_map
+        RENAME CONSTRAINT permission_role_map_pk
+                       TO permission_role_map_pkey;
+
+              ALTER TABLE permission_role_map
+        RENAME CONSTRAINT permission_role_map_fk_1
+                       TO permission_role_map_fk_role;
+
+              ALTER TABLE permission_role_map
+        RENAME CONSTRAINT permission_role_map_fk_2
+                       TO permission_role_map_fk_permission;
+
+        DROP INDEX permission_role_map_i_2;
+        </sql>
+
+        <createIndex tableName = "permission_role_map"
+                     indexName = "permission_role_map_fk_role">
+            <column name = "role_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - permission_user" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE permission_user
+        RENAME CONSTRAINT permission_user_fk_1
+                       TO permission_user_fk_user;
+
+              ALTER TABLE permission_user
+        RENAME CONSTRAINT permission_user_fk_2
+                       TO permission_user_fk_permission;
+
+        DROP INDEX permission_user_map_i_2;
+        </sql>
+
+        <addUniqueConstraint tableName      = "permission_user"
+                             constraintName = "permission_user_uq_permission_user"
+                             columnNames    = "permission_id, user_id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan_meta_field_map
+        RENAME CONSTRAINT plan_meta_field_map_fk_1
+                       TO plan_meta_field_map_fk_plan;
+
+              ALTER TABLE plan_meta_field_map
+        RENAME CONSTRAINT plan_meta_field_map_fk_2
+                       TO plan_meta_field_map_fk_meta_field_value;
+        </sql>
+
+        <addPrimaryKey tableName    = "plan_meta_field_map"
+                       columnNames  = "plan_id, meta_field_value_id" />
+
+        <createIndex tableName = "plan_meta_field_map"
+                     indexName = "plan_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - plan_usage_pool_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE plan_usage_pool_map
+        RENAME CONSTRAINT plan_usage_pool_map_fk_1
+                       TO plan_usage_pool_map_fk_plan;
+
+              ALTER TABLE plan_usage_pool_map
+        RENAME CONSTRAINT plan_usage_pool_map_fk_2
+                       TO plan_usage_pool_map_fk_usage_pool;
+        </sql>
+
+        <addPrimaryKey tableName    = "plan_usage_pool_map"
+                       columnNames  = "plan_id, usage_pool_id" />
+
+        <createIndex tableName = "plan_usage_pool_map"
+                     indexName = "plan_usage_pool_map_fk_usage_pool">
+            <column name = "usage_pool_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - promotion_user_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE promotion_user_map
+        RENAME CONSTRAINT promotion_user_map_compositekey
+                       TO promotion_user_map_pkey;
+
+              ALTER TABLE promotion_user_map
+        RENAME CONSTRAINT promotion_user_map_fk_1
+                       TO promotion_user_map_fk_user;
+
+              ALTER TABLE promotion_user_map
+        RENAME CONSTRAINT promotion_user_map_fk_2
+                       TO promotion_user_map_fk_promotion;
+
+        DROP INDEX promotion_user_map_i_2;
+        </sql>
+
+        <createIndex tableName = "promotion_user_map"
+                     indexName = "promotion_user_map_fk_promotion">
+            <column name = "promotion_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - rate_card_child_entity_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rate_card_child_entity_map
+        RENAME CONSTRAINT rate_card_child_entity_map_fk1
+                       TO rate_card_child_entity_map_fk_entity;
+
+              ALTER TABLE rate_card_child_entity_map
+        RENAME CONSTRAINT rate_card_child_entity_map_fk2
+                       TO rate_card_child_entity_map_fk_rate_card;
+        </sql>
+
+        <addPrimaryKey tableName    = "rate_card_child_entity_map"
+                       columnNames  = "rate_card_id, entity_id" />
+
+        <createIndex tableName = "rate_card_child_entity_map"
+                     indexName = "rate_card_child_entity_map_fk_entity">
+            <column name = "entity_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_item_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_item_map
+        RENAME CONSTRAINT usage_pool_item_map_fk_1
+                       TO usage_pool_item_map_fk_usage_pool;
+
+              ALTER TABLE usage_pool_item_map
+        RENAME CONSTRAINT usage_pool_item_map_fk_2
+                       TO usage_pool_item_map_fk_item;
+        </sql>
+
+        <addPrimaryKey tableName    = "usage_pool_item_map"
+                       columnNames  = "usage_pool_id, item_id" />
+
+        <createIndex tableName = "usage_pool_item_map"
+                     indexName = "usage_pool_item_map_fk_item">
+            <column name = "item_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - usage_pool_item_type_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE usage_pool_item_type_map
+        RENAME CONSTRAINT usage_pool_item_type_map_fk_1
+                       TO usage_pool_item_type_map_fk_usage_pool;
+
+              ALTER TABLE usage_pool_item_type_map
+        RENAME CONSTRAINT usage_pool_item_type_map_fk_2
+                       TO usage_pool_item_type_map_fk_item_type;
+        </sql>
+
+        <addPrimaryKey tableName    = "usage_pool_item_type_map"
+                       columnNames  = "usage_pool_id, item_type_id" />
+
+        <createIndex tableName = "usage_pool_item_type_map"
+                     indexName = "usage_pool_item_type_map_fk_item_type">
+            <column name = "item_type_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - user_credit_card_map" author = "Igor Poteryaev">
+
+        <addUniqueConstraint tableName      = "user_credit_card_map"
+                             constraintName = "user_credit_card_map_uq_user_credit_card"
+                             columnNames    = "user_id, credit_card_id" />
+
+        <sql>
+        DROP INDEX user_credit_card_map_i_2;
+        </sql>
+
+        <addForeignKeyConstraint constraintName         = "user_credit_card_map_fk_user"
+                                 baseTableName          = "user_credit_card_map"
+                                 referencedTableName    = "base_user"
+                                 baseColumnNames        = "user_id"
+                                 referencedColumnNames  = "id" />
+
+        <addForeignKeyConstraint constraintName         = "user_credit_card_map_fk_credit_card"
+                                 baseTableName          = "user_credit_card_map"
+                                 referencedTableName    = "payment_information"
+                                 baseColumnNames        = "credit_card_id"
+                                 referencedColumnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - user_meta_field_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE user_meta_field_map
+        RENAME CONSTRAINT user_meta_field_map_compositekey
+                       TO user_meta_field_map_pkey;
+
+              ALTER TABLE user_meta_field_map
+        RENAME CONSTRAINT user_meta_field_map_meta_field_id_fk
+                       TO user_meta_field_map_fk_meta_field_value;
+
+              ALTER TABLE user_meta_field_map
+        RENAME CONSTRAINT user_meta_field_map_user_id_fk
+                       TO user_meta_field_map_fk_user;
+        </sql>
+
+        <createIndex tableName = "user_meta_field_map"
+                     indexName = "user_meta_field_map_fk_meta_field_value">
+            <column name = "meta_field_value_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - user_role_map" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE user_role_map
+        RENAME CONSTRAINT user_role_map_compositekey
+                       TO user_role_map_pkey;
+
+              ALTER TABLE user_role_map
+        RENAME CONSTRAINT user_role_map_fk_1
+                       TO user_role_map_fk_role;
+
+              ALTER TABLE user_role_map
+        RENAME CONSTRAINT user_role_map_fk_2
+                       TO user_role_map_fk_user;
+
+        DROP INDEX user_role_map_i_2;
+        </sql>
+
+        <createIndex tableName = "user_role_map"
+                     indexName = "user_role_map_fk_role">
+            <column name = "role_id" />
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

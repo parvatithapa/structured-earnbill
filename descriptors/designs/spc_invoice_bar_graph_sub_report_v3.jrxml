@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_bar_graph_sub_report_v3" language="groovy" pageWidth="580" pageHeight="260" columnWidth="580" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="815c334c-2816-4b5b-ba35-efd7026a099a">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[(SELECT s.month, s.int_month, s.int_year, sum(s.total) AS total FROM
+(
+SELECT CONCAT(SUBSTRING(TO_CHAR(i_outer.create_datetime::date, 'Month'),1,3),'-',TO_CHAR(i_outer.create_datetime::date,'YY')) AS month,
+EXTRACT(MONTH FROM i_outer.create_datetime) AS int_month,
+EXTRACT(YEAR FROM i_outer.create_datetime) AS int_year,
+SUM(il_outer.amount)+
+(
+	SELECT COALESCE(SUM(il.amount),0)
+	FROM invoice_line il
+	INNER JOIN invoice i ON i.id = il.invoice_id
+	AND i.create_datetime BETWEEN
+        (
+            SELECT create_datetime - INTERVAL '1 months'
+            FROM invoice
+            WHERE id = i_outer.id
+        )
+        AND
+        (
+            SELECT create_datetime
+            FROM invoice
+            WHERE id = i_outer.id
+        )
+	AND i.id IN
+	(
+		SELECT id
+		FROM   invoice
+		WHERE  user_id = $P{invoice_user_id}
+		AND    id IN ( SELECT unnest(adjustmentInvoices($P{invoice_user_id})))
+	)
+) AS total
+
+FROM invoice_line il_outer
+INNER JOIN invoice i_outer ON i_outer.id = il_outer.invoice_id
+WHERE i_outer.create_datetime BETWEEN
+(
+	SELECT DATE_TRUNC('MONTH',create_datetime - INTERVAL '2 months')::DATE
+	FROM invoice
+	WHERE id = $P{invoice_id}
+) AND
+(
+	SELECT create_datetime
+	FROM invoice
+	WHERE id = $P{invoice_id}
+)
+AND i_outer.user_id = $P{invoice_user_id}
+AND il_outer.type_id != 3
+-- Exclude Adjustment invoices
+AND i_outer.id NOT IN
+(
+	SELECT id
+	FROM   invoice
+	WHERE  user_id = $P{invoice_user_id}
+	AND    id IN ( SELECT unnest(adjustmentInvoices($P{invoice_user_id})))
+)
+GROUP BY 1,2,3, i_outer.id
+ORDER BY int_year, int_month ASC
+) s
+GROUP BY 1,2,3
+ORDER BY int_year, int_month ASC)
+
+UNION ALL
+
+SELECT '' AS month, 0 AS int_month, 0 AS int_year, 0 AS total
+
+UNION ALL
+
+SELECT '' AS month, 0 AS int_month, 0 AS int_year, 0 AS total
+
+LIMIT 3;]]>
+	</queryString>
+	<field name="month" class="java.lang.String"/>
+	<field name="int_month" class="java.lang.Integer"/>
+	<field name="int_year" class="java.lang.Integer"/>
+	<field name="total" class="java.math.BigDecimal"/>
+	<variable name="all_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{total}]]></variableExpression>
+	</variable>
+	<variable name="max_total" class="java.math.BigDecimal" calculation="Highest">
+		<variableExpression><![CDATA[$F{total}]]></variableExpression>
+	</variable>
+	<title>
+		<band height="260" splitType="Immediate">
+			<barChart>
+				<chart isShowLegend="false" evaluationTime="Report" customizerClass="customizers.BarChartCustomization">
+					<reportElement x="6" y="28" width="260" height="140" uuid="1a62b963-4fe4-49a3-9375-baff8da7571c"/>
+					<chartTitle/>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[""]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{month}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{total}]]></valueExpression>
+					</categorySeries>
+				</categoryDataset>
+				<barPlot isShowLabels="false" isShowTickLabels="true" isShowTickMarks="false">
+					<plot>
+						<seriesColor seriesOrder="0" color="#D6036C"/>
+						<seriesColor seriesOrder="1" color="#D6036C"/>
+						<seriesColor seriesOrder="2" color="#D6036C"/>
+					</plot>
+					<itemLabel/>
+					<categoryAxisFormat>
+						<axisFormat verticalTickLabels="false"/>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat tickLabelMask="$" verticalTickLabels="false"/>
+					</valueAxisFormat>
+					<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					<rangeAxisMaxValueExpression><![CDATA[$V{all_total} == 0 ? 43 : $V{max_total}]]></rangeAxisMaxValueExpression>
+				</barPlot>
+			</barChart>
+			<subreport>
+				<reportElement x="275" y="0" width="295" height="260" uuid="faadea13-195f-49cc-bdd0-b23542d770f9"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="BASE_DIR">
+					<subreportParameterExpression><![CDATA[$P{BASE_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_last_billing_summary_sub_report_v3.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</title>
+</jasperReport>

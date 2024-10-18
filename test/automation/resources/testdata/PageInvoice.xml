@@ -1,0 +1,5 @@
+<testdata>
+    <testdataset name="tc_155_PaymentWithInvalid" category="pwi" testenv="develop|lab3">
+        <paymentAmount>-1</paymentAmount>
+    </testdataset>
+</testdata>

@@ -1,0 +1,6 @@
+PROD,<product_code>,<product_description>,<allow_decimal_quantity>,<categories>,<availability_startdate>,<availability_enddate>,<company>
+RATING,<startdate>,<rating_unit_name>,<rating_scheme_name>,<price_unit>
+META,<metafield_features>
+PRICE,<price_start_date>,<currency>,<company>,<chained>
+FLAT,<flat_rate>
+TIER,<from>,<rate>

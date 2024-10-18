@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_asset_summary_v3" language="groovy" pageWidth="595" pageHeight="200" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="5" bottomMargin="5" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="user_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+DISTINCT COALESCE
+(
+ (SELECT mfv.string_value
+ FROM asset a
+ INNER JOIN asset_meta_field_map amfm ON amfm.asset_id = a.id
+ INNER JOIN meta_field_value mfv ON mfv.id = amfm.meta_field_value_id
+ INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+ WHERE mfv.string_value is not null
+ AND mfn.name = 'ServiceId'
+ AND a.identifier = il.call_identifier
+ ),
+il.call_identifier
+) AS display_call_identifier,
+il.call_identifier,
+il.description,
+rc.itemisation_order
+FROM invoice_line il
+LEFT OUTER JOIN rollup_codes rc ON rc.item_type_description = il.description
+WHERE il.invoice_id = $P{invoice_id}
+AND il.call_identifier IS NOT NULL
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{product_category_id_of_internet_usage_items}
+)
+ORDER BY display_call_identifier, rc.itemisation_order ASC;]]>
+	</queryString>
+	<field name="display_call_identifier" class="java.lang.String"/>
+	<field name="call_identifier" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="itemisation_order" class="java.lang.Integer"/>
+	<group name="userNameCallIdentifierGroup" isReprintHeaderOnEachPage="true">
+		<groupExpression><![CDATA[$F{display_call_identifier}]]></groupExpression>
+		<groupHeader>
+			<band height="27" splitType="Stretch">
+				<rectangle radius="4">
+					<reportElement mode="Opaque" x="0" y="5" width="553" height="20" backcolor="#D6036C" uuid="eeb31c86-d23f-438f-8143-08b025b54b1e"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<textField isBlankWhenNull="true">
+					<reportElement mode="Transparent" x="2" y="5" width="550" height="20" forecolor="#FFFFFF" backcolor="#D6036C" uuid="5baa1bc0-da79-4948-a9fd-cdfc1564150e"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+						<paragraph leftIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{display_call_identifier}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="4"/>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="18">
+			<staticText>
+				<reportElement positionType="Float" x="2" y="2" width="113" height="15" forecolor="#D6036C" uuid="e2370341-b6a1-4d5e-9bae-013b465a5ecf"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Call Itemisation]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="11" splitType="Stretch">
+			<subreport>
+				<reportElement x="2" y="2" width="550" height="5" isRemoveLineWhenBlank="true" uuid="f1d08afc-f14e-4943-8fff-fd44b3c44e2a"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="call_identifier">
+					<subreportParameterExpression><![CDATA[$F{call_identifier}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="description">
+					<subreportParameterExpression><![CDATA[$F{description}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_line_asset_summary_subreport_v3.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+</jasperReport>

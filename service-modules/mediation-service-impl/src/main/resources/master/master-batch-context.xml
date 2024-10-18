@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="master-integration.xml"/>
+    <!--<import resource="classpath:custom-mediations/multi-machine/deutsche-telekom/dt-offline-usage-mediation-job.xml"/>-->
+    <import resource="classpath:custom-mediations/single-machine/sample-mediation-job.xml"/>
+    <import resource="classpath:custom-mediations/single-machine/sample-mediation-root-route-job.xml"/>
+    <import resource="classpath:custom-mediations/single-machine/performance-mediation-job.xml"/>
+
+	<!-- jBilling partitioner which will divide customers -->
+    <bean id="jmrDefaultProcessorModulePartitioner" class="com.sapienter.jbilling.server.mediation.processor.JMRProcessorModuloPartitioner" scope="step" />
+
+</beans>

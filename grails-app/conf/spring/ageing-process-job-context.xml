@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <!-- ageing process job bean -->
+    <job id = "ageingProcessJob" xmlns = "http://www.springframework.org/schema/batch">
+        <listeners>
+            <listener ref = "ageingJobListener"/>
+        </listeners>
+
+        <step id = "reviewStatusAndPayment">
+            <partition step = "partitionReviewStatusAndPayment"
+                partitioner = "ageingProcessPartitioner">
+                <handler grid-size = "${springbatch.ageing.process.grid.size}" task-executor = "taskExecutor"/>
+            </partition>
+        </step>
+    </job>
+
+    <!-- only step of job to review users and retry payments    -->
+    <batch:step id = "partitionReviewStatusAndPayment">
+        <batch:tasklet>
+            <batch:chunk reader          = "ageingProcessUserReader"
+                         processor       = "ageingCompositeProcessor"
+                         writer          = "noopWriter"
+                         commit-interval = "1"
+                         skip-policy     = "skipPolicy">
+            </batch:chunk>
+        </batch:tasklet>
+    </batch:step>
+
+    <!--    reader of the chunk oriented step to read the ids of the users to be reviewed later -->
+    <bean  id = "ageingProcessUserReader"
+        class = "com.sapienter.jbilling.batch.ageing.AgeingProcessUserReader"
+        scope = "step">
+        <property name = "dataSource" ref = "dataSource" />
+        <property name="sql">
+            <value>
+            <![CDATA[
+            SELECT user_id
+              FROM collection_batch_job_data
+             WHERE company_id = ?
+               AND partition_num = ?
+            ]]>
+            </value>
+        </property>
+    </bean>
+
+    <!--    spring batch composite processor to run a chain of processors    -->
+    <bean  id = "ageingCompositeProcessor"
+        class = "org.springframework.batch.item.support.CompositeItemProcessor">
+        <property name = "delegates">
+            <list>
+                <ref bean = "ageingProcessUserStatusProcessor" />
+                <ref bean = "ageingProcessPaymentRetryProcessor" />
+            </list>
+        </property>
+    </bean>
+
+    <!--    first processor in a chain of two processors to review users' status    -->
+    <bean  id = "ageingProcessUserStatusProcessor"
+        class = "com.sapienter.jbilling.batch.ageing.AgeingProcessUserStatusProcessor"
+        scope = "step"/>
+
+    <!--    last processor in a chain of two processors to retry payments of user   -->
+    <bean  id = "ageingProcessPaymentRetryProcessor"
+        class = "com.sapienter.jbilling.batch.ageing.AgeingProcessPaymentRetryProcessor"
+        scope = "step"/>
+
+    <!--    spring batch job listener to do some processing before and after an ageing process  -->
+    <bean  id = "ageingJobListener"
+        class = "com.sapienter.jbilling.batch.ageing.AgeingProcessJobListener"
+        scope = "job"/>
+
+    <bean  id = "ageingProcessPartitioner"
+        class = "com.sapienter.jbilling.batch.ageing.AgeingProcessPartitioner"
+        scope = "step">
+    </bean>
+</beans>

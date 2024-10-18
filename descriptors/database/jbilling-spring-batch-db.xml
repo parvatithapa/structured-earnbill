@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/jbilling-spring-batch-db.xml">
+
+    <changeSet author="Marco Manzi" id="Spring-batch-base-schema" context="base">
+
+        <createTable tableName="batch_job_execution">
+            <column name="job_execution_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="java.sql.Types.INTEGER"/>
+            <column name="job_instance_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="create_time" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_time" type="java.sql.Types.TIMESTAMP"/>
+            <column name="end_time" type="java.sql.Types.TIMESTAMP"/>
+            <column name="status" type="java.sql.Types.VARCHAR(10)"/>
+            <column name="exit_code" type="java.sql.Types.VARCHAR(100)"/>
+            <column name="exit_message" type="java.sql.Types.VARCHAR(2500)"/>
+            <column name="last_updated" type="java.sql.Types.TIMESTAMP"/>
+            <column name="job_configuration_location" type="java.sql.Types.VARCHAR(2500)" >
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="batch_job_execution_context">
+            <column name="job_execution_id" type="java.sql.Types.BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="batch_job_execution_context_pkey"/>
+            </column>
+            <column name="short_context" type="java.sql.Types.VARCHAR(2500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serialized_context" type="java.sql.Types.LONGVARCHAR"/>
+        </createTable>
+
+        <createTable tableName="batch_job_instance">
+            <column name="job_instance_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="batch_job_instance_pkey"/>
+            </column>
+            <column name="version" type="java.sql.Types.INTEGER"/>
+            <column name="job_name" type="java.sql.Types.VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_key" type="java.sql.Types.VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="batch_job_execution_params">
+            <column name="job_execution_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type_cd" type="java.sql.Types.VARCHAR(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key_name" type="java.sql.Types.VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="string_val" type="java.sql.Types.VARCHAR(250)"/>
+            <column name="date_val" type="java.sql.Types.TIMESTAMP"/>
+            <column name="long_val" type="java.sql.Types.INTEGER"/>
+            <column name="double_val" type="java.sql.Types.NUMERIC(17)"/>
+            <column name="identifying" type="java.sql.Types.CHAR(1)"/>
+        </createTable>
+
+        <createTable tableName="batch_step_execution">
+            <column name="step_execution_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="batch_step_execution_pkey"/>
+            </column>
+            <column name="version" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="step_name" type="java.sql.Types.VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_execution_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_time" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="java.sql.Types.TIMESTAMP"/>
+            <column name="status" type="java.sql.Types.VARCHAR(10)"/>
+            <column name="commit_count" type="java.sql.Types.INTEGER"/>
+            <column name="read_count" type="java.sql.Types.INTEGER"/>
+            <column name="filter_count" type="java.sql.Types.INTEGER"/>
+            <column name="write_count" type="java.sql.Types.INTEGER"/>
+            <column name="read_skip_count" type="java.sql.Types.INTEGER"/>
+            <column name="write_skip_count" type="java.sql.Types.INTEGER"/>
+            <column name="process_skip_count" type="java.sql.Types.INTEGER"/>
+            <column name="rollback_count" type="java.sql.Types.INTEGER"/>
+            <column name="exit_code" type="java.sql.Types.VARCHAR(100)"/>
+            <column name="exit_message" type="java.sql.Types.VARCHAR(2500)"/>
+            <column name="last_updated" type="java.sql.Types.TIMESTAMP"/>
+        </createTable>
+
+        <createTable tableName="batch_step_execution_context">
+            <column name="step_execution_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="batch_step_execution_context_pkey"/>
+            </column>
+            <column name="short_context" type="java.sql.Types.VARCHAR(2500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serialized_context" type="java.sql.Types.LONGVARCHAR"/>
+        </createTable>
+        <createSequence sequenceName="batch_job_execution_seq"/>
+        <createSequence sequenceName="batch_step_execution_seq"/>
+        <createSequence sequenceName="batch_job_seq"/>
+    </changeSet>
+</databaseChangeLog>

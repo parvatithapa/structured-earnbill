@@ -1,0 +1,829 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.4.3  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_earnbill" language="groovy" pageWidth="595" pageHeight="800" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e98372fe-f1b0-45d2-9162-9bf9bde9ae37">
+    <property name="ireport.zoom" value="1.21000000000003"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <style name="table">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_TH" mode="Opaque" backcolor="#FA8F00">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_CH" mode="Opaque" backcolor="#FFF4E6">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_TH" mode="Opaque" backcolor="#FF8A00">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_CH" mode="Opaque" backcolor="#FFF3E6">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 2_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+        <conditionalStyle>
+            <conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+            <style backcolor="#FFFCF8"/>
+        </conditionalStyle>
+    </style>
+    <style name="table 3">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_TH" mode="Opaque" backcolor="#FFA500">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_CH" mode="Opaque" backcolor="#FFE9BF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 3_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+        <conditionalStyle>
+            <conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+            <style backcolor="#FFF9EF"/>
+        </conditionalStyle>
+    </style>
+    <style name="table 4">
+        <box>
+            <pen lineWidth="1.0" lineColor="#F8ECEC"/>
+        </box>
+    </style>
+    <style name="table 4_TH" mode="Opaque" backcolor="#FFA500">
+        <box>
+            <pen lineWidth="0.5" lineColor="#F8ECEC"/>
+        </box>
+    </style>
+    <style name="table 4_CH" mode="Opaque" backcolor="#FFE9BF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#F8ECEC"/>
+        </box>
+    </style>
+    <style name="table 4_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#F8ECEC"/>
+        </box>
+        <conditionalStyle>
+            <conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+            <style backcolor="#FFF9EF"/>
+        </conditionalStyle>
+    </style>
+    <style name="table 5">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 5_TH" mode="Opaque" backcolor="#FFA500">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 5_CH" mode="Opaque" backcolor="#FFF6E6">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 5_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 6">
+        <box>
+            <pen lineWidth="1.0" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 6_TH" mode="Opaque" backcolor="#FF8C00">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 6_CH" mode="Opaque" backcolor="#FFE2BF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 6_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="table 7">
+        <box>
+            <topPen lineWidth="1.0" lineColor="#F4ECEC"/>
+            <bottomPen lineWidth="1.0" lineColor="#F4ECEC"/>
+        </box>
+    </style>
+    <style name="table 7_TH" mode="Opaque" backcolor="#FF8C00">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F4ECEC"/>
+            <bottomPen lineWidth="0.5" lineColor="#F4ECEC"/>
+        </box>
+    </style>
+    <style name="table 7_CH" mode="Opaque" backcolor="#FFE2BF">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F4ECEC"/>
+            <bottomPen lineWidth="0.5" lineColor="#F4ECEC"/>
+        </box>
+    </style>
+    <style name="table 7_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F4ECEC"/>
+            <bottomPen lineWidth="0.5" lineColor="#F4ECEC"/>
+        </box>
+    </style>
+    <style name="table 8">
+        <box>
+            <pen lineWidth="1.0" lineColor="#F5F3F3"/>
+        </box>
+    </style>
+    <style name="table 8_TH" mode="Opaque" backcolor="#FF8C00">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F5F3F3"/>
+            <bottomPen lineWidth="0.5" lineColor="#F5F3F3"/>
+        </box>
+    </style>
+    <style name="table 8_CH" mode="Opaque" backcolor="#FFE2BF">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F5F3F3"/>
+            <bottomPen lineWidth="0.5" lineColor="#F5F3F3"/>
+        </box>
+    </style>
+    <style name="table 8_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <topPen lineWidth="0.5" lineColor="#F5F3F3"/>
+            <bottomPen lineWidth="0.5" lineColor="#F5F3F3"/>
+        </box>
+        <conditionalStyle>
+            <conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+            <style backcolor="#FFF7EF"/>
+        </conditionalStyle>
+    </style>
+    <subDataset name="invoice_line" uuid="22a6e76a-93ae-4fb4-991f-0c3df8881ee9">
+        <parameter name="invoice_id" class="java.lang.Integer"/>
+        <queryString>
+            <![CDATA[select
+
+  l.description,
+  round(l.price, 2) as price,
+  round(l.quantity) as quantity,
+  round(l.tax_amount, 2) as tax_amount,
+  round(l.amount, 2) as amount,
+  round(l.tax_rate,2) tax_rate,
+  round(l.gross_amount,2) as gross_amount,
+  cur.symbol as currency
+from
+  invoice i
+  join invoice_line l on i.id = l.invoice_id
+  join currency cur on cur.id=i.currency_id
+where
+  i.id = $P{invoice_id};]]>
+        </queryString>
+        <field name="description" class="java.lang.String"/>
+        <field name="price" class="java.math.BigDecimal"/>
+        <field name="quantity" class="java.math.BigDecimal"/>
+        <field name="tax_amount" class="java.math.BigDecimal"/>
+        <field name="amount" class="java.math.BigDecimal"/>
+        <field name="tax_rate" class="java.math.BigDecimal"/>
+        <field name="gross_amount" class="java.math.BigDecimal"/>
+        <field name="currency" class="java.lang.String"/>
+    </subDataset>
+    <parameter name="invoice_id" class="java.lang.Integer"/>
+    <parameter name="LOGO" class="java.io.File"/>
+    <parameter name="QR" class="java.lang.String"/>
+    <queryString>
+        <![CDATA[select
+  (
+    select
+      string_agg(mfv.string_value, ', ') as Address
+    from
+      meta_field_value mfv
+      join meta_field_name mfn on mfv.meta_field_name_id = mfn.id
+      join customer_account_info_type_timeline cait on cait.meta_field_value_id = mfv.id
+      join metafield_group_meta_field_map mgmfm on mgmfm.meta_field_value_id = mfn.id
+      join meta_field_group mfg on mfg.id = mgmfm.metafield_group_id
+    where
+      mfn.field_usage in ('ADDRESS1')
+      and cait.customer_id = c.id
+      and mfg.name =(
+        select
+          mfv.string_value
+        from
+          entity e
+          join entity_meta_field_map emfm on e.id = emfm.entity_id
+          join meta_field_value mfv on emfm.meta_field_value_id = mfv.id
+          join meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+        where
+          e.id = u.entity_id
+          and mfn.name = 'Customer Contact AIT Name'
+      )
+  ) as to_address,
+  (
+    select
+      string_agg(mfv.string_value, ', ') as Address
+    from
+      meta_field_value mfv
+      join meta_field_name mfn on mfv.meta_field_name_id = mfn.id
+      join customer_account_info_type_timeline cait on cait.meta_field_value_id = mfv.id
+      join metafield_group_meta_field_map mgmfm on mgmfm.meta_field_value_id = mfn.id
+      join meta_field_group mfg on mfg.id = mgmfm.metafield_group_id
+    where
+      mfn.field_usage in ('STATE_PROVINCE')
+      and cait.customer_id = c.id
+      and mfg.name =(
+        select
+          mfv.string_value
+        from
+          entity e
+          join entity_meta_field_map emfm on e.id = emfm.entity_id
+          join meta_field_value mfv on emfm.meta_field_value_id = mfv.id
+          join meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+        where
+          e.id = u.entity_id
+          and mfn.name = 'Customer Contact AIT Name'
+      )
+  ) as to_state,
+  (
+    select
+      string_agg(mfv.string_value, ', ') as Address
+    from
+      meta_field_value mfv
+      join meta_field_name mfn on mfv.meta_field_name_id = mfn.id
+      join customer_account_info_type_timeline cait on cait.meta_field_value_id = mfv.id
+      join metafield_group_meta_field_map mgmfm on mgmfm.meta_field_value_id = mfn.id
+      join meta_field_group mfg on mfg.id = mgmfm.metafield_group_id
+    where
+      mfn.field_usage in ('POSTAL_CODE')
+      and cait.customer_id = c.id
+      and mfg.name =(
+        select
+          mfv.string_value
+        from
+          entity e
+          join entity_meta_field_map emfm on e.id = emfm.entity_id
+          join meta_field_value mfv on emfm.meta_field_value_id = mfv.id
+          join meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+        where
+          e.id = u.entity_id
+          and mfn.name = 'Customer Contact AIT Name'
+      )
+  ) as to_postal_code,
+  (
+    select
+      mfv.string_value
+    from
+      meta_field_value mfv
+      join meta_field_name mfn on mfv.meta_field_name_id = mfn.id
+      join customer_account_info_type_timeline cait on cait.meta_field_value_id = mfv.id
+      join metafield_group_meta_field_map mgmfm on mgmfm.meta_field_value_id = mfn.id
+      join meta_field_group mfg on mfg.id = mgmfm.metafield_group_id
+    where
+      mfn.field_usage = 'ORGANIZATION'
+      and cait.customer_id = c.id
+      and mfg.name =(
+        select
+          mfv.string_value
+        from
+          entity e
+          join entity_meta_field_map emfm on e.id = emfm.entity_id
+          join meta_field_value mfv on emfm.meta_field_value_id = mfv.id
+          join meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+        where
+          e.id = u.entity_id
+          and mfn.name = 'Customer Contact AIT Name'
+      )
+  ) as company,
+  i.id as invoice_id,
+  i.create_datetime as invoice_date,
+  l.description,
+  i.public_number as invoice_no,
+  round(l.price, 2) as price,
+  round(l.quantity) as quantity,
+  round(l.tax_amount, 2) as tax_amount,
+  round(l.amount, 2) as amount,
+  i.due_date,
+  round(i.balance, 2) as balance,
+  round(s.amount_of_last_statement, 2) as previous_balance,
+  round(s.new_charges, 2) as new_charges,
+  cur.symbol as currency,
+  (
+    select
+      irn.irn
+    from
+      invoice i
+      join e_invoice_log irn on irn.invoice_id = i.id
+    where
+      irn.invoice_id = l.invoice_id
+  ) as irn,
+  round(s.total_due, 2) as total_due,
+  round(s.amount_of_last_statement, 2) as amount_of_last_statement,
+  (
+    SELECT
+      organization_name AS company_name
+    FROM
+      contact
+    where
+      id in (
+        select
+          contact_id
+        from
+          contact_map
+        where
+          foreign_id = u.entity_id
+          and table_id = 5
+      )
+  ),
+  (
+    SELECT
+      CONCAT(
+        street_addres1, ', ', city, ', ', state_province,
+        '-', postal_code
+      ) AS company_address
+    FROM
+      contact
+    where
+      id in (
+        select
+          contact_id
+        from
+          contact_map
+        where
+          foreign_id = u.entity_id
+          and table_id = 5
+      )
+  ),
+  (
+    select
+      min(
+        round(amount, 2)
+      ) as pay
+    from
+      payment_invoice
+    where
+      invoice_id = i.id
+  ),
+  (
+    select
+      id
+    from
+      pluggable_task
+    where
+      type_id = 277
+      and entity_id = c.user_id
+  ) as eInvoice_block,
+  (
+    select
+      round(new_charges, 2)
+    from
+      invoice_summary
+    where
+      id = (
+        select
+          max(id)
+        from
+          invoice_summary
+        where
+          id < (
+            select
+              max(id)
+            from
+              invoice_summary
+          )
+          and user_id = c.user_id
+          and creation_invoice_id < i.id
+      )
+  ) as last_invoice_amount
+from
+  invoice i
+  join invoice_line l on i.id = l.invoice_id
+  join customer c on i.user_id = c.user_id
+  join currency cur on cur.id = i.currency_id
+  join invoice_summary s on i.id = s.creation_invoice_id
+  join base_user u on u.id = i.user_id
+where
+  i.id = $P{invoice_id};]]>
+    </queryString>
+    <field name="to_address" class="java.lang.String"/>
+    <field name="to_state" class="java.lang.String"/>
+    <field name="to_postal_code" class="java.lang.String"/>
+    <field name="company" class="java.lang.String"/>
+    <field name="invoice_id" class="java.lang.Integer"/>
+    <field name="invoice_date" class="java.sql.Timestamp"/>
+    <field name="description" class="java.lang.String"/>
+    <field name="invoice_no" class="java.lang.String"/>
+    <field name="price" class="java.math.BigDecimal"/>
+    <field name="quantity" class="java.math.BigDecimal"/>
+    <field name="tax_amount" class="java.math.BigDecimal"/>
+    <field name="amount" class="java.math.BigDecimal"/>
+    <field name="due_date" class="java.sql.Date"/>
+    <field name="balance" class="java.math.BigDecimal"/>
+    <field name="previous_balance" class="java.math.BigDecimal"/>
+    <field name="new_charges" class="java.math.BigDecimal"/>
+    <field name="currency" class="java.lang.String"/>
+    <field name="irn" class="java.lang.String"/>
+    <field name="total_due" class="java.math.BigDecimal"/>
+    <field name="amount_of_last_statement" class="java.math.BigDecimal"/>
+    <field name="company_name" class="java.lang.String"/>
+    <field name="company_address" class="java.lang.String"/>
+    <field name="pay" class="java.math.BigDecimal"/>
+    <field name="einvoice_block" class="java.lang.Integer"/>
+    <field name="last_invoice_amount" class="java.math.BigDecimal"/>
+    <variable name="gross_total" class="java.lang.Double" calculation="Sum"/>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="245" splitType="Stretch">
+            <staticText>
+                <reportElement x="363" y="0" width="189" height="49" forecolor="#D72508" uuid="7e332d34-c1d2-4162-8314-533bbf7ebec2"/>
+                <textElement textAlignment="Left">
+                    <font size="37" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Invoice]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="365" y="60" width="65" height="13" uuid="c16b1e9c-ddd7-41a7-b540-459895b77258"/>
+                <textElement textAlignment="Left" verticalAlignment="Top"/>
+                <text><![CDATA[Invoice No     ]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="365" y="75" width="65" height="13" uuid="299d2a1e-411e-4b20-b5b2-a998ef2aa4c5"/>
+                <textElement textAlignment="Left" verticalAlignment="Top"/>
+                <text><![CDATA[Invoice Date  ]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="436" y="60" width="118" height="13" uuid="64db7241-2e6b-4b38-aa80-f69414793077"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{invoice_no}]]></textFieldExpression>
+            </textField>
+            <textField pattern="MMMMM dd, yyyy">
+                <reportElement x="436" y="75" width="118" height="13" uuid="2c29d937-1831-4128-a10b-5c902fb4eaba"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                <reportElement x="102" y="224" width="452" height="19" uuid="4fc7f493-84ba-41bd-a2ff-55bd91593d4a"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$F{irn}.equals(null) ? " ":$F{irn}]]></textFieldExpression>
+            </textField>
+            <image>
+                <reportElement x="0" y="0" width="215" height="49" uuid="ae07c10a-76fd-4614-a544-b1cfdf698129"/>
+                <imageExpression><![CDATA[$P{LOGO}]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement x="430" y="60" width="4" height="13" uuid="0dc8f798-cc26-421c-ae87-c00d9f05a720"/>
+                <text><![CDATA[:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="430" y="75" width="4" height="13" uuid="dc9732d0-fece-4470-b58a-5468692dce4c"/>
+                <text><![CDATA[:]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="0" y="224" width="101" height="19" uuid="ab2c4ff9-8431-4956-8cae-b72533fd3f01"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{irn}.equals(null) ? " ":"e-Invoice IRN No :"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="366" y="162" width="188" height="15" uuid="4b7ff280-1006-42e5-a158-768395cc0aed"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Last Statement Details]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="366" y="179" width="110" height="12" uuid="672ce1a6-383a-4979-96e1-ef910dcac08e"/>
+                <text><![CDATA[Last Invoice Amount ]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="366" y="192" width="110" height="12" uuid="b9e0b49e-25dc-4929-a159-6d1e7a5bcf16"/>
+                <text><![CDATA[Previous Balance ]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="366" y="205" width="110" height="12" uuid="bd16210f-c44d-467a-903a-c5b32ab01310"/>
+                <text><![CDATA[Payment Collected]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="476" y="179" width="5" height="12" uuid="a1661ae7-ea97-47e2-9cfc-479600b8e06b"/>
+                <text><![CDATA[:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="476" y="192" width="5" height="12" uuid="7ac10f3d-3629-454f-b4e7-8a784b970b42"/>
+                <text><![CDATA[:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="476" y="205" width="5" height="12" uuid="2fa727d6-07e5-461b-98f5-040c2b2186de"/>
+                <text><![CDATA[:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="484" y="179" width="70" height="12" uuid="40dd19cf-086f-495d-9102-daf6a585a844"/>
+                <textFieldExpression><![CDATA[($F{currency})+" "+($F{last_invoice_amount}.equals(null)? "None" :$F{last_invoice_amount})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="484" y="192" width="70" height="12" uuid="886d7362-b8b3-4279-89f6-28f915d59435"/>
+                <textFieldExpression><![CDATA[($F{currency})+" "+($F{amount_of_last_statement})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="484" y="205" width="70" height="12" uuid="53e51472-dfcb-4dbd-8dfd-eb26fb62d227"/>
+                <textFieldExpression><![CDATA[($F{currency})+" "+($F{pay}.equals(null)?"0.00":$F{pay})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="1" y="68" width="100" height="15" uuid="b3559172-760f-4b3e-bdb0-8379bab8200c"/>
+                <textElement>
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <text><![CDATA[To :]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true">
+                <reportElement x="1" y="99" width="215" height="36" uuid="17d94b77-6c55-44e8-878b-59aa1bfd3d65"/>
+                <textFieldExpression><![CDATA[$F{to_address}.equals(null)?"":$F{to_address} +", "+($F{to_state}.equals(null)?"":$F{to_state})+" - "+($F{to_postal_code}.equals(null)?"":$F{to_postal_code})]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true">
+                <reportElement x="1" y="83" width="215" height="16" uuid="584fb714-5663-4792-a07d-8c6921218a7e"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{company}.equals(null) ? " ": $F{company}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement mode="Opaque" x="365" y="102" width="70" height="20" backcolor="#FFE2BF" uuid="5fcd9cd6-dc2b-4a96-99b5-45aabc432ea4"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total Due :]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true" isBlankWhenNull="false">
+                <reportElement mode="Opaque" x="437" y="102" width="118" height="20" backcolor="#FFE2BF" uuid="e8690088-f69d-4c3e-bb3f-64a8ef2040e5"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[($F{currency})+" "+($F{total_due})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="365" y="122" width="70" height="20" forecolor="#C81717" uuid="ced6c2c5-fb2c-4340-a703-9488d30b7ffe"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Due Date :]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true" pattern="MMMMM dd, yyyy">
+                <reportElement x="437" y="122" width="118" height="20" forecolor="#C81717" backcolor="#C81717" uuid="9830597a-2fa1-4db1-9661-c6d1bea2f35e"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{due_date}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <pageHeader>
+        <band height="3" splitType="Stretch"/>
+    </pageHeader>
+    <columnHeader>
+        <band splitType="Stretch"/>
+    </columnHeader>
+    <detail>
+        <band height="63" splitType="Stretch">
+            <printWhenExpression><![CDATA[$V{REPORT_COUNT} == 1]]></printWhenExpression>
+            <componentElement>
+                <reportElement key="table 8" style="table 8" stretchType="RelativeToBandHeight" x="0" y="0" width="556" height="63" uuid="d945cc4c-c16d-4fed-a02e-68bca72f0c7b"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="invoice_line" uuid="59826f5d-ab3d-4050-b135-09223492ec39">
+                        <datasetParameter name="invoice_id">
+                            <datasetParameterExpression><![CDATA[$F{invoice_id}]]></datasetParameterExpression>
+                        </datasetParameter>
+                        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                    </datasetRun>
+                    <jr:column width="198" uuid="02392bd4-311c-4a38-988c-8e60716796d5">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="25" y="2" width="147" height="22" uuid="0fba460c-1290-4f34-834c-5d18dd782cba"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Line Item Description]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField isStretchWithOverflow="true">
+                                <reportElement stretchType="RelativeToBandHeight" x="0" y="3" width="198" height="20" uuid="cfd8c1bb-8ce8-4a51-8eb4-4b591fc22caf"/>
+                                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="67" uuid="f36eaffb-b640-427e-9518-b02dbe7818b8">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="2" width="66" height="22" uuid="d02f67b7-5b8d-4c68-80f9-e749d985c055"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Unit Price]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField isStretchWithOverflow="true">
+                                <reportElement stretchType="RelativeToBandHeight" x="0" y="3" width="53" height="20" uuid="67830c4f-7e1c-4133-a30a-3756c24e5b48"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="33" uuid="7d4e0bf9-ea28-4744-805c-7070935148c2">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="3" y="2" width="30" height="22" uuid="c5c9470c-0f33-46ab-bf96-961de30afaff"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[ Qty]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField isStretchWithOverflow="true">
+                                <reportElement stretchType="RelativeToBandHeight" x="0" y="3" width="30" height="20" uuid="1cc71f13-085a-4eb1-ace8-5752354a0ec2"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="91" uuid="ff2dbc1c-a33f-46bc-af0a-8cc5c3224eb1">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="2" width="91" height="22" uuid="18419058-2e56-49e2-9cd3-5c1a7dd018a8"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Tax]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField isStretchWithOverflow="true">
+                                <reportElement stretchType="RelativeToBandHeight" x="0" y="3" width="91" height="20" uuid="c2d29276-81db-41b2-950f-bfb88b49c335"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[($F{tax_amount}.equals(null) ? "0.00" : $F{tax_amount}) + " ("+($F{tax_rate}.equals(null) ? "0.00" : $F{tax_rate})+"%)"]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="81" uuid="8387b58a-3bb3-4a3f-b105-6dd98d2d3931">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="0" y="2" width="80" height="22" uuid="c0170e3b-a97a-448e-9180-b85d4a0d13e2"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Gross Amount]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField isStretchWithOverflow="true">
+                                <reportElement stretchType="RelativeToBandHeight" x="1" y="3" width="80" height="23" uuid="3e883730-b39d-4b51-9347-b211d18d2f1f"/>
+                                <textElement textAlignment="Right" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{price}*$F{quantity}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="85" uuid="5da85391-150d-45c4-8408-d7056e36ab6a">
+                        <jr:columnHeader style="table 8_CH" height="30" rowSpan="1">
+                            <staticText>
+                                <reportElement x="5" y="5" width="74" height="22" uuid="b2072d71-af06-417d-9fa2-67d415551031"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle">
+                                    <font isBold="true"/>
+                                </textElement>
+                                <text><![CDATA[Total]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="table 8_TD" height="30" rowSpan="1">
+                            <textField>
+                                <reportElement stretchType="RelativeToBandHeight" x="0" y="3" width="85" height="23" uuid="03b0bc81-8595-4937-9a04-53c182c569b7"/>
+                                <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                                <textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+        </band>
+    </detail>
+    <columnFooter>
+        <band height="2" splitType="Stretch"/>
+    </columnFooter>
+    <pageFooter>
+        <band height="8" splitType="Stretch"/>
+    </pageFooter>
+    <lastPageFooter>
+        <band height="49">
+            <line>
+                <reportElement x="-1" y="18" width="552" height="1" forecolor="#162D4E" uuid="2f973155-e9bb-4af1-83f3-3e90a7c42741"/>
+                <graphicElement>
+                    <pen lineWidth="1.5"/>
+                </graphicElement>
+            </line>
+            <staticText>
+                <reportElement x="1" y="2" width="216" height="16" forecolor="#162D4E" uuid="267b6d10-185e-48ec-9179-4aaceaf40498"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="10" isBold="false"/>
+                </textElement>
+                <text><![CDATA[Thank you for your Business]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="1" y="22" width="100" height="13" uuid="8a44130a-a0b1-4519-8ee7-2da1cf1e3496"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Office Address :]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true">
+                <reportElement x="101" y="22" width="450" height="27" uuid="370aa161-e78e-4606-9d8f-f5a15afc50c5"/>
+                <textFieldExpression><![CDATA[$F{company_address}.equals(null)?"":$F{company_address}]]></textFieldExpression>
+            </textField>
+        </band>
+    </lastPageFooter>
+    <summary>
+        <band height="148" splitType="Stretch">
+            <textField>
+                <reportElement mode="Opaque" x="444" y="5" width="30" height="20" backcolor="#FFE2BF" uuid="2d1146ee-e7d0-4df9-8023-5e8c0aec5d2e"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{currency}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="false">
+                <reportElement mode="Opaque" x="474" y="5" width="80" height="20" backcolor="#FFE2BF" uuid="8e27b1cc-ead6-441b-9e7a-fb2a953ae99c"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{new_charges}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement mode="Opaque" x="327" y="5" width="114" height="20" backcolor="#FFE2BF" uuid="07bf8df9-6ad3-433d-8ccc-10af19f88bbb"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Invoice Amount :]]></text>
+            </staticText>
+            <image>
+                <reportElement x="444" y="26" width="112" height="110" uuid="724bb80c-33b7-4331-96bf-f967ee30a9fa"/>
+                <imageExpression><![CDATA[com.google.zxing.client.j2se.MatrixToImageWriter.toBufferedImage(
+    new com.google.zxing.qrcode.QRCodeWriter().encode(
+        $P{QR},
+        com.google.zxing.BarcodeFormat.QR_CODE, 300, 300
+    )
+)]]></imageExpression>
+            </image>
+        </band>
+    </summary>
+</jasperReport>

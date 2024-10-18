@@ -1,0 +1,23 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	<test name="VerifyUserIsAbleToAddlDependenciesOnProduct" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyUserIsAbleToAddlDependenciesOnProduct">
+				<methods>
+					<include name="tc_43_verifyUserAbleToAddDependencies"></include> 
+ 					<include name="tc_62_1_addOrderPeriods"></include> 
+					<include name="tc_62_2_addPlans"></include>
+					<include name="tc_62_3_addPlans"></include>
+					<include name = "tc_62_3_1_addPlans"></include> 
+					<include name = "tc_62_4_addPlans"></include> 
+					<include name = "tc_62_5_addPlans"></include> 
+					<include name = "tc_62_6_addPlans"></include>  
+<!-- 					<include name = "tc_102_verifyOrderesWithMandatoryAndOptionalDependency"></include> -->
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

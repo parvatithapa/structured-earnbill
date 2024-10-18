@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_userid_summary_subreport_group_sub_totals_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d7023383-6fe7-411e-815b-b74e708d8e5d">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{invoiceId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/jbilling/jbilling-1/enterprise/descriptors/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="plan_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT pwg.call_counter, pwg.quantity, pwg.amount
+FROM (SELECT il.usage_plan_id AS plan_id,
+	COALESCE(SUM(il.call_counter),0) AS call_counter,
+	COALESCE(SUM(il.quantity),0) AS quantity,
+	COALESCE(SUM(il.amount),0) AS amount
+	FROM invoice_line il
+	WHERE il.invoice_id = $P{invoiceId}
+	AND il.call_identifier IS NOT NULL
+	AND CASE WHEN $P{plan_id} IS NOT NULL THEN il.usage_plan_id = $P{plan_id} ELSE 1 = 1 END
+	GROUP BY plan_id
+	) pwg
+WHERE CASE WHEN $P{plan_id} IS NOT NULL
+	THEN pwg.plan_id = $P{plan_id}
+	ELSE pwg.plan_id IS NULL
+	END;]]>
+	</queryString>
+	<field name="call_counter" class="java.math.BigDecimal"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<detail>
+		<band height="23">
+			<textField isBlankWhenNull="true">
+				<reportElement x="4" y="2" width="71" height="20" forecolor="#505861" uuid="f686ea74-9dc8-4647-ab16-82469e52855e"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_counter}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="76" y="2" width="71" height="20" forecolor="#505861" uuid="8501a0fa-576a-4c71-a19f-4f6c7e5e277d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="152" y="2" width="95" height="20" forecolor="#505861" uuid="d49ea0d9-b978-4263-99b8-135d6180d819"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(null != $F{amount} ? $F{amount}.setScale(2, RoundingMode.HALF_UP) : new BigDecimal("0.00")))]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

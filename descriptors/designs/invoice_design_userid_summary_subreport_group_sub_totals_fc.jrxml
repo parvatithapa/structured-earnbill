@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_userid_summary_subreport_group_sub_totals_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d7023383-6fe7-411e-815b-b74e708d8e5d">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{invoiceId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/jbilling/jbilling-1/enterprise/descriptors/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="plan_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT pwg.call_counter, pwg.quantity, pwg.amount FROM
+(SELECT p.id AS plan_id,
+	COALESCE(SUM(il.call_counter),0) AS call_counter,
+	COALESCE(SUM(il.quantity),0) AS quantity,
+	COALESCE(SUM(il.amount),0) AS amount
+FROM invoice_line il, invoice inv, customer_price cp,
+plan_item pi, plan p, item i, international_description i_d
+WHERE il.invoice_id = inv.id
+AND inv.user_id = cp.user_id
+AND cp.plan_item_id = pi.id
+AND pi.plan_id = p.id
+AND p.item_id = i.id
+AND i.id = i_d.foreign_id
+AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+AND i_d.language_id = 1
+AND il.call_identifier IS NOT NULL
+AND il.item_id = pi.item_id
+AND il.invoice_id = $P{invoiceId}
+AND i.deleted = 0
+AND UPPER(i_d.content) NOT LIKE '%DORMANCY%'
+-- If user have only one Monthly order with FINISHED status and no swap plan history
+AND ((SELECT CASE WHEN COUNT(*) = 1
+		THEN cp.price_expiry_date IS NOT NULL
+		ELSE cp.price_expiry_date IS NULL
+		END
+	FROM purchase_order
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND period_id IN
+		(SELECT id FROM order_period WHERE unit_id = 1 AND value = 1)
+	-- Fishined status
+	AND status_id IN (SELECT id FROM order_status WHERE order_status_flag= 1)
+	)
+-- If user have only one Monthly order with ACTIVE status and no swap plan history
+OR (SELECT CASE WHEN COUNT(*) = 1
+		THEN cp.price_expiry_date IS NULL
+		ELSE cp.price_expiry_date IS NOT NULL
+		END
+	FROM purchase_order
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND period_id IN
+		(SELECT id FROM order_period WHERE unit_id = 1 AND value = 1)
+	-- Active status
+	AND status_id IN (SELECT id FROM order_status WHERE order_status_flag= 0)
+	))
+AND p.item_id NOT IN
+	(SELECT ol.item_id
+	FROM purchase_order po, order_line ol, swap_plan_history sph
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND ol.order_id = po.id
+	AND sph.order_id = po.id
+	AND po.deleted = 0
+	)
+AND p.id = $P{plan_id}
+GROUP BY p.id
+
+UNION ALL
+
+SELECT p.id AS plan_id,
+	COALESCE(SUM(il.call_counter),0) AS call_counter,
+	COALESCE(SUM(il.quantity),0) AS quantity,
+	COALESCE(SUM(il.amount),0) AS amount
+FROM invoice_line il, invoice inv, purchase_order po,
+swap_plan_history sph, plan_item pi, plan p,
+item i, international_description i_d
+WHERE il.invoice_id = inv.id
+AND inv.user_id = po.user_id
+AND po.id = sph.order_id
+AND po.deleted = 0
+-- Orders active until date should be NULL(active order) or should be in last month(finished order)
+AND (po.active_until IS NULL OR po.active_until BETWEEN date_trunc('month', inv.create_datetime - interval '1' month) AND inv.create_datetime)
+AND p.item_id = i.id
+AND pi.item_id = il.item_id
+AND pi.plan_id = p.id
+AND i.id = i_d.foreign_id
+AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+AND i_d.language_id = 1
+AND il.call_identifier IS NOT NULL
+AND il.invoice_id = $P{invoiceId}
+AND i.deleted = 0
+AND UPPER(i_d.content) NOT LIKE '%DORMANCY%'
+AND
+CASE WHEN (SELECT MAX(swap_date)
+	FROM swap_plan_history sph1
+	WHERE po.id = sph1.order_id
+	GROUP BY sph1.order_id
+	HAVING MAX(swap_date) < (SELECT create_datetime
+				FROM invoice
+				WHERE id = $P{invoiceId})) IS NOT NULL
+THEN
+-- take new plan id before invoice generation
+p.id = (SELECT sph4.new_plan_id
+	FROM swap_plan_history sph4
+	WHERE sph4.swap_date = sph.swap_date
+	AND sph4.swap_date = (SELECT MAX(sph1.swap_date)
+				FROM swap_plan_history sph1
+				WHERE po.id = sph1.order_id
+				AND sph1.swap_date < (inv.create_datetime)))
+ELSE
+-- if plan swapped after invoice generation then take old plan id
+p.id = (SELECT sph3.old_plan_id
+	FROM swap_plan_history sph3
+	WHERE sph3.swap_date = sph.swap_date
+	AND sph3.swap_date = (SELECT MIN(swap_date)
+				FROM swap_plan_history sph2
+				WHERE po.id = sph2.order_id
+				AND sph2.swap_date > (inv.create_datetime)))
+END
+AND p.id = $P{plan_id}
+GROUP BY p.id
+
+UNION ALL
+
+SELECT NULL AS plan_id,
+COALESCE(SUM(il.call_counter),0) AS call_counter,
+COALESCE(SUM(il.quantity),0) AS quantity,
+COALESCE(SUM(il.amount),0) AS amount
+FROM invoice_line il, invoice inv
+WHERE il.invoice_id = inv.id
+AND il.call_identifier IS NOT NULL
+AND il.invoice_id = $P{invoiceId}
+AND il.id NOT IN (
+	SELECT
+	il.id
+	FROM invoice_line il, invoice inv, customer_price cp,
+	plan_item pi, plan p, item i, international_description i_d
+	WHERE il.invoice_id = inv.id
+	AND inv.user_id = cp.user_id
+	AND cp.plan_item_id = pi.id
+	AND pi.plan_id = p.id
+	AND p.item_id = i.id
+	AND i.id = i_d.foreign_id
+	AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+	AND i_d.language_id = 1
+	AND il.call_identifier IS NOT NULL
+	AND il.item_id = pi.item_id
+	AND il.invoice_id = $P{invoiceId}
+	AND i.deleted = 0
+	AND CASE WHEN $P{plan_id} IS NOT NULL THEN p.id = $P{plan_id} ELSE 1 = 1 END
+	)
+) pwg
+WHERE CASE WHEN $P{plan_id} IS NOT NULL
+	THEN pwg.plan_id = $P{plan_id}
+	ELSE pwg.plan_id IS NULL
+	END;]]>
+	</queryString>
+	<field name="call_counter" class="java.math.BigDecimal"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<detail>
+		<band height="23">
+			<textField isBlankWhenNull="true">
+				<reportElement x="4" y="2" width="71" height="20" forecolor="#505861" uuid="f686ea74-9dc8-4647-ab16-82469e52855e"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_counter}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="76" y="2" width="71" height="20" forecolor="#505861" uuid="8501a0fa-576a-4c71-a19f-4f6c7e5e277d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="152" y="2" width="95" height="20" forecolor="#505861" uuid="d49ea0d9-b978-4263-99b8-135d6180d819"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(null != $F{amount} ? $F{amount}.setScale(2, RoundingMode.HALF_UP) : new BigDecimal("0.00")))]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

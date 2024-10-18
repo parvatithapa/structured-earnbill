@@ -1,0 +1,30 @@
+H,90,2310198,15/12/2023,24/01/2024,996512,996513,996519
+O,Shipments wise charges for standard services provided,table_type_month,one time
+L,common,19
+L,fragile,10
+L,pharmaceuticals,20
+L,liquid,2
+L,perishable,9
+L,live_animals,25
+L,high_value,20
+L,hazardous,5
+L,weapons,3
+L,electricity,2
+L,construction,1
+L,oilwell,4
+L,helicopters,1
+O,Special charges for shipments in peak season (In Weekdays),table_type_weekday,one time
+L,pharmaceuticals,15
+L,high_value,11
+L,perishable,8
+O,Special charges for shipments in peak season (In Weekend / Holidays),table_type_weekend_holiday,one time
+L,pharmaceuticals,4
+L,high_value,2
+L,perishable,1
+O,Special charges for shipments in peak season (In Weekend / Holidays),table_type_speed_delivery,one time
+L,electricity,6
+L,helicopters,15
+L,fragile,11
+L,common,8
+O,as per LICENSE AGREEMENT DOC NO. FF/TDSS/202098 dated 11-FEB-2020,table_type_subscription,monthly
+L,998314,9

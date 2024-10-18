@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_taxes_ac_uk" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="41e563cb-7ba6-4c53-b591-ce2e8dc3610b">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<queryString>
+		<![CDATA[select internal_number from item where id in (select cast(str_value as int) from pluggable_task_parameter where task_id in (select id from pluggable_task where type_id in (select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.process.task.SimpleTaxCompositionTask')));]]>
+	</queryString>
+	<field name="internal_number" class="java.lang.String"/>
+	<title>
+		<band height="57" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="12" y="18" width="169" height="20" forecolor="#808080" uuid="adefa36f-b5bb-4cfc-96d2-1a7b3feba149"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{internal_number}+' '+new DecimalFormat("#,##0.00").format(new BigDecimal(20.00))+'%']]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

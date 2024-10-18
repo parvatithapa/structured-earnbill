@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_plan_group_sub_report_v3" language="groovy" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="plan_id" class="java.lang.Integer"/>
+	<parameter name="subscription_order_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+(
+ SELECT content
+ FROM international_description int_des
+ INNER JOIN item i ON i.id = int_des.foreign_id
+ INNER JOIN jbilling_table jt ON jt.id = int_des.table_id
+ INNER JOIN plan p ON p.item_id = i.id
+ WHERE jt.name = 'item'
+ AND p.id = ss.plan_id
+) AS plan,
+ss.display_identifier,
+ss.service_id,
+TO_CHAR(ss.start_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS start_date,
+TO_CHAR(ss.end_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS end_date,
+ss.plan_description,
+CASE WHEN
+il.item_id IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{product_category_id_of_internet_usage_items}
+)
+THEN
+'Usage'
+ELSE
+ss.service_description
+END AS service_description,
+CASE WHEN
+(
+ SELECT ru.increment_unit_name
+ FROM item_rating_configuration_map ircm
+ INNER JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+ INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
+ WHERE ircm.item_id = il.item_id
+ AND ru.entity_id = bu.entity_id
+) IS NOT NULL
+THEN
+(
+ SELECT
+ CASE WHEN ru.increment_unit_name = 'MB'
+ THEN CONCAT(ROUND(il.quantity/1024,3)::text,' GB')
+ ELSE CONCAT(ROUND(il.quantity,3)::text,' ',ru.increment_unit_name)
+ END
+ FROM item_rating_configuration_map ircm
+ INNER JOIN rating_configuration rc ON rc.id = ircm.rating_configuration_id
+ INNER JOIN rating_unit ru ON ru.id = rc.rating_unit
+ WHERE ircm.item_id = il.item_id
+ AND ru.entity_id = bu.entity_id
+)
+ELSE
+(CASE WHEN (SELECT po.is_mediated FROM purchase_order po where po.id = il.order_id) = 't'
+THEN il.call_counter::int::text
+ELSE COALESCE(il.quantity,0)::int::text
+END)
+END AS quantity,
+COALESCE(il.amount,0) AS amount
+FROM service_summary ss
+INNER JOIN invoice i ON i.id = ss.invoice_id
+LEFT OUTER JOIN invoice_line il ON il.invoice_id = i.id AND il.id = ss.invoice_line_id
+INNER JOIN base_user bu ON bu.id = i.user_id
+LEFT OUTER JOIN rollup_codes rc2 ON rc2.item_type_description = CASE WHEN ss.service_description IS NULL THEN il.description ELSE ss.service_description END
+WHERE i.id = $P{invoice_id}
+AND ss.plan_id IS NOT NULL
+AND ss.plan_id = $P{plan_id}
+AND ss.subscription_order_id = $P{subscription_order_id}
+AND ss.service_description != 'Yearly Plan Fee'
+ORDER BY ss.service_id, rc2.itemisation_order, ss.start_date ASC;]]>
+	</queryString>
+	<field name="plan" class="java.lang.String"/>
+	<field name="display_identifier" class="java.lang.String"/>
+	<field name="service_id" class="java.lang.String"/>
+	<field name="start_date" class="java.lang.String"/>
+	<field name="end_date" class="java.lang.String"/>
+	<field name="plan_description" class="java.lang.String"/>
+	<field name="service_description" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="PlanGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="final_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<group name="PlanGroup">
+		<groupExpression><![CDATA[$F{plan}]]></groupExpression>
+		<groupHeader>
+			<band height="5"/>
+		</groupHeader>
+		<groupFooter>
+			<band height="22">
+				<staticText>
+					<reportElement x="307" y="2" width="183" height="20" forecolor="#D6036C" uuid="c281211e-26d4-4c63-9995-a84bfdc7b477"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Monthly Charges]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="492" y="2" width="60" height="20" forecolor="#D6036C" uuid="b2a201c6-a144-4fce-8953-ca7e666e41a9"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+						<paragraph rightIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{currency_symbol}+''+$V{sub_total}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="241" y="0" width="180" height="20" uuid="f1f12499-1acf-4ae4-9872-43d36372cf8e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="422" y="0" width="60" height="20" uuid="b42930b8-2256-4b15-99ef-8cef1a0dce97"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="483" y="1" width="69" height="20" uuid="0f4fdd66-b176-4c23-ae3c-2d212be9e4d9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+					<paragraph rightIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="110" y="0" width="117" height="20" uuid="505a3bed-bc2c-416b-b0aa-b592f4cd11ea"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+					<paragraph leftIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $F{start_date} && null == $F{end_date} ? $F{start_date} :
+(null != $F{start_date} && null != $F{end_date} ? ($F{start_date} +' to '+ $F{end_date}) : '')]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="3" y="0" width="106" height="20" uuid="5f2123a2-235e-49f5-850b-9c304a013935"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{display_identifier}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

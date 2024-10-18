@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns="http://www.springframework.org/schema/beans"
+	xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <bean id = "spcMediationJobsInit" class = "com.sapienter.jbilling.server.mediation.custommediation.spc.jobs.SPCMediationJobsInit"/>
+
+    <!-- Common Mediation Beans -->
+    <bean id="spcRecordSeparatorPolicy"
+        class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordSeparatorPolicy">
+        <property name="cdrTypeIdentifier" value="01,99,PWTHDR,PWTTRL,FDR,UIT,date,username,User Name,*Domain,*Daily" />
+        <property name="fieldSeparator"  ref = "spcFieldSeparator"/>
+    </bean>
+
+    <bean id="spcFieldSeparator" class="java.lang.String">
+       <constructor-arg value=","/>
+    </bean>
+
+    <bean id="spcFieldSeparatorTokenizer"
+            class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer" lazy-init="true">
+        <property name="fieldSeparator" ref = "spcFieldSeparator" />
+    </bean>
+
+    <bean id="spcPricingResolutionStep" class="com.sapienter.jbilling.server.mediation.custommediation.spc.steps.JMRPricingResolutionStep"/>
+    <bean id="spcMediationJobListener" class="com.sapienter.jbilling.server.mediation.custommediation.spc.listener.SPCJobListener" parent="mediationJobListener"/>
+    <bean id="spcRecycleJobListener" class="com.sapienter.jbilling.server.mediation.custommediation.spc.listener.SPCRecycleJobListener" parent="recycleMediationJobListener"/>
+    <bean id="spcSkipPolicy" class="com.sapienter.jbilling.server.mediation.custommediation.spc.SPCSkipPolicy" />
+
+    <!-- Recycle Configuration Beans -->
+    <bean id="spcRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecycleRowMapper"/>
+
+    <bean id="spcRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+           <property name="dataSource" ref="jBillingMediationDataSource"/>
+            <property name="sql" value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+           <property name="rowMapper" ref="spcRecycleRowMapper"/>
+    </bean>
+
+    <!-- Import mediation beans configuration files for each batch job -->
+    <import resource="classpath:spc-mediation-jobs.xml"/>
+    <import resource="classpath:spc-mediation-master-integration-config.xml"/>
+    <import resource="classpath:spc-mediation-slave-config.xml"/>
+
+     <bean id = "spcOrderService" class = "com.sapienter.jbilling.server.spc.SPCOrderServiceImpl" parent = "orderService"/>
+
+</beans>

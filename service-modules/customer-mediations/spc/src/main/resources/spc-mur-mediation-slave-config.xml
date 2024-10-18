@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/batch
+       http://www.springframework.org/schema/batch/spring-batch.xsd"
+    profile="mediation.slave">
+
+    <import resource = "classpath:spc-mur-mediation-slave-integration-config.xml"/>
+
+    <bean id    = "optusMurJMRUserReader" 
+          class = "com.sapienter.jbilling.server.batch.mediation.DefaultJMRUserReader" 
+          scope = "step"/>
+          
+    <bean id    = "optusMurJMRUserWriter" 
+          class = "com.sapienter.jbilling.server.batch.mediation.DefaultJMRUserWriter" 
+          scope = "step"/>
+
+    <batch:step id = "optusMurNotifyStep" job-repository="mediationJobRepository">
+        <!--TODO throttle-limit="${springbatch.executor.max.pool.size}"-->
+        <batch:tasklet  transaction-manager = "jbillingMediationTransactionManager"
+                        task-executor       = "taskExecutor">
+                        
+            <batch:chunk reader          = "optusMurJMRUserReader"
+                         processor       = "optusMurJMRUserProcessor" 
+                         writer          = "optusMurJMRUserWriter" 
+                         commit-interval = "1"
+                         skip-policy     = "spcSkipPolicy"/>
+        </batch:tasklet>
+    </batch:step>
+
+</beans>

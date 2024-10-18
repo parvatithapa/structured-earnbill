@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" 
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" 
+              name="failed_payments" language="groovy" pageWidth="992" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="594" 
+              leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" uuid="f9110063-141c-4a0e-92e9-579916fcbd20">
+    <property name="ireport.zoom" value="1.5"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="start_date" class="java.util.Date"/>
+    <parameter name="end_date" class="java.util.Date"/>
+    <parameter name="entity_id" class="java.lang.Integer"/>
+    <parameter name="child_entities" class="java.util.List"/>
+    <queryString>
+                <![CDATA[SELECT p.payment_date AS payment_date, 
+                                p.create_datetime AS response_date, 
+                                p.is_refund AS is_refund,
+                                p.id AS payment_id, 
+                                p.user_id AS customer_id, 
+                                split_part(u.user_name, '_', 1) AS customer_name, 
+                                p.amount AS amount,
+                                c.symbol AS currency_symbol,
+                                c.code AS currency_code,
+                                (SELECT mfv.string_value
+                                   FROM payment_instrument_info pi, payment_information_meta_fields_map pimfm, meta_field_value mfv, meta_field_name mfn
+                                  WHERE pi.instrument_id = pimfm.payment_information_id
+                                    AND pimfm.meta_field_value_id = mfv.id
+                                    AND mfv.meta_field_name_id = mfn.id
+                                    AND pi.payment_id = p.id
+                                    AND mfn.name = 'cc.cardholder.name' LIMIT 1) AS cc_holder,
+                                (SELECT mfv.string_value
+                                   FROM payment_instrument_info pi, payment_information_meta_fields_map pimfm, meta_field_value mfv, meta_field_name mfn
+                                  WHERE pi.instrument_id = pimfm.payment_information_id
+                                    AND pimfm.meta_field_value_id = mfv.id
+                                    AND mfv.meta_field_name_id = mfn.id
+                                    AND pi.payment_id = p.id
+                                    AND mfn.name = 'cc.number' LIMIT 1) AS cc_number,
+                                (SELECT mfv.string_value
+                                   FROM payment_instrument_info pi, payment_information_meta_fields_map pimfm, meta_field_value mfv, meta_field_name mfn
+                                  WHERE pi.instrument_id = pimfm.payment_information_id
+                                    AND pimfm.meta_field_value_id = mfv.id
+                                    AND mfv.meta_field_name_id = mfn.id
+                                    AND pi.payment_id = p.id
+                                    AND mfn.name = 'cc.expiry.date' LIMIT 1) AS cc_expiry,
+                                (SELECT mfv.integer_value
+                                   FROM payment_meta_field_map pmfm, meta_field_value mfv, meta_field_name mfn
+                                  WHERE pmfm.payment_id = p.id
+                                    AND pmfm.meta_field_value_id = mfv.id
+                                    AND mfv.meta_field_name_id = mfn.id
+                                    AND mfn.name = 'Payment Attempt Count' LIMIT 1) AS no_attempts,
+                                (SELECT mfv.string_value
+                                   FROM payment_meta_field_map pmfm, meta_field_value mfv, meta_field_name mfn
+                                  WHERE pmfm.payment_id = p.id
+                                    AND pmfm.meta_field_value_id = mfv.id
+                                    AND mfv.meta_field_name_id = mfn.id
+                                    AND mfn.name = 'Status' LIMIT 1) AS cc_status, 
+                                pa.code3 AS resp_code
+                           FROM payment p
+                      LEFT JOIN base_user u ON u.id = p.user_id 
+                      LEFT JOIN payment_authorization pa ON pa.payment_id = p.id
+                      LEFT JOIN currency c ON c.id = u.currency_id
+                          WHERE (u.entity_id = $P{entity_id} OR $X{IN, u.entity_id, child_entities})
+                            AND p.create_datetime BETWEEN $P{start_date} AND ($P{end_date}::timestamp + interval '1 day')
+                            AND (p.result_id = 2 OR p.result_id = 3)
+                       ORDER BY p.payment_date, p.create_datetime, p.id]]>
+    </queryString>
+    <field name="payment_date" class="java.sql.Timestamp"/>
+    <field name="response_date" class="java.sql.Timestamp"/>
+    <field name="is_refund" class="java.lang.Integer"/>
+    <field name="payment_id" class="java.lang.Integer"/>
+    <field name="customer_id" class="java.lang.Integer"/>
+    <field name="customer_name" class="java.lang.String"/>
+    <field name="amount" class="java.math.BigDecimal"/>
+    <field name="cc_holder" class="java.lang.String"/>
+    <field name="cc_number" class="java.lang.String"/>
+    <field name="cc_expiry" class="java.lang.String"/>
+    <field name="no_attempts" class="java.lang.Integer"/>
+    <field name="cc_status" class="java.lang.String"/>
+    <field name="resp_code" class="java.lang.Integer"/>
+    <field name="currency_symbol" class="java.lang.String"/>
+    <field name="currency_code" class="java.lang.String"/>
+    <variable name="total" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{is_refund} == 0 ? $F{amount} : $F{amount} * -1]]></variableExpression>
+        <initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+    </variable>
+    
+    <group name="currency_symbol">
+        <groupExpression><![CDATA[$F{currency_symbol}]]></groupExpression>
+        <groupFooter>
+            <band height="61">
+                <staticText>
+                    <reportElement x="0" y="12" width="50" height="20" uuid="eb930aeb-0e6b-4e51-829c-242b1b74d67c"/>
+                    <textElement textAlignment="Left" verticalAlignment="Middle">
+                        <font fontName="SansSerif" size="8" isBold="true" isItalic="false"/>
+                    </textElement>
+                    <text><![CDATA[Total:]]></text>
+                </staticText>
+                <textField evaluationTime="Group" evaluationGroup="currency_symbol">
+                    <reportElement x="498" y="12" width="43" height="20" uuid="6048d198-4c12-476c-b597-ce8fba330783"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font size="8" isBold="false" isItalic="false" isStrikeThrough="false"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[($F{currency_symbol} != null ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}, false) : '') + new java.text.DecimalFormat("#,##0.00").format($V{total})]]></textFieldExpression>
+                </textField>
+                <line>  
+                    <reportElement x="0" y="10" width="972" height="2" uuid="05f3b751-390d-4905-9166-b236ff1ad410"/>
+                    <graphicElement>
+                        <pen lineWidth="2.0"/>
+                    </graphicElement>
+                </line>
+            </band>
+        </groupFooter>
+    </group>
+    <title>
+        <band height="100">
+            <staticText>
+                <reportElement x="0" y="1" width="250" height="20" uuid="e594d8ea-09c6-490d-80c1-539f03071164"/>
+                <textElement>
+                    <font size="14" isBold="true"/>
+                </textElement>
+                <text><![CDATA[PaySafe Failed Transactions]]></text>
+            </staticText>
+            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+                <reportElement x="901" y="21" width="75" height="20" uuid="f74b14f9-5668-44e3-b04f-40fdf30e42cb"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+            </textField>
+            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+                <reportElement x="901" y="41" width="75" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+            </textField>
+            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+                <reportElement x="901" y="1" width="76" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="797" y="21" width="100" height="20" uuid="14a01958-077f-4e09-ab9e-9de831eb585e"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Start Date:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="796" y="41" width="100" height="20" uuid="d04dfbbd-c816-40d7-94d1-e6ba7243a0f9"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[End Date:]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="777" y="1" width="120" height="20" uuid="1cb29423-3fbd-43cf-a0e0-f14e7bffd8b5"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Report Date]]></text>
+            </staticText>
+        </band>
+    </title>
+    <pageHeader>
+        <band>
+            <printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+        </band>
+    </pageHeader>
+    <columnHeader>
+        <band height="21">
+            <staticText>
+                <reportElement x="0" y="0" width="108" height="20" uuid="981f59d5-6f5d-4553-9c09-359d8b449d9a"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                    <text><![CDATA[Transaction Date]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="108" y="0" width="108" height="20" uuid="64608301-3e00-47d0-871b-a30ef586a95f"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Response Date]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="216" y="0" width="42" height="20" uuid="c02aaa76-f0e0-4f72-a41c-989e49e82d1a"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[P/R]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="266" y="0" width="42" height="20" uuid="c02aaa76-f0e0-4f72-a41c-989e49e82d1a"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Id]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="328" y="0" width="62" height="20" uuid="126dead2-055e-4a38-a54d-4538921aed3d"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Customer Id]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="20" width="972" height="1" uuid="e66b0fae-9da5-4ba7-8cfd-c1677c39b057"/>
+                <graphicElement>
+                    <pen lineWidth="2.0"/>
+                </graphicElement>
+            </line>
+            <staticText>
+                <reportElement x="390" y="0" width="108" height="20" uuid="898fe966-9f67-49d7-b4f2-b6169084d704"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Customer Name]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="498" y="0" width="52" height="20" uuid="12a00772-52ce-4037-b397-63a3e47fa9e0"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Amount]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="550" y="0" width="88" height="20" uuid="21a161b0-1c2a-4269-9f73-65aab5df378b"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[CC Holder]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="638" y="0" width="88" height="20" uuid="a1ba9294-be49-496b-b77e-b2c1e2c159e6"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[CC Number]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="726" y="0" width="62" height="20" uuid="a1ba9294-be49-496b-b77e-b2c1e2c159e6"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[CC Expiry]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="788" y="0" width="62" height="20" uuid="a1ba9294-be49-496b-b77e-b2c1e2c159e6"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[CC Status]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="850" y="0" width="62" height="20" uuid="a1ba9294-be49-496b-b77e-b2c1e2c159e6"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Resp Code]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="912" y="0" width="62" height="20" uuid="a1ba9294-be49-496b-b77e-b2c1e2c159e6"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[No. Attempts]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="20">
+            <textField pattern="MMMM dd, yyyy">
+                <reportElement x="0" y="0" width="108" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{payment_date}]]></textFieldExpression>
+            </textField>
+            <textField pattern="MMMM dd, yyyy">
+                <reportElement x="108" y="0" width="108" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{response_date}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="216" y="0" width="42" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{is_refund} == 0 ? "P" : "R"]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="266" y="0" width="42" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{payment_id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="328" y="0" width="62" height="20" uuid="f0f09d4d-537e-4419-8942-cd995431ef15"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{customer_id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="390" y="0" width="108" height="20" uuid="2731dab3-16a2-4e75-be75-033453638d84"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+            </textField>
+            <textField> 
+                <reportElement x="498" y="0" width="52" height="20" uuid="b9fba10a-51cc-4239-915e-bb270f2e2c8c"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[($F{is_refund} == 0 ? "" : "-" ) + com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}, false) + new java.text.DecimalFormat("#,##0.00").format($F{amount})]]>
+                </textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="550" y="0" width="88" height="20" uuid="df286895-fe63-4e74-a368-b7c9d13092d9"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{cc_holder}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="638" y="0" width="88" height="20" uuid="44cab7bf-86c6-450f-bcff-cbf20b65a017"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{cc_number}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="726" y="0" width="62" height="20" uuid="a3152737-b67d-4734-82d3-244a2e4b2611"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{cc_expiry}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="788" y="0" width="62" height="20" uuid="c7ec2108-6487-4c9f-aaac-b79ad7688dfa"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{cc_status}.indexOf("-")!=-1 ? $F{cc_status}.substring( 0, $F{cc_status}.indexOf("-")) : $F{cc_status}]]></textFieldExpression>                
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="850" y="0" width="62" height="20" uuid="704fc9ea-e7e0-43bc-876a-de9d3c744fc2"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{resp_code}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="912" y="0" width="62" height="20" uuid="c7ec2108-6487-4c9f-aaac-b79ad7688dfa"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{no_attempts}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <textField>
+                <reportElement x="434" y="0" width="80" height="20" uuid="b6d3fb59-f693-4cc1-88aa-948593b8cec2"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="514" y="0" width="40" height="20" uuid="d0f5d73e-4ef2-4c00-b46a-baa940116f14"/>
+                <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:jms="http://www.springframework.org/schema/jms"
+       xmlns:amq="http://activemq.apache.org/schema/core"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+
+    <bean id = "jmsConnectionFactory" class = "org.apache.activemq.pool.PooledConnectionFactory" destroy-method = "stop">
+        <property name = "connectionFactory">
+           <bean class = "org.apache.activemq.ActiveMQConnectionFactory">
+              <property name = "brokerURL" value = "#{systemEnvironment['JBILLING_ACTIVE_MQ_BROKER_URL']?:'vm://localhost'}"/>
+              <property name = "redeliveryPolicy">
+             <bean class = "org.apache.activemq.RedeliveryPolicy">
+               <property name = "maximumRedeliveries" value = "0"/>
+             </bean>
+            </property>
+               <!-- ActiveMQ enforces users to explicitly whitelist packages that can be exchanged using ObjectMessages.
+                     So setTrustAllPackages allows to turn off security check and trust all classes.
+                     This Security feature has been added in 5.12.2 version.
+                -->
+              <property name="trustAllPackages" value = "true"/>
+           </bean>
+        </property>
+    </bean>
+
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory">
+            <ref bean="jmsConnectionFactory"/>
+        </property>
+        <property name="sessionTransacted" value = "true"/>
+    </bean>
+
+    <!-- JMS destinations -->
+    <bean id="processorsDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.processors"/>
+    </bean>
+
+    <bean id="provisioningCommandsDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.provisioningCommands"/>
+    </bean>
+
+    <bean id="provisioningCommandsReplyDestination" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg index="0" value="topic.jbilling.provisioningCommandsReply"/>
+    </bean>
+
+    <bean id="notificationsDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.notifications"/>
+    </bean>
+
+    <bean id="localNotificationQueueName" class="java.lang.String">
+        <constructor-arg index="0" value="#{'queue.jbilling.notifications.' + T(java.net.InetAddress).getLocalHost().getHostName()}"/>
+    </bean>
+
+    <bean id="notificationsLocalhostDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" ref="localNotificationQueueName"/>
+    </bean>
+
+    <bean id="autoPaymentProcessorsDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.autopayment.processors"/>
+    </bean>
+
+    
+    <bean id="customerCancellationRequestDestination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="queue.jbilling.customer.cancellation.request"/>
+    </bean>
+
+    <bean id="pricingBeanRegisterDestination" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg index="0" value="topic.jbilling.pricingBeanRegister"/>
+    </bean>
+
+    <bean id = "dtLocalCacheClearDestination" class = "org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg index = "0" value = "topic.jbilling.dtLocalCacheClearMDB"/>
+    </bean>
+
+    <!-- Message driven beans -->
+    <bean id="processPaymentMDB" class="com.sapienter.jbilling.server.payment.event.ProcessPaymentMDB"/>
+    <bean id="provisioningCommandsMDB" class="com.sapienter.jbilling.server.provisioning.task.ProvisioningCommandsMDB"/>
+    <bean id="testExternalProvisioningMDB"
+          class="com.sapienter.jbilling.server.provisioning.TestExternalProvisioningMDB"/>
+    <bean id="externalProvisioningMDB" class="com.sapienter.jbilling.server.provisioning.ExternalProvisioningMDB"/>
+    <bean id="notificationMDB" class="com.sapienter.jbilling.server.notification.NotificationMDB"/>
+    <bean id="autoPaymentMDB" class="com.sapienter.jbilling.server.payment.event.AutoPaymentMDB"/>
+    <bean id="generateCancellationInvoiceMDB" class="com.sapienter.jbilling.server.invoice.GenerateCancellationInvoiceMDB"/>
+
+    <bean id="pricingBeanRegisterMDB" class="com.sapienter.jbilling.server.pricing.PricingBeanRegisterMDB"/>
+    <bean id ="dtLocalCacheClearMDB" class = "com.sapienter.jbilling.server.mediation.converter.customMediations.dt.DTLocalCacheClearMDB"/>
+
+</beans>

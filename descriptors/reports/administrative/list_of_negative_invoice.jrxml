@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_of_negative_invoice" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="cd020e82-804a-4754-8639-d9c337fb6dad">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean" isForPrompting="false"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT bu.entity_id,
+e.description,
+i.id,
+i.user_id,
+i.total,
+i.balance,
+i.currency_id,
+c.symbol AS currency_symbol
+FROM invoice AS i
+INNER JOIN currency c ON c.id= i.currency_id
+INNER JOIN base_user bu ON bu.id= i.user_id
+INNER JOIN entity e ON e.id = bu.entity_id AND e.deleted = 0
+WHERE balance < 0.00
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+ORDER BY i.currency_id, bu.entity_id;]]>
+	</queryString>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="total" class="java.math.BigDecimal"/>
+	<field name="balance" class="java.math.BigDecimal"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="100">
+				<staticText>
+					<reportElement x="0" y="3" width="100" height="20" uuid="ede294be-8549-47dc-8b74-7f92b76b28ea"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="24" width="100" height="20" uuid="703cb9cb-edab-4a2b-a625-b2cc83f80825"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="3" width="100" height="20" uuid="8067d429-b282-4067-9058-68c5bb698fda"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="24" width="150" height="20" uuid="7e34d1b2-ad16-47c7-a872-5087bbc8cbd3"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="71" width="138" height="20" uuid="9f9f5478-a8f8-4d5f-b028-acf3abf44577"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Invoice Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="138" y="71" width="138" height="20" uuid="afa7457a-2188-4830-a13d-1684de198cb3"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="308" y="71" width="106" height="20" uuid="5dadc027-ce18-49c3-b324-f8effd283132"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="439" y="71" width="94" height="20" uuid="a12f296c-f62f-49c1-a290-044ce6247a3f"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Balance]]></text>
+				</staticText>
+				<line>
+					<reportElement x="0" y="93" width="555" height="1" uuid="ab72801c-3267-446e-bbf0-8f9748beec96"/>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="13">
+				<line>
+					<reportElement x="0" y="5" width="555" height="1" uuid="dfe03e1d-9468-4b76-a57e-064adcee0121"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="52" splitType="Stretch">
+			<staticText>
+				<reportElement x="151" y="17" width="239" height="20" uuid="f3a4eb1b-cd31-4205-b234-398c686886f3"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Negative Invoices]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="138" height="20" uuid="2c13798b-4b2e-4d2a-b5f4-9d14fe4f6317"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="138" y="0" width="138" height="20" uuid="82c649a9-fdd3-47e6-bdf1-cc29d6f5e5c2"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="276" y="0" width="114" height="20" uuid="f6f331bd-8df4-4a63-bd88-984c42152031"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{total} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{total}) :
+							 "("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{total}.negate())+")"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="414" y="0" width="105" height="20" uuid="442a7463-b366-4d55-bc7a-3ef1734496d1"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{balance} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{balance}) :
+							 "("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{balance}.negate())+")"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="13" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="4" width="555" height="1" uuid="7dd642d8-650f-4206-98bb-57355c121742"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

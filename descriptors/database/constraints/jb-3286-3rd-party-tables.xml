@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jb-3286-maps-tables.xml">
+
+    <changeSet context = "base" id = "JB-3286 - batch_job_execution" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_job_execution
+        RENAME CONSTRAINT job_inst_exec_fk
+                       TO batch_job_execution_fk_batch_job_instance;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_job_execution_params" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_job_execution_params
+        RENAME CONSTRAINT job_exec_params_fk
+                       TO batch_job_execution_params_fk_batch_job_execution;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_step_execution" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_step_execution
+        RENAME CONSTRAINT job_exec_step_fk
+                       TO batch_step_execution_fk_batch_job_execution;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_step_execution_context" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_step_execution_context
+        RENAME CONSTRAINT step_exec_ctx_fk
+                       TO batch_step_execution_context_fk_batch_step_execution;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - batch_job_execution_context" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE batch_job_execution_context
+        RENAME CONSTRAINT job_exec_ctx_fk
+                       TO batch_job_execution_context_fk_batch_job_execution;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - databasechangelog" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "databasechangelog"
+                       columnNames  = "id, author, filename" />
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - databasechangeloglock" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE databasechangeloglock
+        RENAME CONSTRAINT pk_databasechangeloglock
+                       TO databasechangeloglock_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - qrtz_blob_triggers" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE qrtz_blob_triggers
+        RENAME CONSTRAINT qrtz_blob_triggers_sched_name_fkey
+                       TO qrtz_blob_triggers_fk_qrtz_triggers;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - qrtz_cron_triggers" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE qrtz_cron_triggers
+        RENAME CONSTRAINT "qrtz_cron_triggers_sched_name_fkey"
+                       TO qrtz_cron_triggers_fk_qrtz_triggers;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - qrtz_simple_triggers" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE qrtz_simple_triggers
+        RENAME CONSTRAINT qrtz_simple_triggers_sched_name_fkey
+                       TO qrtz_simple_triggers_fk_qrtz_triggers;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - qrtz_simprop_triggers" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE qrtz_simprop_triggers
+        RENAME CONSTRAINT qrtz_simprop_triggers_sched_name_fkey
+                       TO qrtz_simprop_triggers_fk_qrtz_triggers;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3286 - qrtz_triggers" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE qrtz_triggers
+        RENAME CONSTRAINT qrtz_triggers_sched_name_fkey
+                       TO qrtz_triggers_fk_qrtz_job_details;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rejected_payments" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isFloatColumnFooter="true">
+  <property name="ireport.zoom" value="1.5"/>
+  <property name="ireport.x" value="0"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="currency_code" class="java.lang.String"/>
+  <parameter name="currency_symbol" class="java.lang.String"/>
+  <parameter name="payment_date" class="java.util.Date"/>
+  <parameter name="subtotal" class="java.math.BigDecimal"/>
+  <parameter name="entity_id" class="java.lang.Integer"/>
+  <parameter name="child_entities" class="java.util.List"/>
+  <parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+  <queryString>
+    <![CDATA[
+              SELECT p.method_id AS payment_method,
+                     pmt.method_name AS payment_method_name
+                FROM payment p
+           LEFT JOIN base_user u ON u.id=p.user_id
+           LEFT JOIN currency c ON p.currency_id=c.id
+                JOIN payment_instrument_info pii ON pii.payment_id = p.id
+                JOIN payment_information pi ON pii.instrument_id = pi.id
+                JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+               WHERE (u.entity_id = $P{entity_id} OR $X{IN, u.entity_id, child_entities})
+                 AND p.payment_date=$P{payment_date}
+                 AND c.code=$P{currency_code}
+                 AND (p.result_id=2 OR p.result_id=3)
+            GROUP BY p.method_id, pmt.method_name
+            ORDER BY pmt.method_name
+        ]]>
+  </queryString>
+  <field name="payment_method" class="java.lang.Integer"/>
+  <field name="payment_method_name" class="java.lang.String"/>
+  <group name="payment_date">
+    <groupExpression><![CDATA[$P{payment_date}]]></groupExpression>
+    <groupFooter>
+      <band height="30">
+        <line>
+          <reportElement x="80" y="0" width="560" height="1"/>
+          <graphicElement>
+            <pen lineWidth="1.0"/>
+          </graphicElement>
+        </line>
+        <staticText>
+          <reportElement x="80" y="1" width="80" height="20"/>
+          <textElement textAlignment="Left" verticalAlignment="Middle">
+            <font size="10"/>
+          </textElement>
+          <text><![CDATA[Total:]]></text>
+        </staticText>
+        <textField evaluationTime="Group" evaluationGroup="payment_date">
+          <reportElement x="550" y="1" width="80" height="20"/>
+          <textElement verticalAlignment="Middle" textAlignment="Right">
+            <font size="10"/>
+          </textElement>
+          <textFieldExpression class="java.lang.String">
+            <![CDATA[com.sapienter.jbilling.server.util.Util.formatSymbolMoney($P{currency_symbol}, false) + new java.text.DecimalFormat("#,##0.00").format($P{subtotal})]]>
+          </textFieldExpression>
+        </textField>
+      </band>
+    </groupFooter>
+  </group>
+  <detail>
+    <band height="20">
+      <textField>
+        <reportElement x="80" y="0" width="80" height="20" />
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{payment_method_name}]]></textFieldExpression>
+      </textField>
+      <subreport>
+        <reportElement x="0" y="0" width="480" height="20"/>
+        <subreportParameter name="entity_id">
+          <subreportParameterExpression><![CDATA[$P{entity_id}]]></subreportParameterExpression>
+        </subreportParameter>
+        <subreportParameter name="child_entities">
+          <subreportParameterExpression><![CDATA[$P{child_entities}]]></subreportParameterExpression>
+        </subreportParameter>
+        <subreportParameter name="payment_date">
+          <subreportParameterExpression><![CDATA[$P{payment_date}]]></subreportParameterExpression>
+        </subreportParameter>
+        <subreportParameter name="currency_code">
+          <subreportParameterExpression><![CDATA[$P{currency_code}]]></subreportParameterExpression>
+        </subreportParameter>
+        <subreportParameter name="payment_method">
+          <subreportParameterExpression><![CDATA[$F{payment_method}]]></subreportParameterExpression>
+        </subreportParameter>
+        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+        <subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rejected_payments_methods_sub.jasper"]]></subreportExpression>
+      </subreport>
+    </band>
+  </detail>
+</jasperReport>

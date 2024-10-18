@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="deferred_revenue_detailed" language="groovy" pageWidth="870" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="680" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="a9359df0-38bc-4cad-ad46-42ee4051227e">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="month_name" class="java.lang.String"/>
+	<parameter name="year" class="java.lang.Integer"/>
+	<field name="customer_id" class="java.lang.String"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="account_name" class="java.lang.String"/>
+	<field name="account_status" class="java.lang.String"/>
+	<field name="invoice_date" class="java.util.Date"/>
+	<field name="monthly_revenue" class="java.math.BigDecimal"/>
+	<variable name="account_month_revenue" class="java.math.BigDecimal" resetType="Group" resetGroup="account" calculation="Sum">
+		<variableExpression><![CDATA[$F{monthly_revenue}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<variable name="account_month_average_revenue" class="java.math.BigDecimal" resetType="Group" resetGroup="account" calculation="Average">
+		<variableExpression><![CDATA[$F{monthly_revenue}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<group name="account">
+		<groupExpression><![CDATA[$F{account_name}]]></groupExpression>
+		<groupFooter>
+			<band height="74">
+				<line>
+					<reportElement x="0" y="10" width="830" height="1" uuid="4d15970d-f7eb-4b76-b0f0-85d89c0ba072"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+				<staticText>
+					<reportElement x="400" y="11" width="100" height="20" uuid="a0fdbc26-49e3-4b43-9067-2ebac54685f0"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false"/>
+					</textElement>
+					<text><![CDATA[Total Revenue]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="500" y="11" width="87" height="20" uuid="fb4eadbe-af53-40eb-9030-3fb030dbe8e2"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font isBold="true" isItalic="false" isStrikeThrough="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new DecimalFormat('#,##0.00').format($V{account_month_revenue})]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="150" y="10" width="112" height="20" uuid="98240e24-dcda-4743-8fdb-6bf5ca7fba63"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false"/>
+					</textElement>
+					<text><![CDATA[Average Revenue]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="262" y="10" width="72" height="20" uuid="02b8582f-40b2-47d5-aaa9-21f5572a486a"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font isBold="true" isItalic="false" isStrikeThrough="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new DecimalFormat('#,##0.00').format($V{account_month_average_revenue})]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="110">
+			<staticText>
+				<reportElement x="0" y="1" width="250" height="20" uuid="c32d7022-6f8f-4e1e-981c-a49c73661805"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Average Revenue]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="630" y="1" width="100" height="20" uuid="daa1b9be-1a7d-45e6-b43c-4855f213a077"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report date:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="730" y="1" width="100" height="20" uuid="dc30bb30-922a-43d1-9257-212b92a4a3a3"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new Date(System.currentTimeMillis())]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="21" width="100" height="20" uuid="3c6f0ddd-0b5f-4e10-9f01-b442f612bad3"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Month:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="100" y="21" width="130" height="20" uuid="febf13ef-38e6-4b8d-89b4-9bb0829d3ca6"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{month_name} + " " + $P{year}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20">
+			<staticText>
+				<reportElement x="0" y="0" width="89" height="20" uuid="ace98bd2-f9ce-4df5-97f1-2323016c99cf"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="90" y="0" width="138" height="20" uuid="515b873e-e390-491b-834d-79b807cf19bd"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="229" y="0" width="62" height="20" uuid="515b873e-e390-491b-834d-79b807cf19bd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Status]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="291" y="0" width="100" height="20" uuid="515b873e-e390-491b-834d-79b807cf19bd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="392" y="0" width="100" height="20" uuid="515b873e-e390-491b-834d-79b807cf19bd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Invoice]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="500" y="0" width="100" height="20" uuid="515b873e-e390-491b-834d-79b807cf19bd"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Monthly Revenue]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="19" width="830" height="1" uuid="6d6784e8-2b32-402e-b2c4-65a8f10fac51"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20">
+			<textField>
+				<reportElement x="0" y="0" width="89" height="19" uuid="908970b5-5ec4-4510-b8bf-ca8197b8d5c8"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{customer_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="90" y="0" width="138" height="20" uuid="48e3ceca-da4c-4df6-8121-85e64bb5fa0f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="229" y="0" width="62" height="20" uuid="e9b88fa2-f59c-45f1-a191-d05daab14568"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{account_status}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="291" y="0" width="100" height="20" uuid="e9b88fa2-f59c-45f1-a191-d05daab14568"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{account_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MM/dd/yyyy">
+				<reportElement x="392" y="0" width="100" height="20" uuid="e9b88fa2-f59c-45f1-a191-d05daab14568"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="500" y="0" width="100" height="20" uuid="f050c286-2b4e-412a-b0f7-3ff60fea6148"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new DecimalFormat('#,##0.00').format($F{monthly_revenue})]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="25">
+			<textField>
+				<reportElement x="400" y="0" width="80" height="20" uuid="910e7a2e-4641-43fb-9df9-4d0f05917545"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="480" y="0" width="40" height="20" uuid="4f20317a-6f04-4eee-8f48-bf3a11694d7b"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

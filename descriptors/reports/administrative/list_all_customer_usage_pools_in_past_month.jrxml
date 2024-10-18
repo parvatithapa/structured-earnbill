@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_all_customer_usage_pools_in_past_month" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="86321a01-a633-4897-a30a-14bf3ba59b6b">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT c.user_id,
+bu.entity_id,
+e.description,
+cpm.order_id,
+cpm.quantity,
+cpm.cycle_start_date,
+cpm.cycle_end_date
+FROM customer_usage_pool_map AS cpm
+INNER JOIN customer c ON c.id = cpm.customer_id
+INNER JOIN base_user bu ON bu.id = c.user_id
+INNER JOIN entity e ON e.id = bu.entity_id
+INNER JOIN purchase_order po ON po.id = cpm.order_id
+INNER JOIN order_status os ON os.id = po.status_id
+WHERE CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+AND os.order_status_flag = 0
+AND e.deleted = 0
+AND po.deleted = 0
+AND bu.deleted = 0
+AND cpm.cycle_start_date::date > '1970-01-01'
+AND cpm.cycle_start_date::date < (SELECT CAST(DATE_TRUNC('month', current_date) AS date))
+OR cpm.cycle_end_date::date >'1970-01-01'
+AND cpm.cycle_end_date::date < (SELECT CAST(DATE_TRUNC('month', current_date) AS date))
+AND (po.active_until IS NOT NULL OR po.active_until > current_date)
+ORDER BY bu.entity_id;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="order_id" class="java.lang.Integer"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="cycle_start_date" class="java.sql.Timestamp"/>
+	<field name="cycle_end_date" class="java.sql.Timestamp"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="89">
+				<staticText>
+					<reportElement x="0" y="3" width="100" height="20" uuid="ede294be-8549-47dc-8b74-7f92b76b28ea"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="24" width="100" height="20" uuid="703cb9cb-edab-4a2b-a625-b2cc83f80825"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="3" width="100" height="20" uuid="8067d429-b282-4067-9058-68c5bb698fda"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="24" width="150" height="20" uuid="7e34d1b2-ad16-47c7-a872-5087bbc8cbd3"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="81" width="555" height="1" uuid="64fb9ab5-c3a3-41fe-98da-f869f258baac"/>
+				</line>
+				<staticText>
+					<reportElement x="0" y="59" width="111" height="20" uuid="1301f586-31da-4f86-838d-ac85b1aa0444"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="111" y="59" width="111" height="20" uuid="11f773c9-aa3e-41e7-bc3f-cde59bf47e2f"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="222" y="59" width="111" height="20" uuid="5c0f5fa4-2e83-42a7-b3a9-4df96f22accb"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Quantity]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="333" y="59" width="111" height="20" uuid="11eacd98-8297-45c3-a1f8-675c0d4990b6"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Start Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="444" y="59" width="111" height="20" uuid="3677a4e8-55d5-4eb9-a17e-4cc5f1743137"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[End Date]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="11">
+				<line>
+					<reportElement x="0" y="5" width="555" height="1" uuid="9dde394f-ed68-4015-8629-5ba14a737688"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="106" y="17" width="308" height="49" uuid="c0f08bf7-3a95-430d-ab1d-bfac22d543b0"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Usage Pools With Cycle Start Date Or Cycle End Date In Past Month]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="27" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="111" height="20" uuid="59d5578c-6fdb-480a-b05f-4e719e46e9e1"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="111" y="0" width="111" height="20" uuid="e0744cc5-b6bb-452d-b29f-d4b04b3c2731"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_id}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;(###0.00)" isBlankWhenNull="true">
+				<reportElement x="222" y="0" width="111" height="20" uuid="99ff2735-1641-42ed-a90b-e085f9c697c0"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="333" y="0" width="111" height="20" uuid="b44ee4ff-2d84-427a-ae05-3fb7b96e0797"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{cycle_start_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="444" y="0" width="111" height="20" uuid="16d51e78-c3a7-47e8-8344-51f24e77c4da"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{cycle_end_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="14" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="4" width="555" height="1" uuid="d801b9cf-acfa-4ca0-8f04-b02c21709701"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

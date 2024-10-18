@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/foreign-keys-indexes-20170905.xml">
+
+    <changeSet context = "base" id = "billing-indexes" author = "Igor Poteryaev">
+
+        <comment>Create missed indexes and constraint on tables used in billing and ageing processes</comment>
+
+        <!-- process_run_use -->
+
+        <createIndex tableName = "process_run_user"
+                     indexName = "process_run_user_fk_process_run" unique = "false">
+            <column name = "process_run_id"/>
+        </createIndex>
+
+        <createIndex tableName = "process_run_user"
+                     indexName = "process_run_user_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <addUniqueConstraint  constraintName = "process_run_user_uq_user_process"
+                              tableName      = "process_run_user"
+                              columnNames    = "user_id, process_run_id"
+        />
+
+        <createIndex tableName = "ageing_entity_step"
+                     indexName = "ageing_entity_step_fk_status" unique = "false">
+            <column name = "status_id"/>
+        </createIndex>
+
+        <createIndex tableName = "process_run"
+                     indexName = "process_run_fk_billing_process" unique = "false">
+            <column name = "process_id"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet context = "base" id = "extra-performance-indexes" author = "Igor Poteryaev">
+
+        <comment>Create missed indexes and constraint to prevent full scans on potentially big tables</comment>
+
+        <createIndex tableName = "contact"
+                     indexName = "contact_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "customer"
+                     indexName = "customer_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "partner"
+                     indexName = "partner_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "contact_map"
+                     indexName = "contact_map_fk_contact" unique = "false">
+            <column name = "contact_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

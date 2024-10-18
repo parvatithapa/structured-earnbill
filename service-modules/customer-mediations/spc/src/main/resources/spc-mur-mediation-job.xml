@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <batch:job id = "optusMurMediationJob" job-repository = "mediationJobRepository">
+        <batch:step id = "spcMurMediationStep" next ="murPartitionedNotifyStep">
+            <batch:tasklet transaction-manager = "jbillingMediationTransactionManager">
+                <batch:chunk reader          = "optusMurReader" 
+                             processor       = "optusMurCdrProcessor" 
+                             writer          = "jmrDefaultLogWriter"
+                             commit-interval = "100" 
+                             skip-policy     = "spcSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id = "murPartitionedNotifyStep" >
+            <batch:partition partitioner="jmrDefaultProcessorModulePartitioner" handler="spcMurPartitionHandler"/>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="mediationJobListener" />
+        </batch:listeners>
+    </batch:job>
+
+     <!-- Recycle Job Launcher -->
+    <batch:job id = "optusMurRecycleMediationJob" job-repository = "mediationJobRepository">
+        <batch:step id = "spcMurRecycleStep" next = "murRecyclePartitionedNotifyStep">
+            <batch:tasklet transaction-manager = "jbillingMediationTransactionManager">
+                <batch:chunk reader          = "spcRecycleReader"
+                             processor       = "optusMurCdrProcessor"
+                             writer          = "jmrDefaultLogWriter"
+                             commit-interval = "100"
+                             skip-policy     = "spcSkipPolicy" />
+            </batch:tasklet>
+        </batch:step>
+
+        <!--Partitioner Step-->
+        <batch:step id = "murRecyclePartitionedNotifyStep" >
+            <batch:partition partitioner = "jmrDefaultProcessorModulePartitioner" handler = "spcMurPartitionHandler"/>
+        </batch:step>
+
+        <batch:listeners>
+            <batch:listener ref = "recycleMediationJobListener"/>
+            <batch:listener ref = "mediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    <bean id = "spcMurPartitionHandler" class = "org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name = "stepName"     value = "optusMurNotifyStep"/>
+        <property name = "gridSize"     value = "#{systemEnvironment['JBILLING_BATCH_GRID_SIZE']?:10}"/>
+        <property name = "jobExplorer"  ref   = "mediationJobExplorer"/>
+        <property name = "replyChannel" ref   = "spc-mur-mediation-aggregated-reply"/>
+        <property name = "messagingOperations">
+            <bean class = "org.springframework.integration.core.MessagingTemplate">
+                <property name = "defaultChannel" ref   =  "spc-mur-mediation-requests"/>
+                <property name = "receiveTimeout" value =  "100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Import mediation master and slave configuration-->
+    <import resource="classpath:spc-mur-mediation-master-integration-config.xml"/>
+    <import resource="classpath:spc-mur-mediation-slave-config.xml"/>
+</beans>

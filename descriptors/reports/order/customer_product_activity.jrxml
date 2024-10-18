@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="failed_payments" language="groovy" pageWidth="1520" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="594" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" uuid="ce66d287-3ca0-48f1-a8b8-d2ac00364426">
+	<property name="ireport.zoom" value="1.5026296018031562"/>
+	<property name="ireport.x" value="891"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="scope" class="java.lang.String"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="include_items" class="java.util.List">
+		<defaultValueExpression><![CDATA[null]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+    <![CDATA[
+       SELECT po.create_datetime AS spa_action_date,
+              date(po.active_since) AS startdate,
+              getstaffName(po.id)  AS staffName,
+              po.id,
+              (SELECT content
+                 FROM international_description
+                WHERE table_id = 20
+                  AND foreign_id = po.status_id
+                  AND language_id = 1) AS order_status,
+                (CASE WHEN (po.active_until IS NOT NULL) THEN po.active_until ELSE po.finished_date END) AS finished_date,
+              (SELECT content
+                 FROM international_description
+                WHERE table_id = 17 AND foreign_id = po.period_id AND language_id = 1) AS billing_cycle,
+              (SELECT description
+                 FROM language
+                WHERE id = bu.language_id) As language,
+              (SELECT content
+                 FROM international_description
+                WHERE foreign_id in (SELECT payment_method FROM payment_information WHERE user_id = po.user_id)
+                  AND table_id = 35
+                  AND language_id = 1 limit 1) AS payment_method,
+              po.user_id,
+              (SELECT date(min(create_datetime))
+                 FROM purchase_order
+                WHERE user_id = po.user_id
+                  AND deleted = 0) AS oldest_order_date,
+              ol.item_id,
+              getAddress(bu.id,'Province') AS Province,
+              getAddress(bu.id,'Postal Code') AS Postal_Code,
+              (SELECT content
+                 FROM international_description
+                WHERE table_id = 14
+                  AND foreign_id = ol.item_id
+                  AND language_id = 1)AS description,
+              (SELECT SUBSTRING(it.description, POSITION('-' IN it.description )+1,LENGTH(it.description))
+                 FROM item_type it
+           INNER JOIN  item_type_map itmap ON itmap.type_id = it.id
+           INNER JOIN item i ON i.id = itmap.item_id
+                WHERE itmap.item_id = ol.item_id
+                  AND (it.description like 'Discount%'
+                   OR it.description like 'Migration%'
+                   OR it.description like 'Product Class%'
+                   OR it.description like 'Report Group%'
+                   OR it.description like 'Service Provider%') LIMIT 1) AS service,
+              (SELECT mfv.string_value
+                 FROM meta_field_value mfv
+           INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+           INNER JOIN asset a ON a.id = amfm.asset_id
+                  AND a.order_line_id = ol.id
+                WHERE mfv.meta_field_name_id IN (SELECT id FROM meta_field_name where name = 'Domain ID')) AS banffAccount,
+              ol.price
+         FROM purchase_order po
+   INNER JOIN base_user bu ON bu.id = po.user_id
+   INNER JOIN order_line ol ON ol.order_id = po.id
+   INNER JOIN item i ON ol.item_id = i.id
+        WHERE po.active_since::date <= $P{end_date}
+          AND (CASE WHEN (po.active_until IS NOT NULL) THEN po.active_until::date >= $P{start_date} ELSE
+               CASE WHEN (po.finished_date IS NOT NULL) THEN po.finished_date::date >= $P{start_date} ELSE (1 = 1) END END)
+          AND ol.item_id in (SELECT item_id FROM item_type_map itm WHERE $X{IN,itm.type_id,include_items})
+          AND ol.item_id not in (select item_id FROM plan)
+          AND po.deleted = 0
+          AND po.period_id != 1
+          AND (CASE WHEN i.asset_management_enabled = 1 THEN ol.amount > 0 ELSE 1 = 1 END)
+          AND ( bu.entity_id = $P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+          AND ( CASE WHEN 'New customers' = $P{scope} THEN (SELECT CASE WHEN COUNT(*) = 0 THEN TRUE ELSE FALSE END
+         FROM meta_field_value mfv
+   INNER JOIN order_meta_field_map pom ON pom.meta_field_value_id = mfv.id
+   INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+        WHERE pom.order_id = po.id
+          AND mfv.string_value = 'New Services'
+          AND mfn.name = 'Enrollment Type'
+          AND mfn.entity_id = bu.entity_id
+          AND mfn.entity_type = 'ORDER') ELSE 1 = 1
+          END)]]>
+	</queryString>
+	<field name="spa_action_date" class="java.sql.Timestamp"/>
+	<field name="startdate" class="java.sql.Date"/>
+	<field name="staffname" class="java.lang.String"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="order_status" class="java.lang.String"/>
+	<field name="finished_date" class="java.sql.Date"/>
+	<field name="billing_cycle" class="java.lang.String"/>
+	<field name="language" class="java.lang.String"/>
+	<field name="payment_method" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="oldest_order_date" class="java.sql.Date"/>
+	<field name="item_id" class="java.lang.Integer"/>
+	<field name="province" class="java.lang.String"/>
+	<field name="postal_code" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="service" class="java.lang.String"/>
+	<field name="banffaccount" class="java.lang.String"/>
+	<field name="price" class="java.math.BigDecimal"/>
+	<title>
+		<band height="100">
+			<staticText>
+				<reportElement x="0" y="1" width="250" height="20" uuid="548f8b0b-cff4-48e7-b8bd-263b8263f7e6"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Packages Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1270" y="1" width="120" height="20" uuid="9771f5df-e4cf-425f-ac7d-d484b38de2eb"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1270" y="21" width="120" height="20" uuid="7fbe348b-c42e-4646-9a9d-1cc0fd2fd292"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="1390" y="21" width="85" height="20" uuid="218e21e2-5d5b-4950-93ff-304be52da8d8"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1270" y="41" width="120" height="20" uuid="23de26ca-9354-4a2b-a743-ce02b26c9dcf"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="1390" y="41" width="85" height="20" uuid="b1737d92-7f1b-4666-9967-c215b2d088ff"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1270" y="61" width="120" height="20" uuid="7ede9580-ab1e-45ca-9720-9ccc7cd6ca64"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Scope:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1390" y="61" width="85" height="20" uuid="35490871-3870-421a-8cf3-1e5454d0666a"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{scope}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMM dd, yyyy">
+				<reportElement x="1390" y="1" width="85" height="20" uuid="86b05a22-b40c-419c-bfd1-4c585562eb13"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band>
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="31">
+			<staticText>
+				<reportElement x="0" y="0" width="75" height="24" uuid="e5531dd1-5322-4f78-9d4e-3c0a1cb323b9"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Created Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="75" y="0" width="80" height="24" uuid="b7ebee93-af0e-4751-b6cd-189e7bcec684"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Active Since Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="155" y="0" width="115" height="24" uuid="f18f343f-dd6e-4467-a32e-e4e52a61c686"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Agent Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="270" y="0" width="57" height="24" uuid="f8874bfa-6910-4a66-a778-94700aad171b"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="327" y="0" width="68" height="24" uuid="9b59476d-a629-4e5c-84be-cf85bae1bc59"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Status]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="395" y="0" width="88" height="24" uuid="39f7a618-f897-46e6-a09d-27cfc9860516"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Finish Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="483" y="0" width="59" height="24" uuid="430a8802-6d3d-4916-91e5-1f06136b5d72"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="542" y="0" width="121" height="24" uuid="debe0d04-dac6-476f-a7c9-8a60dd6ec193"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Oldest Order Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="886" y="0" width="69" height="24" uuid="ebaa3d7c-79d4-4eee-a612-405c3fab8e20"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Province]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="818" y="0" width="68" height="24" uuid="779195e2-077b-429b-bcd7-de948ff0b14e"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Postal Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1043" y="0" width="133" height="24" uuid="df1eded2-d2f2-4c10-8f50-52507548e450"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1176" y="0" width="114" height="24" uuid="cc7dff6d-adc6-4cf1-8f6b-372446603615"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1410" y="0" width="65" height="24" uuid="f13e107a-6681-4e36-b1dc-70a45272a9ef"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Price]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="663" y="0" width="78" height="24" uuid="2f7e52b9-2044-4461-b058-b544b08d6872"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Billing Cycle]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="741" y="0" width="77" height="24" uuid="76461445-875e-4939-b125-6eee605e67c1"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[language]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="955" y="0" width="88" height="24" uuid="36413a0e-c04c-4c9b-960a-ad1c6038fad5"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Method]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1290" y="0" width="120" height="24" uuid="19cf6699-b51f-4bdf-b34e-cbe21442118b"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[BanffAccount]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="26" width="1502" height="1" uuid="14ca9d84-e2cc-418b-a50f-c2528599ee70"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20">
+			<textField pattern="yyyy-MM-dd">
+				<reportElement x="0" y="0" width="75" height="20" uuid="e95f7f2c-3f59-469f-991d-cd46680cf122"/>
+				<textFieldExpression><![CDATA[$F{spa_action_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="75" y="0" width="80" height="20" uuid="c5db3804-aad8-461f-8367-b4f058e4e9d2"/>
+				<textFieldExpression><![CDATA[$F{startdate}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="155" y="0" width="115" height="20" uuid="9e5b877e-2ef8-4bd4-b21b-bc8c1638806a"/>
+				<textFieldExpression><![CDATA[$F{staffname}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="270" y="0" width="57" height="20" uuid="af0ec6ad-31e0-4211-81e8-8b2338c7a6ea"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="327" y="0" width="68" height="20" uuid="a048186b-c298-406b-ad7a-2da841d4a8c4"/>
+				<textFieldExpression><![CDATA[$F{order_status}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="395" y="0" width="88" height="20" uuid="14fa4ae4-7de3-4ff1-8ebf-a12900adf4a8"/>
+				<textFieldExpression><![CDATA[$F{finished_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="483" y="0" width="59" height="20" uuid="60188438-e19f-45c3-ab21-23ff9564ff3b"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="542" y="0" width="121" height="20" uuid="52fff9a6-6838-45ef-a74b-04a89139c87e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{oldest_order_date}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="663" y="0" width="78" height="20" uuid="793d6aa5-4df7-40f1-b972-e366fb5bcaff"/>
+				<textFieldExpression><![CDATA[$F{billing_cycle}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00" isBlankWhenNull="true">
+				<reportElement x="1410" y="0" width="65" height="20" uuid="1d95f30e-6245-4116-bb99-76ea54fd3656"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="741" y="0" width="77" height="20" uuid="a11c1d58-aa22-4290-96af-03fbda0e9758"/>
+				<textFieldExpression><![CDATA[$F{language}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="818" y="0" width="68" height="20" uuid="365f28aa-9493-4fb5-a74c-a9df9e21a677"/>
+				<textFieldExpression><![CDATA[$F{postal_code}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="886" y="0" width="69" height="20" uuid="4af4f50e-a037-438a-9708-82db3ab29bfb"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{province}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="955" y="0" width="88" height="20" uuid="eaca6ac9-14ad-45ad-8b2e-de67efe926bc"/>
+				<textFieldExpression><![CDATA[$F{payment_method}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1043" y="0" width="133" height="20" uuid="8cf08d54-a63b-48da-857d-4ad8efde4b25"/>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1290" y="0" width="120" height="20" uuid="c7c2d060-40cf-4986-92d1-26d842df7ba7"/>
+				<textFieldExpression><![CDATA[$F{banffaccount}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1176" y="0" width="114" height="20" uuid="8847536e-96d7-4001-845e-9f5564b37896"/>
+				<textFieldExpression><![CDATA[$F{service}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="25">
+			<textField>
+				<reportElement x="661" y="0" width="69" height="20" uuid="41a0fbdc-8ea8-4587-b4b7-7a60718b261e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="730" y="0" width="40" height="20" uuid="cd9da7bf-b319-4fb4-8998-7817e01416e2"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

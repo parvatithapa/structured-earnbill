@@ -1,0 +1,15 @@
+<testdata>
+    <testdataset name="addAgent" category="aa" testenv="develop|lab3">
+        <login>Agentsix{RANDOMNUM}</login>
+        <email>test@gmail.com</email>
+        <agent>Master</agent>
+        <commission>Invoice</commission>
+    </testdataset>
+    <testdataset name="addAgentcurrency" category="currrecnydata" testenv="develop|lab3">
+        <default>United States Dollar</default>
+        <curency1>Euro</curency1>
+        <curency2>Pound Sterling</curency2>
+        <curency3>Yen</curency3>
+        <curency4>Won</curency4>
+    </testdataset>
+</testdata>

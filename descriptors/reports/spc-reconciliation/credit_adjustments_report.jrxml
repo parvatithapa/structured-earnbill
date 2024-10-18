@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="credit_adjustments_report" language="groovy" pageWidth="1360" pageHeight="802" whenNoDataType="AllSectionsNoDetail" columnWidth="1360" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b6442c82-cb6c-457e-a102-7973945ddd25">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="start_date" class="java.lang.String"/>
+    <parameter name="end_date" class="java.lang.String"/>
+    <queryString>
+        <![CDATA[SELECT DISTINCT i.create_datetime AS create_datetime,
+                                 i.user_id,
+                                 i.id,
+                                 i.total,
+                                 SUM(il.amount) AS credit_amount,
+                                 il.description AS line_item_description,
+                                 (SELECT mfv.string_value AS value
+                                    FROM order_line oln
+                              INNER JOIN order_line_meta_field_map olmfn ON olmfn.order_line_id = oln.id AND oln.item_id = il.item_id
+                                                                                                         AND oln.order_id = il.order_id
+                              INNER JOIN meta_field_value mfv ON mfv.id = olmfn.meta_field_value_id
+                                         AND mfv.meta_field_name_id in (SELECT id
+                                                                          FROM meta_field_name
+                                                                         WHERE name = 'Credit Reason Category')) AS "Credit Reason Category",
+                                 (SELECT mfv.string_value AS value
+                                    FROM order_line oln
+                              INNER JOIN order_line_meta_field_map olmfn ON olmfn.order_line_id = oln.id AND oln.item_id = il.item_id
+                                                                                                         AND oln.order_id = il.order_id
+                              INNER JOIN meta_field_value mfv ON mfv.id = olmfn.meta_field_value_id
+                                         AND mfv.meta_field_name_id in (SELECT id
+                                                                          FROM meta_field_name
+                                                                         WHERE name = 'Credit Reason Sub-Category')) AS "Credit Reason Sub-Category"
+                   FROM invoice i
+             INNER JOIN invoice_line il ON i.id = il.invoice_id
+                  WHERE (CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                              THEN i.create_datetime :: DATE = DATE($P{start_date})
+                              ELSE i.create_datetime :: DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                          END)
+                         AND il.item_id in (43, 56, 92)
+               GROUP BY 1, 2, 3, 4, 6,il.order_id,7,8
+               ORDER BY 1, 2;]]>
+    </queryString>
+    <field name="create_datetime" class="java.sql.Timestamp"/>
+    <field name="user_id" class="java.lang.Integer"/>
+    <field name="id" class="java.lang.Integer"/>
+    <field name="total" class="java.math.BigDecimal"/>
+    <field name="credit_amount" class="java.math.BigDecimal"/>
+    <field name="line_item_description" class="java.lang.String"/>
+    <field name="Credit Reason Category" class="java.lang.String"/>
+    <field name="Credit Reason Sub-Category" class="java.lang.String"/>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="50" splitType="Stretch">
+            <staticText>
+                <reportElement x="0" y="0" width="1360" height="20" uuid="0ca74645-0bb6-438a-bb23-8634dac53583"/>
+                <textElement textAlignment="Center">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Credit Adjustments Report]]></text>
+            </staticText>
+            <textField pattern="yyyy/MM/dd">
+                <reportElement x="1259" y="21" width="100" height="20" uuid="d5b5abe1-512f-4cb1-b7cc-b983a595bc20"/>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="1130" y="21" width="129" height="20" uuid="b64727a9-1eb2-4d24-9561-65f67ee45e1b"/>
+                <textElement textAlignment="Right"/>
+                <text><![CDATA[Report Date :]]></text>
+            </staticText>
+        </band>
+    </title>
+    <columnHeader>
+        <band height="24" splitType="Stretch">
+            <staticText>
+                <reportElement x="162" y="0" width="113" height="20" uuid="381d3995-a5b3-4cd0-80d5-867cd639ebf3"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[JB User Id]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="0" width="162" height="20" uuid="4697e5e4-b8c6-445e-a30c-04b1fb48d78f"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Date Created]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="275" y="0" width="103" height="20" uuid="8e1ab715-e8a8-4f0d-a76a-625121e33283"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[JB Invoice Id]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="378" y="0" width="122" height="20" uuid="eaa3a002-097f-41f5-95f5-0a18ccadd0de"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[JB Invoice Amount]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="500" y="0" width="121" height="20" uuid="e0267dd3-0253-4e60-84e5-e3ca89f94e6b"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Credit Applied]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="621" y="0" width="313" height="20" uuid="f4503764-bb0a-4135-a8d0-fb6005fa5af3"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph firstLineIndent="10"/>
+                </textElement>
+                <text><![CDATA[Line Item Description]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="23" width="1360" height="1" uuid="30ff108f-56e7-4dc5-84f0-357d0c95cbca"/>
+            </line>
+            <staticText>
+                <reportElement x="934" y="0" width="196" height="20" uuid="451f299e-94af-4ad0-925c-66a244787d88"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Credit Reason Category]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="1130" y="0" width="230" height="20" uuid="b4a7a3ab-5fd9-4b85-9ce8-96f5129596ff"/>
+                <textElement>
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Credit Reason Sub-Category]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="32" splitType="Stretch">
+            <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                <reportElement x="162" y="7" width="113" height="20" uuid="7477724f-7c47-4c3f-b58b-057b8377dae8"/>
+                <textElement textAlignment="Center"/>
+                <textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+                <reportElement x="0" y="7" width="162" height="20" uuid="de90b68c-6b40-41ec-9d2c-eeaa0c4f3439"/>
+                <textElement textAlignment="Center"/>
+                <textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                <reportElement x="275" y="7" width="103" height="20" uuid="956d11d5-2d24-4321-bf93-bb70bdd77ca7"/>
+                <textElement textAlignment="Center"/>
+                <textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+                <reportElement x="378" y="7" width="122" height="20" uuid="15a1daf6-452d-479a-acdf-c49fc9a39a53"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA[$F{total}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                <reportElement x="621" y="7" width="313" height="20" uuid="be453d6d-2d91-434c-87a5-ecfc49107b1c"/>
+                <textElement>
+                    <paragraph firstLineIndent="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{line_item_description}]]></textFieldExpression>
+            </textField>
+            <textField isStretchWithOverflow="true" isBlankWhenNull="true">
+                <reportElement x="500" y="7" width="121" height="20" uuid="27d7e028-655f-425b-a997-45b5e8a990c4"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA[$F{credit_amount}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="934" y="7" width="196" height="20" uuid="b6ebe3d2-c617-41bc-a465-6fd88d0e10f0"/>
+                <textFieldExpression><![CDATA[$F{Credit Reason Category}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="1130" y="7" width="230" height="20" uuid="f3ded156-7fd2-42b2-8c58-754dab740a44"/>
+                <textFieldExpression><![CDATA[$F{Credit Reason Sub-Category}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="20" splitType="Stretch">
+            <textField>
+                <reportElement x="500" y="0" width="121" height="20" uuid="24a658f9-0803-4ea0-9e58-befefa80b8c7"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="621" y="0" width="313" height="20" uuid="a6f416b2-5429-46e2-a58d-a9bf39c74cbb"/>
+                <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

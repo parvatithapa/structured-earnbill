@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <int:channel id = "billing-slave-invoices-requests"/>
+    <int-jms:message-driven-channel-adapter id = "billing-slave-invoices-requests-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "billing.invoices.requests"
+                                            channel            = "billing-slave-invoices-requests"/>
+
+    <int:channel id = "billing-slave-invoices-reply"/>
+    <int-jms:outbound-channel-adapter id = "billing-slave-invoices-reply-adapter"
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "billing.invoices.reply"
+                                      channel            = "billing-slave-invoices-reply"/>
+
+    <int:service-activator id             = "billing-slave-invoices-service-activator"
+                           ref            = "slaveStepExecutionRequestHandler"
+                           input-channel  = "billing-slave-invoices-requests"
+                           output-channel = "billing-slave-invoices-reply"/>
+
+
+    <int:channel id = "billing-slave-emails-requests"/>
+    <int-jms:message-driven-channel-adapter id                 = "billing-slave-emails-requests-adapter"
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "billing.emails.requests"
+                                            channel            = "billing-slave-emails-requests"/>
+
+    <int:channel id = "billing-slave-emails-reply"/>
+    <int-jms:outbound-channel-adapter id                 = "billing-slave-emails-reply-adapter"
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "billing.emails.reply"
+                                      channel            = "billing-slave-emails-reply"/>
+
+    <int:service-activator id             = "billing-slave-emails-service-activator"
+                           ref            = "slaveStepExecutionRequestHandler"
+                           input-channel  = "billing-slave-emails-requests"
+                           output-channel = "billing-slave-emails-reply"/>
+</beans>

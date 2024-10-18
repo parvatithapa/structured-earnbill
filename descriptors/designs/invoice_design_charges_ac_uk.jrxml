@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_charges_ac_uk" language="groovy" pageWidth="595" pageHeight="842" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="593" leftMargin="1" rightMargin="1" topMargin="1" bottomMargin="1" uuid="d35a02fd-8f7a-498e-bfff-8b5ed8395c64">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="customer_notes" class="java.lang.String"/>
+	<parameter name="sales_tax" class="java.math.BigDecimal"/>
+	<parameter name="invoice_line_tax_id" class="java.lang.Integer"/>
+	<parameter name="tax_price" class="java.lang.String"/>
+	<parameter name="tax_amount" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/jbilling/jbilling-1/enterprise/descriptors/designs/"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select
+(select
+	total
+from
+	invoice
+where id = $P{invoice_id}
+)-
+(select coalesce((
+-- select payments linked to invoice
+select sum(pi.amount) as amount
+from payment p
+inner join payment_invoice pi on p.id = pi.payment_id and pi.invoice_id = $P{invoice_id}
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.payment_date < (select create_datetime from invoice where id = $P{invoice_id})
+),0))
+-
+(select coalesce((
+-- select partial payments linked on invoice
+select sum(p.balance) as amount
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = (select user_id from invoice where id = $P{invoice_id})
+and p.is_refund = 0
+and p.balance > 0
+and p.payment_date < (select create_datetime from invoice where id = $P{invoice_id})
+and p.id in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoice_id}))
+),0))
+-
+(select coalesce((
+-- select unlinked payments
+select sum(p.amount) as amount
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = (select user_id from invoice where id = $P{invoice_id})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoice_id})
+and p.is_refund = 0
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoice_id}))
+),0))
++
+(select coalesce((
+-- select refunds
+select sum(p.amount) as amount
+from payment p
+where p.deleted = 0
+and p.result_id in (1,4)
+and p.user_id = (select user_id from invoice where id = $P{invoice_id})
+and p.payment_date < (select create_datetime from invoice where id = $P{invoice_id})
+and p.is_refund = 1
+and p.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	where pi.invoice_id = $P{invoice_id})
+),0))
++
+(select coalesce((
+-- select partial refunds
+select sum(p.amount - pi.amount) as amount
+from payment_invoice pi
+left outer join payment p on p.id = pi.payment_id
+where pi.payment_id in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoice_id})
+	and p.is_refund = 1
+	and p.result_id in (1,4)
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoice_id}))
+),0)) as "total_due"]]>
+	</queryString>
+	<field name="total_due" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<lastPageFooter>
+		<band height="35">
+			<rectangle>
+				<reportElement x="2" y="3" width="146" height="25" forecolor="#A6A7A7" uuid="baff7ba1-d266-449f-b4c3-3f99e3e3cfa0"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2" y="3" width="145" height="25" forecolor="#808080" uuid="b770f918-9579-46a1-8f7e-7b881c7c50e7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total_due} == null ? $P{currency_symbol}+"0.00":$P{currency_symbol}+" "+$F{total_due}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>

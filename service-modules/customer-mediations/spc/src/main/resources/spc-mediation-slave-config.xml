@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/batch
+       http://www.springframework.org/schema/batch/spring-batch.xsd"
+    profile="mediation.slave">
+
+    <import resource = "classpath:spc-mediation-slave-integration-config.xml"/>
+
+    <bean id    = "spcUserReader" 
+          class = "com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCJMRReader" 
+          scope = "step"/>
+
+    <bean id    = "spcJMRToOrderWriter" 
+          class = "com.sapienter.jbilling.server.mediation.custommediation.spc.writer.SPCJMRToOrderWriter" 
+          scope = "step"/>
+
+    <batch:step id = "spcPartitionedJMRProcessorStep" job-repository="mediationJobRepository">
+        <!--TODO throttle-limit="${springbatch.executor.max.pool.size}"-->
+        <batch:tasklet  transaction-manager = "jbillingMediationTransactionManager"
+                        task-executor       = "taskExecutor" 
+                        throttle-limit      = "10">
+                        
+            <batch:chunk reader          = "spcUserReader" 
+                         writer          = "spcJMRToOrderWriter" 
+                         commit-interval = "1"
+                         skip-policy     = "spcSkipPolicy"/>
+        </batch:tasklet>
+    </batch:step>
+
+</beans>

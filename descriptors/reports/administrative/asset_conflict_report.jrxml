@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="asset_conflict_report" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="eccbf08d-7899-488e-b991-6fbc90a9a5a5">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT aset_id,
+            order_id,
+            identifier,
+            item,
+            status,
+            entity_id,
+            description FROM(
+                            (SELECT ocam.asset_id AS aset_id, o.id AS order_id, a.identifier AS identifier, a.item_id AS item, ind.content AS status, a.entity_id, e.description
+                             FROM order_change_asset_map ocam
+                             INNER JOIN order_change oc ON ocam.order_change_id = oc.id
+                             INNER JOIN purchase_order o ON oc.order_id = o.id
+                             INNER JOIN asset a ON ocam.asset_id = a.id
+                             INNER JOIN international_description ind ON ind.foreign_id = a.status_id
+                             INNER JOIN entity e ON e.id = a.entity_id
+                             INNER JOIN order_status os ON os.id = o.status_id
+                             WHERE ind.table_id =
+                                 ( SELECT id
+                                  FROM jbilling_table
+                                  WHERE name ILIKE 'asset_status')
+                               AND ocam.asset_id IN
+                                 ( SELECT ocam.asset_id AS aset_id
+                                  FROM order_change_asset_map ocam
+                                  INNER JOIN order_change oc ON ocam.order_change_id = oc.id
+                                  INNER JOIN purchase_order o ON oc.order_id = o.id
+                                  WHERE o.deleted = 0
+                                  GROUP BY ocam.asset_id
+                                  HAVING COUNT(ocam.asset_id) > 1)
+                               AND os.order_status_flag = 0
+                               AND CASE WHEN $P{is_parent_inculde} = 'true'
+                               THEN
+                               (
+                                e.id IN
+                                (
+                                 SELECT id
+                                 FROM entity
+                                 WHERE deleted = 0
+                                )
+                               )
+                               ELSE
+                               ($X{IN,e.id,child_entities})
+                               END
+                               )
+                          UNION ALL
+                            (SELECT ocpim.asset_id AS aset_id, o.id AS order_id, a.identifier AS identifier, a.item_id AS item, ind.content AS status, a.entity_id, e.description
+                             FROM order_change_plan_item_asset_map ocpim
+                             INNER JOIN order_change_plan_item ocpi ON ocpim.order_change_plan_item_id = ocpi.id
+                             INNER JOIN order_change oc ON oc.id = ocpi.order_change_id
+                             INNER JOIN purchase_order o ON oc.order_id = o.id
+                             INNER JOIN asset a ON ocpim.asset_id = a.id
+                             INNER JOIN international_description ind ON ind.foreign_id = a.status_id
+                             INNER JOIN entity e ON e.id = a.entity_id
+                             INNER JOIN order_status os ON os.id = o.status_id
+                             WHERE ind.table_id =
+                                 (SELECT id
+                                  FROM jbilling_table
+                                  WHERE name ILIKE 'asset_status')
+                               AND ocpim.asset_id IN
+                                 (SELECT ocpi.asset_id AS aset_id
+                                  FROM order_change_plan_item_asset_map ocpi
+                                  INNER JOIN order_change_plan_item ocp ON ocp.id = ocpi.order_change_plan_item_id
+                                  INNER JOIN order_change oc ON ocp.order_change_id = oc.id
+                                  INNER JOIN purchase_order o ON oc.order_id = o.id
+                                  WHERE o.deleted = 0
+                                  GROUP BY ocpi.asset_id
+                                  HAVING COUNT(ocpi.asset_id) > 1)
+                               AND os.order_status_flag = 0
+                               AND CASE WHEN $P{is_parent_inculde} = 'true'
+                               THEN
+                               (
+                                e.id IN
+                                (
+                                 SELECT id
+                                 FROM entity
+                                 WHERE deleted = 0
+                                )
+                               )
+                               ELSE
+                               ($X{IN,e.id,child_entities})
+                               END
+                               )
+                          UNION ALL
+                            (SELECT ocam.asset_id AS aset_id, oc.order_id AS order_id, a.identifier AS identifier, a.item_id AS item, ind.content AS status, a.entity_id, e.description
+                             FROM order_change_asset_map ocam
+                             INNER JOIN order_change oc ON ocam.order_change_id = oc.id
+                             INNER JOIN purchase_order o ON oc.order_id = o.id
+                             INNER JOIN asset a ON ocam.asset_id = a.id
+                             INNER JOIN international_description ind ON ind.foreign_id = a.status_id
+                             INNER JOIN entity e ON e.id = a.entity_id
+                             INNER JOIN order_status os ON os.id = o.status_id
+                             WHERE ind.table_id =
+                                 (SELECT id
+                                  FROM jbilling_table
+                                  WHERE name ILIKE 'asset_status')
+                               AND ocam.order_change_id IN
+                                 (SELECT ocam.order_change_id AS order_change_id
+                                  FROM order_change_asset_map ocam
+                                  INNER JOIN order_change_plan_item_asset_map ocpi ON ocam.asset_id = ocpi.asset_id
+                                  WHERE ocam.asset_id IN
+                                      (SELECT ocam.asset_id
+                                       FROM order_change_asset_map ocam
+                                       INNER JOIN order_change oc ON ocam.order_change_id = oc.id
+                                       INNER JOIN purchase_order o ON oc.order_id = o.id
+                                       WHERE oc.use_item IS NOT NULL
+                                         AND o.deleted = 0 )
+                                    AND ocpi.asset_id IN
+                                      ( SELECT ocpi.asset_id
+                                       FROM order_change_plan_item_asset_map ocpi
+                                       INNER JOIN order_change_plan_item ocp ON ocpi.order_change_plan_item_id = ocp.id
+                                       INNER JOIN order_change oc ON ocp.order_change_id = oc.id
+                                       INNER JOIN purchase_order o ON oc.order_id = o.id
+                                       WHERE o.deleted = 0 ) )
+                               AND os.order_status_flag = 0
+                               AND CASE WHEN $P{is_parent_inculde} = 'true'
+                               THEN
+                               (
+                                e.id IN
+                                (
+                                 SELECT id
+                                 FROM entity
+                                 WHERE deleted = 0
+                                )
+                               )
+                               ELSE
+                               ($X{IN,e.id,child_entities})
+                               END
+                               )
+                          UNION ALL
+                            (SELECT ocpi.asset_id AS aset_id, oc.order_id AS order_id, a.identifier AS identifier, a.item_id AS item, ind.content AS status, a.entity_id, e.description
+                             FROM order_change_plan_item_asset_map ocpi
+                             INNER JOIN order_change_plan_item ocp ON ocpi.order_change_plan_item_id = ocp.id
+                             INNER JOIN order_change oc ON ocp.order_change_id = oc.id
+                             INNER JOIN purchase_order o ON oc.order_id = o.id
+                             INNER JOIN asset a ON ocpi.asset_id = a.id
+                             INNER JOIN international_description ind ON ind.foreign_id = a.status_id
+                             INNER JOIN entity e ON e.id = a.entity_id
+                             INNER JOIN order_status os ON os.id = o.status_id
+                             WHERE ind.table_id =
+                                 (SELECT id
+                                  FROM jbilling_table
+                                  WHERE name ILIKE 'asset_status')
+                               AND ocpi.order_change_plan_item_id IN
+                                 ( SELECT ocpi.order_change_plan_item_id AS order_change_plan_item_id
+                                  FROM order_change_asset_map ocam
+                                  INNER JOIN order_change_plan_item_asset_map ocpi ON ocam.asset_id = ocpi.asset_id
+                                  WHERE ocam.asset_id IN
+                                      (SELECT ocam.asset_id
+                                       FROM order_change_asset_map ocam
+                                       INNER JOIN order_change oc ON ocam.order_change_id = oc.id
+                                       INNER JOIN purchase_order o ON oc.order_id = o.id
+                                       WHERE oc.use_item IS NOT NULL
+                                         AND o.deleted = 0 )
+                                    AND ocpi.asset_id IN
+                                      ( SELECT ocpi.asset_id
+                                       FROM order_change_plan_item_asset_map ocpi
+                                       INNER JOIN order_change_plan_item ocp ON ocpi.order_change_plan_item_id = ocp.id
+                                       INNER JOIN order_change oc ON ocp.order_change_id = oc.id
+                                       INNER JOIN purchase_order o ON oc.order_id = o.id
+                                       WHERE o.deleted = 0 ) )
+                               AND os.order_status_flag = 0
+                               AND CASE WHEN $P{is_parent_inculde} = 'true'
+                               THEN
+                               (
+                                e.id IN
+                                (
+                                 SELECT id
+                                 FROM entity
+                                 WHERE deleted = 0
+                                )
+                               )
+                               ELSE
+                               ($X{IN,e.id,child_entities})
+                               END
+                               ))
+            AS AnswersJoined
+            GROUP BY aset_id,
+                     order_id,
+                     identifier,
+                     item,
+                     status,
+                     entity_id,
+                     description
+            ORDER BY entity_id, aset_id;]]>
+	</queryString>
+	<field name="aset_id" class="java.lang.Integer"/>
+	<field name="order_id" class="java.lang.Integer"/>
+	<field name="identifier" class="java.lang.String"/>
+	<field name="item" class="java.lang.Integer"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="103">
+				<staticText>
+					<reportElement x="8" y="27" width="100" height="20" uuid="f40f4edc-d0c2-461c-a0bf-1f779a73f616"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="8" y="6" width="100" height="20" uuid="9103be04-db64-4cdc-82b8-bed2b02da200"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="115" y="27" width="150" height="20" uuid="3b56e8b1-16c8-4fb4-85a8-264c5533805b"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="115" y="6" width="100" height="20" uuid="02f3c6b3-f45b-4ac8-ab03-3f021eefc36b"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="115" y="79" width="100" height="20" uuid="f43ece69-25e3-4362-a071-b5a7916799e2"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Identifier]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="343" y="79" width="100" height="20" uuid="23e2c430-085b-41bf-bdad-a7ac964a3817"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Item Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="2" y="79" width="100" height="20" uuid="81022acb-f0eb-4436-aeca-74ebade39484"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Asset ID]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="229" y="79" width="100" height="20" uuid="304b9dd3-681c-41e6-8823-808e4a7d1776"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order ID]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="450" y="79" width="100" height="20" uuid="4b1a1b6f-c54d-4b56-ad1f-4b2f06c823d3"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Status]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="19">
+				<line>
+					<reportElement x="0" y="8" width="550" height="1" uuid="0397c21e-4a29-4b3d-bc41-601f94988295"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="100" y="23" width="370" height="42" uuid="932a9393-4337-45ca-964b-12846b48428f"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Asset Conflict Report]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="23" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="8" width="550" height="1" uuid="1bb71a5f-e1d5-4e88-8a66-6c008babe4a1"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="43" splitType="Stretch">
+			<textField>
+				<reportElement x="2" y="6" width="100" height="20" uuid="51e540ea-2509-4861-85fc-cb40a23b1296"/>
+				<textFieldExpression><![CDATA[$F{aset_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="229" y="6" width="100" height="20" uuid="4f578923-75d7-4dc8-a278-25b7fb40b628"/>
+				<textFieldExpression><![CDATA[$F{order_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="119" y="6" width="100" height="20" uuid="c43d3ec3-28dd-4283-956f-146279f7e057"/>
+				<textFieldExpression><![CDATA[$F{identifier}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="343" y="6" width="100" height="20" uuid="a081b338-9915-4d8f-8ef5-4660026cbd32"/>
+				<textFieldExpression><![CDATA[$F{item}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="450" y="6" width="100" height="20" uuid="78684bfb-3d15-4027-992d-b716ab3520f2"/>
+				<textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="24" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="15" width="550" height="1" uuid="0595bde9-d112-47b0-85e8-fedca6a0bc85"/>
+			</line>
+		</band>
+	</columnFooter>
+</jasperReport>

@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.15.xml">
+
+    <include file = "foreign-keys-indexes-20170905.xml" relativeToChangelogFile = "true"/>
+
+    <changeSet context="base" id="JB-2210 - Future Dated Asset Changes Iteration 2" author="Faizan Ahmad">
+        <validCheckSum>7:0e1ecd9969ab6b864a3fdd20482526f0</validCheckSum> <!-- Correct old checksum -->
+        <validCheckSum>7:4107f6f279588ec25a78dc33f99e76bc</validCheckSum> <!-- Updated Checksum for newer liquibase versions. -->
+		<validCheckSum>7:c2c9e55b801c0c43af7b98f1377e0b4f</validCheckSum> <!-- Updated Checksum for newer liquibase versions. -->
+        <!-- Adding Active and Pending Columns-->
+        <addColumn tableName="asset_status">
+            <column name="is_active" type="java.sql.Types.INTEGER" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="asset_status">
+            <column name="is_pending" type="java.sql.Types.INTEGER" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Enabling Active and Pending for already created orders -->
+        <sql splitStatements="false">
+            <![CDATA[
+                CREATE FUNCTION temp_for_fix() RETURNS VOID AS
+                $$
+                DECLARE t RECORD;
+                DECLARE tableId INTEGER;
+                BEGIN
+                SELECT id INTO tableId FROM jbilling_table WHERE name ILIKE 'asset_status';
+                    FOR t IN (SELECT * FROM asset_status where is_order_saved = 1 and is_pending = 0 and is_active = 0) LOOP
+                        UPDATE asset_status SET is_active  = 1 WHERE id = t.id;
+                        INSERT INTO asset_status VALUES ((SELECT MAX(id) + 1 FROM asset_status),t.item_type_id,0,1,0,0,0,0,0,1);
+                        INSERT INTO international_description VALUES (tableId, (SELECT MAX(id) FROM asset_status), 'description', 1, 'Pending');
+                    END LOOP; END;
+                $$ LANGUAGE plpgsql;
+                SELECT temp_for_fix();
+                DROP function temp_for_fix();
+
+                UPDATE jbilling_seqs SET next_id = (SELECT MAX(id) + 1 from asset_status) WHERE name ILIKE 'asset_status';
+            ]]>
+        </sql>
+
+        <!-- One time asset status update, Updating future dated assets to pending assets -->
+        <sql splitStatements="false">
+            <![CDATA[
+                CREATE FUNCTION temp_for_fix() RETURNS VOID AS
+                $$
+                DECLARE t INTEGER;
+                DECLARE assetStatus RECORD;
+                BEGIN
+                FOR t IN (SELECT ocp.asset_id FROM order_change oc INNER JOIN purchase_order o ON oc.order_id = o.id INNER JOIN order_change_asset_map ocp ON oc.id = ocp.order_change_id WHERE oc.order_line_id IS NULL AND o.deleted = 0
+                      UNION
+                      SELECT ocpm.asset_id FROM order_change oc INNER JOIN purchase_order o ON oc.order_id = o.id INNER JOIN order_change_plan_item ocpi ON oc.id = ocpi.order_change_id INNER JOIN order_change_plan_item_asset_map ocpm ON ocpm.order_change_plan_item_id = ocpi.id WHERE oc.order_line_id IS NULL AND o.deleted = 0) LOOP
+                    SELECT * into assetStatus FROM asset_status WHERE id = (SELECT status_id FROM asset WHERE id = t);
+                    IF assetStatus.is_active = 0 AND assetStatus.is_pending = 0 THEN
+                        UPDATE asset SET status_id  = (SELECT id FROM asset_status WHERE is_pending = 1 AND item_type_id in (SELECT Distinct id FROM item_type WHERE allow_asset_management = 1 and id in ( SELECT DISTINCT type_id FROM item_type_map WHERE item_id = (SELECT item_id FROM asset WHERE id = t)))) WHERE id = t;
+                    END IF;
+                END LOOP; END;
+                $$ LANGUAGE plpgsql;
+                SELECT temp_for_fix();
+                DROP function temp_for_fix();
+            ]]>
+        </sql>
+    </changeSet>
+
+	<changeSet author="Mahesh Shivarkar" context="base" id="#JB-2295-added-permission-delete-entered-payment">
+		<validCheckSum>7:289d2cb6bba6b66129b2c33f675f50f1</validCheckSum> <!-- Correct old checksum -->
+		<validCheckSum>7:36f51a0404c54178fba65c0c8fa7a3eb</validCheckSum> <!-- Updated Checksum for newer liquibase versions. -->
+
+		<comment>Add Delete Entered Payment Permission and rename permission 'Delete Payment' to 'Delete Processed Payment'</comment>
+		<insert tableName="permission">
+			<column name="id" value="1907" />
+			<column name="type_id"
+				valueComputed="(SELECT id FROM permission_type WHERE description='Payment')" />
+			<column name="foreign_id" />
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="59" />
+			<column name="foreign_id" value="1907" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="Delete Entered Payment" />
+		</insert>
+		<sql>
+			INSERT INTO permission_role_map(role_id, permission_id)
+			SELECT r.id AS role_id,
+				(SELECT foreign_id
+				FROM international_description
+				WHERE table_id IN
+					(SELECT id
+					FROM jbilling_table
+					WHERE name = 'permission')
+				AND language_id = 1
+				AND content = 'Delete Entered Payment') AS permission_id
+			FROM role r
+			WHERE r.role_type_id=2
+			GROUP BY r.id;
+
+			INSERT INTO permission_role_map(role_id, permission_id)
+			SELECT r.id AS role_id,
+				(SELECT foreign_id
+				FROM international_description
+				WHERE table_id IN
+					(SELECT id
+					FROM jbilling_table
+					WHERE name = 'permission')
+				AND language_id = 1
+				AND content = 'Delete Entered Payment') AS permission_id
+			FROM role r
+			WHERE r.role_type_id=-1
+			GROUP BY r.id;
+
+			INSERT INTO permission_role_map(role_id, permission_id)
+			SELECT r.id AS role_id,
+				(SELECT foreign_id
+				FROM international_description
+				WHERE table_id IN
+					(SELECT id
+					FROM jbilling_table
+					WHERE name='permission')
+				AND language_id = 1
+				AND content = 'Delete Entered Payment') AS permission_id
+			FROM role r
+			WHERE r.role_type_id = 3
+			GROUP BY r.id;
+		</sql>
+		<update tableName="international_description">
+			<column name="content" value="Delete Processed Payment" />
+			<where>content='Delete payment' and table_id=59 and language_id=1
+			</where>
+		</update>
+	</changeSet>
+
+    <changeSet id="JB-2394 - [Develop] Update Teaser Price Model" author="Leandro Zoi" context="base">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task_type),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.CreateCyclesTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Cycle Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task is triggered when the order line have a price model that use dynamic cycles"/>
+        </insert>
+
+        <sql>
+            <![CDATA[
+                  INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+                       SELECT (SELECT MAX(p.id)+1 FROM pluggable_task AS p) + (SELECT COUNT(*) FROM entity AS e2 WHERE e1.id > e2.id AND e2.id <> e1.id),
+                              e1.id,
+                              (SELECT MAX(id)FROM pluggable_task_type AS ptt WHERE ptt.class_name='com.sapienter.jbilling.server.order.task.CreateCyclesTask'),
+                              (SELECT MAX(p.processing_order)+1 FROM pluggable_task AS p),
+                              1
+                        FROM entity e1
+                     ORDER BY e1.id
+            ]]>
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="COALESCE((SELECT MAX(id)+1 FROM pluggable_task),1)"/>
+            <where> name='pluggable_task' </where>
+        </update>
+    </changeSet>
+
+	<changeSet context="base" id="JB-2635-Remove Ignition's PaymentIgnitionSchedulingTask from Core Implementation" author="Taimoor Choudhary">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				SELECT COUNT(*) FROM pluggable_task WHERE type_id IN
+				(SELECT p.id FROM pluggable_task_type p WHERE p.class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask');
+			</sqlCheck>
+		</preConditions>
+
+		<delete tableName="international_description">
+			<where> foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='title'
+			</where>
+		</delete>
+
+		<delete tableName="international_description">
+			<where>foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='description'
+			</where>
+		</delete>
+
+		<delete tableName="pluggable_task_type">
+			<where>
+				class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask'
+			</where>
+		</delete>
+	</changeSet>
+
+	<changeSet context="base" id="JB-2635-Remove Ignition's PaymentIgnitionTask from Core Implementation" author="Taimoor Choudhary">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				SELECT COUNT(*) FROM pluggable_task WHERE type_id IN
+				(SELECT p.id FROM pluggable_task_type p WHERE p.class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask');
+			</sqlCheck>
+		</preConditions>
+
+		<delete tableName="international_description">
+			<where> foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='title'
+			</where>
+		</delete>
+
+		<delete tableName="international_description">
+			<where>foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='description'
+			</where>
+		</delete>
+
+		<delete tableName="pluggable_task_type">
+			<where>
+				class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask'
+			</where>
+		</delete>
+	</changeSet>
+
+	<changeSet context="base" id="JB-2635-Remove Ignition's IgnitionResponseManagerTask from Core Implementation" author="Taimoor Choudhary">
+		<preConditions onFail="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				SELECT COUNT(*) FROM pluggable_task WHERE type_id IN
+				(SELECT p.id FROM pluggable_task_type p WHERE p.class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask');
+			</sqlCheck>
+		</preConditions>
+
+		<delete tableName="international_description">
+			<where> foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='title'
+			</where>
+		</delete>
+
+		<delete tableName="international_description">
+			<where>foreign_id=(SELECT ptt.id FROM pluggable_task_type ptt WHERE
+				ptt.class_name='com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask') AND
+				table_id=(SELECT
+				jt.id FROM jbilling_table jt WHERE jt.name='pluggable_task_type') AND
+				psudo_column='description'
+			</where>
+		</delete>
+
+		<delete tableName="pluggable_task_type">
+			<where>
+				class_name = 'com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask'
+			</where>
+		</delete>
+	</changeSet>
+
+
+	<changeSet context="base" id="JBDIST-726 Reports produced to CSV include heading and page numbers on page break." author="Fernando Sivila">
+		<validCheckSum>7:fcf966233c267fb6d751c874d7f0bf17</validCheckSum>
+		<comment>Asset Status Update Event Task</comment>
+		<insert tableName="report_parameter">
+			<column name="id"
+					valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+			<column name="report_id"
+					valueComputed="(SELECT id FROM report r WHERE r.name = 'total_payments')" />
+			<column name="dtype" value="string" />
+			<column name="name" value="format" />
+		</insert>
+	</changeSet>
+
+  <changeSet context="base" id="JBDIST-828 Development - Ageing Balance Details Report (018-11)" author="Leandro Bagur">
+	<validCheckSum>7:7bf7d17a2baa4cf94bf9baee1264e630</validCheckSum>  
+    <delete tableName="report_parameter">
+      <where>report_id = (SELECT id 
+                            FROM report r 
+                           WHERE r.name = 'accounts_receivable_ageing_detail')</where>
+    </delete>
+
+    <update tableName="international_description">
+      <column name="content" value="Ageing Balance Detail" />
+      <where>table_id=100 AND foreign_id = (SELECT id 
+                                              FROM report r 
+                                             WHERE r.name = 'accounts_receivable_ageing_detail')</where>
+    </update>
+
+    <update tableName="report">
+      <column name="name" value="ageing_balance_detail"/>
+      <column name="file_name" value="ageing_balance_detail.jasper"/>
+      <where>name = 'accounts_receivable_ageing_detail'</where>
+    </update>
+  </changeSet>	
+
+  <changeSet context="base" id="JBDIST-771 Development - Total Payment Report (018-2) (Revision)" author="Leandro Bagur">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) 
+          FROM report r 
+         WHERE r.name = 'total_payments_detail'
+      </sqlCheck>
+    </preConditions>
+    <insert tableName="report">
+      <column name="id" valueComputed="(SELECT MAX(id)+1 FROM report)" />
+      <column name="type_id" valueNumeric="(SELECT id FROM report_type rt WHERE rt.name = 'payment')" />
+      <column name="name" value="total_payments_detail" />
+      <column name="file_name" value="total_payments_detail.jasper" />
+      <column name="optlock" valueNumeric="0" />
+    </insert>
+
+    <sql>
+      INSERT INTO entity_report_map(report_id, entity_id)
+           SELECT (SELECT r.id
+                     FROM report r
+                    WHERE r.name = 'total_payments_detail'),
+                  id
+             FROM entity
+            WHERE deleted = 0
+    </sql>
+
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'total_payments_detail')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="start_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id" valueComputed="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)" />
+      <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'total_payments_detail')" />
+      <column name="dtype" value="date" />
+      <column name="name" value="end_date" />
+    </insert>
+    <insert tableName="report_parameter">
+      <column name="id" valueNumeric="(SELECT COALESCE(MAX(rp.id), 1)+1 FROM report_parameter rp)"/>
+      <column name="report_id" valueNumeric="(SELECT id FROM report r WHERE r.name = 'total_payments_detail')"/>
+      <column name="dtype" value="integer"/>
+      <column name="name" value="period"/>
+    </insert>
+  </changeSet>
+	
+	<changeSet context="base" id="JBDIST-846 Development - Asset End of Life Status Option (044)" author="Matias Cabezas">
+		<validCheckSum>7:44a0b566c772655b1679982acc69ba07</validCheckSum>
+		<!-- Adding Order Finished column-->
+		<addColumn tableName="asset_status">
+			<column name="is_order_finished" type="java.sql.Types.INTEGER" defaultValue="0">
+				<constraints nullable="false"/>
+			</column>
+		</addColumn>
+		<!-- Adding SetAssetToOrderFinithedStatusTask to DB-->
+		<insert tableName="pluggable_task_type">
+			<column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+			<column name="category_id" valueNumeric="17"/>
+			<column name="class_name" value="com.sapienter.jbilling.server.item.tasks.SetAssetToOrderFinishedStatusTask"/>
+			<column name="min_parameters" valueNumeric="0"/>
+		</insert>
+		<update tableName="jbilling_seqs">
+			<column name="next_id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+			<where>name='pluggable_task_type'</where>
+		</update>
+	</changeSet>
+
+</databaseChangeLog>

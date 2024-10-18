@@ -1,0 +1,28 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	<test name="VerifyUserAbleToAddPaymentMethod" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyUserAbleToAddPaymentMethod">
+				<methods>
+					<include name="TC07_AddPaymentMethodForCard"></include>
+					<include name="TC08_AddPaymentMethodForACH"></include>
+					<include name="TC09_AddPaymentMethodForCheque"></include>
+					<include name="TC11_1_AddAccountTypeWithCreditForThreePayMethod"></include>
+					<include name="TC12_VerifySearchingAndSortingForAccountType"></include>
+					<include name="TC13_AddAccountTypeWithCreditForThreePayMethod"></include>
+					<include name="TC14_AddAccountTypeUsingCardPayMethod"></include>
+					<include name="TC15_AddAccountTypeUsingACHPayMethod"></include>
+					<include name="TC16_AddPaymentMethodUsingCheque"></include>
+					<include name="TC17_AddPaymentMethodForCheque"></include>
+					<include name="TC18_VerifyPaymentMethodAvailableForAllCust"></include>
+					<include name="TC19_VerifyPayMethodIsDefaultSelectedForAllAccType"></include>
+					<include name="TC20_VerifyPayMethodWorksForAllAccType"></include>
+					<include name="TC36_TestAddInfoToAccountType"></include>
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

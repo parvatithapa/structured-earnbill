@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_last_billing_summary_sub_report" language="groovy" pageWidth="294" pageHeight="199" columnWidth="294" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="bab7099b-174a-4c02-a227-bc963f1ce812">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{BASE_DIR}+"/resources/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT *,
+(
+ SELECT COALESCE(inv_sum_inner.adjustment_charges,0)
+ FROM invoice_summary inv_sum_inner
+ WHERE inv_sum_inner.creation_invoice_id IN
+ (
+  SELECT MAX(i.id)
+  FROM invoice i
+  WHERE i.create_datetime::DATE >= inv_sum.last_invoice_date::DATE
+  AND i.user_id = inv_sum.user_id
+ )
+) AS previous_adjustment_charges,
+(
+ SELECT COALESCE(SUM(amount),0)
+ FROM invoice_line
+ WHERE invoice_id = creation_invoice_id
+ AND type_id != 3
+ AND deleted = 0
+) AS total_new_charge,
+(
+ SELECT COALESCE(SUM(tax_amount),0)
+ FROM invoice_line
+ WHERE invoice_id = creation_invoice_id
+ AND deleted = 0
+) AS gst_in_charges,
+(
+ SELECT carried_balance
+ FROM invoice i
+ WHERE i.id = inv_sum.creation_invoice_id
+) AS carried_balance,
+(
+SELECT COALESCE(SUM(amount),0)
+FROM invoice_line
+WHERE item_id IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{account_charges_product_category_id}
+)
+AND deleted = 0
+AND invoice_id = creation_invoice_id
+) AS account_charges_amount
+FROM invoice_summary inv_sum
+WHERE creation_invoice_id = $P{invoice_id};]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="creation_invoice_id" class="java.lang.Integer"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="monthly_charges" class="java.math.BigDecimal"/>
+	<field name="usage_charges" class="java.math.BigDecimal"/>
+	<field name="fees" class="java.math.BigDecimal"/>
+	<field name="taxes" class="java.math.BigDecimal"/>
+	<field name="adjustment_charges" class="java.math.BigDecimal"/>
+	<field name="amount_of_last_statement" class="java.math.BigDecimal"/>
+	<field name="payment_received" class="java.math.BigDecimal"/>
+	<field name="new_charges" class="java.math.BigDecimal"/>
+	<field name="total_due" class="java.math.BigDecimal"/>
+	<field name="invoice_date" class="java.sql.Timestamp"/>
+	<field name="last_invoice_date" class="java.sql.Timestamp"/>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="previous_adjustment_charges" class="java.math.BigDecimal"/>
+	<field name="total_new_charge" class="java.math.BigDecimal"/>
+	<field name="gst_in_charges" class="java.math.BigDecimal"/>
+	<field name="carried_balance" class="java.math.BigDecimal"/>
+	<field name="account_charges_amount" class="java.math.BigDecimal"/>
+	<title>
+		<band height="185" splitType="Stretch">
+			<staticText>
+				<reportElement x="40" y="2" width="135" height="15" uuid="66ab05c1-5263-4a61-93e1-ec3ca9c49401"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Previous Balance]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="193" y="2" width="100" height="15" uuid="9c60f191-fb21-4848-8396-91baf65fea46"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{amount_of_last_statement}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="193" y="18" width="100" height="15" uuid="cb571cbf-b10b-4cdb-a903-4ebe3501de0c"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{payment_received}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="40" y="18" width="135" height="15" uuid="ca12820a-5c1a-46d5-82d5-b402690f28df"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Received]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="40" y="60" width="58" height="15" forecolor="#D6036C" uuid="af151852-90e7-49b5-af72-5d28d15a4b12"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[This Bill]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="193" y="85" width="100" height="15" uuid="d146b8c8-cb85-4a93-8311-07cc688155f8"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+ $F{account_charges_amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="40" y="85" width="135" height="15" uuid="847dae2b-98d9-42bf-8d9c-aeed2c5c29f3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Account Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="40" y="101" width="135" height="15" uuid="0003219c-1491-46b2-8076-ef3b0ea2c31f"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Service Charges]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="193" y="34" width="100" height="15" isRemoveLineWhenBlank="true" uuid="266bc5a5-e9ff-406f-9ac5-80acfd793d4b">
+					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+($F{amount_of_last_statement}.add($F{payment_received}).setScale(2, BigDecimal.ROUND_HALF_UP))]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="14" y="147" width="160" height="15" forecolor="#D6036C" uuid="a9d25fbd-b41e-4a38-b729-103e34542dc7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total New Charge (inc. GST)]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="Float" x="193" y="147" width="100" height="15" uuid="3a60e8bb-49e0-4c48-84f0-be1aa7f8aabb"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{total_new_charge}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="11" y="164" width="170" height="15" forecolor="#D6036C" uuid="1490eec5-c16c-4e4d-ae09-fa33b2f40a10"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST included in New Charges]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement positionType="Float" x="207" y="164" width="86" height="15" uuid="ed37546c-ee66-49e1-856b-72b3dc18c107"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{gst_in_charges}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="40" y="116" width="253" height="21" uuid="6f4bb365-e480-45f8-8f48-0fbf50df5ec9"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_last_billing_summary_sub_report2_v2.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="40" y="34" width="135" height="15" isRemoveLineWhenBlank="true" uuid="548208d5-5137-4446-9c75-ef487f8f203e">
+					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) > 0 ? "Overdue Balance" : "Carried Forward"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

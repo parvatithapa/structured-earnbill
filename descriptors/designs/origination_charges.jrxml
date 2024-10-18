@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="origination_charges" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="e9aeb503-969b-4b5b-a88f-9f58500144f5">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="sub_account_list" class="java.util.List"/>
+	<queryString>
+		<![CDATA[SELECT il.description,
+	       il.quantity AS quantity,
+	       il.price AS unit_price,
+	       il.amount AS sub_total
+	  FROM invoice_line il
+      INNER JOIN invoice inv ON inv.id = il.invoice_id
+      INNER JOIN base_user bu ON bu.id = inv.user_id
+      INNER JOIN customer c on c.user_id = bu.id
+      INNER JOIN item i ON i.id = il.item_id
+      INNER JOIN item_type_map itm ON itm.item_id = i.id
+      INNER JOIN item_type it ON it.id = itm.type_id
+           WHERE it.description = 'Origination'
+             AND bu.id = $P{invoice_user_id}
+	   AND inv.id = $P{invoice_id}
+	   AND il.deleted = 0
+	   AND inv.deleted = 0
+	   AND bu.deleted = 0
+
+	 UNION ALL
+
+-- At least select 1 record so report will not be blank
+	SELECT NULL AS description,
+                 0 AS quantity,
+                 0.00 AS unit_price,
+                 0.00 AS sub_total
+           WHERE NOT EXISTS
+	(SELECT il.description,
+	       il.quantity AS quantity,
+	       il.price AS unit_price,
+	       il.amount AS sub_total
+	  FROM invoice_line il
+      INNER JOIN invoice inv ON inv.id = il.invoice_id
+      INNER JOIN base_user bu ON bu.id = inv.user_id
+      INNER JOIN customer c on c.user_id = bu.id
+      INNER JOIN item i ON i.id = il.item_id
+      INNER JOIN item_type_map itm ON itm.item_id = i.id
+      INNER JOIN item_type it ON it.id = itm.type_id
+           WHERE it.description = 'Origination'
+             AND bu.id = $P{invoice_user_id}
+	   AND inv.id = $P{invoice_id}
+	   AND il.deleted = 0
+	   AND inv.deleted = 0
+	   AND bu.deleted = 0)
+         ORDER BY description ASC]]>
+	</queryString>
+	<field name="description" class="java.lang.String"/>
+	<field name="quantity" class="java.lang.Integer"/>
+	<field name="unit_price" class="java.math.BigDecimal"/>
+	<field name="sub_total" class="java.math.BigDecimal"/>
+	<pageHeader>
+		<band height="1">
+			<line>
+				<reportElement x="0" y="0" width="590" height="1" uuid="0ac62fcc-6209-4499-90ea-f99ad8900612"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="26">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
+			<staticText>
+				<reportElement x="45" y="0" width="185" height="20" isPrintInFirstWholeBand="true" uuid="b656896a-770d-4eba-b650-544c5130ec13"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Origination Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="0" width="5" height="20" isPrintInFirstWholeBand="true" uuid="b530840e-00e1-40e1-b1f2-13137a4fa7ea"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[2]]></text>
+			</staticText>
+			<line>
+				<reportElement positionType="Float" x="590" y="0" width="1" height="26" uuid="c6773a32-c2b8-43b0-8514-ca739ab4d593"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="0" y="0" width="1" height="26" uuid="122c0144-5720-4e52-9d9b-c153b572b454"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement x="303" y="3" width="75" height="20" uuid="b0bc7d03-6d5c-411f-a13e-8d54e7a72a4d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $F{quantity} ? $F{quantity} : 0]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement x="385" y="3" width="90" height="20" uuid="39163a60-a40f-43b7-a003-14f7b92a75e1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + (null != $F{unit_price} ? $F{unit_price}.setScale(2, BigDecimal.ROUND_HALF_UP) : "0.00")]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement x="480" y="3" width="95" height="20" uuid="f9f8ec23-73ba-4010-b974-44e24a150e77"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + (null != $F{sub_total} ? $F{sub_total}.setScale(2, BigDecimal.ROUND_HALF_UP) : "0.00")]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="80" y="3" width="223" height="20" uuid="f0e22097-cde2-4f15-a61c-63868b7612bd"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="590" y="0" width="1" height="25" uuid="30f6787b-86eb-4543-9e1c-cadebab49480"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="1" height="25" uuid="197cf2aa-096b-4264-b421-f9faf3425c85"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="3">
+			<line>
+				<reportElement x="0" y="0" width="590" height="1" uuid="a02cb1c7-f96d-4f66-8ad9-97bcfd0dfdf2"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageFooter>
+</jasperReport>

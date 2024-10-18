@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	
+	<test name="VerifySearchingandSortingforDiscount" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifySearchingandSortingforDiscount">
+				<methods>
+					<include name="VerifySearchingandSortingforDiscount"></include>
+					
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

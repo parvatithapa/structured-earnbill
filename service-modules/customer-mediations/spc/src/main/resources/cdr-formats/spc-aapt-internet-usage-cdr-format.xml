@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>USER_NAME</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>USAGE_UPLOAD</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>USAGE_DOWNLOAD</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>PHONE</name>
+        <type>string</type>
+    </field>
+</format>

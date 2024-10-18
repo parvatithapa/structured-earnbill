@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <batch:job id="distributelMediationJob" job-repository="mediationJobRepository">
+
+        <!--CDR TO JMR STEP-->
+        <batch:step id="distributelMediationStep" next="distributelJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="distributelMediationReader" processor="distributelCDRToJMR"
+                             writer="jmrDefaultWriter" commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="distributelJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="defaultJMRProcessorReader" writer="distributelWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="mediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+
+    <!--distributel recycle job-->
+    <batch:job id="distributelRecycleJob" job-repository="mediationJobRepository">
+        <batch:step id="distributelRecycleStep" next="distributelRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="distributelRecycleReader" processor="distributelCDRToJMR"
+                             writer="jmrDefaultWriter" commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="distributelRecycleJMRProcessorStep">
+            <batch:tasklet transaction-manager="jbillingMediationTransactionManager">
+                <batch:chunk reader="defaultJMRProcessorReader" writer="distributelWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:listeners>
+            <batch:listener ref="recycleMediationJobListener"/>
+            <batch:listener ref="mediationJobListener"/>
+        </batch:listeners>
+    </batch:job>
+</beans>

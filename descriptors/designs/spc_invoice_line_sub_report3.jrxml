@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_sub_report3" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+COALESCE
+(
+ (SELECT mfv.string_value
+ FROM asset ass
+ INNER JOIN asset_meta_field_map amfm ON amfm.asset_id = ass.id
+ INNER JOIN meta_field_value mfv ON mfv.id = amfm.meta_field_value_id
+ INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+ WHERE mfv.string_value is not null
+ AND mfn.name = 'ServiceId'
+ AND ass.id = a.id
+ ),
+ a.identifier
+) AS call_identifier,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,POSITION('Period from' IN il.description)+11))
+ELSE
+(
+ SELECT getPeriod(i.id)
+)
+END AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity,
+il.amount
+FROM base_user bu
+INNER JOIN purchase_order po ON bu.id = po.user_id
+INNER JOIN order_line ol ON ol.order_id = po.id
+INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
+INNER JOIN asset a ON aa.asset_id = a.id
+INNER JOIN invoice i ON bu.id = i.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id AND il.order_id = po.id
+WHERE i.id = $P{invoice_id}
+AND il.call_identifier IS NULL
+AND il.type_id NOT IN (3,4)
+AND aa.id = (
+SELECT min(aa.id)
+FROM base_user bu
+INNER JOIN purchase_order po ON bu.id = po.user_id
+INNER JOIN order_line ol ON ol.order_id = po.id
+INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
+INNER JOIN asset a ON aa.asset_id = a.id
+INNER JOIN invoice i ON bu.id = i.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id
+WHERE i.id = $P{invoice_id}
+AND il.call_identifier IS NULL
+)
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id IN ($P{account_charges_product_category_id}, $P{other_charges_and_credits_product_category_id})
+)
+
+UNION ALL
+
+SELECT
+COALESCE
+(
+ (SELECT mfv.string_value
+ FROM asset ass
+ INNER JOIN asset_meta_field_map amfm ON amfm.asset_id = ass.id
+ INNER JOIN meta_field_value mfv ON mfv.id = amfm.meta_field_value_id
+ INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+ WHERE mfv.string_value is not null
+ AND mfn.name = 'ServiceId'
+ AND ass.id = a.id
+ ),
+ a.identifier
+) AS call_identifier,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,POSITION('Period from' IN il.description)+11))
+ELSE
+(
+ SELECT getPeriod(i.id)
+)
+END AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity,
+il.amount
+FROM base_user bu
+INNER JOIN purchase_order po ON bu.id = po.user_id
+INNER JOIN order_line ol ON ol.order_id = po.id
+INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
+INNER JOIN asset a ON aa.asset_id = a.id
+INNER JOIN invoice i ON bu.id = i.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id AND il.order_id = po.id
+WHERE i.id = $P{invoice_id}
+AND il.call_identifier IS NULL
+AND il.type_id NOT IN (3,4)
+AND aa.id <> (
+SELECT min(aa.id)
+FROM base_user bu
+INNER JOIN purchase_order po ON bu.id = po.user_id
+INNER JOIN order_line ol ON ol.order_id = po.id
+INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
+INNER JOIN asset a ON aa.asset_id = a.id
+INNER JOIN invoice i ON bu.id = i.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id
+WHERE i.id = $P{invoice_id}
+AND il.call_identifier IS NULL
+)
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id IN ($P{account_charges_product_category_id}, $P{other_charges_and_credits_product_category_id})
+)
+
+UNION ALL
+
+SELECT
+COALESCE
+(
+ (SELECT mfv.string_value
+ FROM asset ass
+ INNER JOIN asset_meta_field_map amfm ON amfm.asset_id = ass.id
+ INNER JOIN meta_field_value mfv ON mfv.id = amfm.meta_field_value_id
+ INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+ WHERE mfv.string_value is not null
+ AND mfn.name = 'ServiceId'
+ AND ass.identifier = il.call_identifier
+ ),
+ il.call_identifier
+) AS call_identifier,
+(
+ SELECT getPeriod(i.id)
+) AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity, il.amount
+FROM invoice_line il
+INNER JOIN invoice i ON i.id = il.invoice_id
+WHERE i.id = $P{invoice_id}
+AND il.call_identifier IS NOT NULL
+AND il.type_id NOT IN (3,4)
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id IN ($P{account_charges_product_category_id}, $P{other_charges_and_credits_product_category_id})
+)
+
+UNION ALL
+
+SELECT 'Account Charges' AS call_identifier,
+(
+ SELECT getPeriod(i.id)
+) AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity, il.amount
+FROM invoice_line il
+INNER JOIN invoice i ON i.id = il.invoice_id
+WHERE i.id = $P{invoice_id}
+AND il.type_id NOT IN (3,4)
+AND il.item_id IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{account_charges_product_category_id}
+)
+
+UNION ALL
+
+SELECT 'Other Charges and Credits' AS call_identifier,
+(
+ SELECT getPeriod(i.id)
+) AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity, il.amount
+FROM invoice_line il
+INNER JOIN invoice i ON i.id = il.invoice_id
+WHERE i.id = $P{invoice_id}
+AND il.type_id NOT IN (3,4)
+AND il.item_id IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{other_charges_and_credits_product_category_id}
+)
+
+UNION ALL
+
+SELECT 'Discount' AS call_identifier,
+(
+ SELECT getPeriod(i.id)
+) AS date,
+CASE WHEN il.description LIKE '%Period from%' = 't' THEN TRIM(SUBSTRING(il.description,0,POSITION('Period from' IN il.description))) ELSE il.description END AS desc,
+il.quantity, il.amount
+FROM invoice_line il
+INNER JOIN invoice i ON i.id = il.invoice_id
+WHERE i.id = $P{invoice_id}
+AND il.description iLIKE '%Discount%'
+AND il.item_id IS NULL
+ORDER BY call_identifier;]]>
+	</queryString>
+	<field name="call_identifier" class="java.lang.String"/>
+	<field name="date" class="java.lang.String"/>
+	<field name="desc" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="userNameCallIdentifierGroup" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="final_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<group name="userNameCallIdentifierGroup">
+		<groupExpression><![CDATA[$F{call_identifier}]]></groupExpression>
+		<groupHeader>
+			<band height="50">
+				<staticText>
+					<reportElement x="483" y="26" width="69" height="20" uuid="7bcbbee4-e4b4-4519-9e28-f3ef2323ef84"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="143" y="26" width="268" height="20" uuid="c1762bb3-c873-4850-ab87-9c13c4807918"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Description]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="412" y="26" width="69" height="20" uuid="eaa6ee98-8859-4b3b-9db8-b79c2ee917a9"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Qty]]></text>
+				</staticText>
+				<line>
+					<reportElement x="2" y="48" width="550" height="1" uuid="66e30714-1e7a-4295-8f9f-6e84b3de8899"/>
+					<graphicElement>
+						<pen lineWidth="0.5" lineColor="#FFCCCC"/>
+					</graphicElement>
+				</line>
+				<staticText>
+					<reportElement x="2" y="26" width="140" height="20" uuid="d0a9e2b1-daff-45f7-bf81-138637a83f03"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Date]]></text>
+				</staticText>
+				<rectangle radius="4">
+					<reportElement mode="Opaque" x="0" y="5" width="553" height="20" backcolor="#D6036C" uuid="1c34a523-a2e3-450f-8219-93c85278f261"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<textField isBlankWhenNull="true">
+					<reportElement mode="Transparent" x="2" y="5" width="550" height="20" forecolor="#FFFFFF" backcolor="#D6036C" uuid="5baa1bc0-da79-4948-a9fd-cdfc1564150e"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+						<paragraph leftIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{call_identifier}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="22">
+				<staticText>
+					<reportElement x="298" y="2" width="183" height="20" forecolor="#D6036C" uuid="c281211e-26d4-4c63-9995-a84bfdc7b477"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Monthly Charges]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="483" y="2" width="69" height="20" forecolor="#D6036C" uuid="b2a201c6-a144-4fce-8953-ca7e666e41a9"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+						<paragraph rightIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{currency_symbol}+''+$V{sub_total}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="143" y="0" width="268" height="20" uuid="f1f12499-1acf-4ae4-9872-43d36372cf8e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{desc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="412" y="0" width="69" height="20" uuid="b42930b8-2256-4b15-99ef-8cef1a0dce97"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="483" y="1" width="69" height="20" uuid="0f4fdd66-b176-4c23-ae3c-2d212be9e4d9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+					<paragraph rightIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="2" y="0" width="140" height="20" uuid="505a3bed-bc2c-416b-b0aa-b592f4cd11ea"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+					<paragraph leftIndent="1"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

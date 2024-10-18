@@ -1,0 +1,40 @@
+FROM ubuntu:22.04
+
+MAINTAINER nilesh.vibhute@sarathisoftech.com
+
+# Defining default Java
+ARG JAVA_VERSION="8.0.282.hs-adpt"
+
+RUN apt-get update -y  && apt-get upgrade -y
+
+RUN apt-get install -y fontconfig
+
+RUN apt-get install -y apt-utils
+
+RUN apt-get install -y nano
+
+# Installing basic packages
+RUN apt-get update && \
+	apt-get install -y zip unzip curl && \
+	rm -rf /var/lib/apt/lists/* && \
+	rm -rf /tmp/*
+
+# Creating a tomcat directory
+RUN mkdir /opt/tomcat
+WORKDIR /opt/tomcat
+
+RUN curl -O https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.58/bin/apache-tomcat-8.5.58.tar.gz
+RUN tar xfz apache*.tar.gz --strip-components=1
+RUN rm -rf apache-tomcat-8.5.58.tar.gz
+
+# Downloading SDKMAN!
+RUN curl -s "https://get.sdkman.io" | bash
+
+# Installing Java, removing some unnecessary SDKMAN files
+RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
+    yes | sdk install java $JAVA_VERSION && \
+    rm -rf $HOME/.sdkman/archives/* && \
+    rm -rf $HOME/.sdkman/tmp/*"
+
+ENV JAVA_HOME="/root/.sdkman/candidates/java/current"
+ENV PATH="$JAVA_HOME/bin:$PATH"

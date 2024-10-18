@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.14.xml">
+
+    <changeSet context="base" id="JB-1964 - Future Dated Asset Changes" author="Faizan Ahmad">
+        <!-- Asset Status Update Event Task -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(id)+1 from pluggable_task_type),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.AssetStatusUpdateTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Asset Status Update Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task is triggered when an asset is added and removed from order"/>
+        </insert>
+
+        <!-- One time asset status update -->
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE FUNCTION temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t INTEGER;
+                    BEGIN
+                        FOR t IN (SELECT ocp.asset_id FROM order_change oc INNER JOIN purchase_order o ON oc.order_id = o.id INNER JOIN order_change_asset_map ocp ON oc.id = ocp.order_change_id WHERE oc.order_line_id IS NULL AND o.deleted = 0) LOOP
+                            UPDATE asset SET status_id  = (SELECT id FROM asset_status WHERE is_order_saved = 1 AND item_type_id = ( SELECT type_id FROM item_type_map WHERE item_id = (SELECT item_id FROM asset WHERE id = t))) WHERE id = t;
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBDIST-583 Invoice - Remove carry over line from the detail section" author="Matías Cabezas">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists columnName="include_carried_invoice_lines" tableName="invoice_template_version"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="invoice_template_version">
+            <column name="include_carried_invoice_lines" type="BOOLEAN" defaultValueBoolean="false" />
+        </addColumn>
+    </changeSet>
+    
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Scheduling Task" author="Wajeeha Ahmed">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionSchedulingTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Ignition Scheduling Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Creates Payments for unpaid invoices"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Task" author="TC">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentIgnitionTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Task for Ignition"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is responsible for making payments for Ignition through ABSA and Standard Bank"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBIGN-23: Ingnition Payment Response Manager Scheduling Task updated" author="TC">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.IgnitionResponseManagerTask"/>
+            <column name="min_parameters" valueNumeric="4"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Payment Ignition Response Manager Scheduling Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Manages payments response files from Ignition"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

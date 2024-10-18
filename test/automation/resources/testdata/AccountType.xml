@@ -1,0 +1,10 @@
+<testdata>
+	<testdataset name="TC102_AddAccountType" category="aat" testenv="develop|lab3">
+		<accountName>Account Type{RANDOM}</accountName>
+		<billingCycle>1</billingCycle>
+		<invoiceDesign>simple_design</invoiceDesign>
+		<creditLimit>200</creditLimit>
+		<creditLimitOne>10</creditLimitOne>
+		<creditLimitTwo>20</creditLimitTwo>
+	</testdataset>
+</testdata>

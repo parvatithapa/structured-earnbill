@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_cost_report" language="groovy" pageWidth="720" pageHeight="800" whenNoDataType="AllSectionsNoDetail" columnWidth="680" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="cf565a21-f4fa-40b8-ace6-70398c86d75f">
+	<property name="ireport.zoom" value="1.1000000000000005"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.util.List">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT DISTINCT i.create_datetime,
+                        il.item_id,
+                        gl_data.gl_code,
+                        (SELECT gl_description
+                           FROM route_70_gl_description
+                          WHERE gl_code = gl_data.gl_code),
+                        SUM(il.gross_amount) AS amount
+                  FROM invoice i
+            INNER JOIN invoice_line il ON il.invoice_id = i.id AND il.deleted = 0
+            INNER JOIN purchase_order po ON po.id = il.order_id and po.is_mediated = 't'
+             LEFT JOIN (SELECT mfv.string_value AS gl_code,imfm.item_id AS itmid
+                          FROM item_meta_field_map imfm
+                    INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+                    INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code' AND mfv.meta_field_name_id = mfn.id) AS gl_data
+                               ON (gl_data.itmid = il.item_id)
+                 WHERE i.deleted = 0
+                       AND il.order_id = po.id
+                       AND i.is_review = 0
+                       AND i.create_datetime BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+              GROUP BY 1,il.item_id,3,2 ORDER BY 1 DESC;]]>
+	</queryString>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="gl_description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="subtotal" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<group name="total_amount" footerPosition="ForceAtBottom">
+		<groupFooter>
+			<band height="27">
+				<textField>
+					<reportElement x="535" y="5" width="145" height="20" uuid="d36b580b-656f-4976-b9cc-36bfb394cfbf"/>
+					<textElement textAlignment="Right">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{subtotal}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="5" width="165" height="20" uuid="4e2db0eb-169c-4885-bead-0e10251dc366"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Amount :]]></text>
+				</staticText>
+				<line>
+					<reportElement x="0" y="0" width="680" height="1" uuid="9f2c0010-6234-40e0-be12-3a2088729121"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="76" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="10" width="300" height="19" uuid="8b59ebee-6f1a-4770-a147-2ac952aec6f8"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Summary Cost Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="330" y="10" width="205" height="20" uuid="de941764-9763-4ecb-ac16-a390f7ceac12"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="330" y="30" width="205" height="20" uuid="46332dbf-7654-4bba-beb0-2e76ff8bf2e0"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="330" y="50" width="205" height="20" uuid="c1c1721b-6a7a-42c5-8585-596366fd465c"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="535" y="30" width="145" height="20" uuid="65b06b65-8b83-429c-99f1-a38d02a3b954"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="535" y="50" width="145" height="20" uuid="1292f4aa-1cd2-4d8c-b379-e818452d3133"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="535" y="10" width="145" height="20" uuid="61dd1971-8f1c-471d-8c38-079e2d16dabc"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="28" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="165" height="20" uuid="328be2c0-aa98-4039-8fac-9c135391a5ae"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Reporting Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="165" y="0" width="165" height="20" uuid="147c7ca9-ed76-4a31-992c-1d2b9f1c3331"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Costs GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="330" y="0" width="205" height="20" uuid="d3cc1fd0-73b2-4dfc-a816-013d31b91504"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Costs GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="535" y="0" width="145" height="20" uuid="e47c6c79-b25a-4eac-a252-bdafd6198e93"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cost of Service (ex GST)]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="22" width="680" height="1" uuid="6c2649e7-53df-48d7-b687-e9d72e3ff715"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="165" height="20" uuid="5b591911-4457-4b55-8404-d6013e04e930"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="165" y="0" width="165" height="20" uuid="4a17211c-3efe-442f-9524-a6413ec225e4"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="330" y="0" width="205" height="20" uuid="da6b7b12-97be-4738-b555-4de3ca91dbd4"/>
+				<textFieldExpression><![CDATA[$F{gl_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="535" y="0" width="145" height="20" uuid="80853094-313d-4ed6-9d96-1c4e7581d778"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21" splitType="Stretch">
+			<textField>
+				<reportElement x="535" y="0" width="145" height="20" uuid="8a0c8257-177b-4af6-8fa8-50c2d9166d98"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

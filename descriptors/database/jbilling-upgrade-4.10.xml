@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.10.xml">
+	
+	<changeSet author="Krunal Bhavsar " id="JBFC-746 GenerateCancellationInvoiceTask" context="base">
+		<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.billing.task.GenerateCancellationInvoiceTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Generate Cancellation Invoice Task"/>
+        </insert>
+
+		<insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Scheduled task will generate invoice for customer who has applied for subscription cancellation request"/>
+        </insert>
+        
+        <insert tableName="user_status">
+            <column name="id" valueComputed="(select max(status.id)+1 from user_status status)"/>
+            <column name="can_login" valueNumeric="1"/>
+        </insert>
+        
+         <insert tableName="international_description">
+            <column name="table_id" valueNumeric="9"/>
+            <column name="foreign_id" valueComputed="(select max(status.id) from user_status status)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Cancelled on Request"/>
+        </insert>
+        
+	</changeSet>
+	<changeSet id="JBFC-710-Stop-activation-on-payment-column-added" author="Mahesh Shivarkar" context="base">
+		<addColumn tableName="ageing_entity_step">
+			<column name="stop_activation_on_payment" type="java.sql.Types.INTEGER" defaultValueNumeric="0">
+				<constraints nullable="false" />
+			</column>
+		</addColumn>
+	</changeSet>
+ 
+    <changeSet context = "base" id = "JB-1374 Added column country_code to language" author = "Harshad Pathan">
+        <addColumn tableName = "language">
+            <column name = "country_code" type = "java.sql.Types.VARCHAR(2)">
+                <constraints nullable = "true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "Drop and build new composite primary key" author = "Harshad Pathan">
+
+         <dropColumn tableName = "billing_process_link_log"    columnName="id"/>
+
+         <addPrimaryKey columnNames    = "invoice_id, billing_process_id"
+                       constraintName = "billing_process_link_log_pkey"
+                       tableName      = "billing_process_link_log"/>
+     </changeSet>
+
+    <changeSet  context = "base" id = "JB-1713 update jbilling_seqs for billing_process" author = "Harshad pathan" >
+      <update tableName = "jbilling_seqs">
+          <column name  = "next_id" valueComputed = "(SELECT coalesce(max(id)+1, 1) FROM billing_process)"/>
+          <where> name  = 'billing_process'</where>
+      </update>
+   </changeSet>
+	<changeSet author="Mahesh Shivarkar" context="base"
+	id="JB-2148-permission-delete-entered-refund">
+
+	<comment>Give Delete Payment permission to Roles: System Admin, Super User, Clerk</comment>
+	<sql>
+		INSERT INTO permission_role_map(role_id, permission_id)
+		 SELECT r.id AS role_id,(SELECT foreign_id
+		 						   FROM international_description
+								   WHERE table_id IN (SELECT id
+							   	                        FROM jbilling_table
+								                        WHERE name = 'permission')
+		 	                       AND language_id = 1
+                                   AND content     = 'Delete payment') AS permission_id
+		  FROM role r
+		  WHERE r.role_type_id=2
+		  GROUP BY r.id;
+
+		INSERT INTO permission_role_map(role_id, permission_id)
+		 SELECT r.id AS role_id,(SELECT foreign_id
+		 						    FROM international_description
+									WHERE table_id IN (SELECT id
+														 FROM jbilling_table
+														 WHERE name = 'permission')
+		                            AND language_id = 1
+		                            AND content 	= 'Delete payment') AS permission_id
+		 FROM role r
+		 WHERE r.role_type_id=-1 
+		 GROUP BY r.id;
+		
+		INSERT INTO permission_role_map(role_id, permission_id)
+		 SELECT r.id AS role_id, (SELECT foreign_id 
+		 							FROM international_description
+									WHERE table_id IN (SELECT id 
+									                     FROM jbilling_table 
+									                     WHERE name='permission')
+									AND language_id = 1 
+									AND content     = 'Delete payment') AS permission_id 
+		 FROM role r
+		 WHERE r.role_type_id = 3
+		 GROUP BY r.id;
+	</sql>
+	</changeSet>
+	<changeSet
+	id="#JB-2148 added preference to enable configuration to submit manual payment to payment gateway by default"
+	context="base" author="Mahesh Shivarkar">
+	<comment>This preference enable configuration to submit manual payment to payment gateway by default.</comment>
+	<insert tableName="preference_type">
+		<column name="id" value="86" />
+		<column name="def_value" value="0" />
+	</insert>
+	<insert tableName="international_description">
+		<column name="table_id" valueNumeric="50" />
+		<column name="foreign_id" value="86" />
+		<column name="psudo_column" value="description" />
+		<column name="language_id" valueNumeric="1" />
+		<column name="content" value="Enable configuration to submit manual payment to payment gateway by default" />
+	</insert>
+	<insert tableName="international_description">
+		<column name="table_id" valueNumeric="50" />
+		<column name="foreign_id" value="86" />
+		<column name="psudo_column" value="instruction" />
+		<column name="language_id" valueNumeric="1" />
+		<column name="content" value="This preference enable configuration to submit manual payment to payment gateway by default." />
+	</insert>
+	</changeSet>
+</databaseChangeLog>

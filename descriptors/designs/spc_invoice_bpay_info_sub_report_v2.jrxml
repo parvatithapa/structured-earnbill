@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_bpay_info_sub_report" language="groovy" pageWidth="500" pageHeight="100" columnWidth="500" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6fc0adf1-3561-48b7-9c26-b8b33ad64fc2">
+	<property name="ireport.zoom" value="1.6105100000000039"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/logos/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ INNER JOIN payment_method_template pmtp ON pmtp.id = pmt.template_id AND pmtp.template_name in ('Payment Card','ACH')
+ WHERE pi.user_id = bu.id
+) AS ach_cc_count,
+(
+ SELECT COUNT(*)
+ FROM meta_field_value mfv
+ INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+ INNER JOIN payment_information pi ON pi.user_id = bu.id
+ INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_information_id = pi.id
+ WHERE pimfm.meta_field_value_id = mfv.id
+ AND mfn.name = 'Reference Number'
+) AS bpay_count
+FROM base_user bu
+WHERE bu.id = $P{invoice_user_id};]]>
+	</queryString>
+	<field name="ach_cc_count" class="java.lang.Long"/>
+	<field name="bpay_count" class="java.lang.Long"/>
+	<title>
+		<band height="67">
+			<staticText>
+				<reportElement x="2" y="1" width="113" height="15" forecolor="#D6036C" uuid="cb75f3e7-6ff9-4eec-9154-c992d95b6943"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[How to Pay]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="2" y="18" width="191" height="49" isPrintWhenDetailOverflows="true" forecolor="#D6036C" uuid="d0f912a2-87b2-4123-b73a-e905a912cae9">
+					<printWhenExpression><![CDATA[$F{ach_cc_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="Calibri" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Please note that your account
+is set up for direct debit payments
+and no further action is required.]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="251" y="23" width="122" height="22" uuid="664a4a25-fb97-40e2-b4a8-6f16ac0bf594">
+					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="invoice_user_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_bpay_info_sub_report2_v2.jasper"]]></subreportExpression>
+			</subreport>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="193" y="18" width="56" height="40" uuid="0e248b44-a58e-422b-9e67-9986bc2ff1f6">
+					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/bpay_logo.png"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<summary>
+		<band height="43">
+			<staticText>
+				<reportElement x="195" y="2" width="122" height="41" uuid="11329237-297b-4ecf-a894-31f56c17cbe3">
+					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Pay online or by phone.
+Visit www.bpay.com.au
+for more information.]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>

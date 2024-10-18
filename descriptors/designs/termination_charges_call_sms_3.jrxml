@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="termination_charges_call" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="3c885614-d0c8-4df8-a7fa-9ad1a11d2e8e">
+	<property name="ireport.zoom" value="1.3310000000000004"/>
+	<property name="ireport.x" value="18"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="sub_account_list" class="java.util.List"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[(SELECT il.description,
+	       COALESCE(SUM(il.quantity),0) AS quantity,
+	       COALESCE(SUM(il.price),0) AS unit_price,
+	       COALESCE(SUM(il.amount),0) AS sub_total
+	  FROM invoice_line il
+      INNER JOIN invoice inv ON inv.id = il.invoice_id
+      INNER JOIN base_user bu ON bu.id = inv.user_id
+      INNER JOIN customer c on c.user_id = bu.id
+      INNER JOIN item i ON i.id = il.item_id
+      INNER JOIN item_type_map itm ON itm.item_id = i.id
+      INNER JOIN item_type it ON it.id = itm.type_id
+	 WHERE it.description = 'Termination'
+	   AND bu.id = $P{invoice_user_id}
+	   AND inv.id = $P{invoice_id}
+	   AND il.deleted = 0
+	   AND inv.deleted = 0
+	   AND bu.deleted = 0
+	   AND (il.description ILIKE '%Call%' OR il.description ILIKE '%SMS%')
+        GROUP BY il.description
+        ORDER BY il.description asc)
+        UNION ALL
+-- At least select 1 record so report will not be blank
+	(SELECT NULL AS description,
+                 0 AS quantity,
+                 0.00 AS unit_price,
+                 0.00 AS sub_total
+           WHERE NOT EXISTS
+	(SELECT il.description,
+	       COALESCE(SUM(il.quantity),0) AS quantity,
+	       COALESCE(SUM(il.price),0) AS unit_price,
+	       COALESCE(SUM(il.amount),0) AS sub_total
+	  FROM invoice_line il
+      INNER JOIN invoice inv ON inv.id = il.invoice_id
+      INNER JOIN base_user bu ON bu.id = inv.user_id
+      INNER JOIN customer c on c.user_id = bu.id
+      INNER JOIN item i ON i.id = il.item_id
+      INNER JOIN item_type_map itm ON itm.item_id = i.id
+      INNER JOIN item_type it ON it.id = itm.type_id
+	 WHERE it.description = 'Termination'
+	   AND bu.id = $P{invoice_user_id}
+	   AND inv.id = $P{invoice_id}
+	   AND il.deleted = 0
+	   AND inv.deleted = 0
+	   AND bu.deleted = 0
+	   AND (il.description ILIKE '%Call%' OR il.description ILIKE '%SMS%')
+        GROUP BY il.description
+        ORDER BY il.description asc))]]>
+	</queryString>
+	<field name="description" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="unit_price" class="java.math.BigDecimal"/>
+	<field name="sub_total" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="1">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
+			<line>
+				<reportElement x="0" y="0" width="590" height="1" uuid="f8404556-95bc-4d3a-888a-d39069587525"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22">
+			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
+			<staticText>
+				<reportElement x="45" y="0" width="168" height="20" uuid="674408b3-7e9a-446b-9432-10f75be012b9"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Usage Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="0" width="5" height="20" uuid="6c69604d-c950-4910-a050-2b49ae0f1aca"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[2]]></text>
+			</staticText>
+			<line>
+				<reportElement x="590" y="0" width="1" height="22" uuid="ed2b3b74-10bd-4d6c-91d7-faa954630bd0"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="0" width="1" height="22" uuid="68b0e055-d95c-4fb1-b213-10f1d838f118"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<printWhenExpression><![CDATA[$F{description}.contains("Call")]]></printWhenExpression>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="480" y="2" width="95" height="20" uuid="8375ac7d-fdfb-4acd-af2b-41a1c3d02c43"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + (null != $F{sub_total} ?   $F{sub_total}.setScale(2, BigDecimal.ROUND_HALF_UP) : "0.00")]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="300" y="2" width="90" height="20" forecolor="#808080" uuid="d0a51243-778e-4112-b48a-b1fc29ab2942"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[(Refer​ ​ termination​ ​ cost​ ​ details)]]></text>
+			</staticText>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="590" y="0" width="1" height="24" uuid="2f3e9a42-6ef0-4341-865f-dc2180641f42"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="1" height="24" uuid="3bb74618-02e2-4178-92c6-df2d3a69d07c"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="80" y="2" width="144" height="20" uuid="7fb82eaa-f311-4513-9f7d-298eb9ab26a6"/>
+				<text><![CDATA[Call]]></text>
+			</staticText>
+		</band>
+		<band height="24">
+			<printWhenExpression><![CDATA[$F{description}.contains("SMS")]]></printWhenExpression>
+			<staticText>
+				<reportElement x="80" y="2" width="144" height="20" uuid="a2839148-6a3e-4883-ba00-46cc5eef8295"/>
+				<text><![CDATA[Messages]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="2" width="90" height="20" forecolor="#7E7E7E" uuid="6429dae7-bc25-49fa-b531-81715addea5a"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[(Refer​ ​ termination​ ​ cost​ ​ details)]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="480" y="2" width="95" height="20" uuid="3a549f87-bcd3-41fc-b003-05e37c362b0e"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol} + (null != $F{sub_total} ? $F{sub_total}.setScale(2, BigDecimal.ROUND_HALF_UP) : "0.00")]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="590" y="0" width="1" height="24" uuid="95b0e309-a9c9-415a-9f81-097f83a701a7"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="0" width="1" height="24" uuid="d36dd15c-5c68-463e-830b-ba64a453c8ef"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="3">
+			<line>
+				<reportElement x="0" y="0" width="590" height="1" uuid="403b5556-c6f8-4bbd-94f3-c223184cf9f0"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</pageFooter>
+</jasperReport>

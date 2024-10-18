@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.29.xml">
+
+    <changeSet context = "base" id = "JBSPC-184 - Sales Tax - ATO Report" author = "Swapnil Patil">
+        <comment>New Report to fetch credit Order lines details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'invoice'),1)" />
+            <column name  = "name"      value         = "sales_tax_ato_report" />
+            <column name  = "file_name" value         = "sales_tax_ato_report.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'sales_tax_ato_report'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+             <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+             <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'sales_tax_ato_report'),1)" />
+             <column name = "dtype"     value         = "date" />
+             <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+                      FROM report r
+                     WHERE r.name = 'sales_tax_ato_report'),
+                   id
+              FROM entity
+             WHERE deleted = 0
+        </sql>
+    </changeSet>
+</databaseChangeLog>

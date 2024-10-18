@@ -1,0 +1,120 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <bean  id = "taskExecutor" class = "org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name = "corePoolSize" value = "${springbatch.executor.core.pool.size}"/>
+        <property name = "maxPoolSize"  value = "${springbatch.executor.max.pool.size}"/>
+    </bean>
+
+    <!-- spring batch jobs -->
+    <bean  id = "asyncJobLauncher"
+        class = "org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name = "jobRepository" ref = "jobRepository"/>
+        <property name = "taskExecutor"  ref = "taskExecutor"/>
+    </bean>
+
+    <!-- AssetLoad: Job loads file containing new asset definitions -->
+    <job id = "assetLoadJob" restartable = "true" xmlns="http://www.springframework.org/schema/batch">
+        <step id = "loadFileAndSaveAssets">
+            <tasklet>
+                <!-- commit-interval is 1 because in the processor we check that an identifier is unique and with a value > 1
+                it may be asked to check a duplicate identifier before the first is written to the DB -->
+                <chunk reader          = "assetFileReader"
+                       processor       = "assetValidatingProcessor"
+                       writer          = "assetObjectWriter"
+                       commit-interval = "1">
+                    <streams>
+                        <stream ref = "assetErrorWriter"/>
+                    </streams>
+                </chunk>
+            </tasklet>
+        </step>
+    </job>
+
+    <!-- AssetLoad: Load input files-->
+    <bean  id = "assetFileReader"
+        class = "org.springframework.batch.item.file.FlatFileItemReader"
+        scope ="step">
+        <property name = "lineMapper">
+            <bean class = "com.sapienter.jbilling.server.item.batch.WrappingLineMapper">
+                <property name = "delegate">
+                    <bean class = "org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                        <property name = "lineTokenizer">
+                            <bean class = "org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+                                <property name = "delimiter" value = ","/>
+                    </bean>
+                </property>
+                        <property name = "fieldSetMapper">
+                            <bean class = "org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper"/>
+                </property>
+            </bean>
+                </property>
+            </bean>
+        </property>
+        <property name ="resource">
+            <bean class = "org.springframework.core.io.FileSystemResource">
+                <constructor-arg value = "#{jobParameters['input_file']}"/>
+        </bean>
+        </property>
+    </bean>
+
+    <!-- AssetLoad: Validates asset definitions -->
+    <bean  id = "assetValidatingProcessor"
+        class = "com.sapienter.jbilling.server.item.batch.AssetProcessor"
+        scope = "step">
+        <property name = "errorWriter" ref = "assetErrorWriter"/>
+    </bean>
+
+    <!-- AssetLoad: File contains error lines -->
+    <bean  id = "assetErrorWriter"
+        class = "org.springframework.batch.item.file.FlatFileItemWriter"
+        scope = "step">
+        <property name = "resource">
+            <bean class = "org.springframework.core.io.FileSystemResource">
+                <constructor-arg value = "#{jobParameters['error_file']}"/>
+        </bean>
+        </property>
+        <property name = "lineAggregator">
+            <bean class = "org.springframework.batch.item.file.transform.PassThroughLineAggregator"/>
+        </property>
+    </bean>
+
+    <!-- AssetLoad: Persist Assets in DB -->
+    <bean  id = "assetObjectWriter"
+        class = "com.sapienter.jbilling.server.item.batch.AssetItemWriter"/>
+
+    <!-- profile specific beans -->
+    <beans profile = "billing.master">
+        <bean  id = "usersPartitioner"
+            class = "com.sapienter.jbilling.batch.support.UsersPartitioner"
+            scope = "job"/>
+
+        <bean abstract = "true"
+              id       = "generalMessagePartitionHandler"
+              class    = "org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+            <property name = "gridSize"     value = "#{systemEnvironment['JBILLING_BATCH_GRID_SIZE']?:10}"/>
+            <property name = "jobExplorer"    ref = "jobExplorer"/>
+        </bean>
+    </beans>
+
+    <!-- profile specific beans -->
+    <beans profile = "billing.slave">
+
+        <bean  id = "slaveStepExecutionRequestHandler"
+            class = "org.springframework.batch.integration.partition.StepExecutionRequestHandler">
+            <property name = "jobExplorer" ref = "jobExplorer"/>
+            <property name = "stepLocator" ref = "slaveStepLocator"/>
+        </bean>
+
+        <bean  id = "slaveStepLocator"
+            class = "org.springframework.batch.integration.partition.BeanFactoryStepLocator" />
+    </beans>
+
+</beans>

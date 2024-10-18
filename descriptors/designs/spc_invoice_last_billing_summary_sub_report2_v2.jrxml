@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_last_billing_summary_sub_report2" language="groovy" pageWidth="268" pageHeight="20" columnWidth="268" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="23de836e-1016-4409-972f-8855ce03a545">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT s.* FROM (
+SELECT it.description, SUM(il.amount) AS amount
+FROM invoice_line il
+INNER JOIN item i ON i.id = il.item_id
+INNER JOIN item_type_map itm ON itm.item_id = i.id
+INNER JOIN item_type it ON it.id = itm.type_id
+INNER JOIN rollup_codes rc ON rc.item_type_description = it.description
+WHERE invoice_id = $P{invoice_id}
+AND il.item_id NOT IN
+(
+ SELECT i.id
+ FROM item i
+ INNER JOIN item_type_map itm ON itm.item_id = i.id
+ INNER JOIN item_type it ON it.id = itm.type_id
+ WHERE it.id = $P{account_charges_product_category_id}
+)
+GROUP BY it.description, rc.itemisation_order
+UNION ALL
+SELECT CASE WHEN (il.item_id IS NULL AND il.type_id != 3) THEN (SELECT it.description FROM item_type it WHERE id = $P{other_charges_and_credits_product_category_id}) ELSE NULL END AS description,
+SUM(il.amount) AS amount
+FROM invoice_line il
+WHERE invoice_id = $P{invoice_id}
+AND il.item_id IS NULL
+AND il.amount < 0
+AND il.type_id <> 3
+GROUP BY il.item_id, il.type_id
+) s
+INNER JOIN rollup_codes rc ON rc.item_type_description = s.description
+ORDER BY rc.itemisation_order ASC;]]>
+	</queryString>
+	<field name="description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<group name="description">
+		<groupExpression><![CDATA[$F{description}]]></groupExpression>
+	</group>
+	<detail>
+		<band height="17" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="149" height="16" uuid="a2540163-20f5-44a9-83ab-83b44cefa18e"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="149" y="0" width="104" height="16" uuid="84506223-2e39-470c-afec-399ad5f881e9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+""+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

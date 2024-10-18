@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <bean class="org.springframework.batch.core.scope.StepScope" />
+
+    <bean id="boaJobParametersValidator"
+          class="com.sapienter.jbilling.server.boa.batch.BOAJobParametersValidator">
+    </bean>
+
+    <bean id="boaFileWriter" class="com.sapienter.jbilling.server.boa.batch.BOAFileWriter" />
+
+    <batch:job id="bankJob">
+        <batch:step id="step1" next="step2">
+            <batch:tasklet>
+                <batch:chunk reader="dailyMultiResourceItemReader" writer="boaFileWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:step id="step2">
+            <batch:tasklet>
+                <batch:chunk reader="intradayMultiResourceItemReader" writer="boaFileWriter"
+                             commit-interval="1">
+                </batch:chunk>
+            </batch:tasklet>
+        </batch:step>
+        <batch:validator ref="boaJobParametersValidator"/>
+    </batch:job>
+
+
+    <bean id="dailyMultiResourceItemReader" class="org.springframework.batch.item.file.MultiResourceItemReader" scope="step">
+        <property name="resources" value="file:#{jobParameters['read_from_daily_files_directory']}/*.bai"/>
+        <property name="delegate" ref="boaFileReader" />
+    </bean>
+
+    <bean id="intradayMultiResourceItemReader" class="org.springframework.batch.item.file.MultiResourceItemReader" scope="step">
+        <property name="resources" value="file:#{jobParameters['read_from_intraday_files_directory']}/*.bai"/>
+        <property name="delegate" ref="boaFileReader" />
+    </bean>
+
+    <bean id="boaFileReader" class="com.sapienter.jbilling.server.boa.batch.BOAFileReader" scope="step">
+        <property name="delegate" ref="delegateFileReader" />
+        <property name="readFromDailyFilesDirectory" value="#{jobParameters['read_from_daily_files_directory']}"/>
+        <property name="readFromIntradayFilesDirectory" value="#{jobParameters['read_from_intraday_files_directory']}"/>
+        <property name="moveToDailyFilesDirectory" value="#{jobParameters['move_to_daily_files_directory']}"/>
+        <property name="moveToIntradayFilesDirectory" value="#{jobParameters['move_to_intraday_files_directory']}"/>
+        <!-- property name="linesToSkip" value="1"></property-->
+    </bean>
+    <bean id="delegateFileReader" class="org.springframework.batch.item.file.FlatFileItemReader">
+        <property name="lineMapper">
+            <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                <property name="lineTokenizer" ref="bankFileTokenizer"/>
+                <property name="fieldSetMapper">
+                    <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" />
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="bankFileTokenizer" class="org.springframework.batch.item.file.transform.PatternMatchingCompositeLineTokenizer">
+        <property name="tokenizers">
+            <map>
+                <entry key="01*" value-ref="type01LineTokenizer" />
+                <entry key="02*" value-ref="type02LineTokenizer" />
+                <entry key="03*" value-ref="type03LineTokenizer" />
+                <entry key="16*" value-ref="type16LineTokenizer" />
+                <entry key="88*" value-ref="type88LineTokenizer" />
+                <entry key="49*" value-ref="type49LineTokenizer" />
+                <entry key="98*" value-ref="type98LineTokenizer" />
+                <entry key="99*" value-ref="type99LineTokenizer" />
+            </map>
+        </property>
+    </bean>
+
+    <bean id="type01LineTokenizer"
+          class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+        <property name="names"
+                  value="recordType,senderId,receiverId,date,time,fileId,recordLength,blockSize,version" />
+        <property name="delimiter" value="," />
+    </bean>
+
+    <bean id="type02LineTokenizer"
+          class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+        <property name="names"
+                  value="recordType,receiverId,originatorId,groupStatus,date,time,currencyCode,dateModifier" />
+        <property name="delimiter" value="," />
+    </bean>
+    <bean id="type03LineTokenizer"
+          class="com.sapienter.jbilling.server.boa.batch.AccountRecordTokenizer">
+        <property name="names"
+                  value="recordType,customerAccountNumber" />
+        <property name="delimiter" value="," />
+    </bean>
+    <bean id="type16LineTokenizer"
+          class="com.sapienter.jbilling.server.boa.batch.TransactionRecordTokenizer">
+        <property name="names"
+                  value="recordType,typeCode,amount,bankRefNumber,custRefNumber,rawData" />
+        <property name="delimiter" value="," />
+    </bean>
+    <bean id="type88LineTokenizer"
+          class="com.sapienter.jbilling.server.boa.batch.ContinuationRecordTokenizer">
+        <property name="names"
+                  value="recordType,details,rawData" />
+        <property name="delimiter" value="," />
+    </bean>
+
+    <bean id="type49LineTokenizer"
+          class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+        <property name="names"
+                  value="recordType,act,nor" />
+        <property name="delimiter" value="," />
+    </bean>
+    <bean id="type98LineTokenizer"
+          class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+        <property name="names"
+                  value="recordType,gct,noa,nor" />
+        <property name="delimiter" value="," />
+    </bean>
+    <bean id="type99LineTokenizer"
+          class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+        <property name="names"
+                  value="recordType,fct,nog,nor" />
+        <property name="delimiter" value="," />
+    </bean>
+
+</beans>

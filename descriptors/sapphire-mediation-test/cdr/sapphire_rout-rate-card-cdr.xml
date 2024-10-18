@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<File xmlns="http://www.metaswitch.com/cfs/billing/V1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" compatibility="8">
+<FileHeader seqnum="63140">
+<EquipmentType>Metaswitch CFS</EquipmentType>
+<EquipmentId></EquipmentId>
+<CreateTime>1507899540008</CreateTime>
+</FileHeader>
+<CDRs>
+<Call seqnum="01" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="204539594019983" connected="true">
+<CallType>National</CallType>
+<Features>
+<Feature>UnconditionalCallForwarding</Feature>
+<Feature>LegPartOfForwardedCall</Feature>
+</Features>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>93611819</InternalIndex>
+<OrigParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020076222</SubscriberAddr>
+<CallingPartyAddr type="e164">+35054007838</CallingPartyAddr>
+<ChargeAddr type="e164">+35020076222</ChargeAddr>
+<BusinessGroupName>Europort Holdings Lt1d</BusinessGroupName>
+<SIPCallId>020BF3F9A68140000009A762@TB007190_VOIP0.TB007190</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+919819866699</SubscriberAddr>
+<CallingPartyAddr type="e164">+919819866699</CallingPartyAddr>
+<ChargeAddr type="e164">+919819866699</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd</BusinessGroupName>
+<SIPCallId>F0C01602@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">009819866677</RequestedAddr>
+<DestAddr type="e164">+919819866677</DestAddr>
+<RoutedAddr type="national">9819866677</RoutedAddr>
+<CallingPartyRoutedAddr type="national">9860222621</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">9860222621</CallingPartyOrigAddr>
+</RoutingInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1507900003472</IcSeizeTime>
+<OgSeizeTime>1507900003475</OgSeizeTime>
+<RingingTime/>
+<ConnectTime>1507900003498</ConnectTime>
+<DisconnectTime>1507900048802</DisconnectTime>
+<ReleaseTime>1507900048801</ReleaseTime>
+<CompleteTime>1507900048802</CompleteTime>
+</Call>
+<Call seqnum="02" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="204539594019983" connected="true">
+<CallType>National</CallType>
+<Features>
+<Feature>UnconditionalCallForwarding</Feature>
+<Feature>LegPartOfForwardedCall</Feature>
+</Features>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>93611819</InternalIndex>
+<OrigParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020076223</SubscriberAddr>
+<CallingPartyAddr type="e164">+35054007838</CallingPartyAddr>
+<ChargeAddr type="e164">+35020076223</ChargeAddr>
+<BusinessGroupName>Europort Holdings Lt1d</BusinessGroupName>
+<SIPCallId>020BF3F9A68140000009A762@TB007190_VOIP0.TB007191</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+919819866699</SubscriberAddr>
+<CallingPartyAddr type="e164">+919819866699</CallingPartyAddr>
+<ChargeAddr type="e164">+919819866699</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd</BusinessGroupName>
+<SIPCallId>F0C01602@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">009819866677</RequestedAddr>
+<DestAddr type="e164">+919819866677</DestAddr>
+<RoutedAddr type="national">9819866677</RoutedAddr>
+<CallingPartyRoutedAddr type="national">9860222621</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">9860222621</CallingPartyOrigAddr>
+</RoutingInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1507900003472</IcSeizeTime>
+<OgSeizeTime>1507900003475</OgSeizeTime>
+<RingingTime/>
+<ConnectTime>1539723661000</ConnectTime>
+<DisconnectTime>1539723691001</DisconnectTime>
+<ReleaseTime>1539723691000</ReleaseTime>
+<CompleteTime>1539723691001</CompleteTime>
+</Call>
+<Call seqnum="03" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="204539594019983" connected="true">
+<CallType>International</CallType>
+<Features>
+<Feature>UnconditionalCallForwarding</Feature>
+<Feature>LegPartOfForwardedCall</Feature>
+</Features>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>93611819</InternalIndex>
+<OrigParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020076224</SubscriberAddr>
+<CallingPartyAddr type="e164">+35054007838</CallingPartyAddr>
+<ChargeAddr type="e164">+35020076224</ChargeAddr>
+<BusinessGroupName>Europort Holdings Lt1d</BusinessGroupName>
+<SIPCallId>020BF3F9A68140000009A762@TB007190_VOIP0.TB007191</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+919819866699</SubscriberAddr>
+<CallingPartyAddr type="e164">+919819866699</CallingPartyAddr>
+<ChargeAddr type="e164">+919819866699</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd</BusinessGroupName>
+<SIPCallId>F0C01602@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">009819866677</RequestedAddr>
+<DestAddr type="e164">+919819866677</DestAddr>
+<RoutedAddr type="national">9819866677</RoutedAddr>
+<CallingPartyRoutedAddr type="national">9860222621</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">9860222621</CallingPartyOrigAddr>
+</RoutingInfo>
+<CallForwardInfo privacy="no indication">
+<OriginalCallingAddr type="e164">+35054007838</OriginalCallingAddr>
+<OriginalCalledAddr type="e164">+35020076226</OriginalCalledAddr>
+<LastRedirectingAddr type="e164">+35020076226</LastRedirectingAddr>
+<RedirectCount>1</RedirectCount>
+<RedirectReason>Unconditional</RedirectReason>
+<OriginalRedirectReason>Unconditional</OriginalRedirectReason>
+</CallForwardInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1507900003472</IcSeizeTime>
+<OgSeizeTime>1507900003475</OgSeizeTime>
+<RingingTime/>
+<ConnectTime>1539666061000</ConnectTime>
+<DisconnectTime>1539666091001</DisconnectTime>
+<ReleaseTime>1539666091000</ReleaseTime>
+<CompleteTime>1539666091001</CompleteTime>
+</Call>
+<Call seqnum="04" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="204539594019983" connected="true">
+<CallType>International</CallType>
+<Features>
+<Feature>UnconditionalCallForwarding</Feature>
+<Feature>LegPartOfForwardedCall</Feature>
+</Features>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>93611819</InternalIndex>
+<OrigParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020076225</SubscriberAddr>
+<CallingPartyAddr type="e164">+35054007838</CallingPartyAddr>
+<ChargeAddr type="e164">+35020076225</ChargeAddr>
+<BusinessGroupName>Europort Holdings Lt1d</BusinessGroupName>
+<SIPCallId>020BF3F9A68140000009A762@TB007190_VOIP0.TB007191</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+919819866699</SubscriberAddr>
+<CallingPartyAddr type="e164">+919819866699</CallingPartyAddr>
+<ChargeAddr type="e164">+919819866699</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd</BusinessGroupName>
+<SIPCallId>F0C01602@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">009819866677</RequestedAddr>
+<DestAddr type="e164">+919819866677</DestAddr>
+<RoutedAddr type="national">9819866677</RoutedAddr>
+<CallingPartyRoutedAddr type="national">9860222621</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">9860222621</CallingPartyOrigAddr>
+</RoutingInfo>
+<CallForwardInfo privacy="no indication">
+<OriginalCallingAddr type="e164">+35020076226</OriginalCallingAddr>
+<OriginalCalledAddr type="e164">+35020076226</OriginalCalledAddr>
+<LastRedirectingAddr type="e164">+35020076226</LastRedirectingAddr>
+<RedirectCount>1</RedirectCount>
+<RedirectReason>Unconditional</RedirectReason>
+<OriginalRedirectReason>Unconditional</OriginalRedirectReason>
+</CallForwardInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1507900003472</IcSeizeTime>
+<OgSeizeTime>1507900003475</OgSeizeTime>
+<RingingTime/>
+<ConnectTime>1539723661000</ConnectTime>
+<DisconnectTime>1539723691001</DisconnectTime>
+<ReleaseTime>1539723691000</ReleaseTime>
+<CompleteTime>1539723691001</CompleteTime>
+</Call>
+</CDRs>
+<FileFooter>
+<LastModTime>1507900434617</LastModTime>
+<NumCDRs>125</NumCDRs>
+<DataErroredCDRs>2</DataErroredCDRs>
+<WriteErroredCDRs>0</WriteErroredCDRs>
+</FileFooter>
+</File>

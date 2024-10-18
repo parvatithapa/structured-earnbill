@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<File xmlns="http://www.metaswitch.com/cfs/billing/V1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" compatibility="8">
+<FileHeader seqnum="63139">
+<EquipmentType>Metaswitch CFS</EquipmentType>
+<EquipmentId></EquipmentId>
+<CreateTime>1507899540008</CreateTime>
+</FileHeader>
+<CDRs>
+<Call seqnum="0001" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="165820766895701" connected="true">
+<CallType>National</CallType>
+<Features/>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>95535106</InternalIndex>
+<OrigParty xsi:type="NetworkTrunkPartyType" privacy="false">
+<TrunkGroup type="sip" trunkname="TB003455">
+<TrunkGroupId>4</TrunkGroupId>
+<TrunkMemberId>0</TrunkMemberId>
+</TrunkGroup>
+<CallingPartyAddr type="e164">+35054014836</CallingPartyAddr>
+<SIPCallId>020D4258C28140000006223D@TB003455_VOIP0.TB003455</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="IndividualLinePartyType" subscribergroup="u-mee Residential Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+35022221939</SubscriberAddr>
+<CallingPartyAddr type="e164">+35022221939</CallingPartyAddr>
+<ChargeAddr type="e164">+35022221939</ChargeAddr>
+<UserAgent>ZNID (S3.1.282) M5T SIP Stack/4.1.10.16</UserAgent>
+<SIPCallId>A9629C01@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">22221939</RequestedAddr>
+<DestAddr type="e164">+35022221939</DestAddr>
+<RoutedAddr type="national">22221939</RoutedAddr>
+<CallingPartyRoutedAddr type="national">54014836</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">54014836</CallingPartyOrigAddr>
+</RoutingInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1529677889109</IcSeizeTime>
+<OgSeizeTime>1529677889111</OgSeizeTime>
+<RingingTime>1529677889224</RingingTime>
+<ConnectTime>1529677896893</ConnectTime>
+<DisconnectTime>1529677931492</DisconnectTime>
+<ReleaseTime>1529677931491</ReleaseTime>
+<CompleteTime>1529677931492</CompleteTime>
+</Call>
+<Call seqnum="0002" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="163175063523689" connected="true">
+<CallType>International</CallType>
+<Features/>
+<ReleasingParty>Term</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>95534482</InternalIndex>
+<OrigParty xsi:type="IndividualLinePartyType" subscribergroup="u-mee Residential Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020051526</SubscriberAddr>
+<CallingPartyAddr type="e164">+35020051526</CallingPartyAddr>
+<ChargeAddr type="e164">+35020051526</ChargeAddr>
+<UserAgent>ZNID (S3.1.282) M5T SIP Stack/4.1.10.16</UserAgent>
+<SIPCallId>0gQAAC8WAAACBAAALxYAAHTD3+vWqXKVMqWk6tHV84Lono9H+EE3eeSMEZpZjwGO45+pny7ZuleAuuR+HFWBbQ--@10.22.1.15</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="NetworkTrunkPartyType">
+<TrunkGroup type="sip" trunkname="BICS_SIP_Trunk">
+<TrunkGroupId>14</TrunkGroupId>
+<TrunkMemberId>0</TrunkMemberId>
+</TrunkGroup>
+<SIPCallId>7B83C1E7@10.22.1.2</SIPCallId>
+<Reason type="q850">16</Reason>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">0034956794365</RequestedAddr>
+<DestAddr type="e164">+34956794365</DestAddr>
+<RoutedAddr type="e164">34956794365</RoutedAddr>
+<CallingPartyRoutedAddr type="national">35020051526</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">20051526</CallingPartyOrigAddr>
+</RoutingInfo>
+<CarrierSelectInfo>
+<CarrierOperatorInvolved>False</CarrierOperatorInvolved>
+<SelectionMethod>NetworkDefault</SelectionMethod>
+<NetworkId>0</NetworkId>
+</CarrierSelectInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1529674371433</IcSeizeTime>
+<OgSeizeTime>1529674371683</OgSeizeTime>
+<RingingTime>1529674372336</RingingTime>
+<ConnectTime>1529674378564</ConnectTime>
+<DisconnectTime>1529674790719</DisconnectTime>
+<ReleaseTime>1529674790719</ReleaseTime>
+<CompleteTime>1529674790720</CompleteTime>
+</Call>
+<Call seqnum="0000000064" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="204539594019983" connected="true">
+<CallType>National</CallType>
+<Features>
+<Feature>UnconditionalCallForwarding</Feature>
+<Feature>LegPartOfForwardedCall</Feature>
+</Features>
+<ReleasingParty>Orig</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>93611819</InternalIndex>
+<OrigParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020076579</SubscriberAddr>
+<CallingPartyAddr type="e164">+35054007838</CallingPartyAddr>
+<ChargeAddr type="e164">+35020076579</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd1</BusinessGroupName>
+<SIPCallId>020BF3F9A68140000009A762@TB007190_VOIP0.TB007190</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="BusinessLinePartyType" subscribergroup="Sapphire Business Subscribers" billingtype="flat rate" privacy="no indication">
+<SubscriberAddr type="e164">+35022255539</SubscriberAddr>
+<CallingPartyAddr type="e164">+35022255539</CallingPartyAddr>
+<ChargeAddr type="e164">+35022255539</ChargeAddr>
+<BusinessGroupName>Europort Holdings Ltd</BusinessGroupName>
+<SIPCallId>F0C01602@10.22.1.2</SIPCallId>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">22255539</RequestedAddr>
+<DestAddr type="e164">+35022255539</DestAddr>
+<RoutedAddr type="national">22255539</RoutedAddr>
+<CallingPartyRoutedAddr type="national">54007838</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">54007838</CallingPartyOrigAddr>
+</RoutingInfo>
+<CallForwardInfo privacy="no indication">
+<OriginalCallingAddr type="e164">+35054007838</OriginalCallingAddr>
+<OriginalCalledAddr type="e164">+35020076579</OriginalCalledAddr>
+<LastRedirectingAddr type="e164">+35020076579</LastRedirectingAddr>
+<RedirectCount>1</RedirectCount>
+<RedirectReason>Unconditional</RedirectReason>
+<OriginalRedirectReason>Unconditional</OriginalRedirectReason>
+</CallForwardInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1507900003472</IcSeizeTime>
+<OgSeizeTime>1507900003475</OgSeizeTime>
+<RingingTime/>
+<ConnectTime>1507900003498</ConnectTime>
+<DisconnectTime>1507900048802</DisconnectTime>
+<ReleaseTime>1507900048801</ReleaseTime>
+<CompleteTime>1507900048802</CompleteTime>
+</Call>
+<Call seqnum="003" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="163175063523689" connected="true">
+<CallType>International</CallType>
+<Features/>
+<ReleasingParty>Term</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>95534482</InternalIndex>
+<OrigParty xsi:type="IndividualLinePartyType" subscribergroup="u-mee Residential Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020051520</SubscriberAddr>
+<CallingPartyAddr type="e164">+35020051520</CallingPartyAddr>
+<ChargeAddr type="e164">+35020051526</ChargeAddr>
+<UserAgent>ZNID (S3.1.282) M5T SIP Stack/4.1.10.16</UserAgent>
+<SIPCallId>0gQAAC8WAAACBAAALxYAAHTD3+vWqXKVMqWk6tHV84Lono9H+EE3eeSMEZpZjwGO45+pny7ZuleAuuR+HFWBbQ--@10.22.1.15</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="NetworkTrunkPartyType">
+<TrunkGroup type="sip" trunkname="BICS_SIP_Trunk">
+<TrunkGroupId>14</TrunkGroupId>
+<TrunkMemberId>0</TrunkMemberId>
+</TrunkGroup>
+<SIPCallId>7B83C1E7@10.22.1.2</SIPCallId>
+<Reason type="q850">16</Reason>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">0035020051520</RequestedAddr>
+<DestAddr type="e164">+35020051520</DestAddr>
+<RoutedAddr type="e164">+35020051520</RoutedAddr>
+<CallingPartyRoutedAddr type="national">35020051526</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">20051526</CallingPartyOrigAddr>
+</RoutingInfo>
+<CarrierSelectInfo>
+<CarrierOperatorInvolved>False</CarrierOperatorInvolved>
+<SelectionMethod>NetworkDefault</SelectionMethod>
+<NetworkId>0</NetworkId>
+</CarrierSelectInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1529674371433</IcSeizeTime>
+<OgSeizeTime>1529674371683</OgSeizeTime>
+<RingingTime>1529674372336</RingingTime>
+<ConnectTime>1529674378564</ConnectTime>
+<DisconnectTime>1529674790719</DisconnectTime>
+<ReleaseTime>1529674790719</ReleaseTime>
+<CompleteTime>1529674790720</CompleteTime>
+</Call>
+</CDRs>
+<FileFooter>
+<LastModTime>1507900434617</LastModTime>
+<NumCDRs>125</NumCDRs>
+<DataErroredCDRs>2</DataErroredCDRs>
+<WriteErroredCDRs>0</WriteErroredCDRs>
+</FileFooter>
+</File>

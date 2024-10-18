@@ -1,0 +1,17 @@
+commodity,duration,plan,state,account_type
+Electricity,12,E-12M-$15-N/KWH,New York,Residential
+Electricity,12,E-12M-$15-T/KWH,Texas,Residential
+Electricity,24,E-24M-$15-N/KWH,New York,Residential
+Electricity,24,E-24M-$15-T/KWH,Texas,Residential
+Gas,12,G-12M-$15-N/KWH,New York,Residential
+Gas,12,G-12M-$15-T/KWH,Texas,Residential
+Gas,24,G-24M-$15-N/KWH,New York,Residential
+Gas,24,G-24M-$15-T/KWH,Texas,Residential
+Electricity,12,E-12M-$15-N-NR/KWH,New York,Commercial/Industrial
+Electricity,12,E-12M-$15-T-NR/KWH,Texas,Commercial/Industrial
+Electricity,24,E-24M-$15-N-NR/KWH,New York,Commercial/Industrial
+Electricity,24,E-24M-$15-T-NR/KWH,Texas,Commercial/Industrial
+Gas,12,G-12M-$15-N-NR/KWH,New York,Commercial/Industrial
+Gas,12,G-12M-$15-T-NR/KWH,Texas,Commercial/Industrial
+Gas,24,G-24M-$15-N-NR/KWH,New York,Commercial/Industrial
+Gas,24,G-24M-$15-T-NR/KWH,Texas,Commercial/Industrial

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+    xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+    xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/integration
+http://www.springframework.org/schema/integration/spring-integration.xsd
+http://www.springframework.org/schema/integration/jms
+http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <int:channel id = "spc-mur-mediation-requests" />
+
+    <int-jms:outbound-channel-adapter id = "spc-mur-mediation-requests-adapter" 
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "spc.mur.mediation.requests" 
+                                      channel            = "spc-mur-mediation-requests" />
+
+    <int:channel id = "spc-mur-mediation-reply" />
+
+    <int-jms:message-driven-channel-adapter id = "spc-mur-mediation-reply-adapter" 
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "spc.mur.mediation.reply" 
+                                            channel            = "spc-mur-mediation-reply" />
+
+    <int:channel id = "spc-mur-mediation-aggregated-reply">
+        <int:queue/>
+    </int:channel>
+
+    <int:aggregator id             = "spc-mur-mediation-reply-aggregator"
+                    ref            = "spcMurPartitionHandler"
+                    input-channel  = "spc-mur-mediation-reply"
+                    output-channel = "spc-mur-mediation-aggregated-reply" 
+                    send-timeout   = "3600000" />
+</beans>

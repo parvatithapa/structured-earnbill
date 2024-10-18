@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.24.xml">
+
+    <changeSet context = "base" id = "Added PaymentWestPacTask in pluggable_task_type" author = "Krunal Bhavsar">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "(COALESCE((SELECT MAX(pt.id)+1 FROM pluggable_task_type pt), 1))"/>
+            <column name = "category_id"    valueNumeric  = "6"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.payment.tasks.PaymentWestPacTask"/>
+            <column name = "min_parameters" valueNumeric  = "4"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueComputed = "(SELECT id FROM jbilling_table WHERE name ='pluggable_task_type')"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(pt.id) FROM pluggable_task_type pt WHERE pt.category_id = 6)"/>
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "Submits payments and refund request to WestPac payment gateway."/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

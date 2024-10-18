@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.19.xml">
+
+    <include file = "jbilling-quartz.xml" relativeToChangelogFile = "true" />
+
+    <changeSet context="base" id="JB-2912 - 'Billing Process Task' missing description." author="Leandro Zoi">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*)
+                  FROM international_description AS i
+                 WHERE i.foreign_id = (SELECT p.id
+                                         FROM pluggable_task_type AS p
+                                        WHERE p.class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessTask')
+                   AND i.table_id = 24;
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT p.id FROM pluggable_task_type AS p WHERE p.class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Billing Process task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT p.id FROM pluggable_task_type AS p WHERE p.class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Schedule Billing Process using cron expression"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-2915 New Permissions Reports not available in Child Companies" author="Andres Canevaro">
+        <comment>
+            To avoid unique constraint error if child company has new permission reports already configured,
+            first we ensure to remove all new reports from child companies, so we can add them safely
+        </comment>
+        <sql>
+            DELETE FROM entity_report_map
+                  WHERE entity_id IN (SELECT id
+                                        FROM entity
+                                       WHERE parent_id IS NOT NULL)
+                    AND report_id IN (SELECT r.id
+                                        FROM report r
+                                       WHERE r.name = 'role_permissions'
+                                          OR r.name = 'user_role');
+        </sql>
+        
+        <comment>Adding Permissions by Role report for all child companies</comment>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+                 SELECT ( SELECT r.id
+                            FROM report r
+                           WHERE r.name = 'role_permissions'), id
+                   FROM entity
+                  WHERE parent_id IS NOT NULL;
+        </sql>
+
+        <comment>Adding Users by Role report for all child companies</comment>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+                 SELECT ( SELECT r.id
+                            FROM report r
+                           WHERE r.name = 'user_role'), id
+                   FROM entity
+                  WHERE parent_id IS NOT NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet context="test" id="#JB-2795-Quartz-cluster-mode" author="Tarun Rathor">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.TestQuartzClusterModeScheduledTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Quartz cluster-mode test plugin"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is to be used for testing quartz in cluster mode"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

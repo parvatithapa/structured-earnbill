@@ -1,0 +1,2682 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/jbilling-upgrade-4.0.xml">
+
+	   <changeSet id="#390_Remove all old full creative specific preferences" author="Ashok Kale" context="base">
+        <comment>Renumbered and inserted full creative new preferences in above change-sets. So removing old full creative preferences</comment>
+        <delete tableName="preference">
+            <where>type_id in (select id from preference_type where id in (select foreign_id from international_description where content in 
+		           ('Set ItemId For InBound Calls',
+		           'Set ItemId For Active Response',
+		           'Set ItemId For Chat',
+		           'Billing Contact Info Group Name',
+		           'Set ItemId For IVR',
+		           'Inbound Call Type',
+		           'Chat Call Type',
+		           'Active Response Call Type',
+		           'Spanish (Inbound) Call Type',
+		           'Supervisor (Inbound) Call Type',
+		           'Call Relay (Inbound) Call Type',
+		           'Live Reception Call Type',
+		           'IVR (Incoming) Call Type',
+		           'Mobile App (Outbound) Call Type',
+		           'Voicemail Call Type',
+		           'Webform to Call (IVR) Call Type',
+		           'Full Creative specific condition',
+		           'Mailing Contact Info Group Name',
+		           'Create Adjustment Orders in case of FUP Proration and Plan Swap',
+		           'Product Code to skip while calculating left free usage minute.',
+		           'Diameter units multiplier/divisor',
+		           'The units value received from Diameter is divided/multiplied by this factor to convert input seconds to other time units. Values &lt; 1 set the multiplier to 1.')))
+             </where>
+        </delete>
+        <delete tableName="preference_type">
+            <where>id in (select foreign_id from international_description where content in 
+		           ('Set ItemId For InBound Calls',
+		           'Set ItemId For Active Response',
+		           'Set ItemId For Chat',
+		           'Billing Contact Info Group Name',
+		           'Set ItemId For IVR',
+		           'Inbound Call Type',
+		           'Chat Call Type',
+		           'Active Response Call Type',
+		           'Spanish (Inbound) Call Type',
+		           'Supervisor (Inbound) Call Type',
+		           'Call Relay (Inbound) Call Type',
+		           'Live Reception Call Type',
+		           'IVR (Incoming) Call Type',
+		           'Mobile App (Outbound) Call Type',
+		           'Voicemail Call Type',
+		           'Webform to Call (IVR) Call Type',
+		           'Full Creative specific condition',
+		           'Mailing Contact Info Group Name',
+		           'Create Adjustment Orders in case of FUP Proration and Plan Swap',
+		           'Product Code to skip while calculating left free usage minute.',
+		           'Diameter units multiplier/divisor',
+		           'The units value received from Diameter is divided/multiplied by this factor to convert input seconds to other time units. Values &lt; 1 set the multiplier to 1.'))
+		  </where>
+        </delete>
+        <delete tableName="international_description">
+            <where>table_id = (select id from jbilling_table where name ='preference_type')
+		           and content in 
+		           ('Set ItemId For InBound Calls',
+		           'Set ItemId For Active Response',
+		           'Set ItemId For Chat',
+		           'Billing Contact Info Group Name',
+		           'Set ItemId For IVR',
+		           'Inbound Call Type',
+		           'Chat Call Type',
+		           'Active Response Call Type',
+		           'Spanish (Inbound) Call Type',
+		           'Supervisor (Inbound) Call Type',
+		           'Call Relay (Inbound) Call Type',
+		           'Live Reception Call Type',
+		           'IVR (Incoming) Call Type',
+		           'Mobile App (Outbound) Call Type',
+		           'Voicemail Call Type',
+		           'Webform to Call (IVR) Call Type',
+		           'Full Creative specific condition',
+		           'Mailing Contact Info Group Name',
+		           'Create Adjustment Orders in case of FUP Proration and Plan Swap',
+		           'Product Code to skip while calculating left free usage minute.',
+		           'Diameter units multiplier/divisor',
+		           'The units value received from Diameter is divided/multiplied by this factor to convert input seconds to other time units. Values &lt; 1 set the multiplier to 1.')
+            </where>
+        </delete>
+         <delete tableName="international_description">
+            <where>table_id = (select id from jbilling_table where name ='preference_type')
+		           and content like '%This preference if set to 1 would create overage adjustment orders in case of FUP proration and plan swap.%';
+		    </where>
+		</delete>
+		 <delete tableName="international_description">
+            <where>table_id = (select id from jbilling_table where name ='preference_type')
+		           and content like '%This preference is used to skip a product while calculating remaining free usage unit%';
+		    </where>
+		</delete> 
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="replace-example-mediation-task-with-step-based">
+
+        <comment>Replace the example mediation task with ExampleMediationStepTask which uses steps for logic delegation</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="16"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.mediation.step.ExampleMediationStepResolverTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <update tableName="pluggable_task">
+            <column name="type_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <where>id=420</where>
+        </update>
+        <delete tableName="pluggable_task_parameter">
+            <where>task_id=420</where>
+        </delete>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task p)"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" id="add-mediation-configuration-job-launcher" context="base">
+        <addColumn tableName="mediation_cfg">
+            <column name="mediation_job_launcher" type="java.sql.Types.VARCHAR(50)"/>
+        </addColumn>
+
+        <dropNotNullConstraint tableName="mediation_cfg" columnName="pluggable_task_id" columnDataType="java.sql.Types.INTEGER"/>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" id="add-mediation-configuration-job-launcher-test-data" context="test">
+        <update tableName="mediation_cfg">
+            <column name="mediation_job_launcher" value="mediationJobLauncher"/>
+            <where>id=10</where>
+        </update>
+
+        <update tableName="mediation_cfg">
+            <column name="mediation_job_launcher" value="mediationJdbcJobLauncher"/>
+            <where>id=30</where>
+        </update>
+
+        <insert tableName="mediation_cfg">
+            <column name="id" valueNumeric="50"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="create_datetime" valueDate="2007-11-26T10:41:31.550"/>
+            <column name="name" value="Dummy mediation configuration"/>
+            <column name="order_value" valueNumeric="5"/>
+            <column name="mediation_job_launcher" value="dummyMediationJobLauncher"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="6"/>
+            <where>name='mediation_cfg'</where>
+        </update>
+
+    </changeSet>
+
+    <changeSet author="Vikas Bodani" id="mediation-statistics-for-mediation-process" context="base">
+        <addColumn tableName="mediation_process">
+            <column name="done_and_billable" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+            <column name="done_and_not_billable" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+            <column name="errors_detected" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+            <column name="errors_declared" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Brian Cowdery" id="hbase-mediation-error-handler" context="base">
+        <comment>Feb 15 2013, HBase mediation error handler that saves CDR's to the 'cdr_recycling' table.</comment>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="21"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.mediation.hbase.task.HBaseMediationErrorHandler"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="HBase Mediation Error Handler"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This mediation error handler automatically saves failed CDR's to the HBase 'cdr_recycling' table."/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+
+    <changeSet author="Emir Calabuch" context="base" id="add diameter entities">
+        <comment>Tables used for managing charge sessions and reservations</comment>
+        <createTable tableName="charge_sessions">
+            <column name="id" type="java.sql.Types.INTEGER" />
+            <column name="user_id" type="java.sql.Types.INTEGER" />
+            <column name="session_token" type="java.sql.Types.VARCHAR(150)" />
+            <column name="ts_started" type="java.sql.Types.TIMESTAMP" />
+            <column name="ts_last_access" type="java.sql.Types.TIMESTAMP" />
+        </createTable>
+
+        <createTable tableName="reserved_amounts">
+            <column name="id" type="java.sql.Types.INTEGER" />
+            <column name="session_id" type="java.sql.Types.INTEGER" />
+            <column name="ts_created" type="java.sql.Types.TIMESTAMP" />
+            <column name="currency_id" type="java.sql.Types.INTEGER" />
+            <column name="reserved_amount" type="java.sql.Types.NUMERIC(22,10)" />
+            <column name="item_id" type="java.sql.Types.INTEGER" />
+        </createTable>
+    </changeSet>
+
+    <changeSet author="Emir Calabuch" context="base" id="add diameter constraints">
+        <addPrimaryKey tableName="charge_sessions" columnNames="id" />
+
+        <addPrimaryKey tableName="reserved_amounts" columnNames="id" />
+
+        <addForeignKeyConstraint constraintName="fk_reservations_session"
+                                 baseTableName="reserved_amounts" baseColumnNames="session_id"
+                                 referencedTableName="charge_sessions" referencedColumnNames="id" />
+
+        <addForeignKeyConstraint constraintName="fk_sessions_user"
+                                 baseTableName="charge_sessions" baseColumnNames="user_id"
+                                 referencedTableName="base_user" referencedColumnNames="id" />
+    </changeSet>
+
+    <changeSet author="Sergio Liendo" context="base" id="#4184 - Implement 'Start Session' API call">
+
+        <comment>Preference diameter destination realm</comment>
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="(select max(p.id) + 1 from preference_type p)"/>
+            <column name="def_value" value="realm"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Diameter Destination Realm"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="The realm to be charged. This can be used for routing Diameter messages, so should match a locally-configured realm."/>
+        </insert>
+
+        <comment>Preference diameter quota threshold</comment>
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="(select max(id) + 1 from preference_type p)"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Diameter Quota Threshold"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="When this number of seconds remains the call handling unit should request re-authorisation."/>
+        </insert>
+
+        <comment>Preference diameter session grace period seconds</comment>
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="(select max(id) + 1 from preference_type p)"/>
+            <column name="def_value" value="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Diameter Session Grace Period"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Number of seconds to wait before Diameter sessions are forcibly closed." />
+        </insert>
+    </changeSet>
+
+    <changeSet id="add data column to reserved_amounts table" author="Oscar Bidabehere" context="base" dbms="postgresql,mysql">
+        <addColumn tableName="reserved_amounts">
+            <column name="data" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add data column to reserved_amounts table" author="Emir Calabuch" context="base" dbms="oracle">
+        <addColumn tableName="reserved_amounts">
+            <column name="data" type="VARCHAR2(4000)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add quantity column to reserved amounts table" author="Emir Calabuch" context="base">
+        <addColumn tableName="reserved_amounts">
+            <column name="quantity" type="java.sql.Types.NUMERIC(22,10)"></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add quantity multiplier" author="Emir Calabuch" context="base">
+        <comment>Preference diameter unit multiplier/divisor</comment>
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="(select max(id) + 1 from preference_type p)"/>
+            <column name="def_value" value="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Diameter units multiplier/divisor"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50"/>
+            <column name="foreign_id" valueComputed="(select max(id) from preference_type)"/>
+            <column name="psudo_column" value="instruction"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="The units value received from Diameter is divided/multiplied by this factor to convert input seconds to other time units. Values &lt; 1 set the multiplier to 1." />
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="Add 'Subscriber URI' metafield" author="Oscar Bidabehere">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <sqlCheck expectedResult="t">SELECT COUNT(*) > 0 FROM entity</sqlCheck>
+            </and>
+        </preConditions>
+
+        <sql>
+            <![CDATA[
+                INSERT INTO meta_field_name (id, entity_id, name, entity_type, data_type, is_disabled, is_mandatory, display_order, optlock)
+                select (select COALESCE(max(p.id),0)+1 from meta_field_name p) + (select COALESCE(count(*),0) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                       e1.id,
+                       'Subscriber URI',
+                       'CUSTOMER',
+                       'STRING',
+                       false,
+                       false,
+                       1,
+                       1
+                from entity e1
+                order by e1.id
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet id="#4430 - Call details in order line item" author="Oscar Bidabehere" context="base">
+        <addColumn tableName="order_line">
+            <column name="sip_uri" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="Requirements #4501 - Per-customer automatic top-up parameters" author="Oscar Bidabehere" context="base">
+        <addColumn tableName="customer">
+            <column name="recharge_threshold" type="java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="monthly_limit" type="java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable="true" />
+            </column>
+            <column name="current_monthly_amount" type="java.sql.Types.NUMERIC(22,10)">
+                <constraints nullable="true" />
+            </column>
+            <column name="current_month" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+
+    <changeSet id="add carried_units column to charge_sessions table" author="Oscar bidabehere" context="base">
+        <addColumn tableName="charge_sessions">
+            <column name="carried_units" type="java.sql.Types.NUMERIC(22,10)"></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Emir Calabuch" id="Add termed test rate card" context="test">
+        <insert tableName="rate_card">
+            <column name="id" valueNumeric="10"/>
+            <column name="name" value="USD Prices"/>
+            <column name="table_name" value="rate_usd_price"/>
+            <column name="entity_id" valueNumeric="1"/>
+        </insert>
+
+        <createTable tableName="rate_usd_price">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="rate_usd_price_pkey"/>
+            </column>
+            <column name="match_column" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comment" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rate" type="NUMERIC(22,10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price_term" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14" />
+            <column name="foreign_id" valueNumeric="3200" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Test rate card product" />
+        </insert>
+
+        <insert tableName="rate_usd_price">
+            <column name="id" valueNumeric="1"/>
+            <column name="match_column" value="1"/>
+            <column name="comment" value="United States" />
+            <column name="rate" valueNumeric="0"/>
+            <column name="price_term" value="free" />
+        </insert>
+        <insert tableName="rate_usd_price">
+            <column name="id" valueNumeric="2"/>
+            <column name="match_column" value="53"/>
+            <column name="comment" value="Cuba" />
+            <column name="rate" valueNumeric="9999999999"/>
+            <column name="price_term" value="n/a" />
+        </insert>
+        <insert tableName="rate_usd_price">
+            <column name="id" valueNumeric="3"/>
+            <column name="match_column" value="39"/>
+            <column name="comment" value="Italy" />
+            <column name="rate" valueNumeric="1"/>
+            <column name="price_term" value="" />
+        </insert>
+        <insert tableName="rate_usd_price">
+            <column name="id" valueNumeric="4"/>
+            <column name="match_column" value="55"/>
+            <column name="comment" value="Canada" />
+            <column name="rate" valueNumeric="0.3"/>
+            <column name="price_term" value="" />
+        </insert>
+
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="2200" />
+            <column name="strategy_type" value="RATE_CARD" />
+            <column name="rate" valueNumeric="0" />
+            <column name="currency_id" valueNumeric="1" />
+        </insert>
+
+        <insert tableName="price_model_attribute">
+            <column name="price_model_id" valueNumeric="2200"/>
+            <column name="attribute_name" value="Drop Charge card field"/>
+            <column name="attribute_value" value=""/>
+        </insert>
+        <insert tableName="price_model_attribute">
+            <column name="price_model_id" valueNumeric="2200"/>
+            <column name="attribute_name" value="lookup_field"/>
+            <column name="attribute_value" value="Called-Party-Number"/>
+        </insert>
+        <insert tableName="price_model_attribute">
+            <column name="price_model_id" valueNumeric="2200"/>
+            <column name="attribute_name" value="match_type"/>
+            <column name="attribute_value" value="BEST_MATCH"/>
+        </insert>
+        <insert tableName="price_model_attribute">
+            <column name="price_model_id" valueNumeric="2200"/>
+            <column name="attribute_name" value="rate_card_id"/>
+            <column name="attribute_value" value="10"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueNumeric="3200" />
+            <column name="internal_number" value="PC1" />
+            <column name="entity_id" valueNumeric="1" />
+            <column name="deleted" valueNumeric="0" />
+            <column name="has_decimals" valueNumeric="0" />
+            <column name="optlock" valueNumeric="0" />
+        </insert>
+
+        <insert tableName="item_type_map">
+            <column name="item_id" valueNumeric="3200" />
+            <column name="type_id" valueNumeric="2300" />
+        </insert>
+
+        <insert tableName="item_entity_map">
+            <column name="item_id" valueNumeric="3200" />
+            <column name="entity_id" valueNumeric="1" />
+        </insert>
+
+        <insert tableName="entity_item_price_map">
+            <column name="id" valueNumeric="3200" />
+            <column name="item_id" value="3200" />
+            <column name="entity_id" valueDate="1" />
+        </insert>
+
+        <insert tableName="item_price_timeline">
+            <column name="model_map_id" valueNumeric="3200" />
+            <column name="price_model_id" value="2200" />
+            <column name="start_date" valueDate="1970-01-01" />
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueNumeric="33"/>
+            <where>name='item'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="2"/>
+            <where>name='rate_card'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueNumeric="23"/>
+            <where>name='price_model'</where>
+        </update>
+    </changeSet>
+    <changeSet author="Rahul Asthana" context="base" id="20130510-#4989-customer-notes">
+        <createTable tableName="customer_notes">
+            <column name="id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="note_title" type="varchar(50)"/>
+            <column name="note_content" type="varchar(1000)"/>
+            <column name="creation_time" type="timestamp"/>
+            <column name="entity_id" type="java.sql.Types.INTEGER"/>
+            <column name="user_id" type="java.sql.Types.INTEGER" />
+            <column name="customer_id" type="java.sql.Types.INTEGER" />
+        </createTable>
+        <addForeignKeyConstraint constraintName="customer_notes_entity_id_FK"
+                                 baseTableName="customer_notes" baseColumnNames="entity_id"
+                                 referencedTableName="entity" referencedColumnNames="id"
+                />
+        <addForeignKeyConstraint constraintName="customer_notes_user_id_FK"
+                                 baseTableName="customer_notes" baseColumnNames="user_id"
+                                 referencedTableName="base_user" referencedColumnNames="id"
+                />
+        <addForeignKeyConstraint constraintName="customer_notes_customer_id_FK"
+                                 baseTableName="customer_notes" baseColumnNames="customer_id"
+                                 referencedTableName="customer" referencedColumnNames="id"
+                />
+        <dropColumn columnName="notes"  tableName="customer"/>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="customer_notes"/>
+            <column name="next_id" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Rahul Asthana" context="base" id="20130520-#4962-customer-notes">
+        <dropColumn columnName="balance_type"  tableName="customer"/>
+    </changeSet>
+
+    <changeSet author="Vladimir Carevski" context="base" id="20130703-#4434-mediation-record-changes">
+        <addColumn tableName="mediation_process">
+            <column name="total_records" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Vladimir Carevski" context="post_base" id="20130703-#4434-mediation-record-removal" >
+        <preConditions
+                onFail="CONTINUE" onFailMessage="Make sure you have migrated the MediationRecords into HBase"
+                onError="CONTINUE" onErrorMessage="Did you migrated the MediationRecords into HBase?" >
+
+            <and>
+                <tableExists tableName="mediation_record" />
+                <sqlCheck expectedResult="0">select count(*) from mediation_record</sqlCheck>
+                <tableExists tableName="mediation_record_line" />
+                <sqlCheck expectedResult="0">select count(*) from mediation_record_line</sqlCheck>
+            </and>
+        </preConditions>
+
+        <comment>
+            This will only drop the mediation_record and mediation_record_line
+            tables if they are empty. In case where these two tables are not
+            empty then run HbaseMigrateMediationRecords to migrate the data
+            than execute this script
+        </comment>
+
+        <dropTable tableName="mediation_record_line"/>
+        <delete tableName="jbilling_seqs">
+            <where>name='mediation_record_line'</where>
+        </delete>
+        <delete tableName="jbilling_table">
+            <where>name='mediation_record_line'</where>
+        </delete>
+
+        <dropTable tableName="mediation_record" />
+        <delete tableName="jbilling_seqs">
+            <where>name='mediation_record'</where>
+        </delete>
+        <delete tableName="jbilling_table">
+            <where>name='mediation_record'</where>
+        </delete>
+    </changeSet>
+
+    <!-- Route Based Rate Card jUnit Test Data 12-08-2013 -->
+    <changeSet id="20130812-5726-test-data-create" author="vikas bodani" context="test">
+
+        <createTable tableName="route_rate_1_product_ratecard">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="surcharge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="initial_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="subsequent_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="charge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="destination" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="route_id" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="start_date" type="java.sql.Types.VARCHAR(100)"></column>
+        </createTable>
+
+        <createTable tableName="route_rate_1_plan_ratecard">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="surcharge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="initial_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="subsequent_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="charge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="destination" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="route_id" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="start_date" type="java.sql.Types.VARCHAR(100)"></column>
+        </createTable>
+
+        <createTable tableName="route_rate_1_accnt_type_ratecard">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="surcharge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="initial_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="subsequent_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="charge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="destination" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="route_id" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="start_date" type="java.sql.Types.VARCHAR(100)"></column>
+        </createTable>
+
+        <createTable tableName="route_rate_1_customer_ratecard">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="surcharge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="initial_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="subsequent_increment" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="charge" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="destination" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="route_id" type="java.sql.Types.VARCHAR(100)"></column>
+            <column name="start_date" type="java.sql.Types.VARCHAR(100)"></column>
+        </createTable>
+
+        <insert tableName="route_rate_card">
+            <column name="id" valueComputed="(select coalesce(max(p.id)+1, 1) from route_rate_card p)"/>
+            <column name="name" value="product_rc"></column>
+            <column name="table_name" value="route_rate_1_product_ratecard"></column>
+            <column name="entity_id" valueNumeric="1"></column>
+            <column name="optlock" valueNumeric="0"></column>
+        </insert>
+
+        <insert tableName="route_rate_card">
+            <column name="id" valueComputed="(select max(p.id)+1 from route_rate_card p)"/>
+            <column name="name" value="plan_rc"></column>
+            <column name="table_name" value="route_rate_1_plan_ratecard"></column>
+            <column name="entity_id" valueNumeric="1"></column>
+            <column name="optlock" valueNumeric="0"></column>
+        </insert>
+
+        <insert tableName="route_rate_card">
+            <column name="id" valueComputed="(select max(p.id)+1 from route_rate_card p)"/>
+            <column name="name" value="accnt_type_ratecard"></column>
+            <column name="table_name" value="route_rate_1_accnt_type_ratecard"></column>
+            <column name="entity_id" valueNumeric="1"></column>
+            <column name="optlock" valueNumeric="0"></column>
+        </insert>
+
+        <insert tableName="route_rate_card">
+            <column name="id" valueComputed="(select max(p.id)+1 from route_rate_card p)"/>
+            <column name="name" value="customer_ratecard"></column>
+            <column name="table_name" value="route_rate_1_customer_ratecard"></column>
+            <column name="entity_id" valueNumeric="1"></column>
+            <column name="optlock" valueNumeric="0"></column>
+        </insert>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="route_rate_card"/>
+            <column name="next_id" value="5"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="20130812-5726-test-data-init" author="vikas bodani" context="test">
+
+
+        <sql>
+            <![CDATA[
+            	INSERT INTO route_rate_1_product_ratecard  
+            	(id, name, surcharge, initial_increment, subsequent_increment, charge, destination, route_id, start_date)
+            	values 
+                (1,'F1','0','30','6','7','6132991','CANON','01/01/2011-01/01/2012'),
+				(2,'F2','0','30','7','8','61326617','CANOM','01/01/2001'),
+				(3,'F3','0','30','8','9','8192234544','NAARG','01/01/2001'),
+				(4,'F4','0','30','9','10','81922345','PRARG','01/01/2001'),
+				(5,'F6','0','30','10','11','613299','CANON','01/01/2001');
+                
+                INSERT INTO route_rate_1_plan_ratecard  
+            	(id, name, surcharge, initial_increment, subsequent_increment, charge, destination, route_id, start_date)
+            	values 
+                (1,'F1','0','30','6','2','6132991','CANON','1/1/2011-1/1/2012'),
+				(2,'F2','0','30','7','3','61326617','CANOM','1/1/2011'),
+				(3,'F3','0','30','8','4','8192234544','NAARG','1/1/2011'),
+				(4,'F4','0','30','9','5','81922345','PRARG','1/1/2011'),
+				(5,'F6','0','30','10','6','613299','CANON','1/1/2012');
+				
+				INSERT INTO route_rate_1_accnt_type_ratecard  
+            	(id, name, surcharge, initial_increment, subsequent_increment, charge, destination, route_id, start_date)
+            	values 
+                (1,'F1','0','30','6','1','6132991','CANON','1/1/2011-1/1/2012'),
+				(2,'F2','0','30','7','2','61326617','CANOM','1/1/2011'),
+				(3,'F3','0','30','8','3','8192234544','NAARG','1/1/2011'),
+				(4,'F4','0','30','9','4','81922345','PRARG','1/1/2011'),
+				(5,'F6','0','30','10','5','613299','CANON','1/1/2012');
+                
+                INSERT INTO route_rate_1_customer_ratecard  
+            	(id, name, surcharge, initial_increment, subsequent_increment, charge, destination, route_id, start_date)
+            	values 
+                (1,'F1','0','30','6','0.1','6132991','CANON','1/1/2011-1/1/2012'),
+				(2,'F2','0','30','7','0.2','61326617','CANOM','1/1/2011'),
+				(3,'F3','0','30','8','0.3','8192234544','NAARG','1/1/2011'),
+				(4,'F4','0','30','9','0.4','81922345','PRARG','1/1/2011'),
+				(5,'F6','0','30','10','0.5','613299','CANON','1/1/2012');
+				
+				INSERT INTO matching_field
+                (id, description, required, route_id, route_rate_card_id, mediation_field, matching_field, type, order_sequence, optlock, longest_value, smallest_value, mandatory_fields_query)
+                values
+                ( 10 , 'destination', true, null, ( select id from route_rate_card where table_name='route_rate_1_product_ratecard' ), 'destination', 'destination', 'BEST_MATCH', 1, 0, 10, 6, '(select * from route_rate_1_customer_ratecard where ( ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination ) and char_length( destination )  = (select char_length( destination ) from route_rate_1_customer_ratecard
+where  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  order by char_length( destination ) desc limit 1) )'),
+
+			    (20,'Route',true,null,( select id from route_rate_card where table_name='route_rate_1_product_ratecard' ),'route_id','route_id','ROUTE',2,0,6,3,'select * from route_rate_1_product_ratecard where ''?'' = route_id'),
+
+                (21,'Event Date',false,null,( select id from route_rate_card where table_name='route_rate_1_product_ratecard' ),'event_date','start_date','ACTIVE_DATE',3,0,0,0,''),
+
+				( 11 ,'destination', true, null, ( select id from route_rate_card where table_name='route_rate_1_plan_ratecard' ), 'destination', 'destination', 'BEST_MATCH', 1, 0, 10, 6, '(select * from route_rate_1_customer_ratecard where ( ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination ) and char_length( destination )  = (select char_length( destination ) from route_rate_1_customer_ratecard
+where  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  order by char_length( destination ) desc limit 1) )'),
+
+                (18,'Route',true,null,( select id from route_rate_card where table_name='route_rate_1_plan_ratecard' ),'route_id','route_id','ROUTE',2,0,6,3,'select * from route_rate_1_plan_ratecard where ''?'' = route_id'),
+
+                (19,'Event Date',false,null,( select id from route_rate_card where table_name='route_rate_1_plan_ratecard' ),'event_date','start_date','ACTIVE_DATE',3,0,0,0,''),
+
+				( 12 ,'destination', true, null, ( select id from route_rate_card where table_name='route_rate_1_accnt_type_ratecard' ), 'destination', 'destination', 'BEST_MATCH', 1, 0, 10, 6, '(select * from route_rate_1_customer_ratecard where ( ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination ) and char_length( destination )  = (select char_length( destination ) from route_rate_1_customer_ratecard
+where  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  order by char_length( destination ) desc limit 1) )'),
+
+                (16,'Route',true,null,( select id from route_rate_card where table_name='route_rate_1_accnt_type_ratecard' ),'route_id','route_id','ROUTE',2,0,6,3,'select * from route_rate_1_accnt_type_ratecard where ''?'' = route_id'),
+
+                (17,'Event Date',false,null,( select id from route_rate_card where table_name='route_rate_1_accnt_type_ratecard' ),'event_date','start_date','ACTIVE_DATE',3,0,0,0,''),
+
+				( 13 ,'destination', true, null, ( select id from route_rate_card where table_name='route_rate_1_customer_ratecard' ), 'destination', 'destination', 'BEST_MATCH', 1, 0, 10, 6, '(select * from route_rate_1_customer_ratecard where ( ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination ) and char_length( destination )  = (select char_length( destination ) from route_rate_1_customer_ratecard
+where  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  or  ''?'' = destination  order by char_length( destination ) desc limit 1) )'),
+
+                (14,'Route',true,null,( select id from route_rate_card where table_name='route_rate_1_customer_ratecard' ),'route_id','route_id','ROUTE',2,0,6,3,'select * from route_rate_1_customer_ratecard where ''?'' = route_id'),
+
+                (15,'Event Date',false,null,( select id from route_rate_card where table_name='route_rate_1_customer_ratecard' ),'event_date','start_date','ACTIVE_DATE',3,0,0,0,'');
+
+				UPDATE jbilling_seqs set next_id= (select max(mf.id)+1 from matching_field mf) where name = 'matching_field';
+				    
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="20130820-add-rating-unit">
+        <createTable tableName="rating_unit">
+            <column name="id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price_unit_name" type="varchar(50)"/>
+            <column name="increment_unit_name" type="varchar(50)"/>
+            <column name="increment_unit_quantity" type="java.sql.Types.NUMERIC(22,10)"/>
+            <column name="can_be_deleted" type="java.sql.Types.BOOLEAN" defaultValue="true"/>
+            <column name="optlock" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint constraintName="rating_unit_entity_id_FK"
+                                 baseTableName="rating_unit" baseColumnNames="entity_id"
+                                 referencedTableName="entity" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="base" id="20130820-default-rating-unit-rate-card">
+        <!-- Time rating unit -->
+        <sql>
+            <![CDATA[
+                insert into rating_unit
+                    (id, name, entity_id, price_unit_name, increment_unit_name, increment_unit_quantity,
+                    can_be_deleted, optlock)
+                select (select COALESCE(max(r.id),0)+1 from rating_unit r) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                'Time',e1.id,'Minute','Seconds',60.0,false,0
+                from entity e1;
+            ]]>
+        </sql>
+
+        <addColumn tableName="route_rate_card">
+            <column name="rating_unit_id" type="java.sql.Types.INTEGER" />
+        </addColumn>
+
+        <update tableName="route_rate_card">
+            <column name="rating_unit_id"
+                    valueComputed="(select max(r.id) from rating_unit r, entity e where r.entity_id = e.id and route_rate_card.entity_id=e.id)"/>
+        </update>
+
+        <addForeignKeyConstraint constraintName="route_rate_card_rating_unit_id"
+                                 baseTableName="route_rate_card" baseColumnNames="rating_unit_id"
+                                 referencedTableName="rating_unit" referencedColumnNames="id"/>
+
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="rating_unit"/>
+            <column name="next_id" valueComputed="(select COALESCE(max(r.id),0)+1 from rating_unit r)"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select COALESCE(max(m.id),0)+1 from matching_field m)"/>
+            <where>name='matching_field'</where>
+        </update>
+
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="route"/>
+            <column name="next_id" valueComputed="(select COALESCE(max(r.id),0)+1 from route r)" />
+        </insert>
+
+    </changeSet>
+
+    <changeSet author="Panche Isajeski" context="test" id="20130820-default-rating-unit-rate-card-test-data">
+        <update tableName="route_rate_card">
+            <column name="rating_unit_id"
+                    valueComputed="(select max(r.id) from rating_unit r, entity e where r.entity_id = e.id and route_rate_card.entity_id=e.id)"/>
+        </update>
+    </changeSet>
+
+    <changeSet author="Vladimir Carevski" context="base" id="hierarchical_routing">
+        <addColumn tableName="route">
+            <column name="root_table" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false"/>
+            <column name="output_field_name" type="java.sql.Types.VARCHAR(150)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Gerhard Maree" context="base" id="20131024 hierarchical_routing - default_route">
+        <addColumn tableName="route">
+            <column name="default_route" type="java.sql.Types.VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="hierarchical_routing_matching_field_fix" author="Panche Isajeski" context="post_base">
+        <update tableName="matching_field">
+            <column name="type" value="EXACT"/>
+            <where>type='ROUTE'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#7543:multiple_root_for_mediation" author="Marco Manzi" context="base">
+        <addColumn tableName="mediation_cfg">
+            <column name="root_route" type="java.sql.Types.INTEGER" />
+        </addColumn>
+
+        <addForeignKeyConstraint constraintName="fk_mediation_cfg_root_route"
+                                 baseTableName="mediation_cfg" baseColumnNames="root_route"
+                                 referencedTableName="route" referencedColumnNames="id" />
+    </changeSet>
+
+
+    <changeSet author="Vladimir Carevski" context="base" id="#7332-global-mediation-process" >
+
+        <addColumn tableName="mediation_cfg">
+            <column name="global" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="mediation_process">
+            <column name="global" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+    </changeSet>
+
+    <changeSet author="Vladimir Carevski" context="test" id="#7332-global-mediation-process-test" >
+
+        <!-- active some currencies for Reseller company -->
+        <insert tableName="currency_entity_map">
+            <column name="currency_id" valueNumeric="2"/>
+            <column name="entity_id" valueNumeric="3"/>
+        </insert>
+        <insert tableName="currency_entity_map">
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="entity_id" valueNumeric="3"/>
+        </insert>
+        <insert tableName="currency_entity_map">
+            <column name="currency_id" valueNumeric="3"/>
+            <column name="entity_id" valueNumeric="3"/>
+        </insert>
+        <insert tableName="currency_entity_map">
+            <column name="currency_id" valueNumeric="5"/>
+            <column name="entity_id" valueNumeric="3"/>
+        </insert>
+
+        <!-- create empty account type for Reseller Company -->
+        <insert tableName="account_type">
+            <column name="id" valueNumeric="600"/>
+            <column name="credit_limit" valueNumeric="0E-10"/>
+            <column name="invoice_design" value="invoice_design.jasper"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="date_created" valueDate="2014-01-31T12:45:57.213"/>
+            <column name="credit_notification_limit1" valueNumeric="0E-10"/>
+            <column name="credit_notification_limit2" valueNumeric="0E-10"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="entity_id" valueNumeric="3"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="main_subscript_order_period_id" valueNumeric="6"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="111"/>
+            <column name="foreign_id" valueNumeric="600"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Private"/>
+        </insert>
+
+        <!-- create customer mediation_child for Reseller Company -->
+        <insert tableName="base_user">
+            <column name="id" valueNumeric="10810"/>
+            <column name="entity_id" valueNumeric="3"/>
+            <column name="password" value="46f94c8de14fb36680850768ff1b7f2a"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueDate="2014-01-31T12:47:00.437"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="mediation_child"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueNumeric="107100"/>
+            <column name="user_id" valueNumeric="10810"/>
+            <column name="partner_id"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id" valueNumeric="3"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance" valueNumeric="0E-10"/>
+            <column name="credit_limit" valueNumeric="0E-10"/>
+            <column name="auto_recharge" valueNumeric="0E-10"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="main_subscript_order_period_id" valueNumeric="6"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+            <column name="account_type_id" valueNumeric="600"/>
+            <column name="invoice_design" value="invoice_design.jasper"/>
+            <column name="credit_notification_limit1" valueNumeric="0E-10"/>
+            <column name="credit_notification_limit2" valueNumeric="0E-10"/>
+            <column name="recharge_threshold"/>
+            <column name="monthly_limit"/>
+            <column name="current_monthly_amount"/>
+            <column name="current_month"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueNumeric="10810"/>
+            <column name="role_id" valueNumeric="11"/>
+        </insert>
+
+        <!-- create customer mediation_parent for Prancing Pony -->
+        <insert tableName="base_user">
+            <column name="id" valueNumeric="10813"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="password" value="46f94c8de14fb36680850768ff1b7f2a"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="1"/>
+            <column name="subscriber_status" valueNumeric="9"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="create_datetime" valueDate="2014-01-31T12:49:37.518"/>
+            <column name="last_status_change"/>
+            <column name="last_login"/>
+            <column name="user_name" value="mediation_parent"/>
+            <column name="failed_attempts" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="customer">
+            <column name="id" valueNumeric="107103"/>
+            <column name="user_id" valueNumeric="10813"/>
+            <column name="partner_id"/>
+            <column name="referral_fee_paid"/>
+            <column name="invoice_delivery_method_id" valueNumeric="1"/>
+            <column name="auto_payment_type" valueNumeric="1"/>
+            <column name="due_date_unit_id" valueNumeric="3"/>
+            <column name="due_date_value"/>
+            <column name="df_fm"/>
+            <column name="parent_id"/>
+            <column name="is_parent" valueNumeric="0"/>
+            <column name="exclude_aging" valueNumeric="0"/>
+            <column name="invoice_child"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="dynamic_balance" valueNumeric="0E-10"/>
+            <column name="credit_limit" valueNumeric="0E-10"/>
+            <column name="auto_recharge" valueNumeric="0E-10"/>
+            <column name="use_parent_pricing" valueBoolean="false"/>
+            <column name="main_subscript_order_period_id" valueNumeric="2"/>
+            <column name="next_invoice_day_of_period" valueNumeric="1"/>
+            <column name="account_type_id" valueNumeric="3"/>
+            <column name="invoice_design" value="simple_invoice_b2b"/>
+            <column name="credit_notification_limit1" valueNumeric="0E-10"/>
+            <column name="credit_notification_limit2" valueNumeric="0E-10"/>
+            <column name="recharge_threshold"/>
+            <column name="monthly_limit"/>
+            <column name="current_monthly_amount"/>
+            <column name="current_month"/>
+        </insert>
+
+        <insert tableName="user_role_map">
+            <column name="user_id" valueNumeric="10813"/>
+            <column name="role_id" valueNumeric="5"/>
+        </insert>
+
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051936"/>
+            <column name="meta_field_name_id" valueNumeric="1"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051937"/>
+            <column name="meta_field_name_id" valueNumeric="86"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051938"/>
+            <column name="meta_field_name_id" valueNumeric="2"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051939"/>
+            <column name="meta_field_name_id" valueNumeric="3"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051940"/>
+            <column name="meta_field_name_id" valueNumeric="23"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051941"/>
+            <column name="meta_field_name_id" valueNumeric="5"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051942"/>
+            <column name="meta_field_name_id" valueNumeric="6"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051943"/>
+            <column name="meta_field_name_id" valueNumeric="7"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value=""/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051944"/>
+            <column name="meta_field_name_id" valueNumeric="68"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="1000"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051945"/>
+            <column name="meta_field_name_id" valueNumeric="66"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="unknown"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051946"/>
+            <column name="meta_field_name_id" valueNumeric="73"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="1000"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051947"/>
+            <column name="meta_field_name_id" valueNumeric="61"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Child"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051948"/>
+            <column name="meta_field_name_id" valueNumeric="64"/>
+            <column name="dtype" value="integer"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value" valueNumeric="1"/>
+            <column name="string_value"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051949"/>
+            <column name="meta_field_name_id" valueNumeric="62"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="med@child.com"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051950"/>
+            <column name="meta_field_name_id" valueNumeric="71"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="unknown"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051951"/>
+            <column name="meta_field_name_id" valueNumeric="65"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="address"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051952"/>
+            <column name="meta_field_name_id" valueNumeric="70"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="address2"/>
+        </insert>
+        <insert tableName="meta_field_value">
+            <column name="id" valueNumeric="2051953"/>
+            <column name="meta_field_name_id" valueNumeric="60"/>
+            <column name="dtype" value="string"/>
+            <column name="boolean_value"/>
+            <column name="date_value"/>
+            <column name="decimal_value"/>
+            <column name="integer_value"/>
+            <column name="string_value" value="Mediation"/>
+        </insert>
+
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519200"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="4"/>
+            <column name="meta_field_value_id" valueNumeric="2051944"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519201"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="4"/>
+            <column name="meta_field_value_id" valueNumeric="2051945"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519202"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="5"/>
+            <column name="meta_field_value_id" valueNumeric="2051946"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519203"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="3"/>
+            <column name="meta_field_value_id" valueNumeric="2051947"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519204"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="3"/>
+            <column name="meta_field_value_id" valueNumeric="2051948"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519205"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="3"/>
+            <column name="meta_field_value_id" valueNumeric="2051949"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519206"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="5"/>
+            <column name="meta_field_value_id" valueNumeric="2051950"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519207"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="4"/>
+            <column name="meta_field_value_id" valueNumeric="2051951"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519208"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="5"/>
+            <column name="meta_field_value_id" valueNumeric="2051952"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+        <insert tableName="customer_account_info_type_timeline">
+            <column name="id" valueNumeric="20519209"/>
+            <column name="customer_id" valueNumeric="107103"/>
+            <column name="account_info_type_id" valueNumeric="3"/>
+            <column name="meta_field_value_id" valueNumeric="2051953"/>
+            <column name="effective_date" valueDate="1970-01-01"/>
+        </insert>
+
+        <!--Add global cateory, define product that is accesible to child.
+            Define root price and child price for that product -->
+        <insert tableName="item_type">
+            <column name="id" valueNumeric="230300"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="description" value="Global Call Products"/>
+            <column name="order_line_type_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="internal" valueBoolean="false"/>
+            <column name="allow_asset_management" valueNumeric="0"/>
+            <column name="asset_identifier_label" value=""/>
+            <column name="parent_id"/>
+            <column name="global" valueBoolean="true"/>
+        </insert>
+
+        <insert tableName="item">
+            <column name="id" valueNumeric="320100"/>
+            <column name="internal_number" value="GL-CALL-1"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="percentage"/>
+            <column name="deleted" valueNumeric="0"/>
+            <column name="has_decimals" valueNumeric="0"/>
+            <column name="optlock" valueNumeric="2"/>
+            <column name="gl_code" value=""/>
+            <column name="asset_management_enabled" valueNumeric="0"/>
+            <column name="standard_availability" valueBoolean="true"/>
+            <column name="global" valueBoolean="true"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="14"/>
+            <column name="foreign_id" valueNumeric="320100"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="CALL 1"/>
+        </insert>
+
+        <insert tableName="item_type_map">
+            <column name="item_id" valueNumeric="320100"/>
+            <column name="type_id" valueNumeric="230300"/>
+        </insert>
+
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="220100"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="1.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="price_model">
+            <column name="id" valueNumeric="220101"/>
+            <column name="strategy_type" value="METERED"/>
+            <column name="rate" valueNumeric="3.0000000000"/>
+            <column name="included_quantity"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="next_model_id"/>
+            <column name="entity_id"/>
+        </insert>
+
+        <insert tableName="entity_item_price_map">
+            <column name="id" valueNumeric="210500"/>
+            <column name="entity_id"/>
+            <column name="item_id" valueNumeric="320100"/>
+        </insert>
+        <insert tableName="entity_item_price_map">
+            <column name="id" valueNumeric="210501"/>
+            <column name="entity_id" valueNumeric="3"/>
+            <column name="item_id" valueNumeric="320100"/>
+        </insert>
+
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueNumeric="220100"/>
+            <column name="start_date" valueDate="1970-01-01"/>
+            <column name="model_map_id" valueNumeric="210500"/>
+        </insert>
+
+        <insert tableName="item_price_timeline">
+            <column name="price_model_id" valueNumeric="220101"/>
+            <column name="start_date" valueDate="2014-02-03"/>
+            <column name="model_map_id" valueNumeric="210501"/>
+        </insert>
+
+        <!-- configure that the child company will generate charges into one order -->
+        <insert tableName="preference">
+            <column name="id" valueComputed="(select max(p.id)+1 from preference p)"/>
+            <column name="type_id" valueNumeric="41" />
+            <column name="table_id" valueNumeric="5" />
+            <column name="foreign_id" valueNumeric="3" />
+            <column name="value" value = "1"/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from account_type p)"/>
+            <where>name='account_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from base_user p)"/>
+            <where>name='base_user'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from customer p)"/>
+            <where>name='customer'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from meta_field_value p)"/>
+            <where>name='meta_field_value'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from customer_account_info_type_timeline p)"/>
+            <where>name='customer_account_info_type_timeline'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from item_type p)"/>
+            <where>name='item_type'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from item p)"/>
+            <where>name='item'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from price_model p)"/>
+            <where>name='price_model'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from preference p)"/>
+            <where>name='preference'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from entity_item_price_map p)"/>
+            <where>name='entity_item_price_map'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Alexander Aksenov" context="base" id="20140220 #7520 - Order Changes Type">
+        <createTable tableName="order_change_type">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="order_change_type_pkey"/>
+            </column>
+            <column name="name" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER" />
+            <column name="default_type" type="java.sql.Types.Boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="allow_order_status_change" type="java.sql.Types.Boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="optlock" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="entity_id"
+                                 baseTableName="order_change_type"
+                                 constraintName="order_change_type_entity_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="entity"
+                                 referencesUniqueColumn="false"/>
+
+        <insert tableName="jbilling_table">
+            <column name="id" valueComputed="(select max(t.id)+1 from jbilling_table t)"/>
+            <column name="name" value="order_change_type"/>
+        </insert>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="order_change_type"/>
+            <column name="next_id" valueNumeric="2"/>
+        </insert>
+
+        <createTable tableName="order_change_type_item_type_map">
+            <column name="order_change_type_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_type_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="order_change_type_id"
+                                 baseTableName="order_change_type_item_type_map"
+                                 constraintName="order_change_type_item_type_map_change_type_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_change_type"
+                                 referencesUniqueColumn="false"/>
+        <addForeignKeyConstraint baseColumnNames="item_type_id"
+                                 baseTableName="order_change_type_item_type_map"
+                                 constraintName="order_change_type_item_type_map_item_type_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="item_type"
+                                 referencesUniqueColumn="false"/>
+
+        <createTable tableName="order_change_type_meta_field_map">
+            <column name="order_change_type_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="meta_field_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="order_change_type_id"
+                                 baseTableName="order_change_type_meta_field_map"
+                                 constraintName="order_change_type_meta_field_map_change_type_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_change_type"
+                                 referencesUniqueColumn="false"/>
+        <addForeignKeyConstraint baseColumnNames="meta_field_id"
+                                 baseTableName="order_change_type_meta_field_map"
+                                 constraintName="order_change_type_meta_field_map_meta_field_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="meta_field_name"
+                                 referencesUniqueColumn="false"/>
+        <insert tableName="order_change_type">
+            <column name="id" type="java.sql.Types.INTEGER" valueNumeric="1"/>
+            <column name="name" type="java.sql.Types.VARCHAR(255)" value="Default"/>
+            <column name="optlock" type="java.sql.Types.INTEGER" valueNumeric="0"/>
+            <column name="default_type" type="java.sql.Types.Boolean" valueBoolean="true"/>
+            <column name="allow_order_status_change" type="java.sql.Types.Boolean" valueBoolean="false"/>
+        </insert>
+
+        <addColumn tableName="order_change">
+            <column name="order_change_type_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addColumn tableName="order_change">
+            <column name="order_status_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <update tableName="order_change">
+            <column name="order_change_type_id" valueNumeric="1"/>
+        </update>
+
+        <addNotNullConstraint tableName="order_change" columnDataType="java.sql.Types.INTEGER" columnName="order_change_type_id"/>
+
+        <addForeignKeyConstraint baseColumnNames="order_change_type_id"
+                                 baseTableName="order_change"
+                                 constraintName="order_change_order_change_type_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_change_type"
+                                 referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="order_status_id"
+                                 baseTableName="order_change"
+                                 constraintName="order_change_order_status_id_fk"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_status"
+                                 referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet author="Alexander Aksenov" context="test" id="20140220 #7520 - Order Changes Type: test data">
+        <insert tableName="meta_field_name">
+            <column name="id" valueComputed="(select max(t.id)+1 from meta_field_name t)"/>
+            <column name="name" value="orderChangeTypeMetaField_1"/>
+            <column name="entity_type" value="ORDER_CHANGE"/>
+            <column name="data_type" value="STRING"/>
+            <column name="is_disabled" valueBoolean="false"/>
+            <column name="is_mandatory" valueBoolean="false"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="is_primary" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Alexander Aksenov" context="base"
+               id="20140227 #7520 Order Changes Type plugin for orderStatus change">
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.OrderChangeApplyOrderStatusTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Change order status on order change apply"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content"
+                    value="This plug-in will change the status of order during order change apply to selected in order change."/>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select max(p.id)+1 from pluggable_task_type p)"/>
+            <where>name='pluggable_task_type'</where>
+        </update>
+
+        <sql>
+            <![CDATA[
+                   INSERT INTO pluggable_task (id, entity_id, type_id, processing_order, optlock)
+                   select (select max(p.id)+1 from pluggable_task p) + (select count(*) from entity e2 where e1.id > e2.id and e2.id <> e1.id),
+                          e1.id,
+                          (select max(p.id) from pluggable_task_type p),
+                          1,
+                          1
+                   from entity e1
+                   order by e1.id
+               ]]>
+        </sql>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task p), 1)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#7870:fix-product-id-in-route-tables" author="Marco Manzi" context="base" dbms="postgresql">
+        <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t record;
+                    BEGIN
+                        FOR t IN SELECT table_name FROM route LOOP
+                            EXECUTE 'ALTER TABLE public.' || quote_ident(t.table_name) || ' ALTER COLUMN product TYPE VARCHAR(50)';
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+        </sql>
+    </changeSet>
+    <changeSet author="Vivek Sadh" context="test" id="order change4">
+        <insert tableName="order_status">
+            <column name="id" valueNumeric="400"/>
+            <column name="order_status_flag" valueNumeric="0"/> <!-- INVOICE -->
+            <column name="entity_id" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="order_change">
+            <column name="id" valueComputed="(select COALESCE(max(oc.id),0)+1 from order_change oc)"/>
+            <column name="order_id" valueNumeric="107702"/>
+            <column name="item_id" valueNumeric="320100"/>
+            <column name="quantity" valueNumeric="1"/>
+            <column name="price" valueNumeric="1"/>
+            <column name="description" value="CALL 1"/>
+            <column name="use_item" valueNumeric="1"/>
+            <column name="status_id" valueNumeric="38"/>
+            <column name="user_assigned_status_id" valueNumeric="38"/>
+            <column name="order_line_id" valueNumeric="207902"/>
+            <column name="order_change_type_id" valueNumeric="1"/>
+            <column name="order_status_id" valueNumeric="400"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="user_id" valueNumeric="1"/>
+            <column name="create_datetime" valueDate="2014-03-26 18:56:32.148+05:30"/>
+            <column name="start_date" valueDate="2014-03-26"/>
+            <column name="application_date" valueDate="2014-03-26"/>
+            <column name="create_datetime" valueDate="2012-06-14T10:38:40.673"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="20"/>
+            <column name="foreign_id" valueNumeric="400"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Test"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select COALESCE(max(oc.id),0)+1 from order_change oc)" >
+            </column>
+            <where>name='order_change'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Khobab Chaudhary" context="base" id="#7899 - Subscription Products">
+        <dropColumn tableName="plan" columnName="is_tariff"/>
+
+        <insert tableName="order_line_type">
+            <column name="id"  valueNumeric="5"/>
+            <column name="editable" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select id from jbilling_table where name = 'order_line_type')"/>
+            <column name="foreign_id" valueNumeric="5"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Subscription"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="#8330:reassign_the_same_asset_for_terminated_order" author="Marco Manzi">
+    <validCheckSum>7:330daf6acf15fdd948953a8fa60e91c6</validCheckSum>
+        <addColumn tableName="asset_transition">
+            <column name="start_date" type="java.sql.Types.TIMESTAMP"/>
+        </addColumn>
+        <addColumn tableName="asset_transition">
+            <column name="end_date" type="java.sql.Types.TIMESTAMP"/>
+        </addColumn>
+        <addColumn tableName="asset_transition">
+            <column name="order_line_id" type="java.sql.Types.INTEGER" />
+        </addColumn>
+
+        <sql>
+            <!-- Finds all the applied order changes that contain assets
+                and create asset_transition records for those asset
+                to mark them as taken. So that other orders can not
+                take those assets, and moreover to track the starting of
+                those assets -->
+            <![CDATA[
+                insert into asset_transition
+                (id, create_datetime, start_date, asset_id, user_id, new_status_id, order_line_id)
+                (select tmp.at_id, tmp.create_datetime, tmp.start_date, tmp.asset_id, tmp.user_id, tmp.status_id, tmp.order_line_id
+                from
+                (select (select coalesce(max(id),0)+a.id from asset_transition) as at_id,
+                    coalesce(
+                        (select oc.application_date
+                            from order_change oc
+                            inner join order_change_plan_item ocpi on oc.id = ocpi.order_change_id
+                            inner join order_change_plan_item_asset_map ocpiam on ocpiam.order_change_plan_item_id = ocpi.id
+                            where ocpiam.asset_id = a.id
+                                and oc.application_date is not null
+                                and oc.status_id in (select gs.id from generic_status gs where gs.dtype='order_change_status' and attribute1='YES'))
+                        ,
+                        (select max(oc.application_date)
+                            from order_change oc
+                            inner join order_change_asset_map ocam on oc.id = ocam.order_change_id
+                            where ocam.asset_id = a.id
+                                and oc.status_id in (select gs.id from generic_status gs where gs.dtype='order_change_status' and attribute1='YES'))
+                    ) as create_datetime,
+                    coalesce(
+                        (select oc.application_date
+                            from order_change oc
+                            inner join order_change_plan_item ocpi on oc.id = ocpi.order_change_id
+                            inner join order_change_plan_item_asset_map ocpiam on ocpiam.order_change_plan_item_id = ocpi.id
+                            where ocpiam.asset_id = a.id
+                                and oc.application_date is not null
+                                and oc.status_id in (select gs.id from generic_status gs where gs.dtype='order_change_status' and attribute1='YES'))
+                        ,
+                        (select max(oc.application_date)
+                            from order_change oc
+                            inner join order_change_asset_map ocam on oc.id = ocam.order_change_id
+                            where ocam.asset_id = a.id
+                                and oc.status_id in (select gs.id from generic_status gs where gs.dtype='order_change_status' and attribute1='YES'))
+                    ) as start_date,
+                    (a.id) as asset_id,
+                    (select o.user_id from purchase_order o where exists (select * from order_line ol where ol.order_id = o.id and ol.id = a.order_line_id)) as user_id,
+                    (a.status_id) as status_id,
+                    (a.order_line_id) as order_line_id
+                from asset a where order_line_id is not null) as tmp
+                where tmp.create_datetime is not null
+                    and tmp.start_date is not null);
+            ]]>
+        </sql>
+        <dropForeignKeyConstraint constraintName="asset_fk_2" baseTableName="asset" />
+        <dropColumn tableName="asset" columnName="order_line_id"/>
+    </changeSet>
+
+    <changeSet id="#8330:start_date_not_null" context="base" author="Marco Manzi">
+        <addNotNullConstraint tableName="asset_transition" columnDataType="java.sql.Types.DATE" columnName="start_date"/>
+    </changeSet>
+
+    <changeSet id="#8330:asset_transition_seqs" context="base" author="Marco Manzi">
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT coalesce(max(id),0) FROM asset_transition)" >
+            </column>
+            <where>name='asset_transition'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Gerhard Maree" context="base" id="20140131-7219-save-nested-search-entities">
+        <createTable tableName="data_table_query_entry">
+            <column name="id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="route_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="columns" type="varchar(250)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="next_entry_id" type="java.sql.Types.INTEGER" />
+            <column name="optlock" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint constraintName="data_table_query_entry_next_FK"
+                                 baseTableName="data_table_query_entry" baseColumnNames="next_entry_id"
+                                 referencedTableName="data_table_query_entry" referencedColumnNames="id"/>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="data_table_query_entry"/>
+            <column name="next_id" valueComputed="(select COALESCE(max(r.id),0)+1 from data_table_query_entry r)"/>
+        </insert>
+
+        <createTable tableName="data_table_query">
+            <column name="id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(50)" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="route_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="global" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="root_entry_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="optlock" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint constraintName="data_table_query_next_FK"
+                                 baseTableName="data_table_query" baseColumnNames="root_entry_id"
+                                 referencedTableName="data_table_query_entry" referencedColumnNames="id"/>
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="data_table_query"/>
+            <column name="next_id" valueComputed="(select COALESCE(max(r.id),0)+1 from data_table_query r)"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet author="Gerhard Maree" context="base" id="20140131-7219-save-nested-search-permissions">
+        <insert tableName="permission_type">
+            <column name="id" valueNumeric="17"/>
+            <column name="description" value="Data Tables"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="150"/>
+            <column name="type_id" valueNumeric="16"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="150"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Modify Global Queries" />
+        </insert>
+    </changeSet>
+
+    <changeSet author="Gerhard Maree" context="test" id="20140131-7219-save-nested-search-test-data">
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="170"/>
+            <column name="role_id" valueNumeric="2"/>
+        </insert>
+        <sql>
+            <![CDATA[
+                CREATE TABLE route_2 (
+                id integer NOT NULL,
+                name character varying(255) NOT NULL,
+                routeid character varying(255) NOT NULL,
+                dialed character varying(255) NOT NULL,
+                source character varying(255) NOT NULL,
+                countrycode character varying(255) NOT NULL
+                );
+
+                ALTER TABLE route_2
+                ADD CONSTRAINT route_2_pkey PRIMARY KEY (id);
+
+                INSERT INTO route_2 (id, name, routeid, dialed, source, countrycode)
+                values
+                (1,'Canada Ontario','CANON','613','613','ca'),
+                (2,'Canada Ontario','CANON','613','819','ca'),
+                (3,'Canada Ottawa Montreal','CANOM','613','514','ca'),
+                (4,'Argentina','ARG','54','22',''),
+                (5,'North America Argentina','NAARG','54','1',''),
+                (6,'Puerto Rico Argentina','PRARG','54','1','pr'),
+                (7,'North America Buenos Aires','NAARBA','5411','1','');
+
+                INSERT INTO route (id, name, table_name, entity_id, optlock)
+                values
+                (2,'test_route2','route_2',1,0);
+
+                INSERT INTO data_table_query_entry (id, route_id, columns, next_entry_id, optlock)
+                values
+                (1, 1, '"source"', null, 0),
+                (2, 1, '"source"', null, 0);
+
+                INSERT INTO data_table_query (id, name, route_id, global, root_entry_id, user_id, optlock)
+                values
+                (1, 'Query1', 1, 1, 1, 13, 0),
+                (2, 'Query2', 1, 0, 2, 13, 0);
+
+                UPDATE jbilling_seqs set next_id= (select max(mf.id)+1 from data_table_query mf) where name = 'data_table_query';
+
+                UPDATE jbilling_seqs set next_id= (select max(mf.id)+1 from data_table_query_entry mf) where name = 'data_table_query_entry';
+           ]]>
+        </sql>
+    </changeSet>
+
+    <!-- correct permission id for permission_type id 17 begins at 170
+        refer changeSet id 20140131-7219-save-nested-search-permissions
+    -->
+    <changeSet author="Vikas Bodani" context="base" id="20140131-7219-save-nested-search-test-data-c1">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="170"/>
+            <column name="type_id" valueNumeric="17"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="170"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Modify Global Queries" />
+        </insert>
+        <delete tableName="international_description">
+            <where>
+                table_id = 59 and foreign_id = 150
+            </where>
+        </delete>
+        <delete tableName="permission">
+            <where>id = 150</where>
+        </delete>
+    </changeSet>
+
+    <changeSet id="#7045-data_tables-set_it_as_route_table_or_not" author="Juan Vidal" context="base">
+        <addColumn tableName="route">
+            <column name="route_table" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="#5188-Adding input directory field in mediation_cfg table" author="Khurram Cheema" context="base">
+        <addColumn tableName="mediation_cfg">
+            <column name="local_input_directory" type="java.sql.Types.VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="Vikas Bodani" context="base" id="20141008-#Bug Fix - Error in mediation, updating Records">
+        <addColumn tableName="mediation_process">
+            <column name="rate_card_errors" type="java.sql.Types.BIGINT">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="#10045:reverting_the_asset_transition_history" author="Marco Manzi">
+        <preConditions>
+            <columnExists tableName="asset_transition" columnName="order_line_id"/>
+        </preConditions>
+        <addColumn tableName="asset">
+            <column name="order_line_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+        <addForeignKeyConstraint baseColumnNames="order_line_id"
+                                 baseTableName="asset" constraintName="asset_fk_2"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="order_line"
+                                 referencesUniqueColumn="false" />
+        <sql>
+            <!-- Finds all the applied order changes that contain assets
+        and create asset_transition records for those asset
+        to mark them as taken. So that other orders can not
+        take those assets, and moreover to track the starting of
+        those assets -->
+            <![CDATA[
+                update asset a set order_line_id = (SELECT order_line_id
+			from asset_transition where start_date is not null
+			AND end_date is null
+			AND asset_id = a.id);
+            ]]>
+        </sql>
+
+        <dropColumn tableName="asset_transition" columnName="start_date"/>
+        <dropColumn tableName="asset_transition" columnName="end_date"/>
+        <dropColumn tableName="asset_transition" columnName="order_line_id"/>
+    </changeSet>
+
+    <changeSet id="requirement # 9831 - global assets" author="Rohit Gupta" context="base">
+        <addColumn tableName="asset">
+            <column defaultValueBoolean="false" name="global" type="java.sql.Types.BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createTable tableName="asset_entity_map">
+            <column name="asset_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="entity_id"
+                                 baseTableName="asset_entity_map" constraintName="asset_entity_map_fk1"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="entity"
+                                 referencesUniqueColumn="false" />
+        <addForeignKeyConstraint baseColumnNames="asset_id"
+                                 baseTableName="asset_entity_map" constraintName="asset_entity_map_fk2"
+                                 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+                                 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="asset"
+                                 referencesUniqueColumn="false" />
+        <addUniqueConstraint tableName="asset_entity_map"
+                             columnNames="asset_id, entity_id" constraintName="asset_entity_map_uc_1" />
+
+    </changeSet>
+
+    <changeSet author="Aman Goel" context="base" id="20141104-#10343 - entity_id should not be null">
+        <addNotNullConstraint columnDataType="java.sql.Types.INTEGER" columnName="entity_id"
+                              tableName="item_type"/>
+    </changeSet>
+
+    <changeSet id="20141117-jbilling-seqs-correction" author="Vikas Bodani" context="test">
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/100 + 1), 1) from pluggable_task_parameter t)"/>
+            <where>name='pluggable_task_parameter'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from pluggable_task t)"/>
+            <where>name='pluggable_task'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from meta_field_name t)"/>
+            <where>name='meta_field_name'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from meta_field_value t)"/>
+            <where>name='meta_field_value'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from enumeration t)"/>
+            <where>name='enumeration'</where>
+        </update>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from enumeration_values t)"/>
+            <where>name='enumeration_values'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#9573-usage-pool-fee-charging-task" author="Ashok Kale" context="base">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.usagePool.task.UsagePoolConsumptionFeeChargingTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Usage Pool Consumption Fee Charging Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="When a Usage Pool Consumption Fee Charging Event take place, this plug-in will charge fees to the Customer"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="#9573-configure-usage-pool-fee-charging-task" author="Ashok Kale" context="test">
+        <insert tableName="pluggable_task">
+            <column name="id" valueComputed="(select max(pt.id)+1 from pluggable_task pt)"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="type_id"
+                    valueComputed="(select p.id from pluggable_task_type p
+            					where p.class_name = 'com.sapienter.jbilling.server.usagePool.task.UsagePoolConsumptionFeeChargingTask')"/>
+            <column name="processing_order"
+                    valueComputed="coalesce((select max(pt.processing_order)+1 from pluggable_task pt
+								where pt.type_id IN (select p.id from pluggable_task_type p where p.category_id = 17)), 1)" />
+            <column name="optlock" valueNumeric="0"/>
+            <column name="notes"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(select max(t.id)+1 from pluggable_task t)"/>
+            <where>name = 'pluggable_task'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="20141124-rename-partner-to-Agent" author="Vikas Bodani" context="base">
+        <validCheckSum>7:4859237ad017f452ef2155abda6b4464</validCheckSum>
+        <update tableName="international_description">
+            <column name="content" value="Agent"/>
+            <where>table_id = (select id from jbilling_table where name ='role') and content='Partner'</where>
+        </update>
+        <comment>Preference Types 5 through 12 should not being used anywhere. Partner is replaced with Agent.</comment>
+        <delete tableName="preference">
+            <where>type_id in (5,6,7,8,9,10,11,12)</where>
+        </delete>
+        <delete tableName="international_description">
+            <where>table_id = (select id from jbilling_table where name ='preference_type') and foreign_id in (5,6,7,8,9,10,11,12)</where>
+        </delete>
+        <delete tableName="preference_type">
+            <where>id in (5,6,7,8,9,10,11,12)</where>
+        </delete>
+
+        <!-- Delete existing notifications Partner Payout & Payout reminder -->
+        <delete tableName="notification_message_type">
+            <where>category_id = 3 and id in (10,11)</where>
+        </delete>
+    </changeSet>
+
+    <changeSet id="20141126-rename-ForeignKeyConstraint" author="Manisha Gupta" context="base">
+        <dropForeignKeyConstraint baseTableName="meta_field_group" constraintName="account_type_main_subscription_period_FK2" />
+        <addForeignKeyConstraint
+                constraintName="meta_field_group_account_type_FK2"
+                baseTableName="meta_field_group" baseColumnNames="account_type_id"
+                referencedTableName="account_type" referencedColumnNames="id"
+                />
+        <addForeignKeyConstraint
+                constraintName="meta_field_group_entity_FK1"
+                baseTableName="meta_field_group" baseColumnNames="entity_id"
+                referencedTableName="entity" referencedColumnNames="id"
+                />
+    </changeSet>
+
+    <changeSet id="10632-event_base_custom_notification_fix" author="Marco Manzi" context="base">
+        <update tableName="pluggable_task_type">
+            <column name="min_parameters" value="0"/>
+            <where>class_name = 'com.sapienter.jbilling.server.user.tasks.EventBasedCustomNotificationTask' AND category_id = 17</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#9977:Partner-To-Agent-Fix-demo-data" author="Marco Manzi">
+        <update tableName="permission_type">
+            <column name="description" value="Agent"/>
+            <where>id = 10</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Create agent"/>
+            <where>table_id = 59 AND psudo_column='description' AND foreign_id=101
+                AND language_id=1 AND content='Create partner'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Create agent"/>
+            <where>table_id = 59 AND psudo_column='description' AND foreign_id=101
+                AND language_id=1 AND content='Create partner'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Edit agent"/>
+            <where>table_id = 59 AND psudo_column='description' AND foreign_id=102
+                AND language_id=1 AND content='Edit partner'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Delete agent"/>
+            <where>table_id = 59 AND psudo_column='description' AND foreign_id=103
+                AND language_id=1 AND content='Delete partner'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="View agent details"/>
+            <where>table_id = 59 AND psudo_column='description' AND foreign_id=104
+                AND language_id=1 AND content='View partner details'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="A agent that will bring customers"/>
+            <where>table_id = 60 AND psudo_column='description' AND foreign_id=4
+                AND language_id=1 AND content='A partner that will bring customers'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Agent"/>
+            <where>table_id = 60 AND psudo_column='title' AND foreign_id=4
+                AND language_id=1 AND content='Partner'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="A agent that will bring customers"/>
+            <where>table_id = 60 AND psudo_column='description' AND foreign_id=63
+                AND language_id=1 AND content='A partner that will bring customers'</where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Agent"/>
+            <where>table_id = 60 AND psudo_column='title' AND foreign_id=63
+                AND language_id=1 AND content='Partner'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#10886-init-next-invoice-number-for-child-company" author="Vladimir Carevski" context="test">
+        <!--Reseller Organization -->
+        <insert tableName="preference">
+            <column name="id" valueComputed="(select max(p.id)+1 from preference p)" />
+            <column name="table_id" valueComputed="(select p.id from jbilling_table p where p.name = 'entity')" />
+            <column name="foreign_id" valueNumeric="3" /> <!--entity id -->
+            <column name="type_id" valueNumeric="19" />
+            <column name="value" value="1" />
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(select coalesce( (max(t.id)/10 + 1), 1) from preference t)"/>
+            <where>name='preference'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Anand Kushwaha" id="#10901-Replacing Partner to Agents in Permissions page" context="base">
+        <update tableName="international_description">
+            <column name="content" value="Show agent menu" />
+            <where>content='Show partner menu'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Vikas Bodani" context="base" id="#6904 - Discounts - Permissions - correction">
+
+        <!-- My Account permission ids should have started with ids 160 -->
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="160"/>
+            <column name="type_id" valueNumeric="16"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="160"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="View My Account"/>
+        </insert>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="161"/>
+            <column name="type_id" valueNumeric="16"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="161"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit Password"/>
+        </insert>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="162"/>
+            <column name="type_id" valueNumeric="16"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="162"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit My Account"/>
+        </insert>
+
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="160"/>
+            <where>permission_id = 151</where>
+        </update>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="161"/>
+            <where>permission_id = 152</where>
+        </update>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="162"/>
+            <where>permission_id = 153</where>
+        </update>
+
+        <delete tableName="international_description">
+            <where>table_id = 59 and foreign_id in (150, 151, 152, 153)</where>
+        </delete>
+
+        <delete tableName="permission">
+            <where>id in (150, 151, 152, 153)</where>
+        </delete>
+
+        <!-- Discount permission ids should have started with ids 150 -->
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="150"/>
+            <column name="type_id" valueNumeric="15"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="150"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Show Discounts Menu"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="151"/>
+            <column name="type_id" valueNumeric="15"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="151"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Discount"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="152"/>
+            <column name="type_id" valueNumeric="15"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="152"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Delete Discount"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" valueNumeric="153"/>
+            <column name="type_id" valueNumeric="15"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="153"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Edit Discount"/>
+        </insert>
+
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="150"/>
+            <where>permission_id = 134</where>
+        </update>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="151"/>
+            <where>permission_id = 135</where>
+        </update>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="152"/>
+            <where>permission_id = 136</where>
+        </update>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="153"/>
+            <where>permission_id = 137</where>
+        </update>
+
+        <delete tableName="international_description">
+            <where>table_id = 59 and foreign_id in (134, 135, 136, 137)</where>
+        </delete>
+
+        <delete tableName="permission">
+            <where>id in (134, 135, 136, 137)</where>
+        </delete>
+
+        <insert tableName="permission">
+            <column name="id" valueNumeric="901"/>
+            <column name="type_id" valueNumeric="9"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="901"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Show agent menu"/>
+        </insert>
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="901"/>
+            <where>permission_id = 100</where>
+        </update>
+        <delete tableName="permission">
+            <where>id = 100</where>
+        </delete>
+    </changeSet>
+
+    <changeSet author="Manisha Gupta" context="base" id="Rename MENU_93">
+        <update tableName="international_description">
+            <column name="content" value="Show payments and refunds menu"/>
+            <where>table_id = 59 and foreign_id = 93</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="#8284 - Allow admin to change password" author="Bilal Shah" context="base">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="145"/>
+            <column name="type_id" valueNumeric="14"/>
+            <column name="foreign_id"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueComputed="(select p.id from jbilling_table p where p.name = 'permission')"/>
+            <column name="foreign_id" valueNumeric="145"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Password Override"/>
+        </insert>
+        <insert tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="145"/>
+            <column name="role_id" valueNumeric="2"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="#11281-provisioning-related-plugins-description-test" author="Prashant Gupta" context="test">
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.ExampleProvisioningTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Example provisioning plug-in for jbilling tests."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.ExampleProvisioningTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Example provisioning plug-in for jbilling tests."/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="#11281-provisioning-related-plugins-description-base" author="Prashant Gupta" context="base">
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.OrderProvisioningTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds provisioning commands for order line."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.OrderProvisioningTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds provisioning commands for order line."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.AssetProvisioningTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds provisioning commands for assets."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.AssetProvisioningTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds provisioning commands when assets are created, updated and added to order line"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.PaymentProvisioningTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds provisioning command when payment is made."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.PaymentProvisioningTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Adds command for provisioning when the payment is made."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.ProvisioningCommandStatusUpdateTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Processes command status change."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.ProvisioningCommandStatusUpdateTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Processes command status change."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.OrderLineProvisioningTask')"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Creates provisioning commands for order change."/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select t.id from pluggable_task_type t where class_name = 'com.sapienter.jbilling.server.provisioning.task.OrderLineProvisioningTask')"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Creates provisioning commands whenever an order line is provisioned via order change."/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Prashant Gupta" context="base" id="#11172-show-category-metafields">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="item_type_meta_field_map"/>
+            </not>
+        </preConditions>
+        <createTable tableName="item_type_meta_field_map">
+            <column name="item_type_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="meta_field_value_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="item_type_id" baseTableName="item_type_meta_field_map"
+                                 constraintName="item_type_meta_field_type_fk" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                                 referencedColumnNames="id" referencedTableName="item_type" referencesUniqueColumn="false"/>
+
+        <addForeignKeyConstraint baseColumnNames="meta_field_value_id" baseTableName="item_type_meta_field_map"
+                                 constraintName="item_type_meta_field_value_fk" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                                 referencedColumnNames="id" referencedTableName="meta_field_value" referencesUniqueColumn="false"/>
+
+    </changeSet>
+
+    <changeSet id="11561 :  Fixing the Discount menu permission" author="Aman Goel" context="base">
+        <insert tableName="permission">
+            <column name="id" valueNumeric="902"/>
+            <column name="type_id" valueNumeric="9"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="902"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Show Discounts Menu"/>
+        </insert>
+
+        <update tableName="permission_role_map">
+            <column name="permission_id" valueNumeric="902"/>
+            <where>permission_id = 150</where>
+        </update>
+
+        <delete tableName="international_description">
+            <where>table_id = 59 and foreign_id=150</where>
+        </delete>
+
+        <delete tableName="permission">
+            <where>id=150</where>
+        </delete>
+
+    </changeSet>
+
+    <changeSet author="Anand Kushwaha" context="base" id="#10442 Adding All Account Type checkbox in paymentMethodType edit">
+        <addColumn tableName="payment_method_type" >
+            <column name="all_account_type" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20150114 - late guided usage delete order" author="Vikas Bodani" context="base">
+        <addColumn tableName="purchase_order">
+            <column name="deleted_date" type="java.sql.Types.DATE">
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="10915 -create a child company" author="Rohit Gupta" context="test">
+        <insert tableName="entity">
+            <column name="id" valueComputed="(select max(e.id)+1 from entity e)"/>
+            <column name="external_id"/>
+            <column name="description" value="Child Company"/>
+            <column name="create_datetime" valueDate="2013-07-12T00:00:00.0"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="invoice_as_reseller" valueBoolean="false"/>
+            <column name="parent_id" valueNumeric="1"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="11565-added-invoice-reminder-name" author="Prashant Gupta" context="base">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="0">
+                select count(*) from international_description where table_id = 52
+                and foreign_id = 18 and language_id = 1 and psudo_column='description'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="52"/>
+            <column name="foreign_id" valueNumeric="18"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Invoice Reminder"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="#12690-index-on_parent_id-customer-table" author="Prashant Gupta" context="base">
+        <!-- create index on customer for column parent_id -->
+        <createIndex tableName="customer" indexName="ix_parent_customer_id" unique="false">
+            <column name="parent_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="#12691-Add field_usage column" author="Ravi Singhal" context="base">
+        <comment>Drop table metafield_type_map. One meta field can have only one usage type.</comment>
+        <addColumn tableName="meta_field_name">
+            <column name="field_usage" type="java.sql.Types.VARCHAR(50)">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+        <sql >
+            <![CDATA[
+             		update meta_field_name as name set field_usage = map.field_usage from metafield_type_map as map where name.id = map.metafield_id ;
+               ]]>
+        </sql>
+        <dropTable tableName="metafield_type_map"/>
+    </changeSet>
+
+    <changeSet id="#Remove existing configuration menu permission" author="Ashok Kale" context="base">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">select count(*) from permission_type where description ='Configuration' and id = 18</sqlCheck>
+        </preConditions>
+
+        <comment>Removing configuration permission type and it's related permission if exist</comment>
+        <delete tableName="permission_role_map">
+            <where>permission_id = (select idesc.foreign_id from international_description idesc where idesc.content='Rating Schemes')</where>
+        </delete>
+         <delete tableName="permission">
+            <where>id = (select idesc.foreign_id from international_description idesc where idesc.content='Rating Schemes')</where>
+        </delete>
+        <delete tableName="permission_type">
+            <where>id = (select id from permission_type where description ='Configuration' and id = 18)</where>
+        </delete>
+         <delete tableName="international_description">
+            <where>content='Rating Schemes' and table_id = 59</where>
+        </delete>
+    </changeSet>
+	<changeSet id="#JB-899 - Update Databasechangelog table" author="Ashok Kale" context="base">
+	<comment>Moved all changesets for full Creative from jbilling-upgrade-4.3.xml to jbilling-upgrade-4.5.xml and remove existing wrong data</comment>
+        <sql>
+			<![CDATA[
+				update databasechangelog set filename = 'descriptors/database/jbilling-upgrade-4.1.xml'
+				where id = '#Added-duplicate-records-column-in-mediation-process-table';
+				update databasechangelog set md5sum = '7:f5c3843ae4f9e5670bc513f546f1e210'
+				where id = 'JBIIE-1267: Adding phone number format perference';
+				update databasechangelog set id = 'JBIIE-1237 - Email address for bulk invoice',
+				md5sum = '7:500d50add3da4fd7fea79e140ae9efa6' where id like '%JBIIE-1237 - Email address for bulk invoice%';
+				delete from payment_method_template where template_name = 'PaypalIPN';
+				update databasechangelog set md5sum = '7:0e9152025a2b7d841cab5782ed877b49' where id = 'paypal IPN ';
+				delete from preference where type_id in (1101, 1018, 1102);
+				delete from preference_type where id in (1101, 1018, 1102);
+				delete from international_description where foreign_id in (1101, 1018, 1102) and table_id= 50;
+
+				update databasechangelog set filename = 'descriptors/database/jbilling-upgrade-4.5.xml'
+				where id in ('#customer-usage-pool-add-order', '#Add-new-task-to-prorate-customer-usage-pool',
+				'#8469-Add-Prorate_adjustment_Flag', 'Payment Process Auto Payments Task',
+				'paypal IPN ', 'Added-CustomerUsagePoolEvaluationCronTask-Plugin',
+				'Swap-Plan-FUP-Transfer-Plugin', '#11699-Add-Cycle_Start_Date',
+				'Changed timestamp', '#11699-Add-effective-date',
+				'#System-Health-Check-Reports', 'JBFC-186 - Added preference for adjustment order creation',
+				'JBFC-186 - Swap Plan History', 'JBFC 237 - Add preference for Product Internal Number(Product Code)',
+				'JBFC-113 Mediation Rating Increment Management', 'add-asset-identifier',
+				'#13622 call-counter-add-in-invoice-line', '#13622 call-counter-add-in-order-line',
+				'Added new column payment method id', 'adding new fail payment method',
+				'JBFC-390 Rating Scheme Permission', 'JBFC-390 Add Column Dialed Number',
+				'JBFC-391 Added Pre_evalauted_sql Table', 'Added UniqueConstraint');
+			]]>
+		</sql>
+    </changeSet>
+
+</databaseChangeLog>

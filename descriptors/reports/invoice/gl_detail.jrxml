@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="gl_detail" language="groovy" pageWidth="1160" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="1120" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="274b963f-896d-46db-84e5-44adf3315d43">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="17"/>
+	<property name="ireport.y" value="169"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<queryString>
+            <![CDATA[SELECT bu.id as user_id,
+                            bu.user_name,
+                            c.organization_name,
+                            il.order_id as order_id,
+                            (SELECT content
+                               FROM international_description
+                              WHERE table_id = 17 AND language_id = 1
+                                                  AND psudo_column = 'description'
+                                                  AND foreign_id = (SELECT DISTINCT period_id
+                                                                      FROM purchase_order
+                                                                     WHERE id = il.order_id)) AS order_type,
+                            item_join.item_id as item_id,
+                            item_join.code AS gl_code,
+                            (SELECT description
+                               FROM order_line
+                              WHERE order_id = il.order_id AND item_id = il.item_id
+                                                           AND deleted = 0) AS description,
+                            il.amount,
+                            i.currency_id,
+                            curr.symbol AS currency_symbol
+                       FROM invoice AS i
+                      INNER JOIN invoice_line il on il.invoice_id = i.id
+                      INNER JOIN base_user bu ON bu.id = i.user_id
+                      INNER JOIN currency curr ON curr.id = i.currency_id
+                       LEFT JOIN contact c ON c.user_id = bu.id
+                       LEFT JOIN (SELECT DISTINCT itm.id AS item_id,itm.gl_code AS code from item itm
+                                   INNER JOIN item_type_map itmtm ON itmtm.item_id = itm.id
+                                   INNER JOIN item_type it ON it.id = itmtm.type_id) AS item_join ON (item_join.item_id = il.item_id)
+                      WHERE (bu.entity_id = $P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+                            AND i.deleted = 0
+                            AND i.is_review = 0
+                            AND il.type_id != 3
+                            AND (CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                                      THEN i.create_datetime :: DATE = DATE($P{start_date})
+                                      ELSE i.create_datetime :: DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                                  END)
+                      ORDER BY i.currency_id, bu.user_name]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="organization_name" class="java.lang.String"/>
+	<field name="order_id" class="java.lang.Integer"/>
+	<field name="order_type" class="java.lang.String"/>
+	<field name="item_id" class="java.lang.Integer"/>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="currency_id" class="java.lang.Integer"/>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<variable name="subtotal" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_symbol" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<group name="currency_symbol">
+		<groupExpression><![CDATA[$F{currency_symbol}]]></groupExpression>
+		<groupFooter>
+			<band height="40">
+				<line>
+					<reportElement x="0" y="10" width="1120" height="1" uuid="a28ac52c-754a-4d75-9bc2-6aa8c28a1a3a"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="1020" y="12" width="100" height="20" uuid="06eafbad-fa0d-408d-8d42-9c4abbe6c602"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{currency_symbol}.toString() + $V{subtotal}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="720" y="12" width="300" height="20" uuid="38592bfb-13b5-4d96-96d5-00b4ddf984a5"/>
+					<box rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Amount:]]></text>
+				</staticText>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="100" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="201" height="20" uuid="dc7faf57-30cd-48f6-8256-624fd5cf19ac"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Detail]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1" y="20" width="100" height="20" uuid="c2e946c0-dd0a-40f6-b727-6dca6d63b577"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="40" width="100" height="20" uuid="b0b37546-1a58-43a1-a20e-ebcb257d6e16"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="-1" y="60" width="100" height="20" uuid="ee620154-1088-4cbf-bd93-042d86b6c633"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="101" y="20" width="100" height="20" uuid="ec10206d-5bcf-4b0d-ae49-5463329c81b6"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="101" y="40" width="100" height="20" uuid="6cc94766-977c-4095-9531-4a7d07e18bb9"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="101" y="60" width="100" height="20" uuid="92826d0c-85a5-4669-ab5d-286abb67896f"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="190" height="20" uuid="8b2974fb-a583-401c-ad4e-602405f76739"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[GL Detail]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22">
+			<line>
+				<reportElement x="0" y="21" width="1120" height="1" uuid="660096f0-983d-4df7-9c9a-aa95391d6f48"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="160" y="0" width="160" height="20" uuid="42bc9dd9-d3b5-4b53-bf7e-7a1c354f4354"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+					<paragraph firstLineIndent="10"/>
+				</textElement>
+				<text><![CDATA[Organization]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="60" height="20" uuid="ff2422d4-fb3b-4ee1-a431-783d2def8ba4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="60" y="0" width="100" height="20" uuid="d67c600f-26d2-413b-b445-220dd66b927d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="100" height="20" uuid="2b3b7aa1-cb64-4a60-9635-fb81b6856a08"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="420" y="0" width="100" height="20" uuid="81b9c571-8f4b-4937-9ea5-eb5f1b9eb0c8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="520" y="0" width="100" height="20" uuid="faa67cf6-3081-4cc8-aad2-853d2083ced9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Item Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="620" y="0" width="100" height="20" uuid="9b7e572e-4bb6-49e0-8299-cc1e7f59e09e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="720" y="0" width="300" height="20" uuid="1ff828f7-94d2-410e-8052-bca3d42c7904"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Line Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1020" y="0" width="100" height="20" uuid="81e21b49-9f06-4e26-94ec-01b09e96ed31"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="160" y="5" width="160" height="20" uuid="397c657f-1cbd-4612-8297-aa6ed6296d72"/>
+				<textElement verticalAlignment="Middle">
+					<paragraph firstLineIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{organization_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="5" width="60" height="20" uuid="5785ebfd-5cc9-4fc2-9687-90f11320e748"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="60" y="5" width="100" height="20" uuid="b42b151d-99c2-4f8a-90a8-2ebc7fb94bd3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="320" y="5" width="100" height="20" uuid="10869e26-2987-430c-a800-325ef281d16b"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{order_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="420" y="5" width="100" height="20" uuid="931f6400-b15a-461d-88b6-80b80951c32b"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="520" y="5" width="100" height="20" uuid="6ac58dfd-44ad-4a6e-9604-a4197ab773df"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{item_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="620" y="5" width="100" height="20" uuid="ea32b6c1-1fcb-498f-a0de-439b4cf4c776"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="720" y="5" width="300" height="20" uuid="351445d5-166b-4d3b-9530-b0120f925a97"/>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1020" y="5" width="100" height="20" uuid="d0507705-da00-4eee-9a81-c60aa037fd75"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{currency_symbol}.toString() + $F{amount}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="50">
+			<textField>
+				<reportElement x="0" y="14" width="80" height="20" uuid="2744c1d0-88c6-4899-b497-04ee4874e12f"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="80" y="14" width="40" height="20" uuid="b696ae8b-2b75-43e5-b5f0-6c6f91b0bd08"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

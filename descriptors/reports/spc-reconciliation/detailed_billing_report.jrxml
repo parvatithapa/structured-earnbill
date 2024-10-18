@@ -1,0 +1,734 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="detailed_billing_report" language="groovy" pageWidth="2897" pageHeight="752" whenNoDataType="AllSectionsNoDetail" columnWidth="2897" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="274b963f-896d-46db-84e5-44adf3315d43">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="1815"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date"/>
+	<queryString>
+		<![CDATA[SELECT *,
+						(SELECT tariff_description
+   				    	   FROM route_70_tariff_description
+  				   		  WHERE tariff_code = dbr.tariff_code) AS tariff_description,
+  				   		(SELECT description
+   				    	   FROM route_70_rollup_description
+  				   		  WHERE code = dbr.rollup_code) AS rollup_description,
+  				   		(SELECT description
+   				    	   FROM route_70_rollup_description
+  				   		  WHERE code = dbr.super_rollup_code) AS super_rollup_description,
+  				   		(SELECT description
+   				    	   FROM route_70_rollup_description
+                          WHERE code = dbr.super_super_rollup_code) AS super_super_rollup_description,
+                        CASE WHEN (is_mediated = 'f' AND period_id = 1)
+                             THEN active_since
+                             WHEN (is_mediated = 't' AND period_id = 1)
+                             THEN (SELECT MIN(TO_DATE(SPLIT_PART(SUBSTRING(description,
+                                                                           POSITION('Period from' in description) + 11,
+                                                                           POSITION('Period from' in description) + 16),'to',1),'DD-MM-YYYY'))
+                                     FROM invoice_line
+                                    WHERE invoice_id = CASE WHEN ((SELECT MAX(id)
+                                                                     FROM invoice
+                                                                    WHERE id IN (SELECT invoice_id
+                                                                                   FROM order_process
+                                                                                  WHERE order_id = subscription_order_id)
+                                                                                        AND id != subscription_order_invoice_id) IS NOT NULL)
+                                                            THEN (SELECT MAX(id)
+                                                                     FROM invoice
+                                                                    WHERE id IN (SELECT invoice_id
+                                                                                   FROM order_process
+                                                                                  WHERE order_id = subscription_order_id)
+                                                                                        AND id != subscription_order_invoice_id)
+                                                            ELSE subscription_order_invoice_id
+                                                        END
+                                          AND type_id = 1
+                                          AND order_id =  subscription_order_id)
+                             WHEN (il_period IS NULL)
+                             THEN (SELECT MAX(TO_DATE(SPLIT_PART(SUBSTRING(description, POSITION('Period from' in description) + 11, POSITION('Period from' in description) + 16),'to',1),'DD-MM-YYYY')) FROM invoice_line
+                                   WHERE invoice_id = invoice_number AND type_id = 1)
+                             WHEN (il_period IS NOT NULL)
+                             THEN  TO_DATE(SPLIT_PART(SUBSTRING(il_period, POSITION('Period from' in il_period) + 11, POSITION('Period from' in il_period) + 16),'to',1),'DD-MM-YYYY')
+                         END AS from_date,
+                        CASE WHEN (is_mediated = 'f' AND period_id = 1)
+                             THEN active_since
+                             WHEN (is_mediated = 't' AND period_id = 1)
+                             THEN (SELECT MIN(TO_DATE(SPLIT_PART(SUBSTRING(description,
+                                                                           POSITION('Period from' in description) + 11,
+                                                                           POSITION('Period from' in description) + 16),'to',2),'DD-MM-YYYY'))
+                                     FROM invoice_line
+                                    WHERE invoice_id = CASE WHEN ((SELECT MAX(id)
+                                                                     FROM invoice
+                                                                    WHERE id IN (SELECT invoice_id
+                                                                                   FROM order_process
+                                                                                  WHERE order_id = subscription_order_id)
+                                                                                        AND id != subscription_order_invoice_id) IS NOT NULL)
+                                                            THEN (SELECT MAX(id)
+                                                                     FROM invoice
+                                                                    WHERE id IN (SELECT invoice_id
+                                                                                   FROM order_process
+                                                                                  WHERE order_id = subscription_order_id)
+                                                                                        AND id != subscription_order_invoice_id)
+                                                            ELSE subscription_order_invoice_id
+                                                        END
+                                          AND type_id = 1
+                                          AND order_id =  subscription_order_id)
+                             WHEN (il_period IS NULL)
+                             THEN (SELECT MAX(TO_DATE(SPLIT_PART(SUBSTRING(description, POSITION('Period from' in description) + 11, POSITION('Period from' in description) + 16),'to',2),'DD-MM-YYYY')) FROM invoice_line
+                                   WHERE invoice_id = invoice_number AND type_id = 1)
+                             WHEN (il_period IS NOT NULL)
+                             THEN  TO_DATE(SPLIT_PART(SUBSTRING(il_period, POSITION('Period from' in il_period) + 11, POSITION('Period from' in il_period) + 16),'to',2),'DD-MM-YYYY')
+                         END AS to_date
+			 	FROM (SELECT i.create_datetime AS invoice_date,
+	       					 i.id AS invoice_number,
+	       					 i.user_id AS customer_number,
+                             po.id AS po_id,
+                             il.item_id AS itm_id,
+                             il.type_id AS type_id,
+                             po.active_since AS active_since,
+                             po.is_mediated AS is_mediated,
+                             po.period_id AS period_id,
+                             SPLIT_PART(il.description,'Period from',1) AS plan_name,
+	       					(SELECT STRING_AGG(string_value, ',')
+		  				   	   FROM meta_field_value mfv
+	    			 	 INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+	    			 			AND mfn.name IN ('Phone Number','Email')
+	    			 	 INNER JOIN asset_meta_field_map amfm ON mfv.id = amfm.meta_field_value_id
+					 	 INNER JOIN asset a ON a.id = amfm.asset_id
+					 			AND order_line_id IN (SELECT id
+					 									FROM order_line
+					 							   	   WHERE order_id = il.order_id)) AS service_number_email,
+					 (SELECT CASE
+							 WHEN (SELECT COUNT(*) > 0
+									 FROM plan
+					   				WHERE item_id = il.item_id) = 'f'
+							 THEN (SELECT TRIM(REPLACE(STRING_AGG(description,','), 'Service Type -',''))
+									 FROM item_type it
+				  			   INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+		 		 	   				WHERE description LIKE 'Service Type -%')
+							 ELSE NULL
+							 END ) AS service_type,
+					 (SELECT CASE
+							 WHEN (SELECT COUNT(*) > 0
+									 FROM plan
+					   				WHERE item_id = il.item_id) = 'f'
+							 THEN (SELECT STRING_AGG(service_description,', ')
+								  	 FROM route_70_service_type_description
+								    WHERE service_type IN (SELECT TRIM(REPLACE(description, 'Service Type -',''))
+									 FROM item_type it
+				  			   INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
+		 		 	   				WHERE description LIKE 'Service Type -%'))
+							 ELSE NULL
+							 END ) AS service_description,
+				     (SELECT STRING_AGG(description,',')
+						FROM item_type it
+		  		  INNER JOIN item_type_map itm ON it.id = itm.type_id
+		 		 		 AND item_id = il.item_id) AS plan_type,
+                     (SELECT description
+                        FROM invoice_line
+                       WHERE id = il.id AND description LIKE '%Period from __/__/____ to __/__/____%') AS il_period,
+					 itm.active_until AS product_end_date,
+					 (SELECT tax_code
+					    FROM route_70_tax_scheme
+					   WHERE description =((CASE WHEN (SELECT COUNT(*) > 0
+								  						 FROM plan
+								 						WHERE item_id = il.item_id)
+        				  								 THEN (SELECT mfv.string_value
+                         		  								 FROM meta_field_value mfv
+                   										   INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   										   INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Tax Scheme'
+                   										   INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                		  						 ELSE (SELECT mfv.string_value
+						  					  			 FROM item itm
+												   INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+												   INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+												   INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme' AND mfv.meta_field_name_id = mfn.id AND itm.id = il.item_id) END))) AS tax_code,
+					(CASE WHEN (SELECT COUNT(*) > 0
+								  FROM plan
+								 WHERE item_id = il.item_id)
+        				  THEN (SELECT mfv.string_value
+                         		  FROM meta_field_value mfv
+                   			INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   			INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                   			INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                		  ELSE itm.gl_code END) AS revenue_gl_code,
+					COALESCE((CASE
+							  WHEN il.gross_amount = 0
+			 				  THEN il.amount
+			  				  ELSE il.gross_amount
+			   				   END),0) AS sales_ex_gst,
+                    (CASE
+                          WHEN ((SELECT item_id
+                                   FROM invoice_line
+                                  WHERE invoice_id = il.invoice_id AND description = 'GST' LIMIT 1) = 45)
+                           THEN 0.00
+                           ELSE il.tax_amount
+                     END) AS gst,
+					(CASE WHEN (SELECT COUNT(*) > 0
+								  FROM plan
+								 WHERE item_id = il.item_id)
+        				  THEN (SELECT mfv.string_value
+                         		  FROM meta_field_value mfv
+                   			INNER JOIN plan_meta_field_map pmfm ON mfv.id = pmfm.meta_field_value_id
+                   			INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Costs GL Code'
+                   			INNER JOIN plan p ON p.id = pmfm.plan_id AND p.item_id = il.item_id)
+                		  ELSE (SELECT mfv.string_value
+					   			  FROM item itm
+				 			INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+				 			INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+				 			INNER JOIN meta_field_name mfn ON mfn.name = 'Costs GL Code'
+				 				   AND mfv.meta_field_name_id = mfn.id
+								   AND itm.id = il.item_id) END) AS costs_gl_code,
+					(SELECT rollup_code
+                       FROM rollup_codes
+                      WHERE item_type_description = (SELECT content
+                                                       FROM international_description
+                                                      WHERE foreign_id = il.item_id
+                                                             AND table_id = (SELECT id
+                                                                               FROM jbilling_table
+                                                                              WHERE name = 'item') AND language_id = 1)) AS rollup_code,
+                    (SELECT rollup_code_type
+                       FROM rollup_codes
+                      WHERE item_type_description = (SELECT content
+                                                       FROM international_description
+                                                      WHERE foreign_id = il.item_id
+                                                            AND table_id = (SELECT id
+                                                                              FROM jbilling_table
+                                                                              WHERE name = 'item') AND language_id = 1)) AS super_rollup_code,
+                    (SELECT rollup_code_type
+                       FROM rollup_codes
+                      WHERE rollup_code = (SELECT rollup_code_type
+                                             FROM rollup_codes
+                                            WHERE item_type_description = (SELECT content
+                                                                             FROM international_description
+                                                                            WHERE foreign_id = il.item_id
+                                                                                  AND table_id = (SELECT id
+                                                                                                    FROM jbilling_table
+                                                                                                   WHERE name = 'item') AND language_id = 1))) AS super_super_rollup_code,
+				(SELECT TRIM(REPLACE(SPLIT_PART(SUBSTRING(jmr.pricing_fields FROM '%TARIFF_CODE:1:string:#"%#"%' FOR '#'),',',1), '%3A', ':'))
+				   FROM jbilling_mediation_record jmr
+				  WHERE jmr.order_id = il.order_id
+				   	AND jmr.item_id = il.item_id
+				  LIMIT 1) AS tariff_code,
+                COALESCE ((SELECT SUM(jmr.rated_price)
+                             FROM jbilling_mediation_record jmr
+                            WHERE jmr.order_id = il.order_id AND jmr.item_id = il.item_id), 0) As cost_of_service,
+                (SELECT MAX(id)
+                   FROM invoice
+                  WHERE user_id = i.user_id
+                        AND id IN (SELECT invoice_id
+                                     FROM invoice_line
+                                    WHERE order_id IN (SELECT id
+                                                         FROM purchase_order
+                                                        WHERE id IN (SELECT order_id
+                                                                       FROM order_line
+                                                                      WHERE id IN (SELECT order_line_id
+                                                                                     FROM asset
+                                                                                     WHERE identifier IN (SELECT DISTINCT (call_identifier)
+                                                                                                            FROM invoice_line
+                                                                                                           WHERE invoice_id = il.invoice_id
+                                                                                            AND call_identifier IS NOT NULL
+                                                                                            AND item_id = il.item_id)) LIMIT 1)))
+                        AND id != il.invoice_id) AS subscription_order_invoice_id,
+                (SELECT id
+                   FROM purchase_order
+                   WHERE id IN (SELECT order_id
+                                  FROM order_line
+                                 WHERE id IN (SELECT order_line_id
+                                                FROM asset
+                                               WHERE identifier IN (SELECT DISTINCT (call_identifier)
+                                                                      FROM invoice_line
+                                                                     WHERE invoice_id = il.invoice_id
+                                                                           AND call_identifier IS NOT NULL
+                                                                           AND item_id = il.item_id)) LIMIT 1)) AS subscription_order_id
+				 FROM invoice i
+	       INNER JOIN invoice_line il ON i.id = il.invoice_id
+           LEFT OUTER JOIN purchase_order po ON po.id = il.order_id
+           LEFT OUTER JOIN order_process op ON op.invoice_id = il.invoice_id AND po.id = op.order_id
+		   LEFT OUTER JOIN item itm ON itm.id = il.item_id
+		  	    WHERE il.deleted = 0
+					  AND il.type_id != 3
+					  AND i.create_datetime BETWEEN $P{start_date} AND $P{end_date}
+			 GROUP BY invoice_date,
+			 	 	  invoice_number,
+                      il.id,
+					  customer_number,
+					  il.order_id,
+					  il.item_id,
+					  itm.id,
+					  il_period,
+					  il.gross_amount,
+					  il.amount,
+					  il.tax_amount,
+					  po.active_since,
+					  po.is_mediated,
+					  po.period_id,
+					  po.id
+					  ORDER BY invoice_number,
+						   invoice_date,
+						   il.description DESC) AS dbr;]]>
+	</queryString>
+	<field name="invoice_date" class="java.sql.Timestamp"/>
+	<field name="invoice_number" class="java.lang.Integer"/>
+	<field name="customer_number" class="java.lang.Integer"/>
+	<field name="po_id" class="java.lang.Integer"/>
+	<field name="itm_id" class="java.lang.Integer"/>
+	<field name="type_id" class="java.lang.Integer"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="is_mediated" class="java.lang.Boolean"/>
+	<field name="period_id" class="java.lang.Integer"/>
+	<field name="plan_name" class="java.lang.String"/>
+	<field name="service_number_email" class="java.lang.String"/>
+	<field name="service_type" class="java.lang.String"/>
+	<field name="service_description" class="java.lang.String"/>
+	<field name="plan_type" class="java.lang.String"/>
+	<field name="il_period" class="java.lang.String"/>
+	<field name="product_end_date" class="java.sql.Date"/>
+	<field name="tax_code" class="java.lang.String"/>
+	<field name="revenue_gl_code" class="java.lang.String"/>
+	<field name="sales_ex_gst" class="java.math.BigDecimal"/>
+	<field name="gst" class="java.math.BigDecimal"/>
+	<field name="costs_gl_code" class="java.lang.String"/>
+	<field name="rollup_code" class="java.lang.String"/>
+	<field name="super_rollup_code" class="java.lang.String"/>
+	<field name="super_super_rollup_code" class="java.lang.String"/>
+	<field name="tariff_code" class="java.lang.String"/>
+	<field name="cost_of_service" class="java.math.BigDecimal"/>
+	<field name="subscription_order_invoice_id" class="java.lang.Integer"/>
+	<field name="subscription_order_id" class="java.lang.Integer"/>
+	<field name="tariff_description" class="java.lang.String"/>
+	<field name="rollup_description" class="java.lang.String"/>
+	<field name="super_rollup_description" class="java.lang.String"/>
+	<field name="super_super_rollup_description" class="java.lang.String"/>
+	<field name="from_date" class="java.sql.Date"/>
+	<field name="to_date" class="java.sql.Date"/>
+	<variable name="subtotal" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_symbol" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<variable name="total_incl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_gst} + $F{gst}]]></variableExpression>
+	</variable>
+	<variable name="total_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{gst}]]></variableExpression>
+	</variable>
+	<variable name="total_excl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{sales_ex_gst}]]></variableExpression>
+	</variable>
+	<variable name="total_cost_of_service" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{cost_of_service}]]></variableExpression>
+	</variable>
+	<group name="currency_symbol" footerPosition="ForceAtBottom">
+		<groupExpression><![CDATA[]]></groupExpression>
+		<groupFooter>
+			<band height="21">
+				<staticText>
+					<reportElement x="0" y="1" width="100" height="20" uuid="38592bfb-13b5-4d96-96d5-00b4ddf984a5"/>
+					<box rightPadding="5"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[  Total]]></text>
+				</staticText>
+				<textField pattern="#,##0.00" isBlankWhenNull="false">
+					<reportElement x="2592" y="1" width="106" height="20" uuid="09c7eb5d-a151-4d2b-b198-f0dc3fdb26ef"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_incl_gst} ? $V{total_incl_gst} : 0.00]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="0" width="2897" height="1" uuid="a28ac52c-754a-4d75-9bc2-6aa8c28a1a3a"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+				<textField pattern="#,##0.00" isBlankWhenNull="false">
+					<reportElement x="2487" y="1" width="105" height="20" uuid="17119e97-81ad-415a-9f73-f988c8befc7b"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_gst} ? $V{total_gst} : 0.00]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00" isBlankWhenNull="false">
+					<reportElement x="2382" y="1" width="105" height="20" uuid="b8f9a81c-f211-4ec1-8f2d-392a585a502c"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_excl_gst} ? $V{total_excl_gst} : 0.00]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00" isBlankWhenNull="false">
+					<reportElement x="2798" y="1" width="99" height="20" uuid="f74dcf0d-7eb2-46b2-8732-5057c79b7f56"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_cost_of_service} ? $V{total_cost_of_service} : 0.00]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="71" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="20" uuid="dc7faf57-30cd-48f6-8256-624fd5cf19ac"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Detailed Billing]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2698" y="21" width="100" height="20" uuid="c2e946c0-dd0a-40f6-b727-6dca6d63b577"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2698" y="41" width="100" height="20" uuid="b0b37546-1a58-43a1-a20e-ebcb257d6e16"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2698" y="1" width="100" height="20" uuid="ee620154-1088-4cbf-bd93-042d86b6c633"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="2798" y="21" width="99" height="20" uuid="ec10206d-5bcf-4b0d-ae49-5463329c81b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="2798" y="41" width="99" height="20" uuid="6cc94766-977c-4095-9531-4a7d07e18bb9"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="2798" y="1" width="99" height="20" uuid="92826d0c-85a5-4669-ab5d-286abb67896f"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="20" uuid="8b2974fb-a583-401c-ad4e-602405f76739"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="47">
+			<line>
+				<reportElement x="0" y="33" width="2897" height="1" uuid="660096f0-983d-4df7-9c9a-aa95391d6f48"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="33" uuid="ff2422d4-fb3b-4ee1-a431-783d2def8ba4"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="0" width="100" height="33" uuid="d67c600f-26d2-413b-b445-220dd66b927d"/>
+				<textElement verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="311" y="0" width="170" height="33" uuid="2b3b7aa1-cb64-4a60-9635-fb81b6856a08"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2487" y="0" width="105" height="33" uuid="c226c4a5-5516-4af8-a499-5f19424e99ac"/>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2592" y="0" width="106" height="33" uuid="d7a71e5c-5e36-49cf-bd38-176835b6960d"/>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales incl GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="481" y="0" width="180" height="33" uuid="faa67cf6-3081-4cc8-aad2-853d2083ced9"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Plan/Product Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="661" y="0" width="70" height="33" uuid="9b7e572e-4bb6-49e0-8299-cc1e7f59e09e"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[From Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="800" y="0" width="122" height="33" uuid="1ff828f7-94d2-410e-8052-bca3d42c7904"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product End Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="922" y="0" width="120" height="33" uuid="81e21b49-9f06-4e26-94ec-01b09e96ed31"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tariff Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1042" y="0" width="180" height="33" uuid="9487cbf9-7a35-4534-b732-9b2daeb3f1ad"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tariff Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1222" y="0" width="90" height="33" uuid="b53c0700-a6bb-4f9a-b200-c36a879082ab"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Rollup Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="111" height="33" uuid="08f4a0ff-6023-439e-9395-f7037a35f0a6"/>
+				<textElement verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="731" y="0" width="69" height="33" uuid="54339279-2f21-4f84-8b0e-0c568658101c"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[To Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1312" y="0" width="180" height="33" uuid="a8c83595-dbbb-4eb1-9be0-d02bdbcfb7c7"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Rollup Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="1492" y="0" width="90" height="33" uuid="bd7d37ba-572a-4f32-a1a1-2c6f42c9ae4c"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Super Rollup Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1582" y="0" width="180" height="33" uuid="c556ea02-1c85-4b35-892a-579f45e3e9e2"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Super Rollup Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2382" y="0" width="105" height="33" uuid="8fb2e554-1d25-482b-a14d-3b4641f256fa"/>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sales ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1762" y="0" width="90" height="33" uuid="1b8851e6-19d7-4ef7-8e50-01258f762851"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Super Super Rollup Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1852" y="0" width="111" height="33" uuid="a0af1c6e-1cbb-421a-9b0a-4ffa1e7efba3"/>
+				<textElement verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Super Super Rollup Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1963" y="0" width="100" height="33" uuid="b1636faa-07c7-4fc0-82c3-eae718d44fd3"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tax Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2063" y="0" width="100" height="33" uuid="b9fdbabd-99b8-4de1-8702-cba6578c27c2"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2163" y="0" width="117" height="33" uuid="b42fa451-6781-49b6-9686-6f00a436ac1e"/>
+				<textElement verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Service Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2280" y="0" width="102" height="33" uuid="cb4b9e8c-141f-43c3-b092-9ea9750da9ae"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revenue GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2698" y="0" width="100" height="33" uuid="46c4630c-efea-4674-9806-423d1fdddbb9"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cost GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2798" y="0" width="99" height="33" uuid="76a900f9-2236-436a-96df-75a4093fb3fd"/>
+				<textElement textAlignment="Right" verticalAlignment="Bottom">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cost of Service]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="100" height="20" uuid="a615fca4-043f-4942-9a19-b597a14c8835"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="100" y="0" width="100" height="20" uuid="ebdc0a71-9123-4e4a-85f9-2812a5901c54"/>
+				<textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="200" y="0" width="111" height="20" uuid="2a17e96b-6fcf-4509-9923-6b02b71a4b77"/>
+				<textFieldExpression><![CDATA[$F{customer_number}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="311" y="0" width="170" height="20" uuid="66d42841-d4e7-4883-883d-f006b7507221"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{service_number_email}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2487" y="0" width="105" height="20" uuid="4e95f7ae-64fa-4a4c-b302-6efd7f7fb21c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{gst}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2592" y="0" width="106" height="20" uuid="9aeab344-494e-42aa-b420-dabaa5e769b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_gst} + $F{gst}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="481" y="0" width="180" height="20" uuid="c690a73f-0625-4155-a942-947f2a03fd3e"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{plan_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="661" y="0" width="70" height="20" uuid="1439b921-8145-46e8-bd91-ce66868c9ac7"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{from_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1222" y="0" width="90" height="20" uuid="0c65ab31-9b63-4132-8067-8fe0263accac"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{rollup_code}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="731" y="0" width="69" height="20" uuid="96e9e25f-22d7-460e-9ac7-fd19bd4f597d"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{to_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="800" y="0" width="122" height="20" uuid="295f2e7d-fd89-4afc-953a-596709dd212c"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{product_end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="2382" y="0" width="105" height="20" uuid="3b27f73c-e129-4f4e-8144-3cb01636ff42"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{sales_ex_gst}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2698" y="0" width="100" height="20" uuid="4e34e55f-0abc-4586-9c1e-be701ad17228"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{costs_gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="2280" y="0" width="102" height="20" uuid="5d764613-d5c7-4a11-a19e-a917fa708c01"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{revenue_gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1312" y="0" width="180" height="20" uuid="6af7a33e-a06d-4d0d-97a4-433003649e0f"/>
+				<textFieldExpression><![CDATA[$F{rollup_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1492" y="0" width="90" height="20" uuid="b4c1948d-dae2-4533-ba5d-8c0a845f8adc"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{super_rollup_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1582" y="0" width="180" height="20" uuid="d654aa80-071a-49a1-af15-063ecc3d33ed"/>
+				<textFieldExpression><![CDATA[$F{super_rollup_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1762" y="0" width="90" height="20" uuid="2acdb382-cefd-472e-b456-b9fc2993e0f9"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{super_super_rollup_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1852" y="0" width="111" height="20" uuid="de6bc78f-30a6-48be-87aa-9c49be33c9af"/>
+				<textFieldExpression><![CDATA[$F{super_super_rollup_description}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1963" y="0" width="100" height="20" uuid="d29bd83f-f136-4ebe-8a1d-b03bf1b2a6bc"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{tax_code}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2798" y="0" width="99" height="20" uuid="2b067752-8a5f-4e86-8f42-03a7b5489aa3"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{cost_of_service}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="2063" y="0" width="100" height="20" uuid="7375e914-02c9-4fc4-b51f-5dbcf8587b3e"/>
+				<textFieldExpression><![CDATA[$F{service_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="2163" y="0" width="117" height="20" uuid="3c67a429-5f1e-42e0-8484-997b79414cbc"/>
+				<textFieldExpression><![CDATA[$F{service_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="922" y="0" width="120" height="20" uuid="1b457ee7-f8a4-4c2b-8f82-3115713ad5ce"/>
+				<textFieldExpression><![CDATA[$F{tariff_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1042" y="0" width="180" height="20" uuid="ff7543a7-7215-4ac6-952a-8d8b7d288731"/>
+				<textFieldExpression><![CDATA[$F{tariff_description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="23">
+			<textField>
+				<reportElement x="2798" y="1" width="99" height="20" uuid="854ca842-96fb-407a-8c71-1573d979bd98"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

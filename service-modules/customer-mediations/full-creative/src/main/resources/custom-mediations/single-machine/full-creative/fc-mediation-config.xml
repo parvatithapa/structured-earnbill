@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns="http://www.springframework.org/schema/beans"
+           xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <bean id="fc-init-jobs" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.jobs.MediationJobsInit" scope="singleton"></bean>
+
+	<!-- Common Service Beans -->
+	<bean id="ratingSchemeDAS" class="com.sapienter.jbilling.server.mediation.mrim.RatingSchemeDASImpl">
+		<property name="jdbcTemplate" ref="jBillingJdbcTemplate" />
+	</bean>
+	<bean id="mediationHelperService" class="com.sapienter.jbilling.server.mediation.helper.service.MediationHelperServiceImpl">
+		<property name="jdbcTemplate" ref="jBillingJdbcTemplate" />
+	</bean>
+
+    <!-- Common Mediation Beans -->
+    <bean id="fcRecordSeparatorPolicy" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.reader.FullCreativeRecordSeparatorPolicy" >
+		<property name="headerIdentifierName" value="Connection ID" />
+		 <property name="fieldSeparator" value="[,]" />
+	</bean>
+    <bean id="fcMediationTokenizer" class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer" lazy-init="true">
+        <property name="fieldSeparator" value="[,]" />
+    </bean>
+    <bean id="fcRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.FullCreativeRecycleRowMapper"/>
+	<bean id="fcRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+        <property name="dataSource" ref="jBillingMediationDataSource"/>
+        <property name="sql" value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+        <property name="rowMapper" ref="fcRecycleRowMapper"/>
+    </bean>
+
+	<!-- Common CDR Validation Steps Beans -->
+	<util:map id="fcMediationCdrValidationSteps" map-class="java.util.LinkedHashMap">
+		<entry key="DUPLICATE_RECORD_VALIDATION" value-ref="fcDuplicateRecordValidationStep" />
+		<entry key="MEDIATION_RECORD_FORMAT_VALIDATION" value-ref="fcMediationRecordFormatValidationStep" />
+		<entry key="MEDIATION_RESULT_VALIDATION" value-ref="fcMediationResultValidationStep" />
+	</util:map>
+	
+	<bean id="fcDuplicateRecordValidationStep"
+		class="com.sapienter.jbilling.server.mediation.converter.common.validation.DuplicateRecordValidationStep" />
+	<bean id="fcMediationRecordFormatValidationStep"
+		class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.validation.MediationRecordFormatValidationStep" />
+	<bean id="fcMediationResultValidationStep"
+		class="com.sapienter.jbilling.server.mediation.converter.common.validation.MediationResultValidationStep" />
+
+	<!-- Common Steps Resolver Beans -->
+	<bean id="fcAssetUserItemResolverStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.UserItemFromAssetResolutionStep" >
+    	<property name="assetField" value="DNIS"/>
+    	<property name="mediationHelperService" ref="mediationHelperService" />
+	</bean>
+	<bean id="fcItemResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.ItemResolutionStep" >
+		<property name="mediationHelperService" ref="mediationHelperService" />
+	</bean>
+	<bean id="fcItemQuantityResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.ItemQuantityResolutionStep" >
+    	<property name="quantityField" value="Duration (s)"/>
+        <property name="ratingSchemeDAS" ref="ratingSchemeDAS" />
+        <property name="mediationHelperService" ref="mediationHelperService" />
+	</bean>
+	<bean id="fcDescriptionResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.DescriptionResolutionStep" >
+        <property name="assetField" value="DNIS" />
+	</bean>
+	<bean id="fcJMRPricingResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.steps.JMRPricingResolutionStep">
+		<property name="mediationHelperService" ref="mediationHelperService"/>
+	</bean>
+	
+	<bean id="fcMediationJobListener" class="com.sapienter.jbilling.server.mediation.listener.FullCreativeMediationJobListener" parent="mediationJobListener"/>
+	<bean id="fcRecycleMediationJobListener" class="com.sapienter.jbilling.server.mediation.listener.FullCreativeRecycleMediationJobListener" parent="recycleMediationJobListener"/>
+	
+	<bean id = "fcOrderService" class = "com.sapienter.jbilling.server.fullcreative.FullCreativeOrderServiceImpl" parent = "orderService">
+		<constructor-arg name = "dnisPricingFieldName" value = "DNIS"/>
+	</bean>
+
+	<!-- Import mediation beans configuration files for each batch job -->
+	<import resource="classpath:custom-mediations/single-machine/full-creative/fc-mediation-inbound-call-job.xml"/>
+	<import resource="classpath:custom-mediations/single-machine/full-creative/fc-mediation-chat-job.xml"/>
+	<import resource="classpath:custom-mediations/single-machine/full-creative/fc-mediation-active-response-job.xml"/>
+	<import resource="classpath:custom-mediations/full-creative/fc-mediation-job.xml"/>
+
+</beans>

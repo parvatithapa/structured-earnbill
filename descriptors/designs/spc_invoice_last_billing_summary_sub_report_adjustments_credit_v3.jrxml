@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_last_billing_summary_sub_report_adjustments_credit_v3" language="groovy" pageWidth="263" pageHeight="100" columnWidth="263" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="70baa986-bf7f-4b39-a15e-c13710156c3a">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="credit" class="java.math.BigDecimal"/>
+	<parameter name="debit" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[SELECT 1]]>
+	</queryString>
+	<field name="?column?" class="java.lang.Integer"/>
+	<title>
+		<band height="17" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="1" width="135" height="15" isRemoveLineWhenBlank="true" uuid="39186f34-7c9f-4aa9-8105-fb36cef08c51">
+					<printWhenExpression><![CDATA[$P{credit} != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Credit]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="155" y="1" width="100" height="15" isRemoveLineWhenBlank="true" uuid="ebd171a3-7d81-46b5-b57b-22a0d59912d9">
+					<printWhenExpression><![CDATA[$P{credit} != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$P{credit}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

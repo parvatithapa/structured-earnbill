@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <bean id="appContextInitializerBean" class="com.sapienter.jbilling.server.util.Context.InitializerBean"/>
+
+    <!--	spring batch configuration	-->
+    <import resource="springbatch-infrastructure.xml"/>
+    <import resource="springintegration-infrastructure.xml"/>
+    <import resource="nges-export-job-context.xml"/>
+    <import resource="ageing-process-job-context.xml"/>
+    <import resource="provisioning-resources.xml"/>
+    <import resource="jms-messaging-resources.xml"/>
+    <import resource="jms-messaging-listeners.xml"/>
+    <import resource="aop-security-resources.xml"/>
+    <import resource="validation-resources.xml"/>
+    <import resource="hsqldb-cache-resources.xml"/>
+    <import resource="mediation-config-resources.xml"/>
+    <import resource="classpath:database-production-context.xml"/>
+    <import resource="classpath:mediation-context.xml"/>
+    <import resource="classpath:master/master-batch-context.xml"/>
+    <import resource="classpath:slave/jms-remote-partitioning-slave.xml"/>
+    <import resource="classpath:custom-mediations/multi-machine/deutsche-telekom/dt-mediation-config.xml" />
+    <import resource="classpath:integration-context.xml"/>
+
+    <import resource="classpath:audit-context.xml"/>
+
+    <import resource="edi-process-job-context.xml"/>
+    <import resource="boa-file-processing-job.xml"/>
+
+    <import resource="classpath:pre-evaluated-sql-data-base-config.xml"/>
+    <import resource="classpath:pre-evaluated-sql-context.xml"/>
+
+    <import resource="billing-master.xml"/>
+    <import resource="billing-slave.xml"/>
+    <import resource="ignition-batch-jobs.xml"/>
+    <import resource="ignition-batch-jobs-slave.xml"/>
+
+    <!-- This will locate the xml file in a production environment -->
+    <import resource="classpath:custom-mediations/single-machine/full-creative/fc-mediation-config.xml"/>
+    <!-- Movius Mediation Configuration  -->
+    <import resource="classpath:movius-mediation-config.xml"/>
+
+    <!-- Distriubtel Price Update Job   -->
+    <import resource = "distributel-price-update-job.xml"/>
+
+    <import resource="dt-product-upload-job-context.xml"/>
+    <import resource="classpath:dt-customer-resources.xml"/>
+    <!-- Sapphire Mediation Configuration -->
+    <import resource="classpath:sapphire-mediation-job.xml"/>
+
+    <!-- Rabbit MQ Configuration-->
+    <import resource="rabbit-mq-context.xml"/>
+
+    <!-- SPC Mediation Configuration  -->
+    <import resource="classpath:spc-mediation-config.xml"/>
+
+    <!-- SPC MUR Mediation Job -->
+    <import resource="classpath:spc-mur-mediation-job.xml"/>
+
+    <!-- Distriubtel Price increase and reversal Job   -->
+    <import resource = "distributel-price-increase-reverse-job.xml"/>
+
+    <!--
+          ***************************************************
+          *         MAIN BEAN DEFINITIONS               *
+          ***************************************************
+    -->
+
+    <!-- Session Facade beans, used mostly for transaction control and other AOP -->
+    <bean id="itemSession" class="com.sapienter.jbilling.server.item.ItemSessionBean"/>
+    <bean id="notificationSession" class="com.sapienter.jbilling.server.notification.NotificationSessionBean"/>
+    <bean id="customerSession" class="com.sapienter.jbilling.server.customer.CustomerSessionBean"/>
+    <bean id="userSession" class="com.sapienter.jbilling.server.user.UserSessionBean"/>
+    <bean id="invoiceSession" class="com.sapienter.jbilling.server.invoice.InvoiceSessionBean"/>
+    <bean id="orderSession" class="com.sapienter.jbilling.server.order.OrderSessionBean"/>
+    <bean id="pluggableTaskSession" class="com.sapienter.jbilling.server.pluggableTask.PluggableTaskSessionBean"/>
+    <bean id="paymentSession" class="com.sapienter.jbilling.server.payment.PaymentSessionBean"/>
+    <bean id="mediationSession" class="com.sapienter.jbilling.server.mediation.MediationSessionBean"/>
+    <bean id="jobExecutionSessionBean" class="com.sapienter.jbilling.server.util.JobExecutionSessionBean"/>
+    <bean id="billingProcessSession" class="com.sapienter.jbilling.server.process.BillingProcessSessionBean"/>
+    <bean id="provisioningProcessSession" class="com.sapienter.jbilling.server.provisioning.ProvisioningProcessSessionBean"/>
+    <bean id="customerUsagePoolEvaluationSession" class="com.sapienter.jbilling.server.usagePool.CustomerUsagePoolEvaluationSessionBean"/>
+    <bean id="authenticationUserService" class="com.sapienter.jbilling.client.authentication.AuthenticationUserService"/>
+    <bean id="flatFileParser" class="com.sapienter.jbilling.server.fileProcessing.fileParser.FlatFileParser"/>
+    <bean id="ediTransactionSession" class="com.sapienter.jbilling.server.ediTransaction.EDITransactionSessionBean"/>
+    <bean id="pluginsSession" class="com.sapienter.jbilling.server.notification.PluginsSessionBean"/>
+
+    <!-- The web services API, which is used as main service in the GUI -->
+    <bean id="webServicesSession" class="com.sapienter.jbilling.server.util.WebServicesSessionSpringBean">
+        <aop:scoped-proxy/>
+        <property name="apiUserDetailBL" ref="apiUserDetailBL" />
+    </bean>
+
+    <bean id="dtReserveInstanceWSMapper" class="com.sapienter.jbilling.server.dt.reserve.mapper.DtReserveInstanceWSMapper"/>
+
+	<bean id = "jbillingUserService" class = "com.sapienter.jbilling.client.authentication.AuthenticationUserService">
+		<aop:scoped-proxy/>
+	</bean>
+
+	<bean id = "passwordEncoder" class = "com.sapienter.jbilling.client.authentication.JBillingPasswordEncoder">
+		<aop:scoped-proxy/>
+	</bean>
+
+    <bean id="apiUserDetailBL" class="com.sapienter.jbilling.server.apiUserDetail.service.ApiUserDetailBL">
+        <aop:scoped-proxy/>
+        <property name="userDetailsService" ref="userDetailsService" />
+        <property name="passwordEncoder" ref="passwordEncoder" />
+    </bean>
+
+    <bean id="dtReserveInstanceValidator" class="com.sapienter.jbilling.server.dt.reserve.validator.DtReserveInstanceValidator">
+        <property name="webServicesSession" ref="webServicesSession"/>
+    </bean>
+
+    <!-- The Distributel web services API, which has separate implementation specific to Distributel -->
+    <bean id="distributelWebServicesSession" class="com.sapienter.jbilling.server.util.DistributelWebServicesSessionSpringBean">
+        <aop:scoped-proxy/>
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+
+    <!-- The web services API, which is used as main service in the GUI -->
+    <bean id="migrationServicesSession" class="com.sapienter.jbilling.server.util.MigrationServicesSessionSpringBean">
+        <aop:scoped-proxy/>
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+
+    <!-- Data Access Service beans -->
+    <bean id="internationalDescriptionDAS" class="com.sapienter.jbilling.server.util.db.InternationalDescriptionDAS"
+          factory-method="getInstance" scope="prototype">
+        <property name="jbDAS" ref="jbillingTableDAS"/>
+    </bean>
+
+    <bean id="jbillingTableDAS" class="com.sapienter.jbilling.server.util.db.JbillingTableDAS"
+          factory-method="getInstance" scope="prototype">
+        <property name="cache" ref="cacheProviderFacade"/>
+        <property name="cacheModel" ref="cacheModelReadOnly"/>
+    </bean>
+
+    <bean id="pluggableTaskDAS" class="com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskDAS"
+          factory-method="getInstance" scope="prototype">
+        <property name="cache" ref="cacheProviderFacade"/>
+        <property name="cacheModel" ref="cacheModelPTDTO"/>
+        <property name="flushModel" ref="flushModelPTDTO"/>
+    </bean>
+
+    <!-- Utility beans -->
+    <bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean"/>
+
+    <bean id="auditBL" class="com.sapienter.jbilling.server.audit.AuditBL"/>
+    <bean id="eventService" class="com.sapienter.jbilling.server.system.event.EventServiceImpl"/>
+    <bean id="jBillingJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+    <bean id="customerService" class="com.sapienter.jbilling.server.customer.CustomerJdbcTemplateService">
+        <property name="jdbcTemplate" ref="jBillingJdbcTemplate"/>
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+    <bean id="orderService" class="com.sapienter.jbilling.server.order.OrderServiceImpl">
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+	<!-- Bank Account Number encryption related beans -->
+	<bean id="base64Bean" class="com.sapienter.jbilling.server.payment.Base64Bean"/>
+	<bean id="secretKeyBean" class="com.sapienter.jbilling.server.payment.SecretKeyBean">
+		<property name="keyPath" value="resources/AC_KEY"/>
+		<property name="keyPassword" value="123qwe"/>
+		<property name="keyAlias" value="AC_KEY"/>
+		<property name="keyStoreType" value="JCEKS"/>
+	</bean>
+	<bean id="cipherBean" class="com.sapienter.jbilling.server.payment.CipherBean" scope="prototype">
+		<property name="base64Bean" ref="base64Bean"/>
+		<property name="secretKeyBean" ref="secretKeyBean"/>
+		<property name="encryptionAlgorithm" value="DES/ECB/PKCS5Padding"/>
+	</bean>
+
+	<!-- Will retry execution of api method if Execption occur at runtime mentioned in @RetryConcurrentOperation annotation -->
+    <bean class="com.sapienter.jbilling.common.ConcurrentOperationFailureInterceptor" id="failureInterceptor">
+        <property name="maxRetries" value="10"/>
+        <property name="order" value="0"/>
+    </bean>
+
+    <bean id = "mediationPartitioningPluginHelperService" class = "com.sapienter.jbilling.server.mediation.task.MediationPartitioningPluginHelperServiceImpl"/>
+
+    <bean id = "mediationMRIMServiceImpl" class = "com.sapienter.jbilling.server.mediation.MediationMRIMServiceImpl"/>
+
+    <bean id = "methodTransactionalWrapper" class = "com.sapienter.jbilling.common.MethodTransactionalWrapper"/>
+
+    <!-- Rating Unit/Scheme Integration beans -->
+    <bean id="ratingUnitDAS" class="com.sapienter.jbilling.server.quantity.data.das.RatingUnitDASImpl">
+        <property name="jdbcTemplate" ref="jBillingJdbcTemplate" />
+    </bean>
+
+    <bean id="ratingUnitRater"
+          class="com.sapienter.jbilling.server.quantity.rater.RatingUnitBasedQuantityRater">
+        <property name="ratingUnitDAS" ref="ratingUnitDAS" />
+    </bean>
+
+    <bean id="ratingSchemeRater"
+          class="com.sapienter.jbilling.server.quantity.rater.RatingSchemeBasedQuantityRater" />
+
+    <bean id="itemQuantityRatingService" class="com.sapienter.jbilling.server.quantity.ItemQuantityRatingServiceImpl">
+        <property name="ratingUnitRater" ref="ratingUnitRater" />
+        <property name="ratingSchemeRater" ref="ratingSchemeRater" />
+    </bean>
+
+    <bean id="defaultUsageRecordService"
+          class="com.sapienter.jbilling.server.quantity.usage.service.UsageRecordService">
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" id="usageRecordServiceFactory">
+        <property name="serviceLocatorInterface"
+                  value="com.sapienter.jbilling.server.quantity.usage.service.UsageRecordServiceFactory" />
+    </bean>
+
+    <bean id="pricingModelDataProvider"
+          class="com.sapienter.jbilling.server.pricing.tasks.PricingModelDataProvider">
+        <property name = "persistentDataProvider" ref = "pricingModelPersistentDataProvider" />
+    </bean>
+
+    <bean id="pricingModelPersistentDataProvider"
+          class="com.sapienter.jbilling.server.pricing.tasks.PricingModelPersistentDataProvider">
+    </bean>
+
+    <!-- The Deutsche Telecom web services API, which has separate implementation specific to Deutsche Telecom -->
+    <bean id="deutscheTelecomWebServicesSession" class="com.sapienter.jbilling.server.util.DeutscheTelecomWebServicesSessionSpringBean">
+        <aop:scoped-proxy/>
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+    <bean id = "scheduledTaskTriggerListener" class = "com.sapienter.jbilling.server.pluggableTask.listener.ScheduledTaskTriggerListener"/>
+
+    <bean id = "spcOutBoundInterchangeHelperService" class = "com.sapienter.jbilling.server.spc.wookie.crm.SpcOutBoundInterchangeHelperService"/>
+    <bean id = "outBoundInterchangeDAS" class = "com.sapienter.jbilling.server.integration.db.OutBoundInterchangeDAS"/>
+    <bean id = "userResourceHelperService" class = "com.sapienter.jbilling.server.user.UserResourceHelperService"/>
+    <bean id = "mediationRestHelperService" class = "com.sapienter.jbilling.server.mediation.MediationRestHelperService"/>
+    <bean id = "sapphireHelperService" class = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireHelperService"/>
+    <bean id = "orderResourceHelperService" class = "com.sapienter.jbilling.server.order.OrderResourceHelperService"/>
+    <bean id = "assetResourceHelperService" class = "com.sapienter.jbilling.server.item.AssetResourceHelperService"/>
+    <bean id = "invoiceResourceHelperService" class = "com.sapienter.jbilling.server.invoice.InvoiceResourceHelperService"/>
+    <bean id = "exceptionInterceptor" class="com.sapienter.jbilling.common.ExceptionInterceptor"/>
+
+    <bean id = "readOnlyTx" class = "org.springframework.transaction.support.TransactionTemplate">
+        <property name = "propagationBehaviorName" value = "PROPAGATION_REQUIRED"/>
+        <property name = "readOnly"                value = "true"/>
+        <property name = "transactionManager"      ref   = "transactionManager"/>
+    </bean>
+
+    <bean id = "readWriteTx" class = "org.springframework.transaction.support.TransactionTemplate">
+        <property name = "propagationBehaviorName" value = "PROPAGATION_REQUIRES_NEW"/>
+        <property name = "transactionManager"      ref   = "transactionManager"/>
+    </bean>
+
+    <bean id="paymentWebHookService" class="com.sapienter.jbilling.server.payment.PaymentWebHookService"/>
+</beans>

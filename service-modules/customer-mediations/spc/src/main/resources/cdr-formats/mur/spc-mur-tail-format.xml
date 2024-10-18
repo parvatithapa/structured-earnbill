@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <field>
+        <name>Record Type</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Sequence Number</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>File Closure</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total MSC Record</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total Operator Service Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total VMOD Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total RBS Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total SMSC Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total MMSC Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total GPRS Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total Atomic Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Total InfoAccess 190 Records</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Filler</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>Filler</name>
+        <type>string</type>
+    </field>
+</format>

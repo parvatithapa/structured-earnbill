@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE format SYSTEM "/custom-mediations/mediation.dtd">
+<format>
+    <!--Identifies the CDR Record -->
+    <field>
+        <name>InvRecordVersion</name>
+        <type>string</type>
+    </field>
+    <field>
+        <name>RecSequenceNumber</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>BillingDate</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>RevenueStartDate</name>
+        <type>string</type>
+    </field>
+    <!-- The active since date of the the order, Format: yyyy-MM-dd -->
+    <field>
+        <name>RevenueEndDate</name>
+        <type>string</type>
+    </field>
+    <!-- The active until date of the the order, Format: yyyy-MM-dd -->
+    <field>
+        <name>BusinessUnit</name>
+        <type>string</type>
+    </field>
+    <!-- Name of the company/entity for which billing is included -->
+    <field>
+        <name>CustomerID</name>
+        <type>string</type>
+    </field>
+    <!-- It is related to the CID or Customer ID -->
+    <field>
+        <name>BillingIdentifier</name>
+        <type>string</type>
+        <isKey/>
+    </field>
+    <!-- Product number -->
+    <field>
+        <name>ProductNature</name>
+        <type>string</type>
+    </field>
+    <!-- -->
+    <field>
+        <name>BillingIndicator</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>SubscriptionOrderID</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>InvoiceSegment</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>Language</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>InvoiceDescriptiveText</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>Calls</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>DollarAmount</name>
+        <type>decimal</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>HST</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>GST</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>PST</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>TaxProvinceCode</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>TaxFlag</name>
+        <type>string</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>DetailType</name>
+        <type>integer</type>
+    </field>
+    <!--  -->
+    <field>
+        <name>DetailBaseFilename</name>
+        <type>string</type>
+    </field>
+</format>

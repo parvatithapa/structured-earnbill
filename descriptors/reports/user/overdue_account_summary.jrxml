@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="overdue_account_summary" language="groovy" pageWidth="1638" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="594" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" orientation="Landscape">
+  <property name="ireport.zoom" value="1.5"/>
+  <property name="ireport.x" value="0"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="entity_id" class="java.lang.Integer"/>
+  <parameter name="customer_status" class="java.lang.Integer"/>
+  <parameter name="child_entities" class="java.util.List"/>
+  
+  <queryString>
+    <![CDATA[
+             SELECT u.id AS customer_id, 
+                    cu.symbol AS currency_symbol,
+                    cu.code AS currency_code,
+                    split_part(u.user_name, '_', 1) AS customer_name,
+                    idesc.content AS overdue_status,
+                    (SELECT MAX(p.payment_date) 
+                       FROM payment p 
+                      WHERE p.user_id=u.id) AS last_payment,
+                    (SELECT MIN(i.due_date)
+                       FROM invoice i
+                      WHERE i.status_id != 26
+                        AND i.user_id=u.id) AS oldest_invoice,
+                    (SELECT aes.days 
+                       FROM ageing_entity_step aes 
+                      WHERE aes.entity_id= $P{entity_id}
+                        AND aes.status_id=u.status_id) AS ageing_days,
+                    (SELECT l.description 
+                       FROM language l 
+                      WHERE l.id = u.language_id) AS language,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Street Number'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS street_number,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Street Number Suffix'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS no_suff,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Street Name'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS street_name,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Street Type'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS street_type,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Street Direction'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS direction,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Apt/Suite'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS apt_suite,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'City'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS city,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Province'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS province,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Postal Code'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS postal_code,
+                    (SELECT mfv.string_value
+                       FROM meta_field_value mfv,
+                            meta_field_name mfn,
+                            customer_account_info_type_timeline caitt
+                      WHERE caitt.customer_id = c.id
+                        AND caitt.meta_field_value_id = mfv.id
+                        AND caitt.account_info_type_id IN (SELECT mfg.id
+                                                             FROM meta_field_group mfg
+                                                            WHERE mfg.entity_id = $P{entity_id}
+                                                              AND mfg.name = 'Contact Information')
+                        AND mfn.id = mfv.meta_field_name_id
+                        AND mfn.name = 'Phone Number 1'
+                   ORDER BY caitt.effective_date DESC
+                      LIMIT 1) AS phone_number
+               FROM base_user u
+         INNER JOIN customer c ON c.user_id=u.id
+          LEFT JOIN international_description idesc ON idesc.foreign_id=u.status_id
+          LEFT JOIN currency cu ON cu.id = u.currency_id
+              WHERE (u.entity_id = $P{entity_id} OR $X{IN, u.entity_id, child_entities}) 
+                AND u.deleted = 0
+                AND idesc.table_id IN (SELECT id 
+                                         FROM jbilling_table 
+                                        WHERE name='user_status')
+                AND idesc.psudo_column='description'
+                AND idesc.language_id = 1
+                AND CASE WHEN $P{customer_status} IS NULL
+                         THEN u.status_id NOT IN (1, (SELECT idesc.foreign_id
+                                                       FROM international_description idesc
+                                                      WHERE idesc.language_id = 1
+                                                        AND idesc.table_id IN (SELECT jt.id 
+                                                                                 FROM jbilling_table jt 
+                                                                                WHERE jt.name = 'user_status')
+                                                        AND idesc.psudo_column = 'description'
+                                                        AND idesc.content = 'Cancelled on Request'))
+                         ELSE u.status_id = $P{customer_status}
+                          END
+        ]]>
+  </queryString>
+  
+  <field name="customer_id" class="java.lang.Integer"/>
+  <field name="currency_symbol" class="java.lang.String"/>
+  <field name="currency_code" class="java.lang.String"/>
+  <field name="customer_name" class="java.lang.String"/>
+  <field name="overdue_status" class="java.lang.String"/>
+  <field name="last_payment" class="java.util.Date"/>
+  <field name="oldest_invoice" class="java.util.Date"/>
+  <field name="ageing_days" class="java.lang.Integer"/>
+  <field name="language" class="java.lang.String"/>
+  <field name="street_number" class="java.lang.String"/>
+  <field name="no_suff" class="java.lang.String"/>
+  <field name="street_name" class="java.lang.String"/>
+  <field name="street_type" class="java.lang.String"/>
+  <field name="direction" class="java.lang.String"/>
+  <field name="apt_suite" class="java.lang.String"/>
+  <field name="city" class="java.lang.String"/>
+  <field name="province" class="java.lang.String"/>
+  <field name="postal_code" class="java.lang.String"/>
+  <field name="phone_number" class="java.lang.String"/>
+  
+  <title>
+    <band height="100">
+      <staticText>
+        <reportElement x="0" y="1" width="350" height="20"/>
+        <textElement>
+          <font size="14" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Overdue Accounts]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1300" y="1" width="120" height="20"/>
+        <box rightPadding="5"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Report Date:]]></text>
+      </staticText>
+      <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="1420" y="1" width="76" height="20"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+      </textField>
+      <staticText>
+        <reportElement x="1300" y="21" width="120" height="20"/>
+        <box rightPadding="5"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Customer Status:]]></text>
+      </staticText>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1420" y="21" width="120" height="20"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[new com.sapienter.jbilling.server.user.db.UserStatusDAS().find($P{customer_status}).getDescription(1)]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+  <columnHeader>
+    <band height="21">
+      <staticText>
+        <reportElement x="0" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Customer Id]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="80" y="0" width="140" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Customer Name]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="220" y="0" width="120" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Overdue Status]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="340" y="0" width="103" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Last Payment Date]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="448" y="0" width="107" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Last Notified On]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="555" y="0" width="30" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Cur]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="585" y="0" width="90" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Center">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Total Owed]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="675" y="0" width="70" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Language]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="750" y="0" width="70" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Street No.]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="820" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[No. Suff.]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="900" y="0" width="100" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Street Name]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1000" y="0" width="100" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Street Type]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1100" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Direction]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1180" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Apt/Suite]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1260" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[City]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1340" y="0" width="80" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Prov]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1420" y="0" width="100" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Postal Code]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1520" y="0" width="100" height="20"/>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Phone Number]]></text>
+      </staticText>
+      <line>
+        <reportElement x="0" y="20" width="1620" height="1"/>
+        <graphicElement>
+          <pen lineWidth="2.0"/>
+        </graphicElement>
+      </line>
+    </band>
+  </columnHeader>
+  <detail>
+    <band height="20" >
+      <textField isBlankWhenNull="true" >
+        <reportElement x="0" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{customer_id}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="80" y="0" width="140" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="220" y="0" width="120" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{overdue_status}]]></textFieldExpression>
+      </textField>
+      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="340" y="0" width="103" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{last_payment}]]></textFieldExpression>
+      </textField>
+      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="448" y="0" width="107" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[com.sapienter.jbilling.server.util.time.DateConvertUtils.asUtilDate(com.sapienter.jbilling.server.util.time.DateConvertUtils.asLocalDate(new Date($F{oldest_invoice}.getTime())).plusDays($F{ageing_days}))]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="555" y="0" width="30" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{currency_code}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="585" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Right">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.##").format(com.sapienter.jbilling.server.user.UserBL.getBalance($F{customer_id}))]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="675" y="0" width="70" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{language}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="750" y="0" width="70" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{street_number}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="820" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{no_suff}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="900" y="0" width="100" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{street_name}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1000" y="0" width="100" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{street_type}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1100" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{direction}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1180" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{apt_suite}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1260" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{city}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1340" y="0" width="80" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{province}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1420" y="0" width="100" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{postal_code}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1520" y="0" width="100" height="20">
+        </reportElement>
+        <textElement verticalAlignment="Middle" textAlignment="Left">
+          <font size="10"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$F{phone_number}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+  <pageFooter>
+    <band height="25">
+      <textField>
+        <reportElement x="700" y="0" width="80" height="20"/>
+        <textElement textAlignment="Right"/>
+        <textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+      </textField>
+      <textField evaluationTime="Report">
+        <reportElement x="780" y="0" width="40" height="20"/>
+        <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
+</jasperReport>

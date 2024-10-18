@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_line_asset_summary_subreport_v3" language="groovy" pageWidth="555" pageHeight="200" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="ee152d9b-baf2-4d63-b6e5-00bbc8499cb9">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="call_identifier" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="description" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<parameter name="order_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT jmr.source AS call_identifier,
+TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD/MM/YYYY') AS event_date,
+TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'HH24:MI:SS') AS event_time,
+jmr.destination AS number_called,
+TO_CHAR((jmr.original_quantity || ' sec')::interval, 'HH24:MI:SS') AS min_sec,
+jmr.rated_price + (jmr.rated_price * il.tax_rate/100) AS inc_gst,
+il.description
+FROM jbilling_mediation_record jmr
+INNER JOIN purchase_order po ON po.id = jmr.order_id
+INNER JOIN order_line ol ON ol.id = jmr.order_line_id
+INNER JOIN invoice i ON i.user_id = jmr.user_id
+INNER JOIN invoice_line il ON il.invoice_id = i.id
+INNER JOIN base_user bu ON bu.id = i.user_id
+WHERE i.id = $P{invoice_id}
+AND il.order_id = po.id
+AND il.item_id = ol.item_id
+AND il.call_identifier IS NOT NULL
+AND il.call_identifier = jmr.source
+AND il.call_identifier = $P{call_identifier}
+AND il.description = $P{description}
+ORDER BY jmr.event_date ASC;]]>
+	</queryString>
+	<field name="call_identifier" class="java.lang.String"/>
+	<field name="event_date" class="java.lang.String"/>
+	<field name="event_time" class="java.lang.String"/>
+	<field name="number_called" class="java.lang.String"/>
+	<field name="min_sec" class="java.lang.String"/>
+	<field name="inc_gst" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="GroupByDescription" calculation="Sum">
+		<variableExpression><![CDATA[$F{inc_gst}]]></variableExpression>
+	</variable>
+	<group name="GroupByDescription" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="60">
+		<groupExpression><![CDATA[$F{description}]]></groupExpression>
+		<groupHeader>
+			<band height="47">
+				<textField isBlankWhenNull="true">
+					<reportElement x="0" y="3" width="222" height="20" uuid="8055ef0b-6cec-4d7a-82b4-b81539f686ed"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="1" y="25" width="111" height="20" uuid="12143762-936c-421c-b644-f5c7dc329161"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Date]]></text>
+				</staticText>
+				<line>
+					<reportElement x="3" y="46" width="550" height="1" uuid="2d2f19b9-1d6b-4a4a-b6a9-f0d29453e30a"/>
+					<graphicElement>
+						<pen lineWidth="0.5" lineColor="#FFCCCC"/>
+					</graphicElement>
+				</line>
+				<staticText>
+					<reportElement x="334" y="25" width="111" height="20" uuid="321241ea-ac3b-4463-963b-4e3dfb0591e3"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Hour:min:sec]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="112" y="25" width="111" height="20" uuid="b805aac8-cf23-4d50-92db-0a67e6e77d59"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Time]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="446" y="25" width="70" height="20" uuid="60472851-d3ee-470c-a409-577ae779b1cb"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Incl. GST]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="223" y="25" width="111" height="20" uuid="691a44fe-7607-4c0b-b832-0a3a52a7d505"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Number Called]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="20">
+				<staticText>
+					<reportElement x="261" y="0" width="183" height="20" forecolor="#D6036C" uuid="ab3827b9-11f9-46f3-b334-b75e9de77936"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="446" y="0" width="70" height="20" forecolor="#D6036C" uuid="b82848bc-72f8-4ff4-a1d0-5ea12abdba17"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="Calibri" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{currency_symbol}+''+$V{sub_total}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="446" y="2" width="70" height="20" uuid="2609d19f-db06-42f7-b5f8-a41c69fdc6ab"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{inc_gst}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="335" y="2" width="111" height="20" uuid="82c841f5-30d6-497d-b27d-8eb59d584794"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{min_sec}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="224" y="2" width="111" height="20" uuid="4373341c-7825-4a7b-9597-15681e4ca716"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{number_called}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="2" y="2" width="111" height="20" uuid="d55721d2-2a2e-45d8-9bc8-74195a7ab715"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="113" y="2" width="111" height="20" uuid="2e4b4c27-6a63-499a-b724-83b11ecfd8fd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Calibri"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{event_time}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

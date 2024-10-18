@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/foreign-keys-indexes-20171207.xml">
+
+    <changeSet context = "base" id = "billing-indexes" author = "Igor Poteryaev">
+
+        <comment>Create missed indexes and constraint on tables identified as slow during Ignition migration</comment>
+
+        <!-- invoice_line -->
+
+        <createIndex tableName = "invoice_line"
+                     indexName = "invoice_line_fk_invoice">
+            <column name = "invoice_id"/>
+        </createIndex>
+
+        <createIndex tableName = "invoice_line"
+                     indexName = "invoice_line_fk_user">
+            <column name = "source_user_id"/>
+        </createIndex>
+
+        <!-- payment_information_meta_fields_map -->
+
+        <createIndex tableName = "payment_information_meta_fields_map"
+                     indexName = "payment_info_mf_map_mfv">
+            <column name = "meta_field_value_id"/>
+        </createIndex>
+
+        <!-- customer_account_info_type_timeline -->
+
+        <createIndex tableName = "customer_account_info_type_timeline"
+                     indexName = "cust_acct_typ_tmln_fk_mfvalue">
+            <column name = "meta_field_value_id"/>
+        </createIndex>
+
+        <!-- order_change -->
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_order">
+            <column name = "order_id"/>
+        </createIndex>
+
+        <createIndex tableName = "order_change"
+                     indexName = "order_change_fk_parent">
+            <column name = "parent_order_change_id"/>
+        </createIndex>
+
+        <!-- invoice -->
+
+        <!-- functional index. PostgreSQL feature -->
+        <sql dbms="postgresql">
+            create index invoice_idx_max_user on invoice (user_id) where ((deleted = 0) AND (is_review = 0));
+        </sql>
+
+        <!-- customer_meta_field_map -->
+
+        <createIndex tableName = "customer_meta_field_map"
+                     indexName = "customer_mf_map_fk_mf_value">
+            <column name = "meta_field_value_id"/>
+        </createIndex>
+
+        <createIndex tableName = "customer_meta_field_map"
+                     indexName = "customer_mf_map_fk_customer">
+            <column name = "customer_id"/>
+        </createIndex>
+
+        <!-- customer_meta_field_map -->
+
+        <createIndex tableName = "order_meta_field_map"
+                     indexName = "order_mf_map_fk_mf_value">
+            <column name = "meta_field_value_id"/>
+        </createIndex>
+
+        <createIndex tableName = "order_meta_field_map"
+                     indexName = "order_mf_map_fk_order">
+            <column name = "order_id"/>
+        </createIndex>
+
+        <!-- base_user -->
+
+        <createIndex tableName = "base_user"
+                     indexName = "base_user_fk_status">
+            <column name = "status_id"/>
+        </createIndex>
+
+        <createIndex tableName = "base_user"
+                     indexName = "base_user_fk_entity">
+            <column name = "entity_id"/>
+        </createIndex>
+
+        <!-- functional index. PostgreSQL feature -->
+        <sql dbms="postgresql">
+            create index base_user_idx_entity_name on base_user(entity_id, deleted, lower(user_name));
+        </sql>
+
+        <!-- reseller_entityid_map -->
+
+        <addPrimaryKey  tableName      = "reseller_entityid_map"
+                        columnNames    = "entity_id, user_id" />
+
+        <createIndex tableName = "reseller_entityid_map"
+                     indexName = "reseller_entityid_map_fk_entity">
+            <column name = "entity_id"/>
+        </createIndex>
+
+        <createIndex tableName = "reseller_entityid_map"
+                     indexName = "reseller_entityid_map_fk_user">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <!-- purchase_order -->
+
+        <createIndex tableName = "purchase_order"
+                     indexName = "purchase_order_fk_parent">
+            <column name = "parent_order_id"/>
+        </createIndex>
+
+        <!-- payment_information -->
+
+        <createIndex tableName = "payment_information"
+                     indexName = "payment_information_fk_user">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <!-- order_line -->
+
+        <createIndex tableName = "order_line"
+                     indexName = "order_line_fk_order">
+            <column name = "order_id"/>
+        </createIndex>
+
+        <createIndex tableName = "order_line"
+                     indexName = "order_line_fk_parent_line">
+            <column name = "parent_line_id"/>
+        </createIndex>
+
+        <!-- payment_invoice -->
+
+        <createIndex tableName = "payment_invoice"
+                     indexName = "payment_invoice_fk_invoice">
+            <column name = "invoice_id"/>
+        </createIndex>
+
+        <!-- payment_invoice -->
+
+        <createIndex tableName = "meta_field_value"
+                     indexName = "meta_field_value_fk_name">
+            <column name = "meta_field_name_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

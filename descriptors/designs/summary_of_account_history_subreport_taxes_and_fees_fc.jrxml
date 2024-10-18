@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_of_account_history_subreport_taxes_and_fees_fc" language="groovy" pageWidth="572" pageHeight="752" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="20cc3c6a-dd3a-46e6-95f1-23bcb96316b9">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="feesProductCategoryId" class="java.lang.Integer"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="taxDecimal" class="java.math.BigDecimal"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select COALESCE(sum(amount),0) as amount
+from invoice_line
+where invoice_id = $P{invoiceId}
+and item_id in
+	(select item_id
+	from item_type_map
+	where type_id = $P{feesProductCategoryId});]]>
+	</queryString>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<variable name="taxes_&amp;_fees_sum" class="java.math.BigDecimal">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<title>
+		<band height="19" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="3" y="2" width="125" height="14" forecolor="#505861" uuid="e2c1547a-15fd-4cd4-9553-dd3f5e565964"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{taxDecimal}.add($F{amount}) >= 0 ? $P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($P{taxDecimal}.add($F{amount}.setScale(2, RoundingMode.HALF_UP)))):
+"-"+$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($P{taxDecimal}.add($F{amount}.setScale(2, RoundingMode.HALF_UP)).negate()))]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+</jasperReport>

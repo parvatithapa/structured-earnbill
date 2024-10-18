@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="accounts_with_negative_balance_report" language="groovy" pageWidth="600" pageHeight="842" columnWidth="560" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="573a4b51-d245-4c9d-b6c2-b89ea95a21f2">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="entity_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT bu.id,
+                        ROUND(((SELECT COALESCE(SUM(balance),0) FROM invoice
+                                 WHERE user_id = bu.id AND deleted = 0 AND is_review = 0) -
+                              ((SELECT COALESCE(SUM(balance),0) FROM payment
+                                 WHERE user_id = bu.id AND deleted = 0 AND is_refund = 0) +
+                               (SELECT COALESCE(SUM(balance),0) FROM credit_note
+                                 WHERE creation_invoice_id IN
+                                                             (SELECT id FROM invoice
+                                                               WHERE user_id= bu.id)))), 2) AS total_owed,
+                        (SELECT max(create_datetime) FROM payment
+                          WHERE user_id = bu.id AND deleted = 0
+                                                AND result_id IN (1, 4)
+                                                AND is_preauth = 0) AS last_payment_date,
+                        (SELECT i.due_date FROM invoice i
+                          WHERE i.user_id = bu.id AND i.deleted = 0
+                                                  AND i.id IN
+                                                             (SELECT MAX(i.id) FROM invoice i
+                                                               WHERE i.user_id = bu.id AND i.deleted = 0)) AS last_unpaid_due_date
+                   FROM base_user bu
+                  WHERE bu.deleted = 0 AND ROUND(((SELECT COALESCE(SUM(balance),0) FROM invoice
+                                                    WHERE user_id = bu.id AND deleted = 0) -
+                                                 ((SELECT COALESCE(SUM(balance),0) FROM payment
+                                                    WHERE user_id = bu.id AND deleted = 0) +
+                                                  (SELECT COALESCE(SUM(balance),0) FROM credit_note
+                                                    WHERE creation_invoice_id IN
+                                                                                (SELECT id FROM invoice
+                                                                                  WHERE user_id= bu.id)))), 2) < 0
+                                                      AND (bu.entity_id = $P{entity_id} OR $X{IN,bu.entity_id,child_entities})
+               ORDER BY 2 DESC]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="total_owed" class="java.math.BigDecimal"/>
+	<field name="last_payment_date" class="java.sql.Timestamp"/>
+	<field name="last_unpaid_due_date" class="java.sql.Date"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="513" height="20" uuid="52a38045-f74c-4e37-9910-ae91b08649a2"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Accounts With Negative Balance Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="347" y="21" width="67" height="20" uuid="2c821fb1-2f55-4783-961b-076b74c5b87e"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy/MM/dd">
+				<reportElement x="414" y="21" width="99" height="20" uuid="e401188c-f6ac-406a-bf6d-787089c032e1"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="28" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="90" height="20" uuid="391c04b6-69e6-41ee-a279-39728f3bac2d"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="90" y="0" width="121" height="20" uuid="604376be-2a24-49a6-aba7-eda3305e4013"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Owed]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="211" y="0" width="136" height="20" uuid="eb4f6a13-bda4-45fd-bed1-dbca6378574d"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Payment Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="347" y="0" width="166" height="20" uuid="e54f058c-3301-4f66-9763-1ed00e698628"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Unpaid Due Date]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="23" width="513" height="1" uuid="23629e22-4ced-49b2-ae87-cfb67f983e7c"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="90" height="20" uuid="d1bee3d0-849f-4089-a7a5-1c4457c27340"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="90" y="0" width="121" height="20" uuid="9fc7c267-87b0-47ee-bd52-23e49e0593c8"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{total_owed}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="211" y="0" width="136" height="20" uuid="391a6115-cf30-418f-b2f9-34f261a8182a"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{last_payment_date}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="347" y="0" width="166" height="20" uuid="edb87d84-7569-4df2-ae53-5d97eebe6762"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{last_unpaid_due_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="1" width="211" height="20" uuid="d0484ae7-3fdf-4bd3-9254-cf311a6ca426"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="211" y="1" width="302" height="20" uuid="88deac54-1597-434e-b05a-82848e75226d"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

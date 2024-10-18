@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+    xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+    xsi:schemaLocation="
+http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/integration
+http://www.springframework.org/schema/integration/spring-integration.xsd
+http://www.springframework.org/schema/integration/jms
+http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <import resource="classpath:slave/slave-integration.xml"/>
+    
+    <int:channel id = "sapphire-mediation-slave-requests"/>
+    <int-jms:message-driven-channel-adapter id = "sapphire-mediation-slave-adapter" 
+                                            connection-factory = "jmsConnectionFactory"
+                                            destination-name   = "sapphire.mediation.requests" 
+                                            channel            = "sapphire-mediation-slave-requests"/>
+
+    <int:channel id = "sapphire-mediation-slave-reply"/>
+    <int-jms:outbound-channel-adapter id = "sapphire-mediation-slave-reply-adapter" 
+                                      connection-factory = "jmsConnectionFactory"
+                                      destination-name   = "sapphire.mediation.reply" 
+                                      channel            = "sapphire-mediation-slave-reply"/>
+
+    <int:service-activator id             = "sapphire-mediation-slave-service-activator"
+                           ref            = "stepExecutionRequestHandler" 
+                           input-channel  = "sapphire-mediation-slave-requests"
+                           output-channel = "sapphire-mediation-slave-reply"/>
+
+</beans>

@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="failed_payments" language="groovy" pageWidth="1580" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="1562" leftMargin="9" rightMargin="9" topMargin="20" bottomMargin="20" uuid="ce66d287-3ca0-48f1-a8b8-d2ac00364426">
+	<property name="ireport.zoom" value="1.5026296018031562"/>
+	<property name="ireport.x" value="1408"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<queryString>
+		<![CDATA[SELECT customer.user_id AS Customer_No,
+                             getAddress(customer.user_id,'Customer Name') AS Customer_Name ,
+                             base_user.user_name,
+	           getAddress(customer.user_id,'City') AS city,
+	           getAddress(customer.user_id,'Province') AS Province,
+	           getAddress(customer.user_id,'Postal Code') AS Postal_Code,
+	           invoice.create_datetime AS Transaction_Date,
+	           invoice.public_number AS Invoice_Number,
+	          (SELECT description
+             	             FROM item_type
+                             WHERE id  = ( SELECT MAX(it.id)
+                                                      FROM item_type it, item_type_map itm
+                                                    WHERE it.id = itm.type_id
+                                                         AND itm.item_id = invoice_line.item_id)) AS Report_Group,
+	           invoice_line.item_id AS Product_Id,
+	           invoice_line.description AS Invoice_Line_Description,
+	           invoice_line.amount AS Amount,
+	           purchase_order.active_since AS Active_Since,
+	           (CASE WHEN (purchase_order.active_until IS NOT NULL) THEN purchase_order.active_until
+	                 ELSE purchase_order.finished_date END) AS Active_Until
+	      FROM customer
+	INNER JOIN invoice ON invoice.user_id = customer.user_id
+	INNER JOIN invoice_line ON invoice_line.invoice_id = invoice.id
+	INNER JOIN item ON item.id = invoice_line.item_id
+	INNER JOIN item_type_map ON item_type_map.item_id = item.id
+	INNER JOIN item_type ON item_type.id = item_type_map.type_id
+	INNER JOIN purchase_order ON purchase_order.id = invoice_line.order_id
+	INNER JOIN international_description ON international_description.foreign_id = invoice_line.item_id
+	INNER JOIN base_user ON base_user.id = customer.user_id
+	     WHERE invoice.create_datetime :: date >= $P{start_date}
+	       AND invoice.create_datetime :: date <= $P{end_date}
+	       AND item_type.description LIKE 'Report Group%'
+	       AND invoice_line.type_id != 3
+                         AND invoice.deleted = 0
+                         AND invoice.is_review = 0
+                         AND invoice_line.deleted = 0
+                         AND purchase_order.deleted = 0
+                         AND base_user.deleted = 0
+                         AND (base_user.entity_id = $P{entity_id} OR $X{IN,base_user.entity_id,child_entities})
+	  GROUP BY customer.user_id,
+	           invoice.create_datetime,
+	           invoice.public_number,
+	           invoice_line.item_id,
+	           invoice_line.amount,
+	           invoice_line.description,
+	           purchase_order.active_since,
+	           purchase_order.active_until,
+	           purchase_order.finished_date,
+	           base_user.user_name,
+	           base_user.id
+	  ORDER BY customer.user_id;]]>
+	</queryString>
+	<field name="customer_no" class="java.lang.Integer"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="city" class="java.lang.String"/>
+	<field name="province" class="java.lang.String"/>
+	<field name="postal_code" class="java.lang.String"/>
+	<field name="transaction_date" class="java.sql.Timestamp"/>
+	<field name="invoice_number" class="java.lang.String"/>
+	<field name="report_group" class="java.lang.String"/>
+	<field name="product_id" class="java.lang.Integer"/>
+	<field name="invoice_line_description" class="java.lang.String"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="active_until" class="java.sql.Date"/>
+	<title>
+		<band height="82">
+			<staticText>
+				<reportElement x="611" y="0" width="250" height="20" uuid="548f8b0b-cff4-48e7-b8bd-263b8263f7e6"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transaction Details Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1340" y="1" width="120" height="20" uuid="9771f5df-e4cf-425f-ac7d-d484b38de2eb"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1340" y="21" width="120" height="20" uuid="7fbe348b-c42e-4646-9a9d-1cc0fd2fd292"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date:]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="1460" y="21" width="85" height="20" uuid="218e21e2-5d5b-4950-93ff-304be52da8d8"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1340" y="41" width="120" height="20" uuid="23de26ca-9354-4a2b-a743-ce02b26c9dcf"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date:]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="1460" y="41" width="85" height="20" uuid="b1737d92-7f1b-4666-9967-c215b2d088ff"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMM dd, yyyy">
+				<reportElement x="1460" y="1" width="85" height="20" uuid="86b05a22-b40c-419c-bfd1-4c585562eb13"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band>
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="31">
+			<staticText>
+				<reportElement x="0" y="0" width="88" height="24" uuid="e5531dd1-5322-4f78-9d4e-3c0a1cb323b9"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer No.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="88" y="0" width="122" height="24" uuid="b7ebee93-af0e-4751-b6cd-189e7bcec684"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="210" y="0" width="100" height="26" uuid="f18f343f-dd6e-4467-a32e-e4e52a61c686"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[City]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="310" y="0" width="74" height="24" uuid="f8874bfa-6910-4a66-a778-94700aad171b"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Province]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="395" y="0" width="95" height="24" uuid="9b59476d-a629-4e5c-84be-cf85bae1bc59"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Postal Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="490" y="0" width="121" height="24" uuid="39f7a618-f897-46e6-a09d-27cfc9860516"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transaction Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="611" y="0" width="95" height="24" uuid="430a8802-6d3d-4916-91e5-1f06136b5d72"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="719" y="0" width="258" height="24" uuid="debe0d04-dac6-476f-a7c9-8a60dd6ec193"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Group]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1340" y="0" width="120" height="24" uuid="ebaa3d7c-79d4-4eee-a612-405c3fab8e20"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order Start Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1254" y="0" width="86" height="24" uuid="779195e2-077b-429b-bcd7-de948ff0b14e"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="977" y="0" width="83" height="24" uuid="2f7e52b9-2044-4461-b058-b544b08d6872"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1060" y="0" width="194" height="24" uuid="76461445-875e-4939-b125-6eee605e67c1"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Order Line Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1460" y="0" width="85" height="24" uuid="36413a0e-c04c-4c9b-960a-ad1c6038fad5"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Order End Date]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="26" width="1505" height="1" uuid="14ca9d84-e2cc-418b-a50f-c2528599ee70"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20">
+			<textField>
+				<reportElement x="0" y="0" width="88" height="20" uuid="e95f7f2c-3f59-469f-991d-cd46680cf122"/>
+				<textFieldExpression><![CDATA[$F{customer_no}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="88" y="0" width="122" height="20" uuid="c5db3804-aad8-461f-8367-b4f058e4e9d2"/>
+				<textFieldExpression><![CDATA[$F{customer_name}?$F{customer_name}:($F{user_name}.indexOf("_") > 0 ? $F{user_name}.substring(0, $F{user_name}.indexOf("_")) : $F{user_name})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="210" y="0" width="100" height="20" uuid="9e5b877e-2ef8-4bd4-b21b-bc8c1638806a"/>
+				<textFieldExpression><![CDATA[$F{city}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="310" y="0" width="74" height="20" uuid="af0ec6ad-31e0-4211-81e8-8b2338c7a6ea"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{province}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="395" y="0" width="95" height="20" uuid="a048186b-c298-406b-ad7a-2da841d4a8c4"/>
+				<textFieldExpression><![CDATA[$F{postal_code}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="611" y="0" width="95" height="20" uuid="60188438-e19f-45c3-ab21-23ff9564ff3b"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="977" y="0" width="83" height="20" uuid="793d6aa5-4df7-40f1-b972-e366fb5bcaff"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{product_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1060" y="0" width="194" height="20" uuid="a11c1d58-aa22-4290-96af-03fbda0e9758"/>
+				<textFieldExpression><![CDATA[$F{invoice_line_description}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.00;-###0.00" isBlankWhenNull="true">
+				<reportElement x="1254" y="0" width="86" height="20" uuid="365f28aa-9493-4fb5-a74c-a9df9e21a677"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="1340" y="0" width="120" height="20" uuid="4af4f50e-a037-438a-9708-82db3ab29bfb"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="1460" y="0" width="85" height="20" uuid="eaca6ac9-14ad-45ad-8b2e-de67efe926bc"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_until}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="719" y="0" width="258" height="20" uuid="52fff9a6-6838-45ef-a74b-04a89139c87e"/>
+				<textFieldExpression><![CDATA[$F{report_group}]]></textFieldExpression>
+			</textField>
+			<textField pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="490" y="0" width="121" height="20" uuid="14fa4ae4-7de3-4ff1-8ebf-a12900adf4a8"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{transaction_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="24">
+			<textField>
+				<reportElement x="661" y="0" width="69" height="20" uuid="41a0fbdc-8ea8-4587-b4b7-7a60718b261e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="730" y="0" width="40" height="20" uuid="cd9da7bf-b319-4fb4-8998-7817e01416e2"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

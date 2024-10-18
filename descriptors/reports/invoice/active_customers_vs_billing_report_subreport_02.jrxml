@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="active_customers_vs_billing_report_subreport2" language="groovy" pageWidth="78" pageHeight="802" columnWidth="78" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="351c99fb-1721-4061-ba8e-808d6cdf58d6">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="order_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="user_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[
+		     SELECT DISTINCT(i.id) AS invoice_number
+               FROM invoice i
+         INNER JOIN invoice_line il ON  il.invoice_id = i.id
+                AND (case when $P{order_id} is not null then il.order_id = $P{order_id} else 1=1 end)
+              WHERE i.user_id =  $P{user_id}
+                AND i.create_datetime::date >= $P{start_date}
+                AND i.create_datetime::date <= $P{end_date}
+                AND i.deleted = 0;]]>
+	</queryString>
+	<field name="invoice_number" class="java.lang.Integer"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="78" height="20" uuid="6d665889-7f7c-47a0-b22d-0ce664af1bf5"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="list_of_all_mediated_orders_ with_active_since_date_in_future" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="59c4b6a8-825c-4dcb-bd39-1427181e881b">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT po.id AS order_id,
+bu.entity_id,
+e.description,
+po.user_id,
+po.period_id,
+po.active_since,
+(
+ SELECT content
+ FROM international_description
+ WHERE table_id IN
+ (
+  SELECT id
+  FROM jbilling_table
+  WHERE name = 'order_status'
+ )
+AND foreign_id = po.status_id
+) AS order_status
+FROM purchase_order AS po
+INNER JOIN base_user bu ON po.user_id = bu.id
+INNER JOIN entity e ON e.id = bu.entity_id
+INNER JOIN order_status os ON os.id = po.status_id
+WHERE po.deleted = 0
+AND e.deleted = 0
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+AND os.order_status_flag = 0
+AND notes = 'Current order created by mediation process. Do not edit manually.'
+AND period_id = 1
+AND active_since > now();]]>
+	</queryString>
+	<field name="order_id" class="java.lang.Integer"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="period_id" class="java.lang.Integer"/>
+	<field name="active_since" class="java.sql.Date"/>
+	<field name="order_status" class="java.lang.String"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="100">
+				<staticText>
+					<reportElement x="0" y="3" width="100" height="20" uuid="ede294be-8549-47dc-8b74-7f92b76b28ea"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="24" width="100" height="20" uuid="703cb9cb-edab-4a2b-a625-b2cc83f80825"/>
+					<textElement textAlignment="Right">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="3" width="100" height="20" uuid="8067d429-b282-4067-9058-68c5bb698fda"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="107" y="24" width="150" height="20" uuid="7e34d1b2-ad16-47c7-a872-5087bbc8cbd3"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="63" width="111" height="30" uuid="9682ab28-f05c-4b86-b44e-82c7d5c30421"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="111" y="63" width="111" height="30" uuid="38570d14-3e86-4d4a-8fa1-88b13b98233c"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="222" y="63" width="111" height="30" uuid="110e8b48-ed51-4ee5-9374-e9c24d2f9ff4"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Period Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="333" y="63" width="111" height="30" uuid="b954cf6f-7710-42e4-bc5d-1141839569ed"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Active Since Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="444" y="63" width="111" height="30" uuid="6203b3e7-718e-42df-ab03-bcfc3f5cfbb3"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Order Status]]></text>
+				</staticText>
+				<line>
+					<reportElement x="0" y="93" width="555" height="1" uuid="d9ce13ef-aa12-4cc6-9be5-90e81419c8e2"/>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="13">
+				<line>
+					<reportElement x="0" y="5" width="555" height="1" uuid="a15bbf9d-9c32-4895-9b0f-1bdada019e2b"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="111" y="19" width="316" height="34" uuid="ea473f09-29ce-4840-b9d0-ae9254c6fb25"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Mediated Orders With Active Since Date In Future]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="111" height="20" uuid="356a46f2-6d4c-478c-b180-81529bd77e10"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="111" y="0" width="111" height="20" uuid="c4c79f7a-11ff-437a-9577-168487b59374"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="222" y="0" width="111" height="20" uuid="193cd92c-3177-4377-9b77-0befeec9173f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{period_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="333" y="0" width="111" height="20" uuid="13fe66bc-0c82-44cb-a54f-925c3a2f55f9"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_since}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="444" y="0" width="111" height="20" uuid="ec4b4619-fae6-4e8d-9afc-ca12dbf8ba99"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{order_status}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="12" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="4" width="555" height="1" uuid="5c17fad3-d30c-4886-b100-a5a8268be552"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

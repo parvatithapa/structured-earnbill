@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_payments_refunds_ac_uk" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4c394602-0e08-4188-baf0-f1e7c33bd739">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select
+	date(payment_date) as payment_date,
+	amount,
+	is_refund
+from
+	payment p
+where deleted = 0
+	and p.user_id = (select user_id from invoice where id = $P{invoice_id})
+	-- payment of type credit
+	and method_id != 15
+	-- where payment date between 1st day of previous month and last day of month
+	and p.payment_date >= (select date_trunc('month', create_datetime - interval '1 month')::date from invoice where id = $P{invoice_id})
+	and p.payment_date <= (select (date_trunc('month', create_datetime)::date - 1) from invoice where id = $P{invoice_id})]]>
+	</queryString>
+	<field name="payment_date" class="java.util.Date"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<variable name="payment_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="payment_sum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} == 0 ? $F{amount}:0]]></variableExpression>
+	</variable>
+	<variable name="refund_payment_sum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} ==1 ? $F{amount}:0]]></variableExpression>
+	</variable>
+	<title>
+		<band height="23">
+			<rectangle>
+				<reportElement x="16" y="3" width="150" height="17" forecolor="#A6A7A7" backcolor="#FFFFFF" uuid="c16021fd-a307-4392-b545-7d791e1cfb4d"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="17" y="3" width="150" height="17" forecolor="#1F5868" uuid="870f0387-e52b-4e50-8d10-291ebf1f3ee2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ PAYMENT INFORMATION:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<rectangle>
+				<reportElement x="146" y="2" width="126" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="3d2ac660-57e2-4bc0-a7ae-9a20e53034cf"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="16" y="2" width="126" height="17" forecolor="#A6A7A7" backcolor="#B7DBFF" uuid="533f0d2b-fb89-478e-b54f-525e7a8bf788"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="17" y="2" width="126" height="17" forecolor="#1F5868" uuid="e44c4736-8f84-473b-87c1-e5eb5bcd4079"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PAYMENT DATE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="146" y="2" width="126" height="17" forecolor="#1F5868" uuid="a1c7f001-469c-48e9-b1c3-b729637794d9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="7" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AMOUNT]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="19" splitType="Stretch">
+			<rectangle>
+				<reportElement x="16" y="1" width="126" height="17" forecolor="#A6A7A7" uuid="f388f7c2-98d6-4cad-b940-8eedfde73cdb"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="16" y="1" width="126" height="17" forecolor="#808080" uuid="34951708-5511-491b-a22d-34c75b0a8776"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payment_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="146" y="1" width="126" height="17" forecolor="#A6A7A7" uuid="db7a7e1d-2b99-4d1d-abfc-82fb45328448"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="144" y="1" width="126" height="17" forecolor="#808080" uuid="61bb34c6-abe6-431e-9873-f76ff407a947"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new Integer($F{is_refund}) == 0 ?
+$P{currency_symbol}+" "+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP) :
+"("+$P{currency_symbol}+" "+$F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)+")"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="273" y="2" width="100" height="17" forecolor="#808080" uuid="3dc66641-436b-42eb-a8e3-2ea8879edd0a">
+					<printWhenExpression><![CDATA[$F{is_refund} == 1]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<text><![CDATA[   REFUND]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<summary>
+		<band height="31">
+			<rectangle>
+				<reportElement x="16" y="2" width="126" height="25" forecolor="#A6A7A7" uuid="bd6b4186-3292-4de0-af1d-ffb3baeddb32"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="146" y="2" width="126" height="25" forecolor="#A6A7A7" uuid="9dee07f6-858d-4751-af5b-9b77b2d53ec6"/>
+				<graphicElement>
+					<pen lineWidth="0.25"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="17" y="2" width="125" height="25" forecolor="#808080" uuid="50c22285-d579-4f77-a834-2d1fc10a4f43"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[  TOTAL]]></text>
+			</staticText>
+			<textField evaluationTime="Auto" isBlankWhenNull="true">
+				<reportElement x="144" y="2" width="126" height="25" forecolor="#808080" uuid="8971e269-a076-48c7-8dab-576dc5b335ff"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+" "+$V{payment_sum}.subtract($V{refund_payment_sum}).setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pre_auth" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4bf20fa1-10b8-4536-8e84-2c387bdd5d87">
+	<property name="ireport.zoom" value="1.6105100000000014"/>
+	<property name="ireport.x" value="207"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="is_parent_inculde" class="java.lang.Boolean"/>
+	<parameter name="child_entities" class="java.util.List" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT p.id,
+p.user_id,
+(
+ SELECT
+ content
+ FROM international_description
+ WHERE table_id =
+ (
+  SELECT id
+  FROM jbilling_table
+  WHERE name = 'payment_result'
+ )
+AND foreign_id = p.result_id
+AND language_id = bu.language_id
+) AS result,
+p.payment_date,
+p.amount,
+p.balance,
+p.is_preauth,
+p.deleted,
+p.currency_id,
+c.symbol AS currency_symbol,
+bu.entity_id,
+e.description
+FROM payment AS p
+INNER JOIN currency c ON c.id = p.currency_id
+INNER JOIN base_user bu ON bu.id = p.user_id
+INNER JOIN entity e ON e.id = bu.entity_id
+WHERE p.is_preauth = 1
+AND p.amount > 0
+AND p.result_id IN (1, 4)
+AND p.deleted = 0
+AND p.user_id = bu.id
+AND bu.entity_id = e.id
+AND e.deleted = 0
+AND CASE WHEN $P{is_parent_inculde} = 'true'
+THEN
+(
+ bu.entity_id IN
+ (
+  SELECT id
+  FROM entity
+  WHERE deleted = 0
+ )
+)
+ELSE
+($X{IN,bu.entity_id,child_entities})
+END
+ORDER BY p.currency_id, p.id;]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="result" class="java.lang.String"/>
+	<field name="payment_date" class="java.sql.Date"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="balance" class="java.math.BigDecimal"/>
+	<field name="is_preauth" class="java.lang.Integer"/>
+	<field name="deleted" class="java.lang.Integer"/>
+	<field name="currency_id" class="java.lang.Integer"/>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="entity_id" class="java.lang.Integer"/>
+	<field name="description" class="java.lang.String"/>
+	<group name="entityId">
+		<groupExpression><![CDATA[$F{entity_id}]]></groupExpression>
+		<groupHeader>
+			<band height="83">
+				<staticText>
+					<reportElement x="2" y="2" width="100" height="20" uuid="20f8ab05-5a1d-49a7-9122-90ce2364a626"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Id:]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement x="109" y="23" width="150" height="20" uuid="0ed42e06-88b1-4895-839e-03b8111dca1e"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="109" y="2" width="100" height="20" uuid="20bf3b2a-d2af-43d7-8294-25477147160d"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{entity_id}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="2" y="23" width="100" height="20" uuid="61295905-46ac-45fe-b7f8-166a70c3524c"/>
+					<textElement>
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Entity Name:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="94" y="61" width="92" height="20" uuid="2433b814-5d01-4be4-a8c9-16b10d7cb432"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[User Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="2" y="61" width="92" height="20" uuid="0c09aa5c-1a95-4684-b754-6847a23a0175"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Payment Id]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="186" y="61" width="92" height="20" uuid="a9bfe2ec-efc8-4b5b-80ea-e3f3b28014a7"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Result]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="370" y="61" width="92" height="20" uuid="e74b9778-415f-435f-bd51-8ffc79f11f5d"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="278" y="61" width="92" height="20" uuid="f99a147f-a8cf-40c3-83ba-919dc288e3d1"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Payment Date]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="460" y="61" width="92" height="20" uuid="b3526ce1-7e0d-4e1f-b54c-2d1e3b7e4ec3"/>
+					<textElement textAlignment="Center">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Balance]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="11">
+				<line>
+					<reportElement x="5" y="4" width="547" height="1" uuid="ea4db754-f8e5-43d5-ba70-a78622670c74"/>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="80" splitType="Stretch">
+			<staticText>
+				<reportElement x="128" y="34" width="293" height="20" uuid="d6058176-c354-40d0-b389-c240eb88d148"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payments with pre_auth flag = 1]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="92" height="20" uuid="0a917c35-de91-4fa8-bb65-d19a3c98e28a"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="92" y="0" width="92" height="20" uuid="1c07d153-3e84-4fef-8044-f69b6004a24f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="276" y="0" width="92" height="20" uuid="b539ddb6-bdc3-4343-bac0-7d41d88ca7ff"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{payment_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString("format.date")]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="368" y="0" width="73" height="20" uuid="a09a0fc3-3de3-450e-bb2c-f9c097e42a03"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{amount} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{amount}) :
+						"("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{amount}.negate())+")"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="460" y="0" width="68" height="20" uuid="617b7a81-abd9-4cad-93a3-84d14e1231c9"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{balance} > 0 ? com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{balance}) :
+						"("+com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new DecimalFormat('#,##0.00').format($F{balance}.negate())+")"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="184" y="0" width="92" height="20" uuid="d2785f0a-133b-4937-a292-f3f8b3781f8e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{result}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="10" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="3" width="552" height="1" uuid="2aae5158-8843-4828-9d6a-3ad712673060"/>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

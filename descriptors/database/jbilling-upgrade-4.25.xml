@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.25.xml">
+
+    <changeSet context = "base" id = "JBDIST-1430 -CR-056 Credit report" author = "Pranay G. Raherkar">
+        <comment>New Report to fetch credit Order lines details</comment>
+        <insert tableName = "report">
+            <column name  = "id"        valueComputed = "COALESCE((SELECT MAX(id)+1 FROM report),1)" />
+            <column name  = "type_id"   valueComputed = "COALESCE((SELECT id FROM report_type rt WHERE rt.name = 'order'),1)" />
+            <column name  = "name"      value         = "credit_orders_details" />
+            <column name  = "file_name" value         = "credit_orders_details.jasper" />
+            <column name  = "optlock"   valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+            <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+            <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credit_orders_details'),1)" />
+            <column name = "dtype"     value         = "date" />
+            <column name = "name"      value         = "start_date" />
+        </insert>
+
+        <insert tableName = "report_parameter">
+             <column name = "id"        valueComputed = "COALESCE((SELECT COALESCE(MAX(rp.id), 1) + 1 FROM report_parameter rp),1)" />
+             <column name = "report_id" valueComputed = "COALESCE((SELECT id FROM report r WHERE r.name = 'credit_orders_details'),1)" />
+             <column name = "dtype"     value         = "date" />
+             <column name = "name"      value         = "end_date" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+                      FROM report r
+                     WHERE r.name = 'credit_orders_details'),
+                   id
+              FROM entity
+             WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="DMX - Feature" author="Leandro Zoi">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.order.task.SendCommandToExternalQueueTask'
+            </sqlCheck>
+        </preConditions>
+
+        <!--Configure SendCommandToExternalQueueTask -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type AS p), 1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.SendCommandToExternalQueueTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Send Command To External Queue Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task will send a command to an external rabbit queue"/>
+        </insert>
+
+        <!--Configure UpgradePlanTask -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type AS p), 1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.UpgradePlanTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Upgrade Plan Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task will upgrade the plan of an order"/>
+        </insert>
+
+        <!--Configure RefundOnCancelProRatedTask -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type AS p), 1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.RefundOnCancelProRatedTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Refund On Cancel Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This task will manage the suspension and proration of an order when it will finished"/>
+        </insert>
+
+        <!--Configure RenewOrderNotificationTask -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type AS p)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.RenewOrderTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Renew Order Task"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Renew orders task using cron expression"/>
+        </insert>
+
+        <!--Configure RenewOrderNotificationTask -->
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type AS p)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.order.task.RenewOrderNotificationTask"/>
+            <column name="min_parameters" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Renew Order Notification Task"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Send Notification for order renew task using cron expression"/>
+        </insert>
+
+        <addColumn tableName="purchase_order">
+            <column name="upgrade_order_id" type="java.sql.Types.INTEGER" />
+            <column name="renew_order_id" type="java.sql.Types.INTEGER" />
+            <column name="parent_upgrade_order_id" type="java.sql.Types.INTEGER" />
+            <column name="auto_renew" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false" />
+            <column name="renew_notification" type="java.sql.Types.NUMERIC(22,10)" />
+        </addColumn>
+
+        <addColumn tableName="discount">
+            <column name="apply_to_all_periods" type="java.sql.Types.BOOLEAN" defaultValueBoolean="false" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="Preference to process all or only upgrade orders in RefundOnCancelProRatedTask" author="Pablo Galera">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM preference_type WHERE id = 92
+            </sqlCheck>
+        </preConditions>
+        <comment>Preference to indicate if on cancellation the prorated refund applies to all or only upgrade orders</comment>
+
+        <insert tableName="preference_type">
+            <column name="id" valueComputed="92" />
+            <column name="def_value" value="1" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="92" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Apply Prorated Refund On Cancellation Only To Upgrade Orders" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="50" />
+            <column name="foreign_id" valueComputed="92" />
+            <column name="psudo_column" value="instruction" />
+            <column name="language_id" valueNumeric="1" />
+            <column name="content" value="Disabling this option all cancelled orders not only upgrade orders will be processed by the plugin RefundOnCancelProRatedTask. " />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3169 - Preference for swap plan effective date change" author="Nitisha Sahay">
+        <comment>This preference is responsible for setting the plan swap effective date as next billable date if its not null or set active since date of monthly recurring order of plans during the swap plan option.</comment>
+
+        <insert tableName="preference_type">
+            <column name="id"        valueNumeric="93" />
+            <column name="def_value" value       ="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="93" />
+            <column name="psudo_column" value       ="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="Use Order's next billable date/active since date as Plan Swap effective date" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="50" />
+            <column name="foreign_id"   valueNumeric="93" />
+            <column name="psudo_column" value       ="instruction" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"
+                value="This preference is responsible for setting the plan swap effective date as next billable date if its not null or set active since date of monthly recurring order of plans during the swap plan option." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3294 - Update jbilling sequence for preference table" author="Manish Bansod">
+        <comment>This preference is used for updating the jbilling sequence for preference</comment>
+
+        <update tableName = "jbilling_seqs">
+            <column name="next_id" valueComputed = "(SELECT (MAX(id)/10)+1 FROM preference)" />
+            <where>name = 'preference'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3320 -Credit Orders Details Report" author="Ashok Kale">
+        <comment>JB-3320 - Credit Report do not display any records after providing valid data</comment>
+        <sql splitStatements="false">
+            <![CDATA[
+      CREATE OR REPLACE FUNCTION getstaffName(orderId integer)
+                         RETURNS text AS $$
+                         DECLARE
+                                 staffName text := (SELECT mfv.string_value
+                            FROM meta_field_value mfv
+                      INNER JOIN order_meta_field_map pom ON pom.meta_field_value_id = mfv.id AND pom.order_id = orderId
+                      INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+                             AND mfn.name = 'Staff Identifier');
+                 BEGIN
+                    IF (staffName is null) THEN
+                         SELECT user_name INTO staffName
+                           FROM base_user
+                          WHERE id = (SELECT user_id FROM event_log WHERE foreign_id = orderId
+                            AND message_id = 25 ORDER BY create_datetime LIMIT 1);
+                END IF;
+                RETURN staffName;
+                END;
+                $$ LANGUAGE plpgsql;
+            ]]>
+        </sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBDIST-1511 Apply NOW Check Box Checked by Default" author="Pranay G. Raherkar">
+        <comment>This preference enables configuration to select “Apply Now check-box” by default so that Agent/CSR will not miss while creating future dated orders in jbilling.</comment>
+
+        <insert tableName = "preference_type">
+            <column name  = "id"        valueNumeric = "94" />
+            <column name  = "def_value" value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric = "50" />
+            <column name  = "foreign_id"   valueNumeric = "94" />
+            <column name  = "psudo_column" value        = "description" />
+            <column name  = "language_id"  valueNumeric = "1" />
+            <column name  = "content"      value        = "Enable Apply Now Checkbox At Order Change Level by Default" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric = "50" />
+            <column name  = "foreign_id"   valueNumeric = "94" />
+            <column name  = "psudo_column" value        = "instruction" />
+            <column name  = "language_id"  valueNumeric = "1" />
+            <column name  = "content"      value        = "This preference enables configuration to Apply Now checkbox selected/checked by default." />
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

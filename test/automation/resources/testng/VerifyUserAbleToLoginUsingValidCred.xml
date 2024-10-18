@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite thread-count="5" verbose="1" name="RegressionScript"
+	annotations="JDK">
+	<test name="VerifyUserAbleToLoginUsingValidCred" junit="false"
+		preserve-order="true">
+		<classes>
+			<class name="com.jbilling.test.VerifyUserAbleToLoginUsingValidCred">
+				<methods>
+					<include name="TC01_1_loginWithInvalidCredentials"></include>
+					<include name="TC01_2_loginWithValidCredentials"></include>
+				</methods>
+			</class>
+		</classes>
+	</test>
+</suite>

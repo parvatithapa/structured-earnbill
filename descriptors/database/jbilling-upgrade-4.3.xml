@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/jbilling-upgrade-4.3.xml">
+
+    <changeSet author="Leandro Zoi" context="base" id="20160513 - Reset Code Password">
+        <dropPrimaryKey constraintName="pk_reset_password_code" tableName="reset_password_code"/>
+
+        <addColumn tableName="reset_password_code">
+            <column name="id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+        <update tableName="reset_password_code">
+            <column name="id" valueComputed="(select rpc.base_user_id from reset_password_code rpc where reset_password_code.base_user_id = rpc.base_user_id)"/>
+        </update>
+
+        <addUniqueConstraint tableName="reset_password_code" columnNames="token" constraintName="token_unique"/>
+
+        <insert tableName="jbilling_seqs">
+            <column name="name" value="reset_pwd_code_field_GEN"/>
+            <column name="next_id" valueComputed="(coalesce((select max(rpc.id)+1 from reset_password_code rpc), 1))"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="BasicEmailNotificationTask min parameters should be 0 now" author="Juan Vidal">
+        <update tableName="pluggable_task_type">
+            <column name="min_parameters" valueNumeric="0"/>
+            <where>class_name='com.sapienter.jbilling.server.pluggableTask.BasicEmailNotificationTask'</where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Leandro Zoi" context="base" id="20160601 - Change error message for RangeValidationRuleModel">
+        <update tableName="international_description">
+            <column name="content" value="Failed login attempts can not be more than 6 or less than 0"/>
+            <where>content = 'Failed login attempts can not be more than 6'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="JBIIE-895 - Customer Enrollment Agent" author="Gerhard Maree" context="base">
+        <comment>Partners that must be linked to the customer on creation. </comment>
+        <createTable tableName="customer_enrollment_agent">
+            <column name="id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="customer_enrollment_agent_pk"/>
+            </column>
+            <column name="partner_id" type="java.sql.Types.INTEGER" />
+            <column name="broker_id" type="varchar(255)" />
+            <column name="customer_enrollment_id" type="java.sql.Types.INTEGER" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="rate" type="java.sql.Types.NUMERIC(22,10)" />
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="customer_enrollment_agent_fk_partner"
+                                 baseTableName="customer_enrollment_agent" baseColumnNames="partner_id"
+                                 referencedTableName="partner" referencedColumnNames="id"
+        />
+
+        <addForeignKeyConstraint constraintName="customer_enrollment_agent_fk_enrollment"
+                                 baseTableName="customer_enrollment_agent" baseColumnNames="customer_enrollment_id"
+                                 referencedTableName="customer_enrollment" referencedColumnNames="id" />
+
+
+        <createIndex tableName = "customer_enrollment_agent"
+                     indexName = "customer_enrollment_agent_fk_partner" unique = "false">
+            <column name = "partner_id"/>
+        </createIndex>
+
+        <createIndex tableName = "customer_enrollment_agent"
+                     indexName = "customer_enrollment_agent_fk_enrollment" unique = "false">
+            <column name = "customer_enrollment_id"/>
+        </createIndex>
+
+        <dropColumn
+                columnName="broker_id"
+                tableName="customer_enrollment"/>
+    </changeSet>
+
+    <changeSet author="Neeraj Bhatt" context="base" id="JBIIE-1403-entollment tax line">
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.ediTransaction.task.CalculateTaxLine"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Calculate tax line on enrollment time"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin is used to calucate tax line by the help of SureTax"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Neeraj Bhatt" context="base" id="JB-510 - Deleting NGES permissions for super user">
+        <comment>Deleting NGES permission for super user </comment>
+        <sql>
+            delete from permission_role_map where permission_id=903 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=904 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=910 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=911 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=912 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=920 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=921 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=922 and role_id in (select id from role where role_type_id=2) ;
+            delete from permission_role_map where permission_id=1100 and role_id in (select id from role where role_type_id=2) ;
+        </sql>
+    </changeSet>
+     
+    <changeSet id="JBIIE-1441-SendToLdcTask" author="Hitesh Yadav" context="base">
+        <comment>Change the plugin class name 'SendEnrollmentTask' to 'SendToLdcTask'.</comment>
+        <update tableName="pluggable_task_type">
+            <column name="class_name" value="com.sapienter.jbilling.server.customerEnrollment.task.SendToLdcTask"/>
+            <where>class_name = 'com.sapienter.jbilling.server.customerEnrollment.task.SendEnrollmentTask'</where>
+        </update>
+
+        <comment>Update title from 'Send enrollment to LDC' to 'Send file to LDC'</comment>
+        <update tableName="international_description">
+            <column name="content" value="Send file to LDC"/>
+            <where>content = 'Send enrollment to LDC' AND foreign_id=(select ptt.id from pluggable_task_type ptt where
+                ptt.class_name='com.sapienter.jbilling.server.customerEnrollment.task.SendToLdcTask') AND
+                table_id=(select
+                jt.id from jbilling_table jt where jt.name='pluggable_task_type') AND
+                psudo_column='title'
+            </where>
+        </update>
+
+        <comment>Update description from 'This plugin works Sending enrollment to LDC' to 'This plugin works Sending
+            file to LDC'
+        </comment>
+        <update tableName="international_description">
+            <column name="content" value="This plugin works Sending file to LDC."/>
+            <where>content = 'This plugin works Sending enrollment to LDC.' AND foreign_id=(select ptt.id from
+                pluggable_task_type ptt where
+                ptt.class_name='com.sapienter.jbilling.server.customerEnrollment.task.SendToLdcTask') AND
+                table_id=(select
+                jt.id from jbilling_table jt where jt.name='pluggable_task_type') AND
+                psudo_column='description'
+            </where>
+        </update>
+    </changeSet>
+
+    <changeSet author="Neeraj Bhatt" id="JBIIE-1435 - Rebill order adjustment plugin" context="base" >
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.ediTransaction.task.CancelRebillCompostitonTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="NGES : rebill order adjustment plugin"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(select max(id) from pluggable_task_type)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="This plugin adjust the last rebill order in to the current invoice"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="JB-539 : nges-permission " author="Neeraj">
+        <comment>NGES spacific permission and will be used to show the NGES specific field only on NGES company</comment>
+        <insert tableName="permission">
+            <column name="id" valueComputed="923"/>
+            <column name="type_id" valueComputed="(select id from permission_type where description='EDI')"/>
+            <column name="foreign_id"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="923"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="NGES Permission"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Leandro Zoi" context="test" id="JB-310 - Email notification is not recieved for deleting user.">
+        <insert tableName="notification_message">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message p)"/>
+            <column name="type_id" valueNumeric="9"/>
+            <column name="entity_id" valueNumeric="1"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="use_flag" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="1"/>
+            <column name="attachment_type" value="pdf"/>
+            <column name="include_attachment" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="1"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_line">
+            <column name="id" valueComputed="(select max(nml.id)+1 from notification_message_line nml)"/>
+            <column name="message_section_id" valueComputed="(select max(id) from notification_message_section)"/>
+            <column name="content" value="User deleted"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="2"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="notification_message_line">
+            <column name="id" valueComputed="(select max(nml.id)+1 from notification_message_line nml)"/>
+            <column name="message_section_id" valueComputed="(select max(id) from notification_message_section)"/>
+            <column name="content" value="Dear $userSalutation,\r\n\r\nYour user has been deleted"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="notification_message_section">
+            <column name="id" valueComputed="(select max(p.id)+1 from notification_message_section p)"/>
+            <column name="message_id" valueComputed="(select max(p.id) from notification_message p)"/>
+            <column name="section" valueNumeric="3"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet author="Gerhard Maree" context="base" id="JB-540 - Change the logic of Delete Agent to use soft delete method">
+        <addColumn tableName="partner">
+            <column defaultValueNumeric="0" name="deleted" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!--<changeSet id="Scheduled Tasks works on batch server" author="Marco Manzi">-->
+        <!--<addUniqueConstraint tableName="batch_job_instance" columnNames="job_key" constraintName="batch_job_key_unique"/>-->
+    <!--</changeSet>-->
+
+    <changeSet id="All scheduled tasks use now Cron expressions, migration to set the right expression in test tasks" author="Marco Manzi" context="test">
+        <delete tableName="pluggable_task_parameter">
+            <where>
+                task_id in
+                (SELECT id FROM pluggable_task where type_id in
+                (select p.id from pluggable_task_type p where
+                p.class_name in ('com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationTask'
+                ,'com.sapienter.jbilling.server.billing.task.BillingProcessTask')
+                ))
+            </where>
+        </delete>
+        <delete tableName="pluggable_task">
+            <where>
+                type_id in
+                (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessTask')
+            </where>
+        </delete>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed=" (SELECT id FROM pluggable_task where type_id = (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.usagePool.task.CustomerUsagePoolEvaluationTask'))"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="0 0 9 24 * ?"/> <!-- Run it the 24 of every month -->
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed=" (SELECT id FROM pluggable_task where type_id = (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.process.task.AgeingProcessTask' and entity_id = 1))"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="0 0 3,15 * * ?"/> <!-- Instead of running every 12 hours it now runs at 3am , 3pm, 12 hours but better defined-->
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed=" (SELECT id FROM pluggable_task where type_id = (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.process.task.AgeingProcessTask' and entity_id = 3))"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="0 0 3,15 * * ?"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed=" (SELECT id FROM pluggable_task where type_id = (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.billing.task.BillingProcessTask' and entity_id = 3))"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="0 0 3,15 * * ?"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_parameter">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_parameter pp)"/>
+            <column name="task_id" valueComputed=" (SELECT id FROM pluggable_task where type_id = (select p.id from pluggable_task_type p where p.class_name = 'com.sapienter.jbilling.server.mediation.task.MediationProcessTask'))"/>
+            <column name="name" value="cron_exp"/>
+            <column name="int_value"/>
+            <column name="str_value" value="0 0 3,15 * * ?"/>
+            <column name="float_value"/>
+            <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(coalesce( (select max(t.id)+1 from pluggable_task_parameter t), 1))"/>
+            <where>name = 'pluggable_task_parameter'</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="Background Trigger for notification removed, cron tasks created for the same feature" author="Marco Manzi">
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.InvoiceReminderTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.OrderExpireNotificationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.ProvisioningTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+            <column name="category_id" valueNumeric="22"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.process.task.UserCreditCardExpirationNotificationTask"/>
+            <column name="min_parameters" valueNumeric="0"/>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id"  valueComputed="(coalesce( (select max(t.id)+1 from pluggable_task_type t), 1))"/>
+            <where>name = 'pluggable_task_type'</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

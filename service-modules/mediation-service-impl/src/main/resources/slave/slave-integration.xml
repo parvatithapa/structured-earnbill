@@ -1,0 +1,48 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <int:channel id="slave-outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="slave-outbound-requests-adapter"
+                                      destination-name="requestsQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="slave-outbound-requests"/>
+
+    <int:channel id="slave-inbound-requests"/>
+    <int-jms:message-driven-channel-adapter id="slave-inbound-requests-adapter"
+                                            destination-name="requestsQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="slave-inbound-requests"/>
+
+    <bean id="stepExecutionRequestHandler"
+          class="org.springframework.batch.integration.partition.StepExecutionRequestHandler">
+        <property name="jobExplorer" ref="mediationJobExplorer"/>
+        <property name="stepLocator" ref="stepLocator"/>
+    </bean>
+
+    <int:service-activator id="slave-inbound-requests-service-activator"
+                           ref="stepExecutionRequestHandler"
+                           input-channel="slave-inbound-requests"
+                           output-channel="slave-outbound-staging"/>
+
+    <bean id="stepLocator"  class="org.springframework.batch.integration.partition.BeanFactoryStepLocator" />
+
+    <int:channel id="slave-outbound-staging"/>
+    <int-jms:outbound-channel-adapter id="slave-outbound-staging-adapter"
+                                      destination-name="stagingQueue"
+                                      connection-factory="jmsConnectionFactory"
+                                      channel="slave-outbound-staging"/>
+
+    <int:channel id="slave-outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+</beans>

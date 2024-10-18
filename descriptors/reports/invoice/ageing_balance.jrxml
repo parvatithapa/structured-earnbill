@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ageing_balance" language="groovy" pageWidth="2200" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="2160" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="d0546d9a-bdea-4762-be3a-52a2f3fb3e71">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="1647"/>
+	<property name="ireport.y" value="5"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<queryString>
+		<![CDATA[SELECT u.id AS user_id,
+                            u.user_name,
+                            fn.string_value AS first_name,
+                            ln.string_value AS last_name,
+                            org.string_value AS organization_name,
+                            sp.string_value AS state_province,
+                            cc.string_value AS country_code,
+            				cu.auto_payment_type, -- convert to CH = Check, CC = credit card, ACH or blank
+            				(SELECT int_des.content
+            			   	   FROM international_description AS int_des
+            			  	  WHERE table_id = (SELECT id
+            			    				  	  FROM jbilling_table
+            			    				 	 WHERE name = 'user_status')
+             			    	AND foreign_id IN (SELECT status_id
+             			      					 	 FROM base_user
+													WHERE id = u.id)
+								AND language_id =1) AS content, -- convert to A = Active, S = Suspended, O = Overdue
+            				MAX(i.create_datetime) AS last_billing_date,
+            				MAX(p.payment_date) AS last_payment_date,
+            				((SELECT COALESCE(SUM(i.balance), 0)
+            			    	FROM invoice AS i
+            			   	   WHERE i.deleted = 0
+            			     	 AND i.is_review != 1
+            			     	 AND i.user_id = u.id
+            			     	 AND i.currency_id = c.id) -
+                		 	 (SELECT COALESCE(SUM(p.balance), 0)
+                		    	FROM payment AS p
+                		   	   WHERE p.deleted = 0
+                                 AND p.is_refund = 0
+                                 AND p.result_id in (1,4)
+                		   	 	 AND p.user_id = u.id
+								 AND p.currency_id = c.id)) AS current_balance,
+                		   	c.symbol AS currency_symbol,
+                		   	c.id AS currency_id
+        		       FROM base_user AS u
+                 INNER JOIN customer cu ON cu.user_id = u.id
+                 LEFT JOIN vw_caitt_fn fn ON fn.customer_id= cu.id
+                 LEFT JOIN vw_caitt_ln ln ON ln.customer_id= cu.id
+                 LEFT JOIN vw_caitt_org org ON org.customer_id= cu.id
+                 LEFT JOIN vw_caitt_sp sp ON sp.customer_id= cu.id
+                 LEFT JOIN vw_caitt_cc cc ON cc.customer_id= cu.id
+            	  LEFT JOIN payment p ON p.user_id = u.id AND p.deleted = 0
+            	  LEFT JOIN invoice i ON i.user_id = u.id AND i.deleted = 0 AND i.is_review = 0
+				 INNER JOIN currency c ON c.id = p.currency_id OR c.id = i.currency_id
+        			  WHERE (u.entity_id = $P{entity_id} OR $X{IN,u.entity_id,child_entities})
+            		    AND u.deleted = 0
+        		   GROUP BY u.id,
+                            cu.id,
+        		    		u.user_name,
+                            fn.string_value,
+                            ln.string_value,
+                            org.string_value,
+                            sp.string_value,
+                            cc.string_value,
+            				cu.auto_payment_type,
+            				u.status_id,
+            				c.id,
+            				currency_symbol
+					 HAVING ((SELECT COALESCE(SUM(i.balance), 0)
+         						FROM invoice AS i
+							   WHERE i.deleted = 0
+               					 AND i.is_review != 1
+               					 AND i.user_id = u.id
+               					 AND i.currency_id = c.id) -
+        					 (SELECT COALESCE(SUM(p.balance), 0)
+         						FROM payment AS p
+							   WHERE p.deleted = 0
+                                 AND p.is_refund = 0
+                                 AND p.result_id in (1,4)
+								 AND p.user_id = u.id
+								 AND p.currency_id = c.id)) != 0
+				    ORDER BY u.user_name,
+				    		 c.id]]>
+	</queryString>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="currency_id" class="java.lang.Integer"/>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="user_name" class="java.lang.String"/>
+	<field name="first_name" class="java.lang.String"/>
+	<field name="last_name" class="java.lang.String"/>
+	<field name="organization_name" class="java.lang.String"/>
+	<field name="state_province" class="java.lang.String"/>
+	<field name="country_code" class="java.lang.String"/>
+	<field name="auto_payment_type" class="java.lang.Integer"/>
+	<field name="content" class="java.lang.String"/>
+	<field name="last_billing_date" class="java.sql.Timestamp"/>
+	<field name="last_payment_date" class="java.sql.Timestamp"/>
+	<field name="current_balance" class="java.math.BigDecimal"/>
+	<variable name="sub_total" class="java.math.BigDecimal" resetType="None" calculation="Sum"/>
+	<title>
+		<band height="100" splitType="Stretch">
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="0" y="20" width="100" height="20" uuid="83f40833-df23-4341-9dad-a16abcdcdd99"/>
+				<textElement verticalAlignment="Top"/>
+				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="190" height="20" uuid="827bd324-ae5d-4885-88de-5b5d2e4ea99b"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Ageing Balance Detail]]></text>
+			</staticText>
+			<line>
+				<reportElement x="1759" y="85" width="1" height="10" uuid="fecb4f36-6c6e-494d-be7f-66464e3bc7d6"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="1160" y="85" width="1" height="10" uuid="3bb0c659-59f9-4f6a-ad2c-c69bd9eaab5d"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="1559" y="89" width="200" height="1" uuid="ced22024-3cbd-4ea0-b9b6-1d6d850813d9"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="1162" y="89" width="200" height="1" uuid="6339cd4c-94e1-4fa9-9035-ab9f5401dd2b"/>
+				<graphicElement>
+					<pen lineStyle="Dotted"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement mode="Opaque" x="1370" y="80" width="180" height="20" uuid="6ae0aa00-3e0d-4470-87ac-b748168ddd96"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Outstanding balance at days]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="190" height="20" uuid="0ba9f1fe-bb74-4ba4-9585-c7d7d44eadf4"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Ageing Balance Detail]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22">
+			<line>
+				<reportElement x="0" y="21" width="2060" height="1" uuid="6cd7ab96-f07f-4f87-816a-71ed601026f0"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="873" y="0" width="100" height="20" uuid="9ecd92bb-aac7-4b20-8185-053c876663df"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Invoice]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="773" y="0" width="100" height="20" uuid="d605afff-8e42-4f98-b9c1-622ff8677df3"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="360" y="0" width="100" height="20" uuid="7d83eb99-2f80-4b4c-bc93-3ba26129d21a"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Organization]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="460" y="0" width="100" height="20" uuid="dfcad8be-08ca-4e81-a483-48f399643597"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[State / Prov]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="973" y="0" width="100" height="20" uuid="9a96b84f-8ab5-4f32-b808-a54becb303ff"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Payment]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1073" y="0" width="87" height="20" uuid="9b1b812a-7a95-467d-a6ce-0c21862ac9ac"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Current Balance]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1160" y="0" width="100" height="20" uuid="3c8a8593-c99f-4002-a492-655a9615ae91"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[31-60]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1260" y="0" width="100" height="20" uuid="e0665067-7192-4200-92b1-3577c58b6b89"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[61-90]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1360" y="0" width="100" height="20" uuid="37cec2ea-cc9f-44c2-bc89-f961aea5092f"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[91-120]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1460" y="0" width="100" height="20" uuid="c1e4fc73-98bd-4969-ac2a-eaf21e820a3c"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[121-150]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1560" y="0" width="100" height="20" uuid="ce72916b-3b5b-497b-8328-bfe91ce50b25"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[151-180]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1660" y="0" width="100" height="20" uuid="d727606f-e3d6-46c9-a49f-c143c82bab9f"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Plus 180]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1760" y="0" width="100" height="20" uuid="e9d6ca40-f0df-4797-b01d-372580911c29"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1860" y="0" width="100" height="20" uuid="5e46d5c7-1152-4f5d-abae-3053dda16edc"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Over 30]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1960" y="0" width="100" height="20" uuid="0f0c4359-e1e5-4d76-aba0-e887ac901355"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Over 90]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="560" y="0" width="100" height="20" uuid="7e8f597d-bda6-4087-940c-c339eb7f364a"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Country]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="60" height="20" uuid="48ec4fa1-b745-4b83-a0f7-e671abcd88f6"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="60" y="0" width="100" height="20" uuid="c00024c2-b174-4f73-be5d-ad48fba9030e"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="160" y="0" width="100" height="20" uuid="1335c9ba-1409-4dcb-b111-d85d6dab72b6"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[First Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="260" y="0" width="100" height="20" uuid="c9739157-24ba-40af-b0f2-8d13abc72635"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="660" y="0" width="113" height="20" uuid="87059d29-c004-4a70-bbc3-b83a5cdd3794"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Status]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="27" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="773" y="5" width="100" height="20" uuid="83aba211-e46d-4ab3-8de8-b1b30121eab6"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{auto_payment_type} == null ? ""
+: $F{auto_payment_type}.equals(Integer.valueOf("1")) ? "Credit Card"
+: $F{auto_payment_type}.equals(Integer.valueOf("2")) ? "ACH"
+: $F{auto_payment_type}.equals(Integer.valueOf("3")) ? "Cheque" : "Unknown"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="360" y="5" width="100" height="20" uuid="6997d0fa-33f6-4a3e-9cbc-041ccd0208d7"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{organization_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="460" y="5" width="100" height="20" uuid="95981d50-497b-4628-91ef-1f09564773fc"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{state_province}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="973" y="5" width="100" height="20" uuid="c090d5b1-7ebb-4005-9217-3015abbfcc5d"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{last_payment_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="1073" y="5" width="87" height="20" uuid="9304046a-c78a-4ab2-83dc-2338239a5c72"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{current_balance}.compareTo(BigDecimal.ZERO) >= 0 ?
+						com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new java.text.DecimalFormat("#,##0.00").format($F{current_balance}) :
+						"(" + com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new java.text.DecimalFormat("#,##0.00").format($F{current_balance}.negate()) + ")"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="873" y="5" width="100" height="20" uuid="efd5b920-3483-48fd-9261-68e8ccac9e66"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{last_billing_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<subreport>
+				<reportElement x="1160" y="5" width="100" height="20" uuid="626b4b35-65cf-45a2-a194-ac9975d5231f"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[61]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[31]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1260" y="5" width="100" height="20" uuid="d44b9aef-c0c8-49eb-84c5-7644cdc42fe8"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[91]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[61]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1360" y="5" width="100" height="20" uuid="311016e9-0eb6-4e4e-a379-d43b843649b5"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[121]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[91]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1460" y="5" width="100" height="20" uuid="2092d4e6-0442-490f-b8c3-ac3072e3c07a"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[151]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[121]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1560" y="5" width="100" height="20" uuid="ca9fadfc-daca-4b49-8b5e-2ebc90954ce7"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[181]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[151]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1660" y="5" width="100" height="20" uuid="4e13c075-98ce-4d25-95e8-42e704341a11"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[366]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[180]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<returnValue subreportVariable="sub_total" toVariable="sub_total" calculation="Sum"/>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1860" y="5" width="100" height="20" uuid="4a129a38-d030-46c0-9550-1fefb49076b6"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[366]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[30]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="1960" y="5" width="100" height="20" uuid="bd7c013f-df17-4d9b-b958-0fa612533200"/>
+				<subreportParameter name="end_days">
+					<subreportParameterExpression><![CDATA[366]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="start_days">
+					<subreportParameterExpression><![CDATA[90]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="user_id">
+					<subreportParameterExpression><![CDATA[$F{user_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="currency_id">
+					<subreportParameterExpression><![CDATA[$F{currency_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "ageing_balance_outstanding_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isStretchWithOverflow="true" evaluationTime="Band">
+				<reportElement x="1760" y="5" width="100" height="20" uuid="87cdb5fc-ce49-4f12-944d-5baa98bc567a"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{sub_total}.compareTo(BigDecimal.ZERO) >= 0 ?
+					    com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new java.text.DecimalFormat("#,##0.00").format($V{sub_total}) :
+						"(" + com.sapienter.jbilling.server.util.Util.formatSymbolMoney($F{currency_symbol}.toString(), false) + new java.text.DecimalFormat("#,##0.00").format($V{sub_total}.negate()) + ")"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="560" y="5" width="100" height="20" uuid="292cba41-7a1c-473d-b616-e9136aa9a7e4"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{country_code}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="5" width="60" height="20" uuid="2fc9aca4-a89e-4ed2-a215-b8808d2138be"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="60" y="5" width="100" height="20" uuid="9104e489-1b94-441d-bfdb-d3aa4ba01943"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{user_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="160" y="5" width="100" height="20" uuid="c946e359-275c-4d76-b347-3cc483ca676c"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{first_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="260" y="5" width="100" height="20" uuid="9d9659b5-676e-4e19-9073-d667ac66d6ec"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{last_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="660" y="5" width="113" height="20" uuid="d6c3360b-9cdf-4833-b51f-6186391f9ebe"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{content}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="50">
+			<textField>
+				<reportElement x="0" y="14" width="80" height="20" uuid="4ecae9df-718b-4404-91a8-0a50b9fb0ec7"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="80" y="14" width="40" height="20" uuid="6de2b7fc-48b4-47bc-a217-d52f07bcc511"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

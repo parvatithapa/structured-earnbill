@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<File xmlns="http://www.metaswitch.com/cfs/billing/V1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" compatibility="8">
+<FileHeader seqnum="63139">
+<EquipmentType>Metaswitch CFS</EquipmentType>
+<EquipmentId></EquipmentId>
+<CreateTime>1507899540008</CreateTime>
+</FileHeader>
+<CDRs>
+<Call seqnum="1234" error="no" longcall="false" testcall="false" class="0" operator="false" correlator="163175063523689" connected="true">
+<CallType>International</CallType>
+<Features/>
+<ReleasingParty>Term</ReleasingParty>
+<ReleaseReason type="q850" loc="ln">16</ReleaseReason>
+<ReleaseReason type="internal">No error</ReleaseReason>
+<InternalIndex>95534482</InternalIndex>
+<OrigParty xsi:type="IndividualLinePartyType" subscribergroup="u-mee Residential Subscribers" billingtype="flat rate" privacy="false" cpc="normal" ani-ii="00">
+<SubscriberAddr type="e164">+35020051536</SubscriberAddr>
+<CallingPartyAddr type="e164">+35020051536</CallingPartyAddr>
+<ChargeAddr type="e164">+35020051536</ChargeAddr>
+<UserAgent>ZNID (S3.1.282) M5T SIP Stack/4.1.10.16</UserAgent>
+<SIPCallId>0gQAAC8WAAACBAAALxYAAHTD3+vWqXKVMqWk6tHV84Lono9H+EE3eeSMEZpZjwGO45+pny7ZuleAuuR+HFWBbQ--@10.22.1.15</SIPCallId>
+</OrigParty>
+<TermParty xsi:type="NetworkTrunkPartyType">
+<TrunkGroup type="sip" trunkname="BICS_SIP_Trunk">
+<TrunkGroupId>14</TrunkGroupId>
+<TrunkMemberId>0</TrunkMemberId>
+</TrunkGroup>
+<SIPCallId>7B83C1E7@10.22.1.2</SIPCallId>
+<Reason type="q850">16</Reason>
+</TermParty>
+<RoutingInfo>
+<RequestedAddr type="unknown">0034956794365</RequestedAddr>
+<DestAddr type="e164">+34956794365</DestAddr>
+<RoutedAddr type="e164">34956794365</RoutedAddr>
+<CallingPartyRoutedAddr type="national">35020051526</CallingPartyRoutedAddr>
+<CallingPartyOrigAddr type="national">20051526</CallingPartyOrigAddr>
+</RoutingInfo>
+<CarrierSelectInfo>
+<CarrierOperatorInvolved>False</CarrierOperatorInvolved>
+<SelectionMethod>NetworkDefault</SelectionMethod>
+<NetworkId>0</NetworkId>
+</CarrierSelectInfo>
+<SignalingInfo>
+<MediaCapabilityRequested>Speech</MediaCapabilityRequested>
+</SignalingInfo>
+<IcSeizeTime>1529674371433</IcSeizeTime>
+<OgSeizeTime>1529674371683</OgSeizeTime>
+<RingingTime>1529674372336</RingingTime>
+<ConnectTime>1529674378564</ConnectTime>
+<DisconnectTime>1529674790719</DisconnectTime>
+<ReleaseTime>1529674790719</ReleaseTime>
+<CompleteTime>1529674790720</CompleteTime>
+</Call>
+</CDRs>
+<FileFooter>
+<LastModTime>1507900434617</LastModTime>
+<NumCDRs>125</NumCDRs>
+<DataErroredCDRs>2</DataErroredCDRs>
+<WriteErroredCDRs>0</WriteErroredCDRs>
+</FileFooter>
+</File>

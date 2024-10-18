@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+	logicalFilePath="descriptors/database/jbilling-upgrade-4.12.xml">
+
+	<changeSet context="base" id="JB-1426 - Add Configure IDP and Enable SSO permissions" author="Aamir Ali">
+		<comment>Configure IDP permission</comment>
+		<insert tableName="permission">
+			<column name="id" valueNumeric="157"/>
+			<column name="type_id" valueNumeric="19"/>
+			<column name="foreign_id"/>
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="59"/>
+			<column name="foreign_id" valueComputed="157"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Configure IDP" />
+		</insert>
+
+		<comment>Enable SSO permission</comment>
+		<insert tableName="permission">
+			<column name="id" valueNumeric="158"/>
+			<column name="type_id" valueNumeric="14"/>
+			<column name="foreign_id"/>
+		</insert>
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="59"/>
+			<column name="foreign_id" valueComputed="158"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Enable SSO" />
+		</insert>
+
+		<sql>
+			insert into permission_role_map (permission_id,role_id)(select 157, id from role where role_type_id in (-1,2));
+			insert into permission_role_map (permission_id,role_id)(select 158, id from role where role_type_id in (-1,2));
+		</sql>
+	</changeSet>
+
+	<changeSet context="base" id="SSO- company info type, cit" author="Aadil Nazir">
+		<createTable tableName="company_info">
+			<column name="id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+			<column name="company_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+			<column name="company_info_type_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+			<column name="meta_field_value_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+
+		<addPrimaryKey columnNames="id" constraintName="company_info_pkey" tableName="company_info"/>
+
+		<addUniqueConstraint tableName="company_info"
+							 columnNames="company_id,meta_field_value_id,company_info_type_id"
+							 constraintName="company_info_uk"/>
+
+		<addForeignKeyConstraint baseColumnNames="company_id"
+								 baseTableName="company_info"
+								 constraintName="company_info_company_id_fk"
+								 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+								 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="entity"
+								 referencesUniqueColumn="false"/>
+
+		<addForeignKeyConstraint baseColumnNames="company_info_type_id"
+								 baseTableName="company_info"
+								 constraintName="company_info_company_info_type_id_fk"
+								 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+								 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="meta_field_group"
+								 referencesUniqueColumn="false"/>
+
+		<addForeignKeyConstraint baseColumnNames="meta_field_value_id"
+								 baseTableName="company_info"
+								 constraintName="company_info_meta_field_value_id_fk"
+								 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+								 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="meta_field_value"
+								 referencesUniqueColumn="false"/>
+	</changeSet>
+
+	<changeSet context="base" id="SSO- Add company id column in meta_field_group" author="Aadil Nazir">
+		<addColumn tableName="meta_field_group">
+			<column name="company_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="true"/>
+			</column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet context="base" id="#JB-1426 Add user metafield category" author="Faizan Ahmad">
+		<createTable tableName="user_meta_field_map">
+			<column name="user_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+			<column name="meta_field_value_id" type="java.sql.Types.INTEGER">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+
+		<addForeignKeyConstraint baseColumnNames="user_id"
+								 baseTableName="user_meta_field_map"
+								 constraintName="user_meta_field_map_user_id_fk"
+								 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+								 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="base_user"
+								 referencesUniqueColumn="false"/>
+		<addForeignKeyConstraint baseColumnNames="meta_field_value_id"
+								 baseTableName="user_meta_field_map"
+								 constraintName="user_meta_field_map_meta_field_id_fk"
+								 deferrable="false" initiallyDeferred="false" onDelete="NO ACTION"
+								 onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="meta_field_value"
+								 referencesUniqueColumn="false"/>
+		<addPrimaryKey columnNames="user_id,meta_field_value_id"
+					   constraintName="user_meta_field_map_compositekey" tableName="user_meta_field_map" />
+	</changeSet>
+
+	<changeSet context="base" id="JB-1426 Preference for SSO Active for a company." author="Aamir Ali">
+		<comment>Added preference for activating SSO for a company</comment>
+
+		<insert tableName="preference_type">
+			<column name="id" valueNumeric="84"/>
+			<column name="def_value" value="0"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="50"/>
+			<column name="foreign_id" valueNumeric="84"/>
+			<column name="psudo_column" value="description"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Single Sign On"/>
+		</insert>
+
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="50"/>
+			<column name="foreign_id" valueNumeric="84"/>
+			<column name="psudo_column" value="instruction"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Set it to 1 for enabling Single Sign On"/>
+		</insert>
+
+		<comment>Define validation rules and add to preference 84</comment>
+
+		<insert tableName="validation_rule">
+			<column name="id" valueComputed="coalesce((select max(t.id)+1 from validation_rule t),1)"/>
+			<column name="rule_type" value="RANGE"/>
+			<column name="enabled" valueBoolean="true"/>
+			<column name="optlock" valueNumeric="0"/>
+		</insert>
+		<insert tableName="validation_rule_attributes">
+			<column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+			<column name="attribute_name" value="minRange"/>
+			<column name="attribute_value" value="0"/>
+		</insert>
+		<insert tableName="validation_rule_attributes">
+			<column name="validation_rule_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+			<column name="attribute_name" value="maxRange"/>
+			<column name="attribute_value" value="2"/>
+		</insert>
+		<insert tableName="international_description">
+			<column name="foreign_id" valueComputed="(select max(t.id) from validation_rule t)"/>
+			<column name="table_id" valueComputed="(select id from jbilling_table where name='validation_rule')"/>
+			<column name="psudo_column" value="errorMessage"/>
+			<column name="language_id" valueNumeric="1"/>
+			<column name="content" value="Single Sign On value should be 1 means ON or 0 means OFF"/>
+		</insert>
+		<comment>Set rule for preference: Single Sign On value should be 1 means ON or 0 means OFF</comment>
+		<update tableName="preference_type">
+			<column name="validation_rule_id" valueComputed="(select max(vr.id) from validation_rule vr)"/>
+			<where> id = 84</where>
+		</update>
+		<update tableName="jbilling_seqs">
+			<column name="next_id" valueComputed="(select max(vr.id)+1 from validation_rule vr)"/>
+			<where>name = 'validation_rule'</where>
+		</update>
+	</changeSet>
+
+	<changeSet context="base" id="JB-1426 Notification for SSO Enabled User Creation." author="Faizan Ahmad">
+		<insert tableName="international_description">
+			<column name="table_id" valueNumeric="52" />
+			<column name="foreign_id" valueNumeric="35" />
+			<column name="psudo_column" value="description" />
+			<column name="language_id" valueNumeric="1" />
+			<column name="content" value="SSO Enabled User Creation" />
+		</insert>
+
+		<insert tableName="notification_message_type">
+			<column name="id" valueNumeric="35" />
+			<column name="category_id" valueNumeric="4" />
+			<column name="optlock" valueNumeric="1" />
+		</insert>
+	</changeSet>
+
+	<!-- Replace this "SELECT id FROM entity" query with below query in for loop when start the application from init db -->
+	<!-- SELECT id FROM entity where id not in (select entity_id from notification_message where type_id = 35) -->
+	<changeSet context="base" id="JB-1426 SSO Notification for all entities" author="Faizan Ahmad">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="t">select (count(*) > 0) as address from entity</sqlCheck>
+		</preConditions>
+		<sql splitStatements="false">
+			<![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity where id not in (select entity_id from notification_message where type_id = 35 and entity_id in (select entity_id from notification_message where type_id = 35)) LOOP
+                            insert into notification_message (id,type_id,entity_id,language_id,use_flag,optlock)values (coalesce((select max(nm.id)+1 from notification_message nm),1),35,t,1,1,0);
+                            insert into notification_message_section (id,message_id,section,optlock) values (coalesce((select max(nms.id)+1 from notification_message_section nms),1), coalesce((select max(id) from notification_message),1),1,0);
+                            insert into notification_message_line (id,message_section_id,content,optlock) values (coalesce((select max(nml.id)+1 from notification_message_line nml),1), coalesce((select max(id) from notification_message_section),1),'SSO Enabled User Created',0);
+                            insert into notification_message_section (id,message_id,section,optlock) values (coalesce((select max(nms.id)+1 from notification_message_section nms),1), coalesce((select max(id) from notification_message),1),2,0);
+                            insert into notification_message_line (id,message_section_id,content,optlock) values (coalesce((select max(nml.id)+1 from notification_message_line nml),1), coalesce((select max(id) from notification_message_section),1),'Dear $first_name $last_name, Single SignOn support has been added for user $username on server $url with company ID: $company_id. Please follow the URL $url, provide username $username and company ID : $company_id and click on Login with SSO to proceed. Thanks',0);
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+
+		</sql>
+	</changeSet>
+
+	<changeSet context="base" id="JB-1426 Upgrade Jbilling_Seq table for notifications" author="Faizan Ahmad">
+		<sql splitStatements="false">
+			<![CDATA[
+					update jbilling_seqs set next_id = coalesce((select max(n.id)+1 from notification_message n),1) where name = 'notification_message' and next_id < coalesce((select max(id) from notification_message),1);
+					update jbilling_seqs set next_id = coalesce((select max(n.id)+1 from notification_message_line n),1) where name = 'notification_message_line' and next_id < coalesce((select max(id) from notification_message_line),1);
+					update jbilling_seqs set next_id = coalesce((select max(n.id)+1 from notification_message_section n),1) where name = 'notification_message_section' and next_id < coalesce((select max(id) from notification_message_section),1);
+			]]>
+		</sql>
+	</changeSet>
+
+	<changeSet id="JB-1394 add new column in purchase_order table" author="Pranay G. Raherkar">
+		<addColumn tableName="purchase_order">
+			<column name="is_mediated" type="java.sql.Types.BOOLEAN" defaultValue="false" >
+				<constraints  nullable="false" />
+			</column>
+		</addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-2312" author = "Krunal Bhavsar">
+        <comment>Mediation User Partitioning category</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "28" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.server.mediation.task.IMediationPartitionTask" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueNumeric  = "28" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.task.DefaultUserPartitioningTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Task takes users list and partitioned based on grid size."/>
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueNumeric  = "28" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.task.OrderLineCountBasedUserPartitioningTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Task sorts user id list based on active order line count."/>
+        </insert>
+
+    </changeSet>
+</databaseChangeLog>

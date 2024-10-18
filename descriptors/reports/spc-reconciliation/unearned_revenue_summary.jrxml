@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="unbilled_revenue_summary" language="groovy" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="de93c801-16c5-4496-8f7f-ebb9df2a62d6">
+	<property name="ireport.zoom" value="1.9487171000000014"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[SELECT
+(SELECT gl_description
+                   FROM route_70_gl_description
+                  WHERE gl_code =urs.gl_code) AS gl_description,
+ urs.gl_code,
+ null AS blank,
+ SUM(CASE WHEN unearned_days > 0 THEN (sales_ex_tax * (unearned_days/period_duration)) ELSE 0 END) AS unearned_ex_gst
+ FROM (	SELECT
+		invoice.create_datetime AS invoice_date,
+		(SELECT CASE WHEN (SELECT COUNT(*) > 0 FROM plan WHERE item_id = item.id)
+                                                           THEN (SELECT string_value
+                                                                        FROM meta_field_value mfv
+                                                              INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'Plan GL'
+                                                                                                                AND  mfn.entity_type = 'PLAN' AND mfn.entity_id = base_user.entity_id
+                                                              INNER JOIN plan_meta_field_map pmm ON mfv.id = pmm.meta_field_value_id
+                                                              INNER JOIN plan p ON p.id = pmm.plan_id AND p.item_id = item.id) ELSE item.gl_code END) AS gl_code,
+		  (CASE WHEN
+item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
+THEN
+0
+WHEN(
+item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
+)
+THEN
+(
+item.active_until :: date - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date)
+ELSE ((order_process.period_end :: date - 1) - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) END) :: decimal AS unearned_days,
+
+		((order_process.period_end :: date - order_process.period_start :: date))::decimal AS period_duration,
+		(CASE WHEN il.gross_amount = 0 THEN  il.amount  ELSE il.gross_amount END) AS sales_ex_tax
+         FROM invoice
+    INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
+	          FROM invoice_line
+	    INNER JOIN purchase_order ON purchase_order.id = invoice_line.order_id
+                                     AND purchase_order.period_id != 1
+                                     AND (purchase_order.billing_type_id = 1)
+                 WHERE invoice_line.item_id NOT IN (SELECT id FROM item WHERE internal_number = 'GST' AND (entity_id = $P{entity_id} OR $X{IN,entity_id,child_entities}))
+                                     AND invoice_line.item_id IN ( SELECT item_id FROM item_type_map WHERE type_id IN (SELECT id FROM item_type WHERE description = 'Unearned Revenue - Included'))
+                                     AND purchase_order.deleted = 0
+		   AND invoice_line.deleted = 0
+              GROUP BY invoice_id,order_id,item_id) il ON il.invoice_id = invoice.id
+    INNER JOIN item ON item.id = il.item_id
+    INNER JOIN order_process ON (order_process.order_id = il.order_id AND order_process.invoice_id = invoice.id)
+    INNER JOIN base_user ON base_user.id = invoice.user_id AND (base_user.entity_id = $P{entity_id} OR $X{IN,base_user.entity_id,child_entities})
+         WHERE  invoice.deleted = 0 AND base_user.deleted = 0 AND invoice.create_datetime >= $P{start_date} AND invoice.create_datetime <= $P{end_date}) urs group by 1,2,3]]>
+	</queryString>
+	<field name="gl_description" class="java.lang.String"/>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="blank" class="java.lang.String"/>
+	<field name="unearned_ex_gst" class="java.math.BigDecimal"/>
+	<variable name="total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{unearned_ex_gst}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="68" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="399" height="20" uuid="b3c66722-362c-4aaf-8a43-66b24d8bf86d"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unearned Revenue Summary]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="464" y="0" width="106" height="20" uuid="523457ec-6b2f-45d9-b102-d3f49735c459"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="399" y="20" width="65" height="20" uuid="1cbe7b32-dce9-4ba8-8888-0e194840c0d2"/>
+				<text><![CDATA[From Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="399" y="40" width="65" height="20" uuid="c59c19cf-8726-4e9a-b7a6-9a4e9a6d7781"/>
+				<text><![CDATA[To Date:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="464" y="20" width="106" height="20" uuid="8b813af3-6ad2-4853-a70c-3c4769950b78"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="399" y="0" width="65" height="20" uuid="29ab50d7-7b08-4b54-b255-3cbab6e4a995"/>
+				<text><![CDATA[Report Date:]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="464" y="40" width="106" height="20" uuid="eb3d82b9-3073-4b92-a13e-9590487cabeb"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="27" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="239" height="20" uuid="0cffaa4a-8470-4364-8167-935d27fe2766"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="239" y="0" width="124" height="20" uuid="d1b962b3-d4cf-4656-8c5f-0a34d08c84d7"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="363" y="0" width="101" height="20" uuid="79cd6123-26dd-44dd-96de-b907941e4f48"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Blank]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="464" y="0" width="106" height="20" uuid="336bdd4f-5a1a-4ef3-8ebe-6985d38ac243"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Unearned ex GST]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="23" width="572" height="1" uuid="23a3748f-4bc6-4998-aec5-0adcbf35c7b1"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="239" height="20" uuid="1e333245-2bb7-418d-a139-6197f289ae07"/>
+				<textFieldExpression><![CDATA[$F{gl_description}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="239" y="0" width="124" height="20" uuid="008f4cd7-18db-49b2-bce3-2e733cd3c700"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="363" y="0" width="101" height="20" uuid="471aaa0b-755f-4764-96a7-1a10dee1cd8e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{blank}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="464" y="0" width="108" height="20" uuid="1e273834-f2c8-4ba3-b9c4-6faea51cad5e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{unearned_ex_gst}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+	<pageFooter>
+		<band height="23">
+			<textField>
+				<reportElement x="464" y="0" width="106" height="20" uuid="5ae80b91-5ffe-42b9-9384-f2609f8bfd30"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<lastPageFooter>
+		<band height="54">
+			<line>
+				<reportElement x="0" y="4" width="572" height="1" uuid="5913ae59-84c9-48ac-a9e7-86d0913feec8"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="8" width="114" height="20" uuid="6875d805-b900-4816-8b31-2cc493159440"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
+				<reportElement x="464" y="8" width="106" height="20" uuid="725be9f1-8810-4202-8cad-334730d399c4"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{total}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="464" y="30" width="106" height="20" uuid="9573c15f-9262-4853-96f1-6e354c30e9bd"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>

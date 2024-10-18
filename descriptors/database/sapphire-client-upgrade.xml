@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/sapphire-client-upgrade.xml">
+
+    <changeSet context = "test" id = "JBSAPP-22 : Sapphire-Rate-Card" author = "Swapnil Patil">
+        <createTable tableName = "route_rate_1_sapphire_ratecard">
+                <column name="id" type="java.sql.Types.INTEGER">
+                    <constraints primaryKey="true" nullable="false"/>
+                </column>
+                <column name = "name" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "surcharge" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "initial_increment" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "subsequent_increment" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "charge" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "destination" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "route_id" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "off_peak" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "call_type" type = "java.sql.Types.VARCHAR(255)"/>
+                <column name = "carrier_name" type = "java.sql.Types.VARCHAR(255)"/>
+        </createTable>
+
+        <insert tableName="route_rate_card" >
+            <column name="id" valueComputed="(SELECT MAX(rrc.id)+1 FROM route_rate_card rrc)" ></column>
+            <column name="name" value="sapphire_ratecard"  ></column>
+            <column name="table_name" value="route_rate_1_sapphire_ratecard" ></column>
+            <column name="entity_id" valueNumeric="1" ></column>
+            <column name="optlock" valueNumeric="0" ></column>
+            <column name="rating_unit_id" valueNumeric="1" ></column>
+        </insert>
+
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT COALESCE(MAX(rrc.id),0)+1 FROM route_rate_card rrc)"/>
+            <where>name='route_rate_card'</where>
+        </update>
+
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "1" ></column>
+            <column name="name" value="Local Landline Peak" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="1" ></column>
+            <column name="destination" value="Gibraltar" ></column>
+            <column name="route_id" value="350" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="NATIONAL_LANDLINE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "2" ></column>
+            <column name="name" value="Local Landline Offpeak" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="0.4" ></column>
+            <column name="destination" value="Gibraltar" ></column>
+            <column name="route_id" value="350" ></column>
+            <column name="off_peak" value="true" ></column>
+            <column name="call_type" value="NATIONAL_LANDLINE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "3" ></column>
+            <column name="name" value="Local Mobile Peak" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="6" ></column>
+            <column name="destination" value="Gibraltar" ></column>
+            <column name="route_id" value="350" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="NATIONAL_MOBILE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "4" ></column>
+            <column name="name" value="Afghanistan" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="37.84" ></column>
+            <column name="destination" value="Afghanistan" ></column>
+            <column name="route_id" value="93" ></column>
+            <column name="off_peak" value="true" ></column>
+            <column name="call_type" value="INTERNATIONAL_LANDLINE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "5" ></column>
+            <column name="name" value="Afghanistan" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="37.84" ></column>
+            <column name="destination" value="Afghanistan" ></column>
+            <column name="route_id" value="93" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="INTERNATIONAL_LANDLINE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "6" ></column>
+            <column name="name" value="Afghanistan Mobile" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="55" ></column>
+            <column name="destination" value="Afghanistan" ></column>
+            <column name="route_id" value="93" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="INTERNATIONAL_MOBILE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "7" ></column>
+            <column name="name" value="Afghanistan Mobile" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="55" ></column>
+            <column name="destination" value="Afghanistan" ></column>
+            <column name="route_id" value="93" ></column>
+            <column name="off_peak" value="true" ></column>
+            <column name="call_type" value="INTERNATIONAL_MOBILE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "8" ></column>
+            <column name="name" value="Albania" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="18.06" ></column>
+            <column name="destination" value="Albania" ></column>
+            <column name="route_id" value="355" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="INTERNATIONAL_LANDLINE" ></column>
+            <column name="carrier_name" value="" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "9" ></column>
+            <column name="name" value="India Mobile Vodafone" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="7" ></column>
+            <column name="destination" value="India" ></column>
+            <column name="route_id" value="91" ></column>
+            <column name="off_peak" value="false" ></column>
+            <column name="call_type" value="INTERNATIONAL_MOBILE" ></column>
+            <column name="carrier_name" value="VODAFONE" ></column>
+        </insert>
+        <insert tableName="route_rate_1_sapphire_ratecard">
+            <column name="id" value = "10" ></column>
+            <column name="name" value="India Mobile Vodafone" ></column>
+            <column name="surcharge" value="0" ></column>
+            <column name="initial_increment" value="0" ></column>
+            <column name="subsequent_increment" value="0" ></column>
+            <column name="charge" value="5" ></column>
+            <column name="destination" value="India" ></column>
+            <column name="route_id" value="91" ></column>
+            <column name="off_peak" value="true" ></column>
+            <column name="call_type" value="INTERNATIONAL_MOBILE" ></column>
+            <column name="carrier_name" value="VODAFONE" ></column>
+        </insert>
+
+        <insert tableName="matching_field">
+            <column name="id" valueComputed="(SELECT MAX(mf.id)+1 FROM matching_field mf)" ></column>
+            <column name="description" value="off_peak" ></column>
+            <column name="required" valueBoolean="true" ></column>
+            <column name="route_id" valueNumeric="null" ></column>
+            <column name="route_rate_card_id" valueNumeric="( SELECT id FROM route_rate_card WHERE table_name='route_rate_1_sapphire_ratecard' )" ></column>
+            <column name="mediation_field" value="Off Peak" ></column>
+            <column name="matching_field" value="off_peak" ></column>
+            <column name="type" value="EXACT" ></column>
+            <column name="order_sequence" valueNumeric="3" ></column>
+            <column name="optlock" valueNumeric="0" ></column>
+            <column name="mandatory_fields_query" value="obsoleted" ></column>
+        </insert>
+        <insert tableName="matching_field">
+            <column name="id" valueComputed="(SELECT MAX(mf.id)+1 FROM matching_field mf)" ></column>
+            <column name="description" value="destination" ></column>
+            <column name="required" valueBoolean="true" ></column>
+            <column name="route_id" valueNumeric="null" ></column>
+            <column name="route_rate_card_id" valueNumeric="( SELECT id FROM route_rate_card WHERE table_name='route_rate_1_sapphire_ratecard' )" ></column>
+            <column name="mediation_field" value="Location" ></column>
+            <column name="matching_field" value="destination" ></column>
+            <column name="type" value="EXACT" ></column>
+            <column name="order_sequence" valueNumeric="1" ></column>
+            <column name="optlock" valueNumeric="2" ></column>
+            <column name="mandatory_fields_query" value="obsoleted" ></column>
+        </insert>
+        <insert tableName="matching_field">
+            <column name="id" valueComputed="(SELECT MAX(mf.id)+1 FROM matching_field mf)" ></column>
+            <column name="description" value="route_id" ></column>
+            <column name="required" valueBoolean="true" ></column>
+            <column name="route_id" valueNumeric="null" ></column>
+            <column name="route_rate_card_id" valueNumeric="( SELECT id FROM route_rate_card WHERE table_name='route_rate_1_sapphire_ratecard' )" ></column>
+            <column name="mediation_field" value="Country Code" ></column>
+            <column name="matching_field" value="route_id" ></column>
+            <column name="type" value="EXACT" ></column>
+            <column name="order_sequence" valueNumeric="2" ></column>
+            <column name="optlock" valueNumeric="2" ></column>
+            <column name="mandatory_fields_query" value="obsoleted" ></column>
+        </insert>
+        <insert tableName="matching_field">
+            <column name="id" valueComputed="(SELECT MAX(mf.id)+1 FROM matching_field mf)" ></column>
+            <column name="description" value="Call Type" ></column>
+            <column name="required" valueBoolean="true" ></column>
+            <column name="route_id" valueNumeric="null" ></column>
+            <column name="route_rate_card_id" valueNumeric="( SELECT id FROM route_rate_card WHERE table_name='route_rate_1_sapphire_ratecard' )" ></column>
+            <column name="mediation_field" value="Call Type" ></column>
+            <column name="matching_field" value="call_type" ></column>
+            <column name="type" value="EXACT" ></column>
+            <column name="order_sequence" valueNumeric="4" ></column>
+            <column name="optlock" valueNumeric="0" ></column>
+            <column name="mandatory_fields_query" value="obsoleted" ></column>
+        </insert>
+        <insert tableName="matching_field">
+            <column name="id" valueComputed="(SELECT MAX(mf.id)+1 FROM matching_field mf)" ></column>
+            <column name="description" value="Carrier Name" ></column>
+            <column name="required" valueBoolean="true" ></column>
+            <column name="route_id" valueNumeric="null" ></column>
+            <column name="route_rate_card_id" valueNumeric="( SELECT id FROM route_rate_card WHERE table_name='route_rate_1_sapphire_ratecard' )" ></column>
+            <column name="mediation_field" value="Carrier Name" ></column>
+            <column name="matching_field" value="carrier_name" ></column>
+            <column name="type" value="EXACT" ></column>
+            <column name="order_sequence" valueNumeric="5" ></column>
+            <column name="optlock" valueNumeric="0" ></column>
+            <column name="mandatory_fields_query" value="obsoleted" ></column>
+        </insert>
+        <update tableName="jbilling_seqs">
+            <column name="next_id" valueComputed="(SELECT COALESCE(MAX(m.id),0)+1 FROM matching_field m)"/>
+            <where>name='matching_field'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSAPP-50 : Sapphire Provisioning Requests Handling Task" author = "Swapnil Patil">
+        <comment>This plugin is for the Sapphire Provisioning task</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name  = "id" valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)" />
+            <column name  = "category_id" valueNumeric    = "17" />
+            <column name  = "class_name"
+                value     = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireProvisioningTask" />
+            <column name  = "min_parameters" valueNumeric = "3" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id" valueNumeric    = "24" />
+            <column name  = "foreign_id" valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name  = "psudo_column" value       = "title" />
+            <column name  = "language_id" valueNumeric = "1" />
+            <column name  = "content" value            = "Sapphire Provisioning handling Task" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id" valueNumeric    = "24" />
+            <column name  = "foreign_id" valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name  = "psudo_column" value       = "description" />
+            <column name  = "language_id" valueNumeric = "1" />
+            <column name  = "content" value            = "This task is used to make REST API calls to Sapphire orchestration layer for various events such as activation, suspension etc." />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id="JBSAPP-50 : Sapphire Provisioning Retry Corn Task" author="Ashwinkumar Patra">
+            <insert tableName = "pluggable_task_type">
+           <column name = "id"             valueComputed = "coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+           <column name = "category_id"    valueNumeric  = "22"/>
+           <column name = "class_name"     value         = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireProvisioningRetryTask"/>
+           <column name = "min_parameters" valueNumeric  = "1"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Sapphire Provisioning Retry Task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plug-in will retry failed sapphire provisioning request to push on sapphire orchestration."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSAPP-101 : Sapphire Provisioning - Activation, Suspension, Reactivation" author = "Krunal Bhavsar">
+        <comment>This plugin is for the Sapphire Provisioning Response Handler task</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name  = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)" />
+            <column name  = "category_id"    valueNumeric  = "17" />
+            <column name  = "class_name"     value         = "com.sapienter.jbilling.server.sapphire.provisioninig.SapphireProvisioningResponseHandlerTask" />
+            <column name  = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"          valueNumeric  = "24" />
+            <column name  = "foreign_id"        valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name  = "psudo_column"      value         = "title" />
+            <column name  = "language_id"       valueNumeric  = "1" />
+            <column name  = "content"           value         = "Sapphire Provisioning Response handling Task" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"        valueNumeric     = "24" />
+            <column name  = "foreign_id"      valueComputed    = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name  = "psudo_column"    value            = "description" />
+            <column name  = "language_id"     valueNumeric     = "1" />
+            <column name  = "content"         value            = "This task is used to update customer and order." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Average-Revenue-Report-02" author="Nader Mirzadeh">
+        <comment>Adding a new report which gives an overview of average revenue of a company</comment>
+
+        <insert tableName="report">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report)" />
+            <column name="type_id" value="1" />
+            <column name="name" value="average_revenue" />
+            <column name="file_name" value="average_revenue.jasper" />
+            <column name="optlock" valueNumeric="0" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report_parameter)" />
+            <column name="report_id"
+                valueComputed="(SELECT id FROM report r WHERE r.name = 'average_revenue')" />
+            <column name="dtype" value="string" />
+            <column name="name" value="format" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report_parameter)" />
+            <column name="report_id"
+                valueComputed="(SELECT id FROM report r WHERE r.name = 'average_revenue')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="month" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report_parameter)" />
+            <column name="report_id"
+                valueComputed="(SELECT id FROM report r WHERE r.name = 'average_revenue')" />
+            <column name="dtype" value="integer" />
+            <column name="name" value="year" />
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'average_revenue'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM pluggable_task_type)" />
+            <column name="category_id" value="22" />
+            <column name="class_name"
+                value="com.sapienter.jbilling.server.pluggableTask.AverageRevenueReportScheduleTask" />
+            <column name="min_parameters" value="0" />
+        </insert>
+
+        <insert tableName="notification_message_type">
+            <column name="id"
+                valueComputed="(SELECT max(id)+1 FROM notification_message_type)" />
+            <column name="category_id" value="5" />
+            <column name="optlock" value="0" />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="Notification for Average-Revenue-Report Schedule Task" author="Ashok Kale">
+         <preConditions onFail="CONTINUE">
+         <sqlCheck expectedResult="t">SELECT (COUNT(*) > 0) AS address FROM entity</sqlCheck>
+         </preConditions>
+         <sql splitStatements="false">
+            <![CDATA[
+                    CREATE function temp_for_fix() RETURNS VOID AS
+                     $$
+                    DECLARE t integer;
+                    BEGIN
+                        FOR t IN SELECT id FROM entity WHERE id NOT IN (SELECT entity_id FROM notification_message WHERE type_id = (COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)) AND entity_id IN (SELECT entity_id FROM notification_message WHERE type_id = (COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)))) LOOP
+                            INSERT INTO notification_message (id,type_id,entity_id,language_id,notify_admin,use_flag,optlock) VALUES (COALESCE((SELECT MAX(nm.id)+1 FROM notification_message nm),1),(COALESCE((SELECT MAX(nmt.id) FROM notification_message_type nmt),1)),t,1,1,1,0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),1,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Scheduled Task Has Started',0);
+                            INSERT INTO notification_message_section (id,message_id,section,optlock) VALUES (COALESCE((SELECT MAX(nms.id)+1 FROM notification_message_section nms),1), COALESCE((SELECT MAX(id) FROM notification_message),1),2,0);
+                            INSERT INTO notification_message_line (id,message_section_id,content,optlock) VALUES (COALESCE((SELECT MAX(nml.id)+1 FROM notification_message_line nml),1), COALESCE((SELECT MAX(id) FROM notification_message_section),1),'Dear Admin, an error occurred during execution of task with the name: $task-name at $execution-timestamp . It needs your investigation. Please take at the logs for more details about the error.',0);
+                            INSERT INTO notification_medium_type(notification_id, medium_type) VALUES (COALESCE((SELECT MAX(nm.id) FROM notification_message nm),1), 'EMAIL');
+
+                        END LOOP; END;
+                    $$ LANGUAGE plpgsql;
+                    SELECT temp_for_fix();
+                    DROP function temp_for_fix();
+               ]]>
+         </sql>
+
+         <update tableName = "jbilling_seqs">
+            <column name = "next_id" valueComputed = "(SELECT COALESCE(MAX(nm.id), 1)+1 FROM notification_message nm)"/>
+            <where>name = 'notification_message'</where>
+        </update>
+
+        <update tableName = "jbilling_seqs">
+            <column name = "next_id" valueComputed = "(SELECT COALESCE(MAX(nms.id), 1)+1 FROM notification_message_section nms)"/>
+            <where>name = 'notification_message_section'</where>
+        </update>
+
+        <update tableName = "jbilling_seqs">
+            <column name = "next_id" valueComputed = "(SELECT COALESCE(MAX(nml.id), 1)+1 FROM notification_message_line nml)"/>
+            <where>name = 'notification_message_line'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="Outstanding-Debts-Report-01" author="Nader Mirzadeh">
+         <comment>Adding a new report which summarizes dunning/ageing debts of customers</comment>
+
+        <insert tableName="report">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report)" />
+            <column name="type_id" value="1" />
+            <column name="name" value="ageing_outstanding_debts" />
+            <column name="file_name" value="ageing_outstanding_debts.jasper" />
+            <column name="optlock" valueNumeric="0" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report_parameter)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'ageing_outstanding_debts')" />
+            <column name="dtype" value="string" />
+            <column name="name" value="format" />
+        </insert>
+        <insert tableName="report_parameter">
+            <column name="id" valueComputed="(SELECT max(id)+1 FROM report_parameter)" />
+            <column name="report_id" valueComputed="(SELECT id FROM report r WHERE r.name = 'ageing_outstanding_debts')" />
+            <column name="dtype" value="date" />
+            <column name="name" value="as_of"/>
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'ageing_outstanding_debts'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+
+    <changeSet context="base"  id="inventory-report-01" author="Nader Mirzadeh">
+         <comment>Adding database configuration for a new inventory (assets) report </comment>
+
+        <insert tableName="report">
+             <column name="id" valueComputed="(SELECT max(id)+1 FROM report)"/>
+             <column name="type_id" value="7"/>
+             <column name="name" value="inventory_report"/>
+             <column name="file_name" value="inventory_report.jasper"/>
+             <column name="optlock" valueNumeric="0"/>
+        </insert>
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'inventory_report'),
+            id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:int="http://www.springframework.org/schema/integration" xmlns="http://www.springframework.org/schema/beans"
+	xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+           http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+	
+	<bean id = "moviusJob" class = "com.sapienter.jbilling.server.mediation.customMediations.movius.job.MoviusJob"/>
+	
+	<!-- Common Mediation Beans -->
+	<bean id="moviusRecordSeparatorPolicy"
+		class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecordSeparatorPolicy">
+		<property name="headerIdentifierName" value="cdr-type" />
+		<property name="fieldSeparator"  ref = "fieldSeparator"/>
+	</bean>
+
+	<bean id="moviusMediationTokenizer"
+		class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer"
+		lazy-init="true">
+		<property name="fieldSeparator" ref = "fieldSeparator" />
+	</bean>
+	
+	<bean id="moviusMediationJobListener" class="com.sapienter.jbilling.server.mediation.customMediations.movius.listener.MoviusJobListener" parent="mediationJobListener"/>
+	
+	<bean id="moviusRecycleJobListener" class="com.sapienter.jbilling.server.mediation.customMediations.movius.listener.MoviusRecycleJobListener" parent="recycleMediationJobListener"/>
+	
+	<bean id = "moviusSkipPolicy" class="com.sapienter.jbilling.server.mediation.customMediations.movius.MoviusSkipPolicy" />
+	
+	<!-- Recycle Configuration Beans -->
+	<bean id="moviusRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.customMediations.movius.reader.MoviusRecycleRowMapper"/>
+	
+	<bean id="moviusRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+           <property name="dataSource" ref="jBillingMediationDataSource"/>
+            <property name="sql" value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+           <property name="rowMapper" ref="moviusRecycleRowMapper"/>
+    </bean>
+    
+	<!-- Import mediation beans configuration files for each batch job -->
+      <import resource="classpath:movius-mediation-job.xml"/>
+      <import resource="classpath:movius-mediation-master-integration.xml"/>
+      <import resource="classpath:movius-mediation-slave-config.xml"/>
+
+     <bean id = "moviusOrderService" class = "com.sapienter.jbilling.server.movius.MoviusOrderServiceImpl" parent = "orderService"/> 
+
+</beans>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch.xsd ">
+
+    <!--EDI file processor-->
+    <!-- the parent TAB processor is also mediation batch processor -->
+    <bean id="ediFileItemRead" class="com.sapienter.jbilling.server.ediTransaction.task.EDIFileParserItemReader" scope="step" />
+    <bean id="ediFileItemProcessor" class="com.sapienter.jbilling.server.ediTransaction.invoiceRead.InvoiceReadTask" scope="step" />
+    <bean id="ediFileItemWriter" class="com.sapienter.jbilling.server.ediTransaction.task.EDIFileItemWriter" scope="step"/>
+
+    <job id="invoiceReadProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediTransactionProcessing" >
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediFileItemProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1" />
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED" />
+
+            </tasklet>
+        </step>
+    </job>
+
+    <bean id="meterInvoiceReprocess" class="com.sapienter.jbilling.server.nges.ediProcessing.task.util.MeterInvoiceReprocess"/>
+    <bean id="ediFileMeterReadProcessor" class="com.sapienter.jbilling.server.ediTransaction.task.MeterReadParserTask" scope="step" />
+    <bean id="meterReadChunkListener" class="com.sapienter.jbilling.server.nges.ediProcessing.task.listeners.MeterReadChunkListener" scope="step" >
+        <property name="meterInvoiceReprocess" ref="meterInvoiceReprocess"/>
+    </bean>
+
+    <job id="meterReadProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="meterReadEDITransactionProcessing" >
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediFileMeterReadProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1" />
+                <listeners>
+                    <listener ref="meterReadChunkListener"></listener>
+                </listeners>
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED" />
+
+            </tasklet>
+        </step>
+    </job>
+
+
+    <bean id="ediFilePaymentReadProcessor" class="com.sapienter.jbilling.server.ediTransaction.task.PaymentParserTask" scope="step" />
+
+    <job id="paymentReadProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="paymentReadEDITransactionProcessing" >
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediFilePaymentReadProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1" />
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED" />
+
+            </tasklet>
+        </step>
+    </job>
+
+    <bean id="ediEnrollmentResponseParserProcessor" class="com.sapienter.jbilling.server.customerEnrollment.task.EnrollmentResponseParserTask" scope="step" />
+
+    <job id="enrollmentResponseParserProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediEnrollmentResponseParserProcessing" >
+
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediEnrollmentResponseParserProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1"/>
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED"/>
+
+            </tasklet>
+        </step>
+    </job>
+
+    <bean id="ediCustomerTerminationProcessor" class="com.sapienter.jbilling.server.earlyTermination.task.CustomerTerminationTask" scope="step" />
+
+    <job id="customerTerminationProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediCustomerTerminationProcessing" >
+
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediCustomerTerminationProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1"/>
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED"/>
+
+            </tasklet>
+        </step>
+    </job>
+
+    
+    <bean id="ediEscoTerminationProcessor" class="com.sapienter.jbilling.server.ediTransaction.task.ParseEscoTerminationResponseTask" scope="step" />
+
+    <job id="escoTerminationProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediEscoTerminationStep" >
+
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediEscoTerminationProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1"/>
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED"/>
+
+            </tasklet>
+        </step>
+    </job>
+    
+    
+    <bean id="ediAcknowledgementProcessor"
+          class="com.sapienter.jbilling.server.ediTransaction.task.AcknowledgementParserTask" scope="step"/>
+
+    <job id="acknowledgementProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediAcknowledgementProcessing">
+
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediAcknowledgementProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1"/>
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED"/>
+
+            </tasklet>
+        </step>
+    </job>
+
+
+    <bean id="ediChangeRequestProcessor"
+          class="com.sapienter.jbilling.server.ediTransaction.task.ChangeRequestParserTask" scope="step"/>
+
+    <job id="changeRequestProcess" restartable="false" xmlns="http://www.springframework.org/schema/batch">
+        <step id="ediChangeRequestProcessing">
+
+            <tasklet>
+                <chunk reader="ediFileItemRead"
+                       processor="ediChangeRequestProcessor"
+                       writer="ediFileItemWriter"
+                       commit-interval="1"/>
+
+                <transaction-attributes
+                        isolation="DEFAULT"
+                        propagation="REQUIRED"/>
+
+            </tasklet>
+        </step>
+    </job>
+
+</beans>

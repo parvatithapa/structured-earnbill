@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+  logicalFilePath="descriptors/database/dt/dt-client-upgrade.xml">
+
+  <changeSet context="base" id="JBDT-19. Scheduled Tasks" author="Gerhard Maree">
+    <comment>FTP remote CDR files</comment>
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="22"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.process.task.DtCdrRetrievalTask"/>
+      <column name="min_parameters" valueNumeric="4"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Copy DT CDR File Packages"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(select max(p.id) from pluggable_task_type p)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Copy DT CDR File Packages from a remote FTP server, then extract and validate them."/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDT-24 Enable bulk loader permission to be accessible by system admin" author="Wajeeha Ahmed">
+    <update tableName="permission">
+      <column name="role_assignable"  valueBoolean="false"/>
+      <column name="user_assignable"  valueBoolean="true"/>
+      <column name="required_to_assign_permission_id"  valueNumeric="1400"/>
+      <where>id = 1917</where>
+    </update>
+  </changeSet>
+
+  <changeSet context="base" id="JBDT-38: DTAG Bulk Loader Task" author="Taimoor Choudhary">
+
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.DT.DTAGBulkLoaderTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Bulk Loader task for DTAG"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(SELECT MAX(id) FROM pluggable_task_type)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="This plugin is responsible for uploading default, account level and customer level pricing"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="# JBDT- Report usage for reserved plan subscription purchase" author="Abhishek Yadav" >
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(select max(t.id)+1 from pluggable_task_type t)"/>
+      <column name="category_id" valueNumeric="17"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.meteredUsage.MeteredUsageIntegrationTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(select max(t.id) from pluggable_task_type t)"/>
+      <column name="psudo_column" value="description"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Reports usage for reserved plan subscription purchase"/>
+    </insert>
+
+    <insert tableName="international_description">
+      <column name="table_id" valueNumeric="24"/>
+      <column name="foreign_id" valueComputed="(select max(t.id) from pluggable_task_type t)"/>
+      <column name="psudo_column" value="title"/>
+      <column name="language_id" valueNumeric="1"/>
+      <column name="content" value="Plan Subscription Task"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JBDT-80: DTAG Bulk Loader Task Namespace changed" author="Taimoor Choudhary">
+
+    <update tableName="pluggable_task_type">
+      <column name="class_name" value="com.sapienter.jbilling.server.dt.DTAGBulkLoaderTask"/>
+      <where>class_name = 'com.sapienter.jbilling.server.DT.DTAGBulkLoaderTask'</where>
+    </update>
+  </changeSet>
+
+  <changeSet context = "base" id = "JBDT-50: Usage Rating Scheme types" author = "Priyank">
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="Tiered"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.usageratingscheme.scheme.TieredUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="Tiered Linear"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.usageratingscheme.scheme.TieredLinearUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="DNS Count If"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.quantity.usageRatingScheme.scheme.ResourceThresholdUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="Average Monthly"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.quantity.usageRatingScheme.scheme.AverageMonthlyUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="Average Monthly Derived"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.quantity.usageRatingScheme.scheme.AverageMonthlyDerivedUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="KMS Resource Count"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.quantity.usageRatingScheme.scheme.UniqueResourceUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+
+  </changeSet>
+
+
+  <changeSet context="base" id="Remove invoice generation for DT" author="Ashish Tewari">
+    <insert tableName="invoice_delivery_method">
+      <column name="id" valueNumeric="0"/>
+    </insert>
+    <sql> INSERT INTO entity_delivery_method_map(entity_id, method_id)
+      SELECT DISTINCT entity_id, 0 as method_id FROM entity_delivery_method_map
+    </sql>
+  </changeSet>
+
+  <changeSet context="base" id="Remove invoice generation for DT. Changed id for NONE" author="Ashish Tewari">
+    <insert tableName="invoice_delivery_method">
+      <column name="id" valueNumeric="4"/>
+    </insert>
+    <sql> UPDATE entity_delivery_method_map SET method_id = 4 WHERE method_id = 0 </sql>
+    <sql> UPDATE customer SET invoice_delivery_method_id = 4 WHERE invoice_delivery_method_id = 0 </sql>
+    <sql> UPDATE account_type SET invoice_delivery_method_id = 4 WHERE invoice_delivery_method_id = 0 </sql>
+    <sql> DELETE FROM invoice_delivery_method WHERE id = 0 </sql>
+  </changeSet>
+
+  <changeSet context="base" id="Undo Mediation Filter Task for DT" author="Maria Khan" >
+    <insert tableName="pluggable_task_type">
+      <column name="id" valueComputed="(select max(pp.id)+1 from pluggable_task_type pp)"/>
+      <column name="category_id" valueNumeric="30"/>
+      <column name="class_name" value="com.sapienter.jbilling.server.pluggableTask.dt.DTUndoMediationFilterTask"/>
+      <column name="min_parameters" valueNumeric="0"/>
+    </insert>
+  </changeSet>
+
+  <changeSet id="Jbdt-197: Formatting desc in metered usage payload" author="PriyankS" context="base">
+    <sql>
+      <![CDATA[
+          UPDATE language SET country_code = 'DE' WHERE code = 'de'
+        ]]>
+    </sql>
+    <sql>
+      <![CDATA[
+          INSERT INTO language (id, code, description, country_code)
+            SELECT coalesce((SELECT MAX(id) + 1 FROM language), 1), 'de', 'Deutsch', 'DE'
+            WHERE NOT EXISTS (SELECT 1 FROM language WHERE code in ('de'))
+        ]]>
+    </sql>
+    <sql>
+      <![CDATA[
+          UPDATE language SET country_code = 'US' WHERE code = 'en'
+        ]]>
+    </sql>
+    <sql>
+      <![CDATA[
+		  INSERT INTO language (id, code, description, country_code)
+            SELECT coalesce((SELECT MAX(id) + 1 FROM language), 1), 'en', 'English', 'US'
+            WHERE NOT EXISTS (SELECT 1 FROM language WHERE code in ('en'))
+        ]]>
+    </sql>
+  </changeSet>
+  
+  <changeSet context = "base" id = "Stck rating scheme" author = "PriyankS">
+    <insert tableName="usage_rating_scheme_type">
+      <column name="id" valueComputed="coalesce((SELECT MAX(u.id)+1 FROM usage_rating_scheme_type u),1)"/>
+      <column name="name" value="Stck"/>
+      <column name="impl_class" value="com.sapienter.jbilling.server.quantity.usageRatingScheme.scheme.ConstantUsageRatingScheme"/>
+      <column name="active" valueBoolean="true"/>
+    </insert>
+  </changeSet>
+
+  <changeSet context="base" id="JB-3298 - Change Permission behavior and default for Permission 1918 Mediation Rating Scheme" author="Andres Canevaro">
+    <comment>Remove permission 1918 Mediation Rating Scheme from all system admin roles for DT customer</comment>
+    <delete tableName="permission_role_map" >
+      <where>
+        permission_id=1918 AND role_id IN (SELECT id FROM role WHERE role_type_id IN (-1) AND parent_role_id IS NULL)
+      </where>
+    </delete>
+  </changeSet>
+
+</databaseChangeLog>

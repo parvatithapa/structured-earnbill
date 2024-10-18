@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="activity_report_full" language="groovy" pageWidth="1180" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true">
+  <property name="ireport.zoom" value="1.5"/>
+  <property name="ireport.x" value="0"/>
+  <property name="ireport.y" value="0"/>
+  <parameter name="start_date" class="java.util.Date"/>
+  <parameter name="end_date" class="java.util.Date"/>
+  <parameter name="type" class="java.lang.String"/>
+  <parameter name="entity_id" class="java.lang.Integer"/>
+  <parameter name="child_entities" class="java.util.List"/>
+  <parameter name="currency_symbol" class="java.lang.String"/>
+
+  <field name="staff_name" class="java.lang.String"/>
+  <field name="create_date" class="java.lang.String"/>
+  <field name="product_id" class="java.lang.String"/>
+  <field name="product_name" class="java.lang.String"/>
+  <field name="product_group" class="java.lang.String"/>
+  <field name="term" class="java.lang.Integer"/>
+  <field name="services" class="java.lang.Integer"/>
+  <field name="customers" class="java.lang.Integer"/>
+  <field name="serv_cust" class="java.math.BigDecimal"/>
+  <field name="total_price" class="java.math.BigDecimal"/>
+  <field name="months" class="java.lang.Integer"/>
+  <field name="price" class="java.math.BigDecimal"/>
+  <field name="revenue" class="java.math.BigDecimal"/>
+
+  <title>
+    <band height="100">
+      <staticText>
+        <reportElement x="0" y="1" width="250" height="20"/>
+        <textElement>
+          <font size="14" isBold="true"/>
+        </textElement>
+        <text><![CDATA[Activity Report]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="0" y="21" width="250" height="20"/>
+        <textElement>
+          <font size="12"/>
+        </textElement>
+        <text><![CDATA[Full]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="900" y="1" width="100" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Report date:]]></text>
+      </staticText>
+      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="1000" y="1" width="120" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.util.Date"><![CDATA[new Date(System.currentTimeMillis())]]></textFieldExpression>
+      </textField>
+      <staticText>
+        <reportElement x="900" y="21" width="100" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Start date:]]></text>
+      </staticText>
+      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="1000" y="21" width="120" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.util.Date"><![CDATA[$P{start_date}]]></textFieldExpression>
+      </textField>
+      <staticText>
+        <reportElement x="900" y="41" width="100" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[End date:]]></text>
+      </staticText>
+      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+        <reportElement x="1000" y="41" width="120" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.util.Date"><![CDATA[$P{end_date}]]></textFieldExpression>
+      </textField>
+      <staticText>
+        <reportElement x="900" y="61" width="100" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Type:]]></text>
+      </staticText>
+      <textField isBlankWhenNull="true">
+        <reportElement x="1000" y="61" width="120" height="20"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$P{type}]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+  <columnHeader>
+    <band height="21">
+      <staticText>
+        <reportElement x="0" y="0" width="120" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Staff]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="120" y="0" width="80" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Date]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="200" y="0" width="80" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Prod Id]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="280" y="0" width="120" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Product Name]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="400" y="0" width="100" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Prod Group]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="500" y="0" width="60" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Term]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="560" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Services]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="640" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Customers]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="720" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Serv/Cust.]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="800" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Total Price]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="880" y="0" width="60" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Months]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="940" y="0" width="100" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Price per Month]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="1040" y="0" width="100" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font isBold="true"/>
+        </textElement>
+        <text><![CDATA[Monthly Revenue]]></text>
+      </staticText>
+      <line>
+        <reportElement x="0" y="20" width="1140" height="1"/>
+        <graphicElement>
+          <pen lineWidth="2.0"/>
+        </graphicElement>
+      </line>
+    </band>
+  </columnHeader>
+  <detail>
+    <band height="20">
+      <textField>
+        <reportElement x="0" y="0" width="120" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$F{staff_name}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="120" y="0" width="80" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$F{create_date}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="200" y="0" width="80" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$F{product_id}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="280" y="0" width="120" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$F{product_name}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="400" y="0" width="100" height="20"/>
+        <textElement textAlignment="Left" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$F{product_group}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="500" y="0" width="60" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.Integer"><![CDATA[$F{term}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="560" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.Integer"><![CDATA[$F{services}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="640" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.Integer"><![CDATA[$F{customers}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="720" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{serv_cust}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="800" y="0" width="80" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$P{currency_symbol} + new DecimalFormat('#,##0.00').format($F{total_price})]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="880" y="0" width="60" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.Integer"><![CDATA[$F{months}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="940" y="0" width="100" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$P{currency_symbol} + new DecimalFormat('#,##0.00').format($F{price})]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="1040" y="0" width="100" height="20"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <textFieldExpression class="java.lang.String"><![CDATA[$P{currency_symbol} + new DecimalFormat('#,##0.00').format($F{revenue})]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <pageFooter>
+    <band height="25">
+      <textField>
+        <reportElement x="434" y="0" width="80" height="20"/>
+        <textElement textAlignment="Right"/>
+        <textFieldExpression class="java.lang.String"><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+      </textField>
+      <textField evaluationTime="Report">
+        <reportElement x="514" y="0" width="40" height="20"/>
+        <textElement/>
+        <textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
+</jasperReport>

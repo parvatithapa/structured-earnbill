@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns     = "http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath = "descriptors/database/batch-job-partition-by-users-20180319.xml">
+
+    <changeSet context = "base" id = "spring-batch-users-partitions-data" author = "Igor Poteryaev">
+        <comment>Create table for storing users IDs for spring batch jobs partitioned by users</comment>
+
+        <createTable tableName = "batch_job_user_ids">
+            <column name = "job_instance_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name="partition_num" type="java.sql.Types.INTEGER">
+                <constraints nullable = "true" />
+            </column>
+            <column name="status" type="java.sql.Types.INTEGER">
+                <constraints nullable = "false" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName      = "batch_job_user_ids"
+                       constraintName = "batch_job_user_ids_pk"
+                       columnNames    = "job_instance_id, user_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "batch_job_user_ids_fk_batch_job_instance"
+                                 baseTableName   = "batch_job_user_ids" referencedTableName   = "batch_job_instance"
+                                 baseColumnNames = "job_instance_id"    referencedColumnNames = "job_instance_id"
+        />
+
+        <addForeignKeyConstraint constraintName  = "batch_job_user_ids_fk_user"
+                                 baseTableName   = "batch_job_user_ids" referencedTableName   = "base_user"
+                                 baseColumnNames = "user_id"            referencedColumnNames = "id"
+        />
+
+        <createIndex tableName = "batch_job_user_ids"
+                     indexName = "batch_job_user_ids_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_user_ids"
+                     indexName = "batch_job_user_ids_fk_batch_job_instance" unique = "false">
+            <column name = "job_instance_id"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_user_ids"
+                     indexName = "batch_job_user_ids_idx_partition" unique = "false">
+            <column name = "job_instance_id"/>
+            <column name = "partition_num"/>
+        </createIndex>
+
+        <createIndex tableName = "batch_job_user_ids"
+                     indexName = "batch_job_user_ids_idx_status" unique = "false">
+            <column name = "job_instance_id"/>
+            <column name = "status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

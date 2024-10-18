@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="payment_status_report" language="groovy" pageWidth="2400" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="2360" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="35b21246-73e4-4ce7-946a-99ecf4c21db0">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="49"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT p.user_id,
+                        (SELECT mfv.string_value
+                           FROM customer cu
+                     INNER JOIN customer_meta_field_map cmfm ON cmfm.customer_id = cu.id
+                     INNER JOIN meta_field_value mfv ON mfv.id = cmfm.meta_field_value_id
+                     INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name = 'crmAccountNumber'
+                          WHERE cu.user_id = p.user_id) AS wookie_account_no,
+                    (SELECT mfv.string_value
+                            FROM customer cu
+                      INNER JOIN customer_meta_field_map cmfm ON cmfm.customer_id = cu.id
+                      INNER JOIN meta_field_value mfv ON mfv.id = cmfm.meta_field_value_id
+                      INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND mfn.name = 'Origin'
+                           WHERE cu.user_id = p.user_id) AS origin,
+                       CONCAT(
+                               (SELECT distinct mfv.string_value
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_group mfg on mfg.id = caitt.account_info_type_id and mfg.name = 'Customer Details'
+                                 INNER JOIN customer cu on cu.id = caitt.customer_id
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.field_usage = 'TITLE'
+                                 WHERE cu.user_id = p.user_id AND caitt.account_info_type_id = mfg.id),
+                               (SELECT distinct CASE WHEN mfv.string_value is not null THEN ' '||  mfv.string_value  END
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_group mfg on mfg.id = caitt.account_info_type_id and mfg.name = 'Customer Details'
+                                 INNER JOIN customer cu on cu.id = caitt.customer_id
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.field_usage = 'FIRST_NAME'
+                                 WHERE cu.user_id = p.user_id AND caitt.account_info_type_id = mfg.id),
+                               (SELECT distinct CASE WHEN mfv.string_value is not null THEN ' '||  mfv.string_value  END
+                                  FROM customer_account_info_type_timeline caitt
+                                 INNER JOIN meta_field_group mfg on mfg.id = caitt.account_info_type_id and mfg.name = 'Customer Details'
+                                 INNER JOIN customer cu on cu.id = caitt.customer_id
+                                 INNER JOIN meta_field_value mfv ON caitt.meta_field_value_id = mfv.id
+                                 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id=mfn.id AND mfn.field_usage = 'LAST_NAME'
+                                 WHERE cu.user_id = p.user_id AND caitt.account_info_type_id = mfg.id)) AS customer_name,
+                        p.id,
+                        pinv.invoice_id AS invoice_id,
+                        inv.billing_process_id AS billing_process_id,
+                        TIMEZONE('AEDT', p.create_datetime::timestamp with time zone) AS create_datetime,
+                        payment_info.gateway_key,
+                        payment_info.transaction_id,
+                        payment_method.method AS payment_type,
+                        p.is_refund,
+                        COALESCE(pinv.amount, p.amount) AS payment_amount,
+                        CASE WHEN (payment_info.payment_result = 'approved' AND p.result_id = 1)
+                             THEN 'SUCCESSFUL'
+                             WHEN (payment_info.payment_result = 'Approved' OR p.result_id = 4)
+                             THEN 'ENTERED'
+                             ELSE 'FAILED'
+                        END AS payment_result,
+                        payment_info.response_message,
+                        CC_TYPE.cc_type AS cc_type,
+                        CASE WHEN (p.result_id = 4)
+                             THEN p.payment_notes
+                             ELSE ''
+                         END AS payment_notes,
+                         CASE WHEN (p.result_id = 4)
+                              THEN (SELECT bu.user_name FROM base_user bu
+                                     INNER JOIN event_log el ON el.user_id = bu.id
+                                     WHERE el.foreign_id = p.id AND el.table_id = 42
+                                                                AND el.message_id = 25)
+                              ELSE ''
+                          END AS done_by
+                   FROM payment p
+             INNER JOIN base_user bu ON bu.id = p.user_id
+              LEFT JOIN payment_invoice pinv ON pinv.payment_id = p.id
+              LEFT JOIN invoice inv ON pinv.invoice_id = inv.id
+              LEFT JOIN (SELECT pa.payment_id AS payment_id,
+                                pa.response_message AS response_message,
+                                pa.transaction_id AS transaction_id,
+                                pa.code3 AS payment_result,
+                                mfv.string_value AS gateway_key,
+                                pii.instrument_id AS instrument_id
+                           FROM payment_authorization pa
+                          INNER JOIN payment_instrument_info pii ON pii.payment_id = pa.payment_id
+                                                             AND pii.instrument_id IN
+                                                                                     (SELECT id
+                                                                                        FROM payment_information
+                                                                                       WHERE id IN
+                                                                                                  (SELECT instrument_id
+                                                                                                     FROM payment_instrument_info
+                                                                                                    WHERE payment_id = pa.payment_id)
+                                                                                                    GROUP BY 1,processing_order
+                                                                                                   HAVING processing_order = (SELECT MIN(processing_order)
+                                                                                                                                FROM payment_information
+                                                                                                                               WHERE id IN (SELECT instrument_id
+                                                                                                                                              FROM payment_instrument_info
+                                                                                                                                             WHERE payment_id = pa.payment_id) AND processing_order != 0))
+                      INNER JOIN payment_information pi ON pi.id = pii.instrument_id
+                      INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_information_id = pi.id
+                      INNER JOIN meta_field_value mfv ON pimfm.meta_field_value_id = mfv.id
+                          WHERE pa.code3 IN ('approved', 'declined','failed') AND pa.transaction_id != 'N/A'
+                                        AND mfv.meta_field_name_id IN (SELECT id FROM meta_field_name
+                                                                        WHERE name = 'cc.gateway.key' AND entity_type = 'PAYMENT_METHOD_TYPE')) AS payment_info
+                             ON (payment_info.payment_id = p.id)
+              LEFT JOIN (SELECT DISTINCT string_value AS cc_type,pi_in.user_id AS user_id FROM meta_field_value mfv_in
+                              INNER JOIN payment_information_meta_fields_map pimfm_in ON mfv_in.id = pimfm_in.meta_field_value_id
+                              INNER JOIN payment_information pi_in ON pi_in.id = pimfm_in.payment_information_id
+                                   WHERE mfv_in.meta_field_name_id IN (SELECT id FROM meta_field_name
+                                                                        WHERE name = 'cc.type' AND entity_type = 'PAYMENT_METHOD_TYPE')) AS CC_TYPE
+                              ON (CC_TYPE.user_id = p.user_id)
+              LEFT JOIN (SELECT pmt.method_name AS method,pii.payment_id AS pid
+                           FROM payment_method_type pmt
+                          INNER JOIN payment_information pi ON pi.payment_method_id = pmt.id
+                          INNER JOIN payment_instrument_info pii ON pii.instrument_id = pi.id
+                          WHERE pi.processing_order = (SELECT MIN(processing_order)
+                                                         FROM payment_information
+                                                        WHERE id IN (SELECT instrument_id
+                                                                       FROM payment_instrument_info
+                                                                      WHERE payment_id = pii.payment_id)
+                                                               AND processing_order != 0)) payment_method ON (payment_method.pid = p.id)
+                  WHERE p.deleted = 0 AND bu.deleted = 0
+                                      AND CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                                               THEN TIMEZONE('AEDT', p.create_datetime::timestamp with time zone) ::DATE = DATE($P{start_date})
+                                               ELSE TIMEZONE('AEDT', p.create_datetime::timestamp with time zone) ::DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                                           END
+               GROUP BY 1,5,6,7,9,10,11,12,13,14,15,16
+               ORDER BY 4,5, 10 DESC, 2;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="wookie_account_no" class="java.lang.String"/>
+	<field name="origin" class="java.lang.String"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="id" class="java.lang.Integer"/>
+	<field name="invoice_id" class="java.lang.Integer"/>
+	<field name="billing_process_id" class="java.lang.Integer"/>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="gateway_key" class="java.lang.String"/>
+	<field name="transaction_id" class="java.lang.String"/>
+	<field name="payment_type" class="java.lang.String"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<field name="payment_amount" class="java.math.BigDecimal"/>
+	<field name="payment_result" class="java.lang.String"/>
+	<field name="response_message" class="java.lang.String"/>
+	<field name="cc_type" class="java.lang.String"/>
+	<field name="payment_notes" class="java.lang.String"/>
+	<field name="done_by" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="109" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="2" width="2360" height="20" uuid="71b896d6-1c84-4925-a270-3c537059a496"/>
+				<textElement textAlignment="Center">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Status Report ]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="2221" y="22" width="139" height="20" uuid="f2f7fb64-691c-47d8-8285-bcfdfb005093"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1987" y="22" width="233" height="20" uuid="5e347ca2-a9d0-4d91-a949-79c8e49f6918"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date  :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="2221" y="42" width="139" height="20" uuid="f069a730-a140-47f8-982c-a5819c598216"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="2221" y="62" width="139" height="20" uuid="bc4ad4f4-674f-4953-99cd-5a1f3a9c1985"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1987" y="42" width="233" height="20" uuid="9a5b0f94-6397-4e8c-b2ec-f58e60df9cf1"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1987" y="62" width="233" height="20" uuid="5ae5e4dd-b586-4cd4-bb07-056e05b8249c"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="25" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="105" height="20" uuid="54128f1d-f640-470f-bb0e-a3e59d68a858"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB User Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="625" y="0" width="105" height="20" uuid="0fac22c2-0ab5-41ff-93e5-1aa32408a5fd"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[JB Payment Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="730" y="0" width="105" height="20" uuid="4ca3cd9e-a82b-42d7-a187-0329aa9ec6fd"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="835" y="0" width="111" height="20" uuid="574813ec-5ca5-4b6c-b753-7eb2fb70ff76"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Billing Process Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="946" y="0" width="139" height="20" uuid="4b91e64f-c89f-4b02-a925-7b9a13b08355"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Create Date/time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1085" y="0" width="115" height="20" uuid="34e6dc2d-8576-4ef5-8634-e548ef4c59ab"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Gateway Key]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1200" y="0" width="115" height="20" uuid="d5c33562-842f-4821-a919-07f22ec4e85e"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transaction Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1465" y="0" width="115" height="20" uuid="3e756b93-30bd-4f33-9a4c-f0aa8d2584ff"/>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1580" y="0" width="115" height="20" uuid="9ea5f204-2a1b-44e7-9e46-c4bc03047506"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Result]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1695" y="0" width="155" height="20" uuid="39417967-c3c4-4599-abf8-b351ec28db9f"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Response message]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1850" y="0" width="137" height="20" uuid="50fff2ed-dfb1-484d-9db1-4e359d2bd99a"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[CC_TYPE]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="21" width="2360" height="1" uuid="3de5e2a9-e470-4e34-b49b-495e6e2befb5"/>
+			</line>
+			<staticText>
+				<reportElement x="105" y="0" width="127" height="20" uuid="674916eb-d08a-4de6-b9b2-7f3dbbe676c3"/>
+				<textElement textAlignment="Center">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Wookie Account No]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="432" y="0" width="193" height="20" uuid="be6156e8-3d65-4be4-a5a8-06c0f1d61bd8"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph firstLineIndent="5"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1315" y="0" width="150" height="20" uuid="f81485ba-f044-4381-afb6-f0ef6c0cdb27"/>
+				<textElement>
+					<font isBold="true"/>
+					<paragraph firstLineIndent="5"/>
+				</textElement>
+				<text><![CDATA[Payment Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="232" y="0" width="200" height="20" uuid="0b641de6-a3fc-4c4d-ab22-bf5c69dda5ec"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Origin]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1987" y="0" width="234" height="20" uuid="fce1f71f-d780-4375-a6ea-dfda10c0719c"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Notes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2221" y="0" width="139" height="20" uuid="328fcfd1-6bca-46ef-a986-1b338eb18b2c"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Made By User]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="105" height="20" uuid="5ee5371c-8286-42c8-b0c1-599d858f4d6d"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="625" y="0" width="105" height="20" uuid="ebe08065-1bdb-4c0a-bad5-63c15c327418"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="730" y="0" width="105" height="20" uuid="8aee579a-efa9-4b45-92f1-b12d70bea63c"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{invoice_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="835" y="0" width="111" height="20" uuid="3fbf6070-ef9b-4688-9e98-286b11fb53bb"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{billing_process_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd hh:mm:ss.sss" isBlankWhenNull="true">
+				<reportElement x="946" y="0" width="139" height="20" uuid="21d3a0f4-15f8-4c1e-b44d-adeb56a0046f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{create_datetime}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1085" y="0" width="115" height="20" uuid="ed061b3c-f38a-49f4-aa9c-d430f228b405"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gateway_key}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1200" y="0" width="115" height="20" uuid="237cc98e-aab0-4fa2-b012-aac35699d4a4"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{transaction_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1465" y="0" width="115" height="20" uuid="63215d6a-6e9f-480e-835f-4f7930ed6abb"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{is_refund} == 1 ?  $F{payment_amount}.negate().setScale(2, RoundingMode.HALF_UP) : $F{payment_amount}.setScale(2, RoundingMode.HALF_UP)]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1580" y="0" width="115" height="20" uuid="66b896f1-ac88-41a5-bbbe-5107d39a0d7f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{payment_result}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1695" y="0" width="155" height="20" uuid="907fa746-bbc8-4326-9cbd-a08e9b730fa3"/>
+				<textFieldExpression><![CDATA[$F{response_message}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1850" y="0" width="137" height="20" uuid="ce308d79-6e78-4a2d-91c6-ab04dcb6c8ce"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{cc_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="105" y="0" width="127" height="20" uuid="4aa92536-6dda-4d1d-899e-57130e00d409"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{wookie_account_no}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="432" y="0" width="193" height="20" uuid="ae52a1f4-f420-40dd-9439-46f0a57e3e31"/>
+				<textElement>
+					<paragraph firstLineIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1315" y="0" width="150" height="20" uuid="92d9a826-be2a-46e1-a34a-0c6d3411d667"/>
+				<textElement>
+					<paragraph firstLineIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payment_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="232" y="0" width="200" height="20" uuid="c157f54d-fc8b-4327-89d7-2da9a83b9c17"/>
+				<textFieldExpression><![CDATA[$F{origin}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1987" y="0" width="234" height="20" uuid="6f27ebad-9559-4188-b523-0107de6cb8c3"/>
+				<textFieldExpression><![CDATA[$F{payment_notes}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="2221" y="1" width="139" height="20" uuid="ad60629a-6663-43b5-b941-4bddaf8fbc89"/>
+				<textFieldExpression><![CDATA[$F{done_by}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21" splitType="Stretch">
+			<textField evaluationTime="Report">
+				<reportElement x="946" y="0" width="139" height="20" uuid="dc96ed63-4376-4b23-b732-1d8ec14a71c6"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="835" y="0" width="111" height="20" uuid="13f59957-d2af-4c30-a4e2-896f071e16fe"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

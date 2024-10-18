@@ -1,0 +1,40 @@
+<%@ page import="com.sapienter.jbilling.server.user.db.CompanyDTO" %>
+
+<g:set var="planIndex" value="${planIndex ?: ''}"/>
+<g:set var="defaultCurrency" value="${CompanyDTO.get(session['company_id']).getCurrency()}"/>
+<g:hiddenField name="model.${modelIndex}.id" value="${model?.id}"/>
+
+<div class="row">
+    <label class="toolTipElement" title="<g:message code="price.strategy.COMMON.pricing.tooltip.message"/>" for="model.${modelIndex}.type"><g:message code="plan.model.type"/></label>
+    <g:applyLayout name="form/select_holder">
+        <content tag="include.script">true</content>
+        <content tag="label.for">model.${modelIndex}.type</content>
+        <g:select name="model.${modelIndex}.type" class="model-type toolTipElement"
+              title="${message(code: 'price.strategy.COMMON.pricing.tooltip.message')}"
+              from="${types}"
+              keys="${types*.name()}"
+              valueMessagePrefix="price.strategy"
+              value="${model?.type ?: type.name()}"/>
+
+    <g:hiddenField name="model.${modelIndex}.oldType" value="${model?.type ?: type.name()}"/>
+
+    </g:applyLayout>
+    <a class="price-model-help toolTipElement" onclick="openHelpDialog('${planIndex + type?.name() + modelIndex}');"title="${message(code: 'price.strategy.COMMON.pricing.help.tooltip.message')}">
+    </a>
+</div>
+
+<g:hiddenField name="model.${modelIndex}.rateAsDecimal" value="${BigDecimal.ZERO}"/>
+
+<g:applyLayout name="form/select">
+    <content tag="label"><g:message code="prompt.user.currency"/></content>
+    <content tag="label.for">model.${modelIndex}.currencyId</content>
+    <content tag="label.title"><g:message code="price.strategy.COMMON.currency.tooltip.message"/></content>
+    <content tag="label.class">toolTipElement</content>
+    <content tag="include.script">true</content>
+    <g:select name="model.${modelIndex}.currencyId"
+              class="toolTipElement"
+              title="${message(code: 'price.strategy.COMMON.currency.tooltip.message')}"
+              from="${currencies}"
+              optionKey="id" optionValue="${{it.getDescription(session['language_id'])}}"
+              value="${model?.currencyId ?: defaultCurrency?.id}" />
+</g:applyLayout>

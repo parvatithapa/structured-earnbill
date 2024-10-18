@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="gl_summary" language="groovy" pageWidth="650" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="610" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="3eec84d8-e05d-4ee7-8b37-dbe49a9031d2">
+	<property name="ireport.zoom" value="1.2100000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="entity_id" class="java.lang.Integer"/>
+	<parameter name="child_entities" class="java.util.List"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT gld.gl_code AS gl_code,
+                            gld.gl_description AS "GL Description",
+                            curr.symbol AS currency_symbol,
+                            SUM(il.amount) AS billed_amount
+                       FROM invoice AS i
+                      INNER JOIN invoice_line il on il.invoice_id = i.id
+                      INNER JOIN base_user bu ON bu.id = i.user_id
+                      INNER JOIN currency curr ON curr.id = i.currency_id
+                 LEFT OUTER JOIN route_70_gl_description gld ON gld.gl_code = (SELECT gl_code FROM item WHERE id = il.item_id)
+                       LEFT JOIN contact c on c.user_id = bu.id
+                      WHERE (bu.entity_id = $P{entity_id} OR $X{IN, bu.entity_id, child_entities})
+                                                          AND i.deleted = 0
+                                                          AND i.is_review = 0
+                                                          AND il.type_id != 3
+                                                          AND (CASE WHEN (DATE($P{start_date}) = DATE($P{end_date}))
+                                                                    THEN i.create_datetime :: DATE = DATE($P{start_date})
+                                                                    ELSE i.create_datetime :: DATE BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+                                                                END)
+                      GROUP BY 1,2,3
+                      ORDER BY currency_symbol;]]>
+	</queryString>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="GL Description" class="java.lang.String"/>
+	<field name="currency_symbol" class="java.lang.String"/>
+	<field name="billed_amount" class="java.math.BigDecimal"/>
+	<variable name="subtotal" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_symbol" calculation="Sum">
+		<variableExpression><![CDATA[$F{billed_amount}]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<group name="currency_symbol">
+		<groupExpression><![CDATA[$F{currency_symbol}]]></groupExpression>
+		<groupFooter>
+			<band height="39">
+				<line>
+					<reportElement x="0" y="5" width="576" height="1" uuid="cae48453-0ccc-4d88-a99e-4f675aa2466b"/>
+					<graphicElement>
+						<pen lineWidth="2.0" lineStyle="Dotted"/>
+					</graphicElement>
+				</line>
+				<textField isStretchWithOverflow="true" pattern="###0.00;-###0.00" isBlankWhenNull="true">
+					<reportElement x="451" y="13" width="125" height="20" uuid="34a280ec-8832-4b36-8484-6d51cf216e29"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{subtotal}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="13" width="100" height="20" uuid="f81ddf54-549f-4348-9a7f-3c3b5292b706"/>
+					<box rightPadding="5"/>
+					<textElement verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="###0.00;-###0.00" isBlankWhenNull="true">
+					<reportElement x="415" y="13" width="36" height="20" uuid="2272f973-0e89-4163-8c5c-d7cb6aab55f5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{currency_symbol}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="80" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="10" width="190" height="20" uuid="9c07d388-6d9e-4e82-b3fd-3c288200ac85"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Summary]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="355" y="30" width="96" height="20" uuid="efdb720b-acc4-4ea9-a01b-47bd444305b0"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="355" y="50" width="96" height="20" uuid="bc77dfe3-c274-4c33-9948-2bc1ab6c8457"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="355" y="10" width="96" height="20" uuid="1b537979-81ce-4e4a-9195-9586b217bbfb"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="451" y="30" width="125" height="20" uuid="6f2b47e2-52c0-42b6-b870-4b3cfa554425"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+				<reportElement x="451" y="50" width="125" height="20" uuid="890575cc-a05c-410c-bc1d-9dcf839f58f8"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="451" y="10" width="125" height="20" uuid="add6274d-f972-47e6-bdc6-c6c87acac7d1"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="190" height="20" uuid="6eb9e121-199e-48cd-8ca1-98332dceffc4"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[GL Summary]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22">
+			<line>
+				<reportElement x="0" y="21" width="576" height="1" uuid="01a4fcb1-6648-4732-aa73-39dd74ff5994"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="451" y="0" width="125" height="20" uuid="dd1884b6-f342-4860-b01b-951e6135ae89"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="139" height="20" uuid="58555579-c140-4109-b432-697ab0d6f903"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="139" y="0" width="312" height="20" uuid="84fb80e0-36b1-4bab-bcf4-20abb7c61c91"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GL Description]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement x="451" y="5" width="125" height="20" uuid="93abbb8b-5aee-4f31-97ce-791e4111b6c0"/>
+				<textFieldExpression><![CDATA[$F{currency_symbol} + $F{billed_amount}.setScale(2, RoundingMode.HALF_UP).toString()]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="5" width="139" height="20" uuid="417b83b6-c1a4-498c-823f-2de4ef5142fc"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="139" y="5" width="312" height="20" uuid="23eb3d1f-9047-4645-b43f-515addf1a969"/>
+				<textFieldExpression><![CDATA[$F{GL Description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="25">
+			<textField>
+				<reportElement x="451" y="4" width="125" height="20" uuid="03e79f4a-3141-4393-98a8-be98ae22ecd4"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

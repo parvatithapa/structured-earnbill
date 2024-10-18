@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="total_invoiced" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+    <property name="ireport.zoom" value="1.5"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="entity_id" class="java.lang.Integer"/>
+    <parameter name="child_entities" class="java.util.List"/>
+    <queryString>
+        <![CDATA[
+          SELECT u.id AS account_number,
+                 split_part(split_part(u.user_name, ' ', 1), '_', 1) AS customer_name,
+                 split_part(split_part(u.user_name, ' ', 2), '_', 1) AS customer_surname,
+                 mfv.string_value AS tax_exemption_number,
+                 (SELECT mfv.date_value
+                    FROM customer_meta_field_map cmfm
+               LEFT JOIN meta_field_value mfv on mfv.id = cmfm.meta_field_value_id
+               LEFT JOIN meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+                   WHERE cmfm.customer_id = c.id 
+                     AND mfn.name='Exemption Effective Date') AS exemption_effective_date
+            FROM base_user u
+       LEFT JOIN customer c on c.user_id=u.id
+       LEFT JOIN customer_meta_field_map cmfm on cmfm.customer_id = c.id
+       LEFT JOIN meta_field_value mfv on mfv.id = cmfm.meta_field_value_id
+       LEFT JOIN meta_field_name mfn on mfn.id = mfv.meta_field_name_id
+           WHERE (u.entity_id = $P{entity_id} OR $X{IN, u.entity_id, child_entities})
+             AND EXISTS (SELECT 1
+                           FROM purchase_order o
+                          WHERE o.user_id = u.id
+                            AND o.status_id NOT IN (SELECT id
+                                                      FROM order_status
+                                                     WHERE order_status_flag = 1)
+                            AND o.active_since <= current_date
+                            AND (o.active_until IS NULL OR o.active_until >= current_date))
+             AND mfn.name='Tax Exempt Number'
+        ]]>
+    </queryString>
+
+    <field name="account_number" class="java.lang.Integer"/>
+    <field name="customer_name" class="java.lang.String"/>
+    <field name="customer_surname" class="java.lang.String"/>
+    <field name="tax_exemption_number" class="java.lang.Integer"/>
+    <field name="exemption_effective_date" class="java.util.Date"/>
+
+    <title>
+        <band height="100">
+            <staticText>
+                <reportElement x="0" y="1" width="250" height="20"/>
+                <textElement>
+                    <font size="14" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Supplemental Tax Report]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="600" y="1" width="120" height="20"/>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Report date:]]></text>
+            </staticText>
+            <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+                <reportElement x="720" y="1" width="130" height="20"/>
+                <textElement verticalAlignment="Middle"/>
+                <textFieldExpression class="java.util.Date"><![CDATA[new Date(System.currentTimeMillis())]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <columnHeader>
+        <band height="21">
+            <staticText>
+                <reportElement x="0" y="0" width="150" height="20"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Account Number]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="150" y="0" width="200" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Customer First Name]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="350" y="0" width="200" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Customer Last Name]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="550" y="0" width="150" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Tax Exemption Number]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="700" y="0" width="150" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[Exemption Effective Date]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="20" width="850" height="1"/>
+                <graphicElement>
+                    <pen lineWidth="2.0"/>
+                </graphicElement>
+            </line>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="20">
+            <textField>
+                <reportElement x="0" y="0" width="150" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression class="java.lang.Integer"><![CDATA[$F{account_number}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="150" y="0" width="200" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression class="java.lang.String"><![CDATA[$F{customer_name}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="350" y="0" width="200" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression class="java.util.String"><![CDATA[$F{customer_surname}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="550" y="0" width="150" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression class="java.lang.Integer"><![CDATA[$F{tax_exemption_number}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true" pattern="MM/dd/yyyy">
+                <reportElement x="700" y="0" width="150" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression class="java.util.Date"><![CDATA[$F{exemption_effective_date}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <textField>
+                <reportElement x="434" y="0" width="80" height="20"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression class="java.lang.String"><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="514" y="0" width="40" height="20"/>
+                <textElement/>
+                <textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/integration
+    http://www.springframework.org/schema/integration/spring-integration.xsd
+    http://www.springframework.org/schema/integration/jms
+    http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+
+    <bean id="jmrDefaultProcessorModulePartitionerHandler"
+          class="org.springframework.batch.integration.partition.MessageChannelPartitionHandler">
+        <property name="stepName" value="DefaultPartitionedJMRProcessorStep"/>
+        <property name="gridSize" value="${springbatch.mediation.process.partition.count}"/>
+        <property name="jobExplorer" ref="mediationJobExplorer"/>
+        <property name="replyChannel" ref="outbound-replies"/>
+        <property name="messagingOperations">
+            <bean class="org.springframework.integration.core.MessagingTemplate">
+                <property name="defaultChannel" ref="outbound-requests"/>
+                <property name="receiveTimeout" value="100000"/>
+            </bean>
+        </property>
+    </bean>
+
+    <int:channel id="outbound-requests"/>
+    <int-jms:outbound-channel-adapter id="master-outbound-requests-adapter"
+                                      connection-factory="jmsConnectionFactory"
+                                      destination-name="requestsQueue"
+                                      channel="outbound-requests"/>
+
+    <int:channel id="inbound-staging"/>
+    <int-jms:message-driven-channel-adapter id="master-inbound-staging-adapter"
+                                            destination-name="stagingQueue"
+                                            connection-factory="jmsConnectionFactory"
+                                            channel="inbound-staging"/>
+
+    <int:aggregator id="master-inbound-staging-aggregator"
+                    ref="jmrDefaultProcessorModulePartitionerHandler"
+                    input-channel="inbound-staging"
+                    output-channel="outbound-replies"/>
+
+    <int:channel id="outbound-replies">
+        <int:queue/>
+    </int:channel>
+
+</beans>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.32.xml">
+
+    <changeSet context = "base"
+               id = "JB-3535: Customer Account Identification to apply Password Expiry Rules that Differ from Administrative Account Rules"
+               author = "Andres Canevaro">
+
+        <comment>Adding new columns to configure password expiration by roles</comment>
+        <addColumn tableName="role">
+            <column name="expire_password" type="java.sql.Types.BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password_expire_days" type="java.sql.Types.INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-533 - Use Asset Linked Free Usage Pools Only" author="Ashwinkumar">
+        <comment>This preference is required for using Asset Linked Free Usage Pools Only.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"         valueNumeric = "100" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric ="50" />
+            <column name  = "foreign_id"   valueNumeric ="100" />
+            <column name  = "psudo_column" value        ="description" />
+            <column name  = "language_id"  valueNumeric ="1" />
+            <column name  = "content"      value        ="Use Asset Linked Free Usage Pools Only" />
+        </insert>
+        <insert tableName ="international_description">
+            <column name  ="table_id"     valueNumeric ="50" />
+            <column name  ="foreign_id"   valueNumeric ="100" />
+            <column name  ="psudo_column" value        ="instruction" />
+            <column name  ="language_id"  valueNumeric ="1" />
+            <column name  ="content"      value        ="Default value is 0, if value is 1, Asset Linked Free Usage Pools will be used." />
+        </insert>
+    </changeSet>
+</databaseChangeLog>

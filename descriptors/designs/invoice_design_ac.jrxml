@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_ac" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="5" uuid="15d3e2ea-845a-4df1-862f-72f026b16407">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="188"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#FCF5F5"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#FCF5F5"/>
+			<bottomPen lineWidth="0.5" lineColor="#FCF5F5"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#FFBFBF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#FCF5F5"/>
+			<bottomPen lineWidth="0.5" lineColor="#FCF5F5"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#FCF5F5"/>
+			<bottomPen lineWidth="0.5" lineColor="#FCF5F5"/>
+		</box>
+	</style>
+	<style name="table 1">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 1_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+			<style backcolor="#EFF7FF"/>
+		</conditionalStyle>
+	</style>
+	<style name="table 2">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 2_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 2_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 2_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+			<style backcolor="#EFF7FF"/>
+		</conditionalStyle>
+	</style>
+	<style name="table 3">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 3_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 3_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table 3_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[new Boolean($V{REPORT_COUNT}.intValue()%2==0)]]></conditionExpression>
+			<style backcolor="#EFF7FF"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="customerName" class="java.lang.String"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="customerId" class="java.lang.String"/>
+	<parameter name="dateDue" class="java.lang.String"/>
+	<parameter name="balanceWithoutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="carriedBalanceWithoutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="customerAddress" class="java.lang.String"/>
+	<parameter name="customerAddress2" class="java.lang.String"/>
+	<parameter name="customerPostalCode" class="java.lang.String"/>
+	<parameter name="customerCity" class="java.lang.String"/>
+	<parameter name="prevInvoiceTotal" class="java.lang.String"/>
+	<parameter name="paid" class="java.lang.String"/>
+	<parameter name="totalPaymentsReceived" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="carriedBalance" class="java.lang.String"/>
+	<parameter name="balanceForward" class="java.lang.String"/>
+	<parameter name="planOverageCharges" class="java.lang.String"/>
+	<parameter name="otherCharges" class="java.lang.String"/>
+	<parameter name="companyLogo" class="java.io.File"/>
+	<parameter name="prevInvoiceTotalWithOutCurrencySymbol" class="java.lang.String">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="userId" class="java.lang.Integer"/>
+	<parameter name="lastPaymentDate" class="java.util.Date"/>
+	<parameter name="lastPaymentAmount" class="java.math.BigDecimal"/>
+	<parameter name="entityId" class="java.lang.Integer"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="companyAddress1" class="java.lang.String"/>
+	<parameter name="companyAddress2" class="java.lang.String"/>
+	<parameter name="companyCity" class="java.lang.String"/>
+	<parameter name="companyPostalCode" class="java.lang.String"/>
+	<parameter name="customerProvince" class="java.lang.String"/>
+	<parameter name="paymentCount" class="java.lang.Integer"/>
+	<parameter name="serviceNumber" class="java.lang.String"/>
+	<parameter name="invoiceCount" class="java.lang.Long"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<parameter name="lateFeePercentage" class="java.math.BigDecimal"/>
+	<parameter name="sumOfpaymentsLinkedToCurrentInvoice" class="java.math.BigDecimal"/>
+	<parameter name="companyStateCode" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="create_datetime" class="java.sql.Timestamp"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="internal_number" class="java.lang.String"/>
+	<field name="date" class="java.sql.Date"/>
+	<variable name="totalDue" class="java.lang.String"/>
+	<variable name="address" class="java.lang.String">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="totalCurrentCharges" class="java.lang.String"/>
+	<variable name="totalDueBy" class="java.lang.String"/>
+	<variable name="totalDueAfter" class="java.lang.String"/>
+	<variable name="companyAddress" class="java.lang.String"/>
+	<variable name="serviceNumber" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="801" splitType="Prevent">
+			<staticText>
+				<reportElement x="287" y="6" width="261" height="14" forecolor="#0000FF" uuid="9bf7dd16-e603-4a26-96fb-50bcb2a2ab1d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Statement Summary]]></text>
+			</staticText>
+			<line>
+				<reportElement x="287" y="3" width="261" height="1" uuid="cea51ad1-db8e-4a08-8f10-014d6f5a57d3"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="287" y="21" width="261" height="1" uuid="bb3f17f9-4efe-4af2-b1a6-943d3681198e"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="288" y="23" width="101" height="13" uuid="76434168-a8d7-4132-8cdd-bce911564378"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="288" y="60" width="101" height="13" uuid="1bf5685e-5186-42b1-94d8-b3c3c798972d"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Phone Number:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="288" y="73" width="101" height="13" uuid="e11565db-e38e-4e5b-bf5f-323e22578932"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="287" y="86" width="101" height="13" uuid="b1f0a80d-9bc6-45ae-8907-d6f45c68b5b2"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Due:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="287" y="99" width="101" height="13" forecolor="#0000FF" uuid="2af2c7a6-4bc5-46c8-8d90-29ab328c99ec"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Due:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="288" y="120" width="103" height="13" uuid="cc4cc4cf-fd2f-4f15-9685-c9aa76abed0f"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Amount Enclosed:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="288" y="146" width="260" height="1" uuid="9770d1f9-af50-45da-a2e6-90b3c22e9061"/>
+				<graphicElement>
+					<pen lineColor="#000000"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="12" y="99" width="118" height="14" uuid="84c318e6-3efa-4b9f-be6f-dc56e1f39cc3"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Address Service Requested]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="12" y="60" width="239" height="13" uuid="e64c5ddb-f33c-4c1c-9878-6b043e04a6e0"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[P.O. Box 80040 Portland, OR 97280-1040]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="159" y="214" width="218" height="14" uuid="f027c78b-39be-4975-be23-a0e41dc4898d"/>
+				<textElement verticalAlignment="Middle">
+					<font size="7" isBold="false" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Please detach and return above portion with your payment]]></text>
+			</staticText>
+			<line>
+				<reportElement x="279" y="235" width="270" height="1" uuid="1f52343c-cbd1-41f6-ac02-afe549aca96c"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="279" y="253" width="270" height="1" uuid="8c3c24f4-888b-4fdc-92e2-91e78eea42b1"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="279" y="238" width="270" height="14" forecolor="#0000FF" uuid="918a09da-9fe7-4e37-8ebe-70b09f90b9b0"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Important Messages]]></text>
+			</staticText>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="392" y="73" width="156" height="13" uuid="f6fc5914-1329-4e00-8f66-3e1cafd51e9e"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="287" y="36" width="101" height="13" uuid="ab1895dd-2f8d-4071-96a2-a7f76f85176a"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Number:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="288" y="47" width="101" height="13" uuid="ff3178c1-45d7-48e0-9957-da6e52d18c31"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Number:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="392" y="35" width="156" height="13" uuid="d267a5af-2670-467d-aca6-0c57f1bb1100"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{customerId}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="392" y="48" width="156" height="13" uuid="03abd120-21ec-4229-9315-51dda653eaf5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceId}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="392" y="86" width="156" height="13" uuid="e836b93f-4531-4d42-a090-4618f0615482"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{dateDue}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="12" y="121" width="250" height="84" uuid="398553d0-1868-4572-9cf7-a55c659ad9ca"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(null != $P{customerName} && !$P{customerName}.isEmpty() &&
+null != $P{customerAddress} && !$P{customerAddress}.isEmpty() &&
+null != $P{customerAddress2} && !$P{customerAddress2}.isEmpty() &&
+null != $P{customerCity} && !$P{customerCity}.isEmpty() &&
+null != $P{customerProvince} && !$P{customerProvince}.isEmpty() &&
+null != $P{customerPostalCode} && !$P{customerPostalCode}.isEmpty() ?
+$P{customerName}+"\n"+$P{customerAddress} +"\n"+$P{customerAddress2} +"\n"+$P{customerCity} +"\n"+$P{customerProvince} +"\n"+$P{customerPostalCode} :
+$P{customerName}+"\n"+$P{customerAddress} +"\n"+$P{customerCity} +"\n"+$P{customerProvince} +"\n"+$P{customerPostalCode}
+)]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="13" y="8" width="170" height="39" uuid="a2e7c84e-4042-4785-b482-e787472d974f"/>
+				<imageExpression><![CDATA[$P{companyLogo}]]></imageExpression>
+			</image>
+			<textField isBlankWhenNull="true">
+				<reportElement x="392" y="23" width="156" height="13" uuid="defc26b7-1125-4526-8a1b-c9725655b4a7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="392" y="60" width="156" height="13" uuid="cf0bfda0-4b8c-4e11-b894-0a3d6e9c9172"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{accountNumber}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement positionType="Float" x="-17" y="211" width="41" height="560" uuid="6d5cac42-d80c-4f2a-9438-fc8b27eb2be2">
+					<printWhenExpression><![CDATA[$P{invoiceCount} >= 2]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="otherCharges">
+					<subreportParameterExpression><![CDATA[$P{otherCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="entityId">
+					<subreportParameterExpression><![CDATA[$P{entityId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="totalPaymentsReceived">
+					<subreportParameterExpression><![CDATA[$P{totalPaymentsReceived}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="dateDue">
+					<subreportParameterExpression><![CDATA[$P{dateDue}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceTotalWithOutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceTotalWithOutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="carriedBalanceWithoutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{carriedBalanceWithoutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="companyName">
+					<subreportParameterExpression><![CDATA[$P{companyName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="sumOfpaymentsLinkedToCurrentInvoice">
+					<subreportParameterExpression><![CDATA[$P{sumOfpaymentsLinkedToCurrentInvoice}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="balanceForward">
+					<subreportParameterExpression><![CDATA[$P{balanceForward}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="planOverageCharges">
+					<subreportParameterExpression><![CDATA[$P{planOverageCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="paymentCount">
+					<subreportParameterExpression><![CDATA[$P{paymentCount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentAmount">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentAmount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentDate">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentDate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="userId">
+					<subreportParameterExpression><![CDATA[$P{userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lateFeePercentage">
+					<subreportParameterExpression><![CDATA[$P{lateFeePercentage}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "summary_of_account_history.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement x="288" y="134" width="101" height="12" uuid="764f0d7c-8250-4bf9-8b13-c309b8d1c239"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Make checks payable to:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="391" y="134" width="155" height="12" forecolor="#0000FF" uuid="a81a331e-6c09-40e8-b6ef-5fb5f3dc09dc"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{companyName}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="419" y="121" width="4" height="12" uuid="03fa54b2-8690-4169-82d5-72762cc6e96d"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[$]]></text>
+			</staticText>
+			<line>
+				<reportElement x="424" y="130" width="122" height="1" uuid="ed400790-4154-49e2-a6dc-3374984c4bb7"/>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement x="287" y="150" width="247" height="65" uuid="e6c30958-81e3-497d-96b4-4fd45a093660"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(null != $P{companyName} && !$P{companyName}.isEmpty() &&
+null != $P{companyAddress1} && !$P{companyAddress1}.isEmpty() &&
+null != $P{companyAddress2} && !$P{companyAddress2}.isEmpty() &&
+null != $P{companyCity} && !$P{companyCity}.isEmpty() &&
+null != $P{companyPostalCode} && !$P{companyPostalCode}.isEmpty() ?
+$P{companyName}+"\n"+$P{companyAddress1} +"\n"+$P{companyAddress2} +"\n"+$P{companyCity}+"\n" + $P{companyStateCode} +"\n"+$P{companyPostalCode} :
+$P{companyName}+"\n"+$P{companyAddress1} +"\n"+$P{companyCity}+"\n" + $P{companyStateCode}+"\n"+$P{companyPostalCode}
+)]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="-16" y="211" width="41" height="560" uuid="d6e6a62f-3d12-4446-a781-4d924a704e39">
+					<printWhenExpression><![CDATA[$P{invoiceCount} < 2]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="otherCharges">
+					<subreportParameterExpression><![CDATA[$P{otherCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="entityId">
+					<subreportParameterExpression><![CDATA[$P{entityId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="dateDue">
+					<subreportParameterExpression><![CDATA[$P{dateDue}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="totalPaymentsReceived">
+					<subreportParameterExpression><![CDATA[$P{totalPaymentsReceived}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceTotalWithOutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceTotalWithOutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="carriedBalanceWithoutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{carriedBalanceWithoutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="companyName">
+					<subreportParameterExpression><![CDATA[$P{companyName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="sumOfpaymentsLinkedToCurrentInvoice">
+					<subreportParameterExpression><![CDATA[$P{sumOfpaymentsLinkedToCurrentInvoice}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="paymentCount">
+					<subreportParameterExpression><![CDATA[$P{paymentCount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="planOverageCharges">
+					<subreportParameterExpression><![CDATA[$P{planOverageCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="balanceForward">
+					<subreportParameterExpression><![CDATA[$P{balanceForward}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentAmount">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentAmount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentDate">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentDate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="userId">
+					<subreportParameterExpression><![CDATA[$P{userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="REPORT_RESOURCE_BUNDLE">
+					<subreportParameterExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lateFeePercentage">
+					<subreportParameterExpression><![CDATA[$P{lateFeePercentage}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "summary_of_account_history_new_customer.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="392" y="98" width="154" height="15" uuid="76c4809c-4eae-4173-be59-f494fce89a15">
+					<printWhenExpression><![CDATA[$P{invoiceCount}>1]]></printWhenExpression>
+				</reportElement>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="otherCharges">
+					<subreportParameterExpression><![CDATA[$P{otherCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="entityId">
+					<subreportParameterExpression><![CDATA[$P{entityId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="totalPaymentsReceived">
+					<subreportParameterExpression><![CDATA[$P{totalPaymentsReceived}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="dateDue">
+					<subreportParameterExpression><![CDATA[$P{dateDue}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceTotalWithOutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceTotalWithOutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="carriedBalanceWithoutCurrencySymbol">
+					<subreportParameterExpression><![CDATA[$P{carriedBalanceWithoutCurrencySymbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="companyName">
+					<subreportParameterExpression><![CDATA[$P{companyName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="sumOfpaymentsLinkedToCurrentInvoice">
+					<subreportParameterExpression><![CDATA[$P{sumOfpaymentsLinkedToCurrentInvoice}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="balanceForward">
+					<subreportParameterExpression><![CDATA[$P{balanceForward}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="planOverageCharges">
+					<subreportParameterExpression><![CDATA[$P{planOverageCharges}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="paymentCount">
+					<subreportParameterExpression><![CDATA[$P{paymentCount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentAmount">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentAmount}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lastPaymentDate">
+					<subreportParameterExpression><![CDATA[$P{lastPaymentDate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="userId">
+					<subreportParameterExpression><![CDATA[$P{userId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="prevInvoiceId">
+					<subreportParameterExpression><![CDATA[$P{prevInvoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="lateFeePercentage">
+					<subreportParameterExpression><![CDATA[$P{lateFeePercentage}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "total_due.jasper"]]></subreportExpression>
+			</subreport>
+			<textField>
+				<reportElement x="392" y="100" width="156" height="13" forecolor="#0000FF" uuid="1473d2b4-2dc2-42c7-91dd-751917cb327d">
+					<printWhenExpression><![CDATA[$P{invoiceCount} == 1]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges})).subtract($P{sumOfpaymentsLinkedToCurrentInvoice})]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="280" y="277" width="266" height="514" uuid="10c76ab4-02ed-4901-bffc-79f710edad38">
+					<printWhenExpression><![CDATA[$P{entityId} == 63]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Top">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["As of 01-April-2016, you’ll no longer be charged for any calls lasting less than thirty seconds."+"\n"+"\n"+
+"Calls of thirty seconds or more will be rounded up to the nearest minute."+"\n"+"\n"+
+"Generally, when a call lasts less than thirty seconds, it’s some kind of mistake—a wrong number, dropped call, or disconnection."+"\n"+"\n"+
+"Those calls don’t help your business, so we won’t count them against your minutes."+"\n"+"\n"+
+"Our aim is to keep things simple and to charge you for the usage that helps you grow."+"\n"+"\n"+
+"If you have any questions about this change, please contact us at (866) 818-8090"+"\n"+
+"---------------------------------------------------------------------------------------"+"\n"+
+"The above amount will be charged to your credit card."+"\n"+"\n"+
+"The 'Total Due' amount will be charged to the credit card you have on file."+"\n"+"\n"+
+"The charge will appear on your credit card statement as A-CTI."+"\n"+"\n"+
+"You do not need to send payment in the enclosed envelope. ( If we are not able to charge the above amount on your credit card, you will be contacted to make alternate arrangements.)"+"\n"+"\n"+
+"Thank you again for your business!"+"\n"+"\n"+
+"Remember to forward your phones to us!"+"\n"+"\n"+
+"You can forward your phones to us any time of day."+"\n"+"\n"+
+"We're available 24 hours a day, 7 days a week."+"\n"+"\n"+
+"Any time that you're out or unavailable, just forward your calls to us and we'll take care of it until you return."+"\n"+"\n"+
+"If you have any questions, please feel free to contact us at the toll-free customer service below. Thank you!"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="280" y="263" width="266" height="489" uuid="491450c6-ece0-4daf-b453-856c65988975">
+					<printWhenExpression><![CDATA[$P{entityId} != 61]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["The above amount will be charged to your credit card."+"\n"+"\n"+
+"The 'Total Due' amount will be charged to the credit card you have on file."+"\n"+"\n"+
+"The charge will appear on your credit card statement as A-CTI."+"\n"+"\n"+
+"You do not need to send payment in the enclosed envelope. ( If we are not able to charge the above amount on your credit card, you will be contacted to make alternate arrangements.)"+"\n"+"\n"+
+"Thank you again for your business!"+"\n"+"\n"+
+"Remember to forward your phones to us!"+"\n"+"\n"+
+"You can forward your phones to us any time of day."+"\n"+"\n"+
+"We're available 24 hours a day, 7 days a week."+"\n"+"\n"+
+"Any time that you're out or unavailable, just forward your calls to us and we'll take care of it until you return."+"\n"+"\n"+
+"If you have any questions, please feel free to contact us at the toll-free customer service below. Thank you!"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="283" y="262" width="263" height="483" uuid="6b70fedd-04b2-4d2f-8d2c-6a3436bc7e1f">
+					<printWhenExpression><![CDATA[$P{entityId} == 61]]></printWhenExpression>
+				</reportElement>
+				<textFieldExpression><![CDATA["As of 01-October-2016, you’ll no longer be charged for"+"\n"+
+"any calls lasting less than thirty seconds."+"\n"+"\n"+
+"Calls of thirty seconds or more will be rounded up to"+"\n"+
+"the nearest minute."+"\n"+"\n"+
+"Generally, when a call lasts less than thirty seconds, it’s"+"\n"+
+"some kind of mistake-a wrong number, dropped call,"+"\n"+
+"or disconnection."+"\n"+"\n"+
+"Those calls don’t help your business, so we won’t count"+"\n"+
+"them against your minutes."+"\n"+"\n"+
+"Our aim is to keep things simple and to charge you for the"+"\n"+
+"usage that helps you grow."+"\n"+"\n"+
+"If you have any questions about this change,"+"\n"+
+"please contact us at (800) 531-5828."]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Prevent"/>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Prevent"/>
+	</columnHeader>
+	<detail>
+		<band splitType="Stretch"/>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="10" splitType="Prevent">
+			<textField>
+				<reportElement x="138" y="0" width="250" height="10" uuid="6fee1b38-9ecb-4206-98f5-6fe14279f5d5"/>
+				<textElement textAlignment="Center">
+					<font size="8" isBold="true" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["For Customer Service, Please call "+$P{serviceNumber}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="101" splitType="Prevent">
+			<subreport>
+				<reportElement positionType="Float" x="10" y="8" width="536" height="26" uuid="b390106f-16f4-43e4-a768-313df3c7557c"/>
+				<subreportParameter name="customerName">
+					<subreportParameterExpression><![CDATA[$P{customerName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="serviceNumber">
+					<subreportParameterExpression><![CDATA[$P{serviceNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceDate">
+					<subreportParameterExpression><![CDATA[$P{invoiceDate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="accountNumber">
+					<subreportParameterExpression><![CDATA[$P{accountNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="companyLogo">
+					<subreportParameterExpression><![CDATA[$P{companyLogo}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_ac_summary_of_charges.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement positionType="Float" x="9" y="56" width="534" height="26" uuid="17b4822b-ca62-4d63-a4ab-973c1b393d9f"/>
+				<subreportParameter name="customerName">
+					<subreportParameterExpression><![CDATA[$P{customerName}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="serviceNumber">
+					<subreportParameterExpression><![CDATA[$P{serviceNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceDate">
+					<subreportParameterExpression><![CDATA[$P{invoiceDate}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="accountNumber">
+					<subreportParameterExpression><![CDATA[$P{accountNumber}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="customerId">
+					<subreportParameterExpression><![CDATA[$P{customerId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoiceId">
+					<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="companyLogo">
+					<subreportParameterExpression><![CDATA[$P{companyLogo}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_ac_userid_summary.jasper"]]></subreportExpression>
+			</subreport>
+			<break>
+				<reportElement positionType="Float" x="0" y="44" width="528" height="1" uuid="84eb2840-386b-4a07-a442-3599c7363400"/>
+			</break>
+		</band>
+	</summary>
+</jasperReport>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+           http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <bean id="distributelMediationReader" class="com.sapienter.jbilling.server.mediation.converter.common.reader.DistributelMediationReader" >
+        <property name="lineMapper" ref="distributelMediationConverter"/>
+        <property name="linesToSkip" value="0"/>
+        <property name="strict" value="false"/>
+        <property name="extensionFile" value="INV"/>
+    </bean>
+    <bean id="distributelMediationConverter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.sampleMediation.SampleMediationRecordLineConverter" lazy-init="true">
+        <property name="format" ref="distributelMediationFormatFactory" />
+    </bean>
+    <bean id="distributelMediationFormatFactory" class="com.sapienter.jbilling.server.mediation.converter.common.reader.TokenizedFormatFactory" lazy-init="true">
+        <property name="formatFilename" value="/custom-mediations/distributelMediationFormat.xml" />
+        <property name="tokenizer" ref="distributelMediationTokenizer" />
+    </bean>
+    <!-- Mediation line to CDR -->
+    <bean id="distributelMediationTokenizer" class="com.sapienter.jbilling.server.mediation.converter.common.reader.SeparatorMediationTokenizer" lazy-init="true">
+        <property name="fieldSeparator" value="[,]" />
+    </bean>
+
+    <!-- CDR to JMR -->
+
+    <bean id="distributelCDRToJMR" class="com.sapienter.jbilling.server.mediation.converter.common.job.CallDataRecordToConversionResult">
+        <property name="resolver" ref="distributelRecordMediationCdrResolver"></property>
+    </bean>
+
+    <bean id="distributelRecordMediationCdrResolver" class="com.sapienter.jbilling.server.mediation.converter.common.steps.JMRMediationCdrResolver" >
+        <property name="validationSteps" ref="distributelValidationStep" />
+        <property name="steps" ref="distributelResolutionStep" />
+    </bean>
+    <util:map id="distributelValidationStep" map-class="java.util.LinkedHashMap">
+        <entry key="MEDIATION_RESULT_VALIDATION" value-ref="mediationResultValidationStep" />
+    </util:map>
+
+    <util:map id="distributelResolutionStep" map-class="java.util.LinkedHashMap">
+        <entry key="USER_CURRENCY" value-ref="distributelUserAndCurrencyResolutionStep" />
+        <entry key="EVENT_DATE" value-ref="distributelDateResolutionStep" />
+        <entry key="ORDER_LINE_ITEM" value-ref="distributelItemAndQuantityResolutionStep" />
+        <entry key="PRICING" value-ref="distributelPriceResolutionStep" />
+    </util:map>
+
+    <bean id="distributelDateResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelDateResolutionStep"/>
+
+    <bean id="distributelItemAndQuantityResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelItemAndQuantityResolutionStep">
+        <property name="distributelGenericProduct" value="DISTRIBUTEL-ITEM" />
+        <property name="distributelQuantityProduct"  value="1" />
+    </bean>
+
+    <bean id="distributelPriceResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelPriceResolutionStep"/>
+
+    <bean id="distributelUserAndCurrencyResolutionStep" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelUserAndCurrencyResolutionStep">
+        <property name="customerService" ref="customerService" />
+    </bean>
+
+    <!--Validation Beans-->
+    <bean id="mediationResultValidationStep" class="com.sapienter.jbilling.server.mediation.converter.common.validation.MediationResultValidationStep"/>
+
+    <bean id="customerService" class="com.sapienter.jbilling.server.customer.CustomerJdbcTemplateService">
+        <property name="jdbcTemplate" ref="jBillingJdbcTemplate"/>
+        <property name="webServicesSessionBean" ref="webServicesSession"/>
+    </bean>
+
+    <bean id="distributelWriter" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelWriter"/>
+
+    <bean id="orderServiceDistributel" class="com.sapienter.jbilling.server.order.OrderServiceDistributel">
+        <property name="detailFileNamesMF" value="Detail File Names"/>
+    </bean>
+
+    <bean id="distributelRecycleRowMapper" class="com.sapienter.jbilling.server.mediation.converter.customMediations.distributelMediation.DistributelRecycleRowMapper" />
+
+    <bean id="distributelRecycleReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" >
+        <property name="dataSource" ref="jBillingMediationDataSource"/>
+        <property name="sql" value="SELECT * FROM jbilling_mediation_error_record WHERE status = 'TO_BE_RECYCLED'"/>
+        <property name="rowMapper" ref="distributelRecycleRowMapper"/>
+    </bean>
+
+</beans>

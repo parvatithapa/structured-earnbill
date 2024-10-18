@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jb-3286-maps-tables.xml">
+
+    <changeSet context = "test" id = "JB-3286 - rate_long_distance" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE rate_long_distance
+        RENAME CONSTRAINT rate_ld_pkey
+                       TO rate_long_distance_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - rate_movius_call_rates" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "rate_movius_call_rates"
+                       columnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - rate_movius_sms_rates" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "rate_movius_sms_rates"
+                       columnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - rate_movius_override_call_rates" author = "Igor Poteryaev">
+
+        <addPrimaryKey tableName    = "rate_movius_override_call_rates"
+                       columnNames  = "id" />
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - route_rate_1_product_ratecard" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE route_rate_1_product_ratecard
+        RENAME CONSTRAINT pk_route_rate_1_product_ratecard
+                       TO route_rate_1_product_ratecard_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - route_rate_1_plan_ratecard" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE route_rate_1_plan_ratecard
+        RENAME CONSTRAINT pk_route_rate_1_plan_ratecard
+                       TO route_rate_1_plan_ratecard_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - route_rate_1_accnt_type_ratecard" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE route_rate_1_accnt_type_ratecard
+        RENAME CONSTRAINT pk_route_rate_1_accnt_type_ratecard
+                       TO route_rate_1_accnt_type_ratecard_pkey;
+        </sql>
+    </changeSet>
+
+    <changeSet context = "test" id = "JB-3286 - route_rate_1_customer_ratecard" author = "Igor Poteryaev">
+        <sql>
+              ALTER TABLE route_rate_1_customer_ratecard
+        RENAME CONSTRAINT pk_route_rate_1_customer_ratecard
+                       TO route_rate_1_customer_ratecard_pkey;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

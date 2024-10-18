@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="credits_report" language="groovy" pageWidth="1860" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="1820" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="274b963f-896d-46db-84e5-44adf3315d43">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="817"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date"/>
+	<parameter name="end_date" class="java.util.Date"/>
+	<queryString>
+		<![CDATA[SELECT i.create_datetime as invoice_date,
+						i.user_id as customer_id,
+						(SELECT string_agg(mfv.string_value, ' ')
+						   FROM customer c
+					 INNER JOIN customer_account_info_type_timeline cai ON c.id = cai.customer_id
+					 INNER JOIN meta_field_group mfg ON c.account_type_id = mfg.account_type_id
+					 INNER JOIN meta_field_value mfv ON cai.meta_field_value_id = mfv.id
+					 INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+						  WHERE i.user_id = c.user_id
+						    AND c.id = cai.customer_id
+						    AND c.account_type_id = mfg.account_type_id
+						    AND cai.account_info_type_id = mfg.id
+						    AND cai.meta_field_value_id = mfv.id
+						    AND mfv.meta_field_name_id = mfn.id
+						    AND cai.effective_date <= date(CURRENT_DATE)
+						    AND mfn.name in('First Name','Last Name')
+					   GROUP BY c.user_id) AS customer_name,
+						(SELECT mfv.string_value
+						   FROM meta_field_name mfn
+					 INNER JOIN order_line_meta_field_map olm ON olm.order_line_id = ol.id
+					 INNER JOIN	meta_field_value mfv ON olm.meta_field_value_id = mfv.id
+						  WHERE olm.order_line_id = ol.id
+						    AND olm.meta_field_value_id = mfv.id
+						    AND mfv.meta_field_name_id = mfn.id
+						    AND mfn.name = 'Credit Reason Category') AS credit_reason_category,
+						(SELECT mfv.string_value
+						   FROM meta_field_name mfn
+					 INNER JOIN order_line_meta_field_map olm ON olm.order_line_id = ol.id
+					 INNER JOIN	meta_field_value mfv ON olm.meta_field_value_id = mfv.id
+						  WHERE olm.order_line_id = ol.id
+						    AND olm.meta_field_value_id = mfv.id
+						    AND mfv.meta_field_name_id = mfn.id
+						    AND mfn.name = 'Credit Reason Sub-Category') AS credit_reason_sub_category,
+						(SELECT mfv.string_value
+						   FROM meta_field_name mfn
+					 INNER JOIN order_line_meta_field_map olm ON olm.order_line_id = ol.id
+					 INNER JOIN	meta_field_value mfv ON olm.meta_field_value_id = mfv.id
+						  WHERE olm.order_line_id = ol.id
+						    AND olm.meta_field_value_id = mfv.id
+						    AND mfv.meta_field_name_id = mfn.id
+						    AND mfn.name = 'Reason') AS reason,
+						(SELECT mfv.string_value
+						   FROM meta_field_name mfn
+					 INNER JOIN order_line_meta_field_map olm ON olm.order_line_id = ol.id
+					 INNER JOIN	meta_field_value mfv ON olm.meta_field_value_id = mfv.id
+						  WHERE olm.order_line_id = ol.id
+						    AND olm.meta_field_value_id = mfv.id
+						    AND mfv.meta_field_name_id = mfn.id
+						    AND mfn.name = 'CSC Agent Name') AS csc_agent_requester,
+						itm.gl_code,
+						(SELECT gl_description
+						   FROM route_70_gl_description
+						  WHERE gl_code = itm.gl_code) AS gl_description,
+						(SELECT tax_code
+						   FROM route_70_tax_scheme
+						  WHERE description =(	(SELECT mfv.string_value
+						  						   FROM item itm
+											 INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+											 INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id
+											 INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme'
+											 		AND mfv.meta_field_name_id = mfn.id
+													AND itm.id = il.item_id))) AS gst_code,
+						SUM(il.gross_amount) AS credit_ex_gst,
+						COALESCE( (CASE
+								   WHEN SUM(il.gross_amount) = 0
+								   THEN (SELECT SUM(amount) FROM invoice_line il
+								  WHERE il.invoice_id = i.id
+								    AND il.item_id = (SELECT id FROM item WHERE internal_number = 'GST' AND deleted = 0)
+								    AND il.amount<0
+							   GROUP BY il.invoice_id)
+								   ELSE SUM(il.tax_amount)
+									END),0) AS gst,
+						SUM(il.amount) AS credit_incl_gst
+				FROM invoice i
+		  INNER JOIN invoice_line il ON i.id = il.invoice_id
+		  INNER JOIN purchase_order po ON il.order_id = po.id
+		  INNER JOIN order_line ol ON po.id = ol.order_id
+		  INNER JOIN order_line_meta_field_map olm ON ol.id = olm.order_line_id
+		  INNER JOIN meta_field_value mfv ON olm.meta_field_value_id = mfv.id
+		  INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id
+		  INNER JOIN item itm ON itm.id = il.item_id
+			   WHERE itm.deleted = 0
+				 AND i.id = il.invoice_id
+				 AND il.order_id = po.id
+				 AND il.amount < 0
+				 AND po.id = ol.order_id
+				 AND ol.id = olm.order_line_id
+				 AND olm.meta_field_value_id = mfv.id
+				 AND mfv.meta_field_name_id = mfn.id
+				 AND itm.id = il.item_id
+				 AND mfn.name = 'Credit Reason Category'
+				 AND i.deleted = 0
+				 AND i.create_datetime BETWEEN DATE($P{start_date}) AND  DATE($P{end_date})
+			GROUP BY i.user_id,
+					 i.id,mfn.name,
+					 mfv.string_value,
+					 il.item_id,
+					 itm.gl_code,ol.id
+			ORDER BY invoice_date,
+					 customer_id,
+					 credit_incl_gst;]]>
+	</queryString>
+	<field name="invoice_date" class="java.sql.Timestamp"/>
+	<field name="customer_id" class="java.lang.Integer"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="credit_reason_category" class="java.lang.String"/>
+	<field name="credit_reason_sub_category" class="java.lang.String"/>
+	<field name="reason" class="java.lang.String"/>
+	<field name="csc_agent_requester" class="java.lang.String"/>
+	<field name="gl_code" class="java.lang.String"/>
+	<field name="gl_description" class="java.lang.String"/>
+	<field name="gst_code" class="java.lang.String"/>
+	<field name="credit_ex_gst" class="java.math.BigDecimal"/>
+	<field name="gst" class="java.math.BigDecimal"/>
+	<field name="credit_incl_gst" class="java.math.BigDecimal"/>
+	<variable name="subtotal" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_symbol" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
+	</variable>
+	<variable name="total_incl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{credit_incl_gst}]]></variableExpression>
+	</variable>
+	<variable name="total_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{gst}]]></variableExpression>
+	</variable>
+	<variable name="total_excl_gst" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{credit_ex_gst} !=0 ? $F{credit_ex_gst} : ($F{credit_incl_gst} - $F{gst})]]></variableExpression>
+	</variable>
+	<group name="currency_symbol">
+		<groupExpression><![CDATA[]]></groupExpression>
+		<groupFooter>
+			<band height="41">
+				<staticText>
+					<reportElement x="0" y="1" width="100" height="20" uuid="38592bfb-13b5-4d96-96d5-00b4ddf984a5"/>
+					<box rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Amount:]]></text>
+				</staticText>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="1712" y="1" width="108" height="20" uuid="09c7eb5d-a151-4d2b-b198-f0dc3fdb26ef"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_incl_gst}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="0" width="1820" height="1" uuid="a28ac52c-754a-4d75-9bc2-6aa8c28a1a3a"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="1607" y="1" width="105" height="20" uuid="17119e97-81ad-415a-9f73-f988c8befc7b"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_gst}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="1502" y="1" width="105" height="20" uuid="b8f9a81c-f211-4ec1-8f2d-392a585a502c"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total_excl_gst}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="71" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="201" height="20" uuid="dc7faf57-30cd-48f6-8256-624fd5cf19ac"/>
+				<textElement>
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credits Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1607" y="20" width="105" height="20" uuid="c2e946c0-dd0a-40f6-b727-6dca6d63b577"/>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1607" y="40" width="105" height="20" uuid="b0b37546-1a58-43a1-a20e-ebcb257d6e16"/>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1607" y="0" width="105" height="20" uuid="ee620154-1088-4cbf-bd93-042d86b6c633"/>
+				<textElement textAlignment="Left"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1712" y="20" width="108" height="20" uuid="ec10206d-5bcf-4b0d-ae49-5463329c81b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1712" y="40" width="108" height="20" uuid="6cc94766-977c-4095-9531-4a7d07e18bb9"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="MMMMM dd, yyyy">
+				<reportElement x="1712" y="0" width="108" height="20" uuid="92826d0c-85a5-4669-ab5d-286abb67896f"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="20" uuid="8b2974fb-a583-401c-ad4e-602405f76739"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Credits Report]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="48">
+			<line>
+				<reportElement x="0" y="33" width="1820" height="1" uuid="660096f0-983d-4df7-9c9a-aa95391d6f48"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="0" y="13" width="100" height="20" uuid="ff2422d4-fb3b-4ee1-a431-783d2def8ba4"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Invoice Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="13" width="100" height="20" uuid="d67c600f-26d2-413b-b445-220dd66b927d"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="311" y="13" width="170" height="20" uuid="2b3b7aa1-cb64-4a60-9635-fb81b6856a08"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit Reason Category]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1502" y="13" width="105" height="20" uuid="8fb2e554-1d25-482b-a14d-3b4641f256fa"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit ex GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1607" y="13" width="105" height="20" uuid="c226c4a5-5516-4af8-a499-5f19424e99ac"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1712" y="13" width="108" height="20" uuid="d7a71e5c-5e36-49cf-bd38-176835b6960d"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit incl GST]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="481" y="13" width="180" height="20" uuid="81b9c571-8f4b-4937-9ea5-eb5f1b9eb0c8"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit Reason Sub-Category]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="661" y="13" width="180" height="20" uuid="faa67cf6-3081-4cc8-aad2-853d2083ced9"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Reason]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="841" y="13" width="139" height="20" uuid="9b7e572e-4bb6-49e0-8299-cc1e7f59e09e"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[CSC Agent Requester]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="980" y="13" width="122" height="20" uuid="1ff828f7-94d2-410e-8052-bca3d42c7904"/>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Name Approver]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1102" y="13" width="120" height="20" uuid="81e21b49-9f06-4e26-94ec-01b09e96ed31"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revenue GL Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1222" y="13" width="180" height="20" uuid="9487cbf9-7a35-4534-b732-9b2daeb3f1ad"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Revenue GL Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1402" y="13" width="100" height="20" uuid="b53c0700-a6bb-4f9a-b200-c36a879082ab"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[GST Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="13" width="111" height="20" uuid="08f4a0ff-6023-439e-9395-f7037a35f0a6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="29" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="100" height="20" uuid="a615fca4-043f-4942-9a19-b597a14c8835"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="0" width="100" height="20" uuid="ebdc0a71-9123-4e4a-85f9-2812a5901c54"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{customer_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="200" y="0" width="111" height="20" uuid="2a17e96b-6fcf-4509-9923-6b02b71a4b77"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="311" y="0" width="170" height="20" uuid="66d42841-d4e7-4883-883d-f006b7507221"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{credit_reason_category}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="481" y="0" width="180" height="20" uuid="3b641ccb-fe2e-4bf3-9a50-0a6676bd9864"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{credit_reason_sub_category}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1502" y="0" width="105" height="20" uuid="7b0bd81d-e01e-4444-8f52-543a6fe8a20c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{credit_ex_gst} !=0 ? $F{credit_ex_gst} : ($F{credit_incl_gst} - $F{gst})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1607" y="0" width="105" height="20" uuid="4e95f7ae-64fa-4a4c-b302-6efd7f7fb21c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{gst}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1712" y="0" width="108" height="20" uuid="9aeab344-494e-42aa-b420-dabaa5e769b6"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{credit_incl_gst}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="661" y="0" width="180" height="20" uuid="c690a73f-0625-4155-a942-947f2a03fd3e"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{reason}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="841" y="0" width="139" height="20" uuid="1439b921-8145-46e8-bd91-ce66868c9ac7"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{csc_agent_requester}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1102" y="0" width="120" height="20" uuid="3e1262c4-3894-4c19-a19e-9c6bb42ddb0b"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{gl_code}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1222" y="0" width="180" height="20" uuid="a06107ff-dd53-482e-80ba-a737f605192d"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$F{gl_description}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1402" y="0" width="100" height="20" uuid="0c65ab31-9b63-4132-8067-8fe0263accac"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{gst_code}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="50">
+			<textField>
+				<reportElement x="1804" y="0" width="16" height="20" uuid="bd5e22f6-3181-4b84-a504-57c0ab1aabbf"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1712" y="0" width="92" height="20" uuid="410e998e-630e-41a1-8115-d0b8e2f0a82e"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Page]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>

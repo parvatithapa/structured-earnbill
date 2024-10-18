@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+    logicalFilePath="descriptors/database/jbilling-upgrade-4.26.xml">
+
+    <changeSet context = "base" id = "JBSAPP-22 Implementation of Mediation for Sapphire" author = "Krunal Bhavsar">
+        <comment>Directory based mediation  Scheduled task</comment>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name = "category_id"    valueNumeric  = "22"/>
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.task.MediationDirectoryBasedProcessTask"/>
+            <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.mediation.task.MediationDirectoryBasedProcessTask')"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Directory based mediation  Scheduled task"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24"/>
+            <column name = "foreign_id"    valueComputed = "(SELECT id FROM pluggable_task_type WHERE class_name = 'com.sapienter.jbilling.server.mediation.task.MediationDirectoryBasedProcessTask')"/>
+            <column name = "psudo_column"  value         = "title"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Task will take file from given dir path from mediation configuration and trigger one job at a time."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3210: Delete DynamicBalanceManagerTask from all customers" author="Nitisha Sahay">
+        <delete tableName="pluggable_task">
+            <where>
+                type_id = (
+                SELECT id FROM pluggable_task_type
+                    WHERE category_id = 17
+                    AND class_name = 'com.sapienter.jbilling.server.user.balance.DynamicBalanceManagerTask')
+            </where>
+        </delete>
+    </changeSet>
+
+     <changeSet context="base" id="JBSAPP-19 - Update minimum parameters for WorldPayExternaltask" author="Ashish Srivastava">
+        <comment>Update minimum parameters to 2 for pluggable_task_type table for WorldpayExternal Task</comment>
+        <update tableName = "pluggable_task_type">
+            <column name="min_parameters" valueComputed = "2" />
+            <where>class_name = 'com.sapienter.jbilling.server.payment.tasks.PaymentWorldPayExternalTask'</where>
+        </update>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3298 - Change Permission behavior and default for Permission 1918 Mediation Rating Scheme" author="Andres Canevaro">
+        <comment>Update permission 1918 to be role based instead user based</comment>
+        <update tableName="permission">
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+            <where> id=1918</where>
+        </update>
+
+        <comment>Enable permission 1918 for all system admin roles by default</comment>
+        <sql>
+            INSERT INTO permission_role_map(role_id, permission_id)
+                SELECT r.id AS role_id,(SELECT foreign_id
+                                        FROM international_description
+                                        WHERE table_id IN (SELECT id
+                                                            FROM jbilling_table
+                                                            WHERE name = 'permission')
+                                                            AND language_id = 1
+                                                            AND content = 'Mediation Rating Scheme') AS permission_id
+                FROM role r
+                WHERE r.role_type_id=-1
+                GROUP BY r.id;
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JB-3175 Added missing index." author="Krunal Bhavsar">
+         <!-- Added Index on order_line_usage_pool_map -->
+        <createIndex indexName = "order_line_usage_pool_map_fk_order_line"
+                     tableName = "order_line_usage_pool_map"
+                     unique    = "false" >
+            <column  name      = "order_line_id"/>
+        </createIndex>
+
+        <createIndex indexName = "order_line_usage_pool_map_fk_customer_usage_pool_map"
+                     tableName = "order_line_usage_pool_map"
+                     unique    = "false" >
+            <column  name      = "customer_usage_pool_id"/>
+        </createIndex>
+
+        <createIndex indexName = "customer_usage_pool_map_fk_customer"
+                     tableName = "customer_usage_pool_map"
+                     unique    = "false" >
+            <column  name      = "customer_id"/>
+        </createIndex>
+    </changeSet>
+     <changeSet context="base" id="JB-3361 error while adding Customer in maestro" author="Ashish Srivastava">
+        <comment>Adding entry for Maestro payment </comment>
+        <insert tableName = "payment_method">
+            <column name = "id"             value = "13"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"             value = "35"/>
+            <column name = "foreign_id"             value = "13"/>
+            <column name = "psudo_column"             value = "description"/>
+            <column name = "language_id"             value = "1"/>
+            <column name = "content"             value = "Maestro"/>
+        </insert>
+    </changeSet>
+    <changeSet context = "base" id = "JBFC-920: Show note on invoice boolean flag added" author = "Mahesh Shivarkar">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM databasechangelog WHERE id = 'JBFC-920: Show note on invoice boolean flag added'
+            </sqlCheck>
+        </preConditions>
+        <comment>Increase note_content Column Limitation from 2000 to 6000 Char</comment>
+            <sql>
+                ALTER TABLE customer_notes ALTER COLUMN note_content TYPE character varying(6000);
+            </sql>
+            <sql>
+                ALTER TABLE invoice ALTER COLUMN customer_notes TYPE character varying(6000);
+            </sql>
+        <addColumn tableName = "customer_notes">
+            <column name = "notes_in_invoice" type = "java.sql.Types.BOOLEAN" defaultValue="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-225 Add new prference for Number of decimal digits for mediation events price "
+               author  = "Pranay G. Raherkar">
+
+        <insert tableName = "preference_type">
+            <column name  = "id"        valueNumeric = "96"/>
+            <column name  = "def_value" value        = "2"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric = "50"/>
+            <column name  = "foreign_id"   valueNumeric = "96"/>
+            <column name  = "psudo_column" value        = "description"/>
+            <column name  = "language_id"  valueNumeric = "1"/>
+            <column name  = "content"      value        = "Number of decimal digits for mediation events price"/>
+        </insert>
+
+    </changeSet>
+</databaseChangeLog>

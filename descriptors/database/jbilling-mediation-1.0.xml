@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd"
+        logicalFilePath="descriptors/database/jbilling-mediation-1.0.xml">
+
+    <changeSet author="Marco Manzi" id="Mediation-Database-base-schema" context="base">
+        <createTable tableName="audit">
+            <column name="type" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="audit_key" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity" type="java.sql.Types.BINARY"/>
+            <column name="event" type="java.sql.Types.VARCHAR(255)"/>
+        </createTable>
+        <createTable tableName="jbilling_mediation_error_record">
+            <column name="jbilling_entity_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mediation_cfg_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="record_key" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_codes" type="java.sql.Types.VARCHAR(255)"/>
+            <column name="pricing_fields" type="java.sql.Types.VARCHAR(255)"/>
+            <column name="process_id" type="java.sql.Types.BINARY"/>
+            <column name="status" type="java.sql.Types.VARCHAR(255)"/>
+        </createTable>
+        <createTable tableName="jbilling_mediation_process">
+            <column name="id" type="java.sql.Types.BINARY">
+                <constraints nullable="false"/>
+            </column>
+            <column name="configuration_id" type="java.sql.Types.INTEGER"/>
+            <column name="done_and_billable" type="java.sql.Types.INTEGER"/>
+            <column name="duplicates" type="java.sql.Types.INTEGER"/>
+            <column name="end_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="entity_id" type="java.sql.Types.INTEGER"/>
+            <column name="errors" type="java.sql.Types.INTEGER"/>
+            <column name="global" type="java.sql.Types.BOOLEAN"/>
+            <column name="records_processed" type="java.sql.Types.INTEGER"/>
+            <column name="star_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+        </createTable>
+        <createTable tableName="jbilling_mediation_record">
+            <column name="event_date" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="record_key" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_id" type="java.sql.Types.INTEGER"/>
+            <column name="description" type="java.sql.Types.VARCHAR(255)"/>
+            <column name="item_id" type="java.sql.Types.INTEGER"/>
+            <column name="jbilling_entity_id" type="java.sql.Types.INTEGER"/>
+            <column name="mediation_cfg_id" type="java.sql.Types.INTEGER"/>
+            <column name="order_id" type="java.sql.Types.INTEGER"/>
+            <column name="order_line_id" type="java.sql.Types.INTEGER"/>
+            <column name="pricing_fields" type="java.sql.Types.VARCHAR(1000)"/>
+            <column name="process_id" type="java.sql.Types.BINARY"/>
+            <column name="processing_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="quantity" type="java.sql.Types.NUMERIC(22, 2)"/>
+            <column name="rated_cost_price" type="java.sql.Types.NUMERIC(22, 2)"/>
+            <column name="rated_price" type="java.sql.Types.NUMERIC(22, 2)"/>
+            <column name="status" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="java.sql.Types.VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="java.sql.Types.INTEGER"/>
+        </createTable>
+        <addPrimaryKey columnNames="type, timestamp, audit_key" constraintName="audit_pkey" tableName="audit"/>
+        <addPrimaryKey columnNames="jbilling_entity_id, mediation_cfg_id, record_key" constraintName="jbilling_mediation_error_record_pkey" tableName="jbilling_mediation_error_record"/>
+        <addPrimaryKey columnNames="id" constraintName="jbilling_mediation_process_pkey" tableName="jbilling_mediation_process"/>
+        <addPrimaryKey columnNames="event_date, record_key" constraintName="jbilling_mediation_record_pkey" tableName="jbilling_mediation_record"/>
+    </changeSet>
+
+    <!-- JBFC-446 : Adding new status columns to jBilling mediation process -->
+    <changeSet id="JBFC-446:Adding new status columns to jBilling mediation process" author="Neelabh Dubey" context="base">
+        <comment>Adding new status columns</comment>
+        <addColumn tableName="jbilling_mediation_process">
+            <column name="processed_with_errors" type="java.sql.Types.INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="done_and_not_billable" type="java.sql.Types.INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+	<changeSet id="JBFC-492: Removing status column from jBilling mediation process" author="Neelabh Dubey" context="base">
+        <dropColumn columnName="processed_with_errors" tableName="jbilling_mediation_process"/>
+	</changeSet>
+
+    <changeSet author="Krunal Bahvsar" context="base" id="JBFC-487 Modified jbilling_mediation_error_record Table's pricing_fields size">
+        <comment>
+            Increasing the size of the pricing_fields.
+        </comment>
+        <modifyDataType tableName="jbilling_mediation_error_record" columnName="pricing_fields" newDataType="java.sql.Types.VARCHAR(1000)"/>
+    </changeSet>
+
+    <changeSet author="Ashok Kale" id="Drop and build new composite primary key" context="base">
+        <comment>Drop primary key and build new composite primary key using UUID</comment>
+        <dropPrimaryKey tableName="jbilling_mediation_error_record" constraintName="jbilling_mediation_error_record_pkey" />
+        <addColumn tableName="jbilling_mediation_error_record">
+           <column name="id" type="java.sql.Types.BINARY"/>
+        </addColumn>
+        <addPrimaryKey columnNames="jbilling_entity_id, mediation_cfg_id, record_key, id" constraintName="jbilling_mediation_error_record_pkey" tableName="jbilling_mediation_error_record"/>
+    </changeSet>
+
+    <changeSet id="JBFC-576 Add Column OrderAffectedCount" author="Krunal Bhavsar" context="base">
+        <addColumn tableName="jbilling_mediation_process">
+            <column name="order_affected_count" type="java.sql.Types.INTEGER" defaultValueNumeric="0"/>
+        </addColumn>
+	</changeSet>
+
+	<changeSet id="JBFC-644 Change Primary key index of jbilling_mediation_record Table" author="Krunal Bhavsar" context="base">
+        <dropPrimaryKey tableName="jbilling_mediation_record" constraintName="jbilling_mediation_record_pkey" />
+        <addPrimaryKey columnNames="record_key,event_date" constraintName="jbilling_mediation_record_pkey" tableName="jbilling_mediation_record"/>
+	</changeSet>
+
+    <changeSet context = "base" author = "Krunal Bhavsar" id = "JB-2312 Added Index" >
+        <comment>Added Index on status and user_id column to improve fetch query based on both columns </comment>
+        <createIndex indexName = "jbilling_mediation_record_idx_user_status"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "user_id"/>
+            <column  name      = "status"/>
+        </createIndex>
+	</changeSet>
+
+    <!-- JBMOV-16 : Adding new  columns to jBilling mediation record -->
+    <changeSet context = "base" id = "JBMOV-16 : Adding new  columns to jBilling mediation process" author = "Krunal Bhavsar">
+        <comment>Adding new columns</comment>
+        <addColumn tableName = "jbilling_mediation_record">
+            <column name = "source" type = "java.sql.Types.VARCHAR(255)" >
+                <constraints nullable = "true" />
+            </column>
+            <column name="destination" type = "java.sql.Types.VARCHAR(255)" >
+                <constraints nullable = "true" />
+            </column>
+            <column name="original_quantity" type="java.sql.Types.NUMERIC(22, 2)">
+                <constraints nullable = "true" />
+            </column>
+            <column name="cdr_type" type = "java.sql.Types.VARCHAR(255)" >
+                <constraints nullable = "true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBMOV-191 : Change JMR Column Size" author = "Krunal Bhavsar" >
+        <comment>Data types of amount and quantity fields in jmr table changed to jBilling standard amount data types.</comment>
+
+        <modifyDataType columnName  = "rated_price"
+                    newDataType = "java.sql.Types.NUMERIC(22,10)"
+                    tableName   = "jbilling_mediation_record" />
+
+        <modifyDataType columnName  = "quantity"
+                    newDataType = "java.sql.Types.NUMERIC(22,10)"
+                    tableName   = "jbilling_mediation_record" />
+
+        <modifyDataType columnName  = "rated_cost_price"
+                    newDataType = "java.sql.Types.NUMERIC(22,10)"
+                    tableName   = "jbilling_mediation_record" />
+    </changeSet>
+    <changeSet context="base" id="JBDT-19. Mediation Process" author="Gerhard Maree">
+        <comment>Indicates if this row was aggregated into another row</comment>
+        <addColumn tableName="jbilling_mediation_process">
+            <column name="aggregated" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="JMR New column Resource Id" author="Priyank">
+        <addColumn tableName="jbilling_mediation_record">
+            <column name="resource_id" type="java.sql.Types.VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="JMR Orignal Quantity - precision and scale" author="Priyank">
+        <modifyDataType tableName="jbilling_mediation_record" columnName="original_quantity"
+                        newDataType="java.sql.Types.NUMERIC(30, 10)" />
+    </changeSet>
+
+    <changeSet context = "base" id="JM Error Usage Record new table" author="PriyankS">
+        <createTable tableName="jm_error_usage_record">
+            <column name="id"  type="java.sql.Types.INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="error_usage_record_pk"/>
+            </column>
+            <column name = "error_record_id"  type = "java.sql.Types.BINARY">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "entity_id"  type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "mediation_cfg_id"  type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "record_key"  type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "item_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "resource_id" type = "java.sql.Types.VARCHAR(255)">
+                <constraints nullable = "true"/>
+            </column>
+            <column name="event_date" type = "java.sql.Types.DATE">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "original_quantity" type = "java.sql.Types.NUMERIC(30, 10)">
+                <constraints nullable = "true"/>
+            </column>
+            <column name = "quantity" type = "java.sql.Types.NUMERIC(22, 10)">
+                <constraints nullable = "true"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="error_record_id,entity_id,mediation_cfg_id,record_key"
+                                 baseTableName="jm_error_usage_record"
+                                 constraintName="error_record_fk1" deferrable="false"
+                                 initiallyDeferred="false" onDelete="CASCADE" onUpdate="CASCADE"
+                                 referencedColumnNames="id,jbilling_entity_id,mediation_cfg_id,record_key"
+                                 referencedTableName="jbilling_mediation_error_record" />
+    </changeSet>
+
+    <changeSet context = "test" author = "Gerhard Maree" id = "JB-2315 Test Data6" >
+        <insert tableName="jbilling_mediation_record">
+            <column name="event_date" valueDate="2010-01-01T12:01:00.0"/>
+            <column name="record_key" value="AAA"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="order_id" valueNumeric="4"/>
+            <column name="order_line_id" valueNumeric="-1"/>
+            <column name="process_id" valueBlobFile="jmr.uuid"/>
+            <column name="quantity" valueNumeric="0"/>
+            <column name="rated_cost_price" valueNumeric="0.0"/>
+            <column name="rated_price" valueNumeric="0.0"/>
+            <column name="status" value="PROCESSED"/>
+            <column name="type" value="MEDIATION"/>
+            <column name="chargeable" valueBoolean="true"/>
+        </insert>
+
+        <insert tableName="jbilling_mediation_record">
+            <column name="event_date" valueDate="2010-01-02T12:02:00.0"/>
+            <column name="record_key" value="BBB"/>
+            <column name="currency_id" valueNumeric="1"/>
+            <column name="order_id" valueNumeric="4"/>
+            <column name="order_line_id" valueNumeric="-1"/>
+            <column name="process_id" valueBlobFile="jmr.uuid"/>
+            <column name="quantity" valueNumeric="0"/>
+            <column name="rated_cost_price" valueNumeric="0.0"/>
+            <column name="rated_price" valueNumeric="0.0"/>
+            <column name="status" value="PROCESSED"/>
+            <column name="type" value="MEDIATION"/>
+            <column name="chargeable" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JB-3175 Added Index" author = "Krunal Bhavsar">
+        <comment> Added Index on status and record_key column to improve fetch query. </comment>
+
+        <!-- Added Index on jbilling_mediation_record-->
+        <createIndex indexName = "jbilling_mediation_record_idx_record_key"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "record_key"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_record_idx_status"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "status"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_record_idx_order_id"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "order_id"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_record_idx_process_id"
+                     tableName = "jbilling_mediation_record"
+                     unique    = "false" >
+            <column  name      = "process_id"/>
+        </createIndex>
+
+        <!-- Added Index on jbilling_mediation_error_record-->
+        <createIndex indexName = "jbilling_mediation_error_record_idx_process_id"
+                     tableName = "jbilling_mediation_error_record"
+                     unique    = "false" >
+            <column  name      = "process_id"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_error_record_idx_record_key"
+                     tableName = "jbilling_mediation_error_record"
+                     unique    = "false" >
+            <column  name      = "record_key"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_error_record_idx_mediation_cfg_id"
+                     tableName = "jbilling_mediation_error_record"
+                     unique    = "false" >
+            <column  name      = "mediation_cfg_id"/>
+        </createIndex>
+
+        <createIndex indexName = "jbilling_mediation_error_record_idx_jbilling_entity_id"
+                     tableName = "jbilling_mediation_error_record"
+                     unique    = "false" >
+            <column  name      = "jbilling_entity_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-51 CDR Processing (Optus MUR Files)" author = "Krunal Bhavsar">
+        <addColumn tableName = "jbilling_mediation_record">
+            <column name = "chargeable" type = "java.sql.Types.BOOLEAN" defaultValueBoolean = "true">
+                    <constraints nullable = "false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-50 : alter size of pricing fields column" author = "Harshad Pathan">
+
+        <modifyDataType tableName = "jbilling_mediation_error_record"
+                       columnName = "pricing_fields"
+                      newDataType = "java.sql.Types.VARCHAR(6000)"/>
+
+        <modifyDataType tableName = "jbilling_mediation_record"
+                       columnName = "pricing_fields"
+                      newDataType = "java.sql.Types.VARCHAR(6000)"/>
+    </changeSet>
+</databaseChangeLog>

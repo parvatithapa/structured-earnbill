@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_payments_and_refunds_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="4c394602-0e08-4188-baf0-f1e7c33bd739">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="prevInvoiceId" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[-- select payments linked to invoice
+select date(p1.create_datetime) as create_datetime,
+	p1.amount,
+	p1.is_refund
+from payment p1
+where p1.deleted = 0
+and p1.result_id in (1,4)
+-- payment method should not be credit
+and p1.method_id != 15
+and p1.is_refund = 0
+and p1.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p1.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p1.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+-- payment not in unlinked payments
+and p1.id not in
+(select p2.id
+from payment p2
+where p2.deleted = 0
+and p2.result_id in (1,4)
+and p2.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p2.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p2.is_refund = 0
+-- payment method should not be credit
+and p2.method_id != 15
+and p2.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p2.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1))
+
+union all
+-- where payment linked to current invoice and previous invoice
+select date(p4.create_datetime) as create_datetime,
+	pi.amount,
+	p4.is_refund
+from payment p4
+inner join payment_invoice pi on p4.id = pi.payment_id and pi.invoice_id in ($P{invoiceId},$P{prevInvoiceId})
+where p4.deleted = 0
+and p4.result_id in (1,4)
+and p4.is_refund = 0
+and p4.method_id != 15
+and p4.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p4.payment_date < (select create_datetime from invoice where id = $P{prevInvoiceId})
+
+union all
+
+-- select unlinked payments
+select date(p2.create_datetime) as create_datetime,
+	p2.amount,
+	p2.is_refund
+from payment p2
+where p2.deleted = 0
+and p2.result_id in (1,4)
+and p2.user_id = (select user_id from invoice where id = $P{invoiceId})
+and p2.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p2.is_refund = 0
+-- payment method should not be credit
+and p2.method_id != 15
+and p2.id not in
+	(select pi.payment_id
+	from payment_invoice pi
+	inner join payment p on p.id = pi.payment_id
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId}))
+and p2.id not in
+	(select p.payment_id
+	from payment p
+	where p.user_id = (select user_id from invoice where id = $P{invoiceId})
+	and p.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+	and p.deleted = 0
+	and p.is_refund = 1)
+
+union all
+
+-- select refunds
+select date(p3.create_datetime) as create_datetime,
+	p3.amount,
+	p3.is_refund
+from payment p3
+where p3.deleted = 0
+and p3.result_id in (1,4)
+and p3.user_id = (select user_id from invoice where id = $P{invoiceId})
+and case when $P{invoiceId} != $P{prevInvoiceId} then p3.payment_date >= (select create_datetime from invoice where id = $P{prevInvoiceId}) else 1=1 end
+and p3.payment_date < (select create_datetime from invoice where id = $P{invoiceId})
+and p3.is_refund = 1
+-- payment method should not be credit
+and p3.method_id != 15]]>
+	</queryString>
+	<field name="create_datetime" class="java.sql.Date"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<variable name="payment_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="payment_sum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} == 0 ? $F{amount}:0]]></variableExpression>
+	</variable>
+	<variable name="refund_payment_sum" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{is_refund} ==1 ? $F{amount}:0]]></variableExpression>
+	</variable>
+	<title>
+		<band height="33">
+			<staticText>
+				<reportElement x="13" y="3" width="210" height="17" forecolor="#505861" uuid="870f0387-e52b-4e50-8d10-291ebf1f3ee2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payments and Refunds]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="2" width="210" height="17" forecolor="#505861" uuid="e44c4736-8f84-473b-87c1-e5eb5bcd4079"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESCRIPTION]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="413" y="2" width="126" height="17" forecolor="#505861" uuid="a1c7f001-469c-48e9-b1c3-b729637794d9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[AMOUNT]]></text>
+			</staticText>
+			<line>
+				<reportElement x="13" y="25" width="527" height="1" uuid="bfb69060-ec08-4e92-9602-95abd9609504"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#999C9F"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<textField pattern="dd-MMM-yy" isBlankWhenNull="true">
+				<reportElement x="13" y="5" width="211" height="17" forecolor="#505861" uuid="34951708-5511-491b-a22d-34c75b0a8776"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{is_refund} == 0 ?
+'Payment Received on '+new SimpleDateFormat("dd-MMM-yy").format($F{create_datetime})
+:
+'Refund of Payment on '+new SimpleDateFormat("dd-MMM-yy").format($F{create_datetime})]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="413" y="5" width="126" height="17" forecolor="#505861" uuid="61bb34c6-abe6-431e-9873-f76ff407a947"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new Integer($F{is_refund}) == 0 ?
+"-"+$P{currency_symbol}+new java.text.DecimalFormat("#,##0.00").format($F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP)) :
+$P{currency_symbol}+new java.text.DecimalFormat("#,##0.00").format($F{amount}.setScale(2, BigDecimal.ROUND_HALF_UP))]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="37">
+			<staticText>
+				<reportElement x="13" y="11" width="125" height="20" forecolor="#505861" uuid="50c22285-d579-4f77-a834-2d1fc10a4f43"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+			<textField evaluationTime="Auto" isBlankWhenNull="true">
+				<reportElement x="413" y="11" width="126" height="20" forecolor="#505861" uuid="8971e269-a076-48c7-8dab-576dc5b335ff"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{payment_sum}.subtract($V{refund_payment_sum}) >= 0 ?
+"-"+$P{currency_symbol}+new java.text.DecimalFormat("#,##0.00").format($V{payment_sum}.subtract($V{refund_payment_sum}).setScale(2, BigDecimal.ROUND_HALF_UP)):
+$P{currency_symbol}+new java.text.DecimalFormat("#,##0.00").format($V{payment_sum}.subtract($V{refund_payment_sum}).setScale(2, BigDecimal.ROUND_HALF_UP))]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="13" y="4" width="527" height="1" forecolor="#999C9F" uuid="d8c913b8-0e49-4a4c-a821-1f646b129871"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="13" y="35" width="527" height="1" forecolor="#999C9F" uuid="25263f24-91af-4352-80fc-d4bb0d65c0cd"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

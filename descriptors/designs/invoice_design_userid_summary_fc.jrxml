@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_userid_summary_fc" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="d7023383-6fe7-411e-815b-b74e708d8e5d">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoiceDate" class="java.lang.String"/>
+	<parameter name="customerId" class="java.lang.String"/>
+	<parameter name="invoiceId" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[$P{invoiceId}]]></defaultValueExpression>
+	</parameter>
+	<parameter name="companyLogo" class="java.io.File"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="customerName" class="java.lang.String"/>
+	<parameter name="serviceNumber" class="java.lang.String"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/designs/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+	i_d.content AS "plan_description",
+	il.call_identifier AS phone_number,
+	il.description AS call_type,
+	(SELECT mfv.string_value
+	FROM item i, meta_field_value mfv,
+	asset_meta_field_map amfm, asset a
+	WHERE mfv.meta_field_name_id IN
+		(SELECT id
+		FROM meta_field_name
+		WHERE name = 'Asset Nick Name')
+	AND amfm.meta_field_value_id = mfv.id
+	AND amfm.asset_id = a.id
+	AND a.item_id = i.id
+	AND i.id = item_id
+	AND (a.identifier = call_identifier)) AS asset_nick_name,
+	il.call_counter,
+	il.quantity,
+	il.amount,
+	p.id AS plan_id
+FROM invoice_line il, invoice inv,
+customer_price cp, plan_item pi, plan p,
+item i, international_description i_d
+WHERE il.invoice_id = inv.id
+AND inv.user_id = cp.user_id
+AND cp.plan_item_id = pi.id
+AND pi.plan_id = p.id
+AND p.item_id = i.id
+AND i.id = i_d.foreign_id
+AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+AND i_d.language_id = 1
+AND il.call_identifier IS NOT NULL
+AND il.item_id = pi.item_id
+AND il.invoice_id = $P{invoiceId}
+AND i.deleted = 0
+AND UPPER(i_d.content) NOT LIKE '%DORMANCY%'
+-- If user have only one Monthly order with FINISHED status AND no swap plan history
+AND ((SELECT CASE WHEN count(*) = 1 THEN cp.price_expiry_date IS NOT NULL ELSE cp.price_expiry_date IS NULL END
+	FROM purchase_order
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND period_id IN
+		(SELECT id FROM order_period WHERE unit_id = 1 AND value = 1)
+	-- Fishined status
+	AND status_id IN (SELECT id FROM order_status WHERE order_status_flag= 1)
+	)
+-- If user have only one Monthly order with ACTIVE status AND no swap plan history
+OR (SELECT CASE WHEN count(*) = 1 THEN cp.price_expiry_date IS NULL ELSE cp.price_expiry_date IS NOT NULL END
+	FROM purchase_order
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND period_id IN
+		(SELECT id FROM order_period WHERE unit_id = 1 AND value = 1)
+	-- Active status
+	AND status_id IN (SELECT id FROM order_status WHERE order_status_flag= 0)
+	))
+AND p.item_id NOT IN
+	(SELECT ol.item_id
+	FROM purchase_order po, order_line ol, swap_plan_history sph
+	WHERE user_id = (SELECT user_id FROM invoice WHERE id = $P{invoiceId})
+	AND ol.order_id = po.id
+	AND sph.order_id = po.id
+	AND po.deleted = 0
+	)
+
+UNION ALL
+
+SELECT
+	'No Plan',
+	il.call_identifier AS phone_number,
+	il.description AS call_type,
+	(SELECT mfv.string_value
+	FROM item i, meta_field_value mfv,
+	asset_meta_field_map amfm, asset a
+	WHERE mfv.meta_field_name_id IN
+		(SELECT id
+		FROM meta_field_name
+		WHERE name = 'Asset Nick Name')
+	AND amfm.meta_field_value_id = mfv.id
+	AND amfm.asset_id = a.id
+	AND a.item_id = i.id
+	AND i.id = item_id
+	AND (a.identifier = call_identifier)) AS asset_nick_name,
+	il.call_counter,
+	il.quantity,
+	il.amount,
+	NULL
+FROM invoice_line il, invoice inv
+WHERE il.invoice_id = inv.id
+AND il.call_identifier IS NOT NULL
+AND il.invoice_id = $P{invoiceId}
+AND il.id NOT IN (
+	SELECT il.id
+	FROM invoice_line il, invoice inv,
+	customer_price cp, plan_item pi, plan p,
+	item i, international_description i_d
+	WHERE il.invoice_id = inv.id
+	AND inv.user_id = cp.user_id
+	AND cp.plan_item_id = pi.id
+	AND pi.plan_id = p.id
+	AND p.item_id = i.id
+	AND i.id = i_d.foreign_id
+	AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+	AND i_d.language_id = 1
+	AND il.call_identifier IS NOT NULL
+	AND il.item_id = pi.item_id
+	AND il.invoice_id = $P{invoiceId}
+	AND i.deleted = 0
+	)
+
+UNION ALL
+
+SELECT
+	i_d.content AS "plan_description",
+	il.call_identifier AS phone_number,
+	il.description AS call_type,
+	(SELECT mfv.string_value
+	FROM item i, meta_field_value mfv,
+	asset_meta_field_map amfm, asset a
+	WHERE mfv.meta_field_name_id IN
+		(SELECT id
+		FROM meta_field_name
+		WHERE name = 'Asset Nick Name')
+	AND amfm.meta_field_value_id = mfv.id
+	AND amfm.asset_id = a.id
+	AND a.item_id = i.id
+	AND i.id = item_id
+	AND (a.identifier = call_identifier)) AS asset_nick_name,
+	il.call_counter,
+	il.quantity,
+	il.amount,
+	p.id AS plan_id
+FROM invoice_line il, invoice inv, purchase_order po,
+swap_plan_history sph, plan p, item i,
+international_description i_d, plan_item pi
+WHERE il.invoice_id = inv.id
+AND inv.user_id = po.user_id
+AND po.id = sph.order_id
+AND po.deleted = 0
+-- Orders active until date should be NULL(active order) or should be in last month(finished order)
+AND (po.active_until IS NULL OR po.active_until BETWEEN date_trunc('month', inv.create_datetime - interval '1' month) AND inv.create_datetime)
+AND p.item_id = i.id
+AND pi.item_id = il.item_id
+AND pi.plan_id = p.id
+AND i.id = i_d.foreign_id
+AND i_d.table_id = (SELECT id FROM jbilling_table WHERE name = 'item')
+AND i_d.language_id = 1
+AND il.call_identifier IS NOT NULL
+AND il.invoice_id = $P{invoiceId}
+AND i.deleted = 0
+AND UPPER(i_d.content) NOT LIKE '%DORMANCY%'
+AND
+CASE WHEN (SELECT MAX(swap_date)
+	FROM swap_plan_history sph1
+	WHERE po.id = sph1.order_id
+	GROUP BY sph1.order_id
+	HAVING MAX(swap_date) < (SELECT create_datetime FROM invoice WHERE id = $P{invoiceId})) IS NOT NULL
+THEN
+-- take new plan id before invoice generation
+p.id = (SELECT sph4.new_plan_id
+	FROM swap_plan_history sph4
+	WHERE sph4.swap_date = sph.swap_date
+	AND sph4.swap_date = (SELECT MAX(sph1.swap_date)
+				FROM swap_plan_history sph1
+				WHERE po.id = sph1.order_id
+				AND sph1.swap_date < (inv.create_datetime)))
+ELSE
+-- if plan swapped after invoice generation then take old plan id
+p.id = (SELECT sph3.old_plan_id
+	FROM swap_plan_history sph3
+	WHERE sph3.swap_date = sph.swap_date
+	AND sph3.swap_date = (SELECT MIN(swap_date)
+				FROM swap_plan_history sph2
+				WHERE po.id = sph2.order_id
+				AND sph2.swap_date > (inv.create_datetime)))
+END
+ORDER BY plan_description;]]>
+	</queryString>
+	<field name="plan_description" class="java.lang.String"/>
+	<field name="phone_number" class="java.lang.String"/>
+	<field name="call_type" class="java.lang.String"/>
+	<field name="asset_nick_name" class="java.lang.String"/>
+	<field name="call_counter" class="java.lang.Long"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="plan_id" class="java.lang.Integer"/>
+	<variable name="total_amount" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
+	</variable>
+	<variable name="serviceNumber" class="java.lang.String"/>
+	<variable name="customerName" class="java.lang.String"/>
+	<group name="PlanGroup">
+		<groupExpression><![CDATA[$F{plan_description}]]></groupExpression>
+		<groupHeader>
+			<band height="29">
+				<textField isBlankWhenNull="true">
+					<reportElement x="13" y="5" width="284" height="20" forecolor="#505861" uuid="64947afe-8c63-448c-93df-2c4fc5f17ec2"/>
+					<textElement>
+						<font fontName="Lato" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{plan_description}.substring(0, $F{plan_description}.indexOf("-") > 0 ? $F{plan_description}.indexOf("-") :0).length() > 0 ?
+"Live Answer Usage with "+$F{plan_description}.substring(0, $F{plan_description}.indexOf("-")) :
+"Live Answer Usage with "+$F{plan_description}]]></textFieldExpression>
+				</textField>
+				<subreport>
+					<reportElement x="294" y="5" width="244" height="20" uuid="c7ec7e4a-bf20-4b5c-8ce8-175c537b9b43"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="invoiceId">
+						<subreportParameterExpression><![CDATA[$P{invoiceId}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="currency_symbol">
+						<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="plan_id">
+						<subreportParameterExpression><![CDATA[$F{plan_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "invoice_design_userid_summary_subreport_group_sub_totals_fc.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band/>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="80" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="15" width="518" height="17" forecolor="#505861" uuid="af5b565e-40ff-48f2-9456-a1732390f1b2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Usage Details & Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="13" y="47" width="100" height="14" forecolor="#505861" uuid="0551abcf-e2e0-4a38-bd11-ed7d4f7cc17c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="297" y="47" width="70" height="14" forecolor="#505861" uuid="6da17d3f-4120-4c81-89dd-4bd9701d4502"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Calls]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="368" y="47" width="70" height="14" forecolor="#505861" uuid="2e67b6d4-d5aa-4507-8c63-997cd5ef22c1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Minutes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="439" y="47" width="99" height="14" forecolor="#505861" uuid="b4e434e8-1b2c-4614-827c-4f39fa553d23"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Overage Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="13" y="70" width="527" height="1" forecolor="#999C9F" uuid="afc21f81-6ba7-400b-8198-8916cece4f8d"/>
+				<graphicElement>
+					<pen lineWidth="0.15"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="206" y="47" width="90" height="14" forecolor="#505861" uuid="b4bef42b-7d70-475d-bad1-8a55d634ded5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nick Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="114" y="47" width="90" height="14" forecolor="#505861" uuid="23ca4458-89b2-4cc5-8b69-a3e56668edc7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Lato" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Call Type]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="17" splitType="Prevent">
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="368" y="2" width="70" height="13" forecolor="#505861" uuid="931607f8-ddff-4a4c-bea7-ee631aa92602"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="439" y="2" width="100" height="13" forecolor="#505861" uuid="3068f44c-3e0e-4223-957e-e1cfa2ce96fc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format($F{amount}.setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="297" y="2" width="70" height="13" forecolor="#505861" uuid="80e40169-dfb7-406b-9835-881d49841d80"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_counter}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="13" y="2" width="100" height="13" forecolor="#505861" uuid="77f9493a-88f9-4f73-bc31-d2425366cf0b"/>
+				<textElement textAlignment="Left">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{phone_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="206" y="2" width="90" height="13" forecolor="#505861" uuid="21d3fdb8-a0dd-404b-834d-accbc5d2b1e7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{asset_nick_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="114" y="2" width="90" height="13" forecolor="#505861" uuid="5b7bf239-b0f8-49b2-87d8-fc2295382a89"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Open Sans" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{call_type}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<summary>
+		<band height="36" splitType="Stretch">
+			<staticText>
+				<reportElement x="13" y="7" width="126" height="20" forecolor="#505861" uuid="e5857b29-ec67-4523-a81d-30e1c79cb158"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Usage Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="13" y="2" width="527" height="1" forecolor="#999C9F" uuid="c5c91f2c-3c54-456e-abd8-f6699a1bbf4d"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+			<textField pattern="###0.00" isBlankWhenNull="true">
+				<reportElement x="439" y="7" width="100" height="20" forecolor="#505861" uuid="acf84873-cd8d-448e-a05f-50c7f431c1fc"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Lato" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+(new java.text.DecimalFormat("#,##0.00").format(new BigDecimal($V{total_amount}).setScale(2, RoundingMode.HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="13" y="34" width="527" height="1" forecolor="#999C9F" uuid="698404a5-46a4-497e-8d09-0d9531951895"/>
+				<graphicElement>
+					<pen lineWidth="0.2"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

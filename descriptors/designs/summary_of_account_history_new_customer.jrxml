@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="summary_of_account_history" language="groovy" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c7988445-fc8a-4cb5-be84-bbb0269df086">
+	<property name="ireport.zoom" value="1.331000000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="userId" class="java.lang.Integer"/>
+	<parameter name="prevInvoiceTotalWithOutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="balanceForward" class="java.lang.String"/>
+	<parameter name="planOverageCharges" class="java.lang.String"/>
+	<parameter name="otherCharges" class="java.lang.String"/>
+	<parameter name="dateDue" class="java.lang.String"/>
+	<parameter name="lastPaymentDate" class="java.util.Date"/>
+	<parameter name="lastPaymentAmount" class="java.math.BigDecimal"/>
+	<parameter name="totalPaymentsReceived" class="java.lang.String"/>
+	<parameter name="entityId" class="java.lang.Integer"/>
+	<parameter name="companyName" class="java.lang.String"/>
+	<parameter name="paymentCount" class="java.lang.Integer"/>
+	<parameter name="carriedBalanceWithoutCurrencySymbol" class="java.lang.String"/>
+	<parameter name="invoiceId" class="java.lang.Integer"/>
+	<parameter name="lateFeePercentage" class="java.lang.String"/>
+	<parameter name="sumOfpaymentsLinkedToCurrentInvoice" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[select payment_date, amount, is_refund
+from payment
+where user_id =$P{userId}
+and deleted = 0
+and (result_id = 1
+or result_id = 4);]]>
+	</queryString>
+	<field name="payment_date" class="java.sql.Date"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="is_refund" class="java.lang.Integer"/>
+	<variable name="paymentsReceived" class="java.lang.String" calculation="Sum"/>
+	<variable name="separator1" class="java.lang.String"/>
+	<variable name="separator2" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band height="42" splitType="Stretch">
+			<line>
+				<reportElement x="10" y="4" width="258" height="1" uuid="df1dbd17-9edb-4028-98b9-3f576e50c23a"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="10" y="22" width="258" height="1" uuid="29bee97f-ff48-4a48-a1aa-73c57a840efe"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="10" y="7" width="258" height="14" forecolor="#000000" uuid="b2a639e5-95db-4c44-96e5-0a20b91eee86"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Summary of Account History]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="28" width="135" height="13" uuid="a06f88b2-f0d3-4cf6-b5d7-403811197d1c"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Amount of Last Statement]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="146" y="28" width="118" height="13" uuid="ccadc986-5293-4133-9c3a-243f9f0be505"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $P{prevInvoiceTotalWithOutCurrencySymbol} ? $P{prevInvoiceTotalWithOutCurrencySymbol} : "0.00"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="4" splitType="Stretch">
+			<line>
+				<reportElement x="12" y="2" width="251" height="1" uuid="294ac028-c3ab-4269-a7c2-bae0c2f7d6a4">
+					<printWhenExpression><![CDATA[$P{paymentCount} > 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dashed"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="13" splitType="Stretch">
+			<printWhenExpression><![CDATA[$P{paymentCount} > 1]]></printWhenExpression>
+			<textField isBlankWhenNull="true">
+				<reportElement x="11" y="0" width="135" height="13" uuid="1c77f3bd-2ca4-474b-a0cf-8f4cf3989cd4"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{payment_date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="145" y="0" width="118" height="13" uuid="3ca3c107-e144-486c-8643-d1024c92aa06"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{is_refund} == 0 ?
+($F{amount} == 0 ? "0.00" : "-" + new DecimalFormat("###0.00").format($F{amount})) :
+($F{amount} == 0 ? "(Refund) 0.00" : "(Refund)+" + new DecimalFormat("###0.00").format($F{amount}))]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="231" splitType="Prevent">
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="147" y="20" width="118" height="13" uuid="d3e74764-9a9c-40db-ac65-dcd67c26f666"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{balanceForward}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="20" width="135" height="13" uuid="8f178361-a08d-432d-ac66-590b9d1f9daf"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Balance Forward]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="147" y="34" width="118" height="13" uuid="a9850965-42bb-4348-9698-b346d134a234"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{planOverageCharges}).add(new BigDecimal($P{otherCharges}))]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="34" width="135" height="13" uuid="ded92309-417f-40eb-b50f-205ae996b725"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Current Charges]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="10" y="83" width="134" height="13" uuid="121a0f7c-3c7f-426f-bf45-3def61019eb6"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Total Due After "+$P{dateDue}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="10" y="102" width="258" height="1" uuid="a77bcc88-dedf-41cc-b27e-0ce0345b64fe"/>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="11" y="150" width="118" height="13" uuid="1bc01b61-fe14-47a8-bc2c-dd8d61083ff7"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Plan Overage Charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="11" y="120" width="258" height="1" uuid="152e80eb-bb20-4cb7-9f96-2a4c222addf5"/>
+				<graphicElement>
+					<pen lineColor="#0000FF"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="11" y="164" width="118" height="13" uuid="bae55745-d5d4-4d56-a914-e0c07ddbf05c"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Other Charges]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="11" y="203" width="151" height="13" uuid="f9b80086-dbb9-4863-a32d-0c53d382abfa"/>
+				<textElement verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TOTAL CURRENT CHARGES]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="161" y="188" width="105" height="13" uuid="204c4160-7aec-41b3-9da9-cc371d070428"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new BigDecimal($P{planOverageCharges}).add(new BigDecimal($P{otherCharges}))]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="131" y="150" width="135" height="13" uuid="ac13dd8f-4a5b-436c-8745-7c0701224830"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $P{planOverageCharges} ? new DecimalFormat("#,##0.00").format(new BigDecimal($P{planOverageCharges})) : "0.00"]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true" hyperlinkType="Reference">
+				<reportElement x="205" y="66" width="60" height="13" forecolor="#0000FF" uuid="f5bfd3e8-3516-4754-8ff6-7105c835476b"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges})).subtract($P{sumOfpaymentsLinkedToCurrentInvoice})]]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA[$P{companyName} == "AnswerConnect" ? "https://access.answerconnect.com/login" :
+$P{companyName} == "AnswerForce" ? "https://access.answerforce.com/login" :
+$P{companyName} == "LexReception" ? "https://access.lexreception.com/login" :
+$P{companyName} == "Conversion Support" ? "https://access.conversionsupport.com/login" :
+"https://access.hellosells.com/login"]]></hyperlinkReferenceExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true" hyperlinkType="Reference">
+				<reportElement x="146" y="81" width="118" height="13" forecolor="#0000FF" uuid="020e0e66-118e-40c6-baef-498dcc3a74e4"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges})) > new BigDecimal(0) ?
+new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges})).subtract($P{sumOfpaymentsLinkedToCurrentInvoice}).add(
+new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges})).subtract($P{sumOfpaymentsLinkedToCurrentInvoice}).multiply(new BigDecimal($P{lateFeePercentage}).divide(new BigDecimal(100)))) :
+new BigDecimal($P{balanceForward}).add(new BigDecimal($P{planOverageCharges})).add(new BigDecimal($P{otherCharges}))]]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA[$P{companyName} == "AnswerConnect" ? "https://access.answerconnect.com/login" :
+$P{companyName} == "AnswerForce" ? "https://access.answerforce.com/login" :
+$P{companyName} == "LexReception" ? "https://access.lexreception.com/login" :
+$P{companyName} == "Conversion Support" ? "https://access.conversionsupport.com/login" :
+"https://access.hellosells.com/login"]]></hyperlinkReferenceExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="162" y="203" width="105" height="13" uuid="cdf4ac69-2792-448f-9f38-418bb01e0826"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new BigDecimal($P{planOverageCharges}).add(new BigDecimal($P{otherCharges}))]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="105" width="258" height="14" forecolor="#000000" uuid="7dd49882-f719-4e98-8d7f-ca7f16f5f78f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Summary of Charges]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="10" y="68" width="113" height="13" uuid="6d4e70a5-5ca9-423c-842f-b01b5954089b"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Total Due By "+$P{dateDue}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="131" y="164" width="135" height="13" uuid="79175797-359c-428f-aa72-218e57d63d96"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new DecimalFormat("#,##0.00").format(new BigDecimal($P{otherCharges}))]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" hyperlinkType="Reference">
+				<reportElement positionType="FixRelativeToBottom" x="123" y="64" width="76" height="14" forecolor="#0000FF" uuid="cb79da8c-5bbc-401f-a4e4-766d94eca356"/>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font size="9" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Make Payment"]]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA[$P{companyName} == "AnswerConnect" ? "https://access.answerconnect.com/login" :
+$P{companyName} == "AnswerForce" ? "https://access.answerforce.com/login" :
+$P{companyName} == "LexReception" ? "https://access.lexreception.com/login" :
+$P{companyName} == "Conversion Support" ? "https://access.conversionsupport.com/login" :
+"https://access.hellosells.com/login"]]></hyperlinkReferenceExpression>
+				<hyperlinkParameter name="entityId">
+					<hyperlinkParameterExpression><![CDATA[$P{entityId}]]></hyperlinkParameterExpression>
+				</hyperlinkParameter>
+			</textField>
+			<line>
+				<reportElement x="123" y="78" width="62" height="1" forecolor="#0000FF" uuid="5fba87d0-9c01-4619-b671-ebe0c88115c7"/>
+			</line>
+			<line>
+				<reportElement x="11" y="2" width="251" height="1" uuid="2f9f3ef9-5ac9-4a00-a49d-1e0d391f30ea">
+					<printWhenExpression><![CDATA[$P{paymentCount} > 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dashed"/>
+				</graphicElement>
+			</line>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="147" y="47" width="118" height="13" uuid="d96384c1-c1ec-4a80-b252-f717e616b66d">
+					<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{sumOfpaymentsLinkedToCurrentInvoice} != new BigDecimal("0.00") ? "-"+$P{sumOfpaymentsLinkedToCurrentInvoice} : "0.00"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="47" width="135" height="13" uuid="026ed256-ed49-43fc-80dc-6486de9003c5">
+					<printWhenExpression><![CDATA[1==2]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Balance Payment Received]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="10" y="6" width="135" height="13" uuid="ffa680fe-baca-4069-b17f-5df57c57c99f"/>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{paymentCount}.intValue() == 1 ? "Payment Received "+$P{lastPaymentDate}:"Payments Received "]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="147" y="6" width="118" height="13" uuid="c81991f2-ec71-4e34-a228-dfa43fcd396f"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[null != $P{totalPaymentsReceived} && $P{totalPaymentsReceived} != "0.00" ? "-"+ $P{totalPaymentsReceived} : "0.00"]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

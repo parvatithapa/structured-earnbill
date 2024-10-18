@@ -1,0 +1,539 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="jBilling Functional Test Suite" verbose="2" parallel="false">
+
+	<listeners>
+		<listener class-name="com.gurock.testrail.TestRailsListener" />
+	</listeners>
+
+	<!--
+		Note that "preserve-order" won't work with tests annotated with @Test(dependsOn* ...)
+		when order is defined using annotations the order here will always loose, so do all your
+		ordering here or ENTIRELY using groups/method dependency annotations.
+	-->
+
+	<test name="web-services">
+		<classes>
+			<class name="com.sapienter.jbilling.test.PaymentInformationBackwardCompatibilityTestCase"/>
+            <class name="com.sapienter.jbilling.server.order.WSTest"/>
+            <class name="com.sapienter.jbilling.server.order.MultiplePlanOnSingleOrderTest"/>
+            <class name="com.sapienter.jbilling.server.order.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.plan.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.user.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.item.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.util.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.asset.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.route.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.partner.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.process.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.invoice.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.payment.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.metafield.ImproperAccessTest"/>
+            <class name="com.sapienter.jbilling.server.mediation.GlobalMediationTest"/>
+            <class name="com.sapienter.jbilling.server.mediation.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.mediation.SampleMediationTests"/>
+         	<class name="com.sapienter.jbilling.server.pluggable.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.ratingUnit.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.enumeration.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.accountType.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.orderChange.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.provisioning.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.paymentMethod.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.orderChangeType.ImproperAccessTest"/>
+			<class name="com.sapienter.jbilling.server.orderChangeStatus.ImproperAccessTest"/>
+            <class name="com.sapienter.jbilling.server.user.WSTest"/>
+            <class name="com.sapienter.jbilling.server.user.CustomerNotesWSTest"/>
+            <class name="com.sapienter.jbilling.server.payment.WSTest"/>
+            <class name="com.sapienter.jbilling.server.item.WSTest"/>
+            <class name="com.sapienter.jbilling.server.invoice.WSTest"/>
+            <class name="com.sapienter.jbilling.server.process.WSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.WSTest"/>
+            <class name="com.sapienter.jbilling.server.entity.WSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.CappedGraduatedPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.GraduatedPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.ItemSelectorPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.PooledPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.QuantityAddonPricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.RateCardPricingStrategyWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.GraduatedRateCardPricingStrategyWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.LinePercentagePricingWSTest"/>
+            <class name="com.sapienter.jbilling.server.pricing.strategy.NYMEXPlusMonthlyPricingStrategyTest"/>
+			<class name="com.sapienter.jbilling.server.pricing.strategy.LBMPPlusBlendedRatePricingStrategyTest"/>
+			<class name="com.sapienter.jbilling.server.pricing.strategy.RRCPercentagePricingStrategyTest"/>
+			<class name="com.sapienter.jbilling.server.pricing.strategy.TeaserPricingStrategyWSTest"/>
+            <class name="com.sapienter.jbilling.server.user.PartnerWSTest"/>
+            <class name="com.sapienter.jbilling.server.user.PurchaseAuthorizationTest"/>
+            <class name="com.sapienter.jbilling.server.payment.RefundTest"/>
+            <class name="com.sapienter.jbilling.server.metafield.WSTest"/>
+            <class name="com.sapienter.jbilling.server.accountType.WSTest"/>
+            <class name="com.sapienter.jbilling.server.order.OrderCancellationFeeTest"/>
+            <class name="com.sapienter.jbilling.server.ratecards.WSTest"/>
+			<class name="com.sapienter.jbilling.server.user.AITTimelineTest"/>
+			<class name="com.sapienter.jbilling.server.item.PlansEnhancementTest"/>
+            <class name="com.sapienter.jbilling.server.user.CommissionTest"/>
+            <class name="com.sapienter.jbilling.server.pluggable.WSTest"/>
+            <class name="com.sapienter.jbilling.server.asset.WSTest"/>
+            <class name="com.sapienter.jbilling.server.util.WSTest"/>
+            <class name="com.sapienter.jbilling.server.orderStatus.OrderStatusTest"/>
+            <class name="com.sapienter.jbilling.server.orderChangeStatus.WSTest"/>
+            <class name="com.sapienter.jbilling.server.paymentMethod.WSTest"/>
+            <class name="com.sapienter.jbilling.server.item.AssetValidateTest"/>
+			<class name="com.sapienter.jbilling.server.orderChange.OrderChangeTest"/>
+			<class name="com.sapienter.jbilling.server.ediTransaction.EDITypeTest"/>
+			<class name="com.sapienter.jbilling.server.metafield.CompanyMetaFieldTest"/>
+			<class name="com.sapienter.jbilling.server.creditnote.WSTest"/>
+			<class name="com.sapienter.jbilling.server.mediation.RatingSchemeTest"/>
+			<class name="com.sapienter.jbilling.server.user.CustomerMetaFieldAPITest"/>
+			<class name="com.sapienter.jbilling.server.ediTransaction.SureAddressTest"/>
+			<class name="com.sapienter.jbilling.server.user.CancellationRequestAPITest"/>
+			<class name="com.sapienter.jbilling.server.notification.WSTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.WSTest"/>
+			<class name="com.sapienter.jbilling.server.metafield.MetaFieldAccountNumberEncryptionTest"/>
+			<class name="com.sapienter.jbilling.server.asset.AssetStatusChangeTest"/>
+			<class name="com.sapienter.jbilling.server.collection.WSTest"/>
+
+			<class name="com.sapienter.jbilling.server.UsageRatingScheme.UsageRatingSchemeTest"/>
+            <class name="com.sapienter.jbilling.server.order.SwapAssetsTest"/>
+			<class name="com.sapienter.jbilling.server.user.ValidateLoginAndUpdatePasswordTest"/>
+			<class name="com.sapienter.jbilling.server.company.CopyCompanyTest"/>
+		</classes>
+	</test>
+
+    <test name="diameter">
+        <classes>
+            <!-- TODO MODULARIZATION: DIAMETER WAS USING MEDIATION RECORDS TO STORE EVENTS -->
+            <!--<class name="com.sapienter.jbilling.server.diameter.WSTest"/>-->
+        </classes>
+    </test>
+
+	<test name="integration">
+		<classes>
+			<class name="com.sapienter.jbilling.server.item.CurrencyExchangeTest"/>
+			<class name="com.sapienter.jbilling.server.process.BillingProcessTest"/>
+			<!--  mediation 2.0 -->
+			<!--
+			<class name="com.sapienter.jbilling.server.mediation.MediationTest"/>
+			-->
+			<!--<class name="com.sapienter.jbilling.server.mediation.db.MediationCDRRecordLineDASTest"/>-->
+			<!--  mediation 3.0 -->
+			<!--<class name="com.sapienter.jbilling.server.mediation.RecycleMediationTest"/>-->
+			<!--<class name="com.sapienter.jbilling.server.mediation.JMRMediationTest"/>-->
+			<!--<class name="com.sapienter.jbilling.server.mediation.MediationUndoTest"/>-->
+			<class name="com.sapienter.jbilling.server.provisioning.ProvisioningTest"/>
+			<class name="com.sapienter.jbilling.server.process.AgeingTest"/>
+			<class name="com.sapienter.jbilling.server.task.BasicLineTotalTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.SimpleTaxCompositionTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.CountryTaxCompositionTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.OverdueInvoicePenaltyTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.PaymentTermPenaltyTaskTest"/>
+			<class name="com.sapienter.jbilling.server.task.ThresholdNotificationTest"/>
+            <class name="com.sapienter.jbilling.server.task.AutoRechargeTaskTest"/>
+            <class name="com.sapienter.jbilling.server.task.CreditLimitationNotificationTaskTest"/>
+            <class name="com.sapienter.jbilling.server.task.DynamicBalanceManagerTaskTest"/>
+            <class name="com.sapienter.jbilling.server.process.SuspendedUsersBillingProcessFilterTaskTest"/>
+            <!--<class name="com.sapienter.jbilling.server.mediation.GlobalMediationTest"/>-->
+            <class name="com.sapienter.jbilling.server.process.AgeingStopActivationOnPaymentTest"/>
+            <class name="com.sapienter.jbilling.server.task.GenerateCancellationInvoiceTaskTest"/>
+            <class name="com.sapienter.jbilling.server.task.PriceCompositionInResellerInvoiceTest"/>
+            <class name="com.sapienter.jbilling.server.process.UnlinkPaymentAndCreditNoteTest"/>
+            <class name="com.sapienter.jbilling.server.process.AgeingMinimumBalanceTest"/>
+			<class name="com.sapienter.jbilling.server.task.FreeTrialPlanPeriodHandlerTaskTest"/>
+		</classes>
+	</test>
+
+	<!--<test name="selenium-ui-functional">-->
+		<!--<classes>-->
+        	<!--<class name="com.sapienter.jbilling.selenium.sanity.JBillingSanityTest"/>           -->
+		<!--</classes>-->
+	<!--</test>-->
+
+	<!--
+	   1. discounts test group not execute in ant test and ant test-ws
+	   2. This group execute independently. when you do ant test-discounts
+	-->
+	<test name="discounts">
+		<classes>
+            <class name="com.sapienter.jbilling.server.discounts.AmountDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.CreateDiscountSubOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.PercentageDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.PeriodBasedDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.RateOrderDiscountTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.UpdateDiscountOrderTest"/>
+        </classes>
+	</test>
+
+	<test name="usagePools">
+		<classes>
+			<class name="com.sapienter.jbilling.server.usagePool.FreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.PlanSubcriptionUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.MeteredFreeUsagePoolTest" />
+			<class name="com.sapienter.jbilling.server.usagePool.GraduatedFreeUsagePoolsTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.CappedGraduatedFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.VolumeFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.TieredFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.TimeOfDayFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.ItemSelectorFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.PooledUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.FlatFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.ItemPercentageSelectorFreeUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.CustomerUsagePoolCyclePeriodExpiryTest"/>
+			<class name="com.sapienter.jbilling.server.usagePool.CustomerUsagePoolEvaluationTest"/>
+		</classes>
+	</test>
+
+	<test name="fupProrating">
+		<classes>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingActiveSinceChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingActiveUntilChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingMultiplePoolsActiveSinceChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingMultiplePoolsActiveUntilChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingMultiplePlansActiveSinceChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.FUPProratingMultiplePlansActiveUntilChangeTest"/>
+			<class name="com.sapienter.jbilling.server.fupProrating.AddRemovePlanTest"/>
+		</classes>
+	</test>
+
+	<test name="swapPlan">
+		<classes>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToOneUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithOneToOneUsagePoolTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferOneToOneUsagePoolWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferOneToOneUsagePoolWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithMultiplePoolsTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithMultiplePoolsTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferMultiplePoolsWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferMultiplePoolsWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithMultipleToSinglePoolsTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithMultipleToSinglePoolsTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithMultipleToSinglePoolsWithDiffBundlePriceTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithMultipleToSinglePoolsWithDiffBundlePriceTest" />
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToMultipleUsagePoolsTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithOneToMultipleUsagePoolsTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanUpgradeFUPTransferwithOneToMultipleUsagePoolsWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanDowngradeFUPTransferwithOneToMultipleUsagePoolsWithDiffBundlePriceTest"/>
+			<class name="com.sapienter.jbilling.server.swapPlan.SwapPlanCustomerPriceExpiryTest"/>
+       </classes>
+	</test>
+
+	<!--
+	   1. billing test group not execute in ant test and ant test-ws
+	   2. This group execute independently. when you do ant test-billing
+	-->
+	<test name="billing">
+		<classes>
+			<class name="com.sapienter.jbilling.server.process.SemiMonthlyBillingCycleTest"/>
+	        <class name="com.sapienter.jbilling.server.process.MonthlyBillingCycleTest"/>
+	        <class name="com.sapienter.jbilling.server.process.DailyBillingCycleTest"/>
+			<class name="com.sapienter.jbilling.server.process.EndOfMonthBillingTest"/>
+			<class name="com.sapienter.jbilling.server.process.UserSuspensionAndActivationTest"/>
+	        <class name="com.sapienter.jbilling.server.process.WeeklyBillingCycleTest"/>
+        </classes>
+     </test>
+
+	<!--
+		1. billing-and-discounts test group is combination of discounts and billing groups as per ascending order of triggering billing.
+		2. this test group execute in ant test and also execute independently. when you do ant test-billing-and-discounts
+	-->
+	<test name="billing-and-discounts">
+		<classes>
+			<class name="com.sapienter.jbilling.server.process.SemiMonthlyBillingCycleTest"/>
+			<class name="com.sapienter.jbilling.server.process.MonthlyBillingCycleTest"/>
+			<class name="com.sapienter.jbilling.server.process.DailyBillingCycleTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.AmountDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.CreateDiscountSubOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.PercentageDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.PeriodBasedDiscountOrderTest"/>
+			<class name="com.sapienter.jbilling.server.discounts.RateOrderDiscountTest"/>
+			<class name="com.sapienter.jbilling.server.process.WeeklyBillingCycleTest"/>
+			<class name="com.sapienter.jbilling.server.process.OrderLineChangesBillingTest" />
+			<class name="com.sapienter.jbilling.server.process.BillingProcessLinkingTest"/>
+		</classes>
+	</test>
+
+    <test name="order-line-changes">
+        <classes>
+            <class name="com.sapienter.jbilling.server.process.OrderLineChangesBillingTest" />
+        </classes>
+    </test>
+
+    <test name="debug">
+        <classes>
+            <class name="com.sapienter.jbilling.server.process.MonthlyBillingCycleTest" />
+            <!-- class name="com.sapienter.jbilling.server.process.BillingProcessTest" /-->
+        </classes>
+    </test>
+
+    <test name="planEnhancements">
+        <classes>
+            <class name="com.sapienter.jbilling.server.item.PlanRelatedEnhancementsTest"/>
+        </classes>
+    </test>
+
+	<test name="rating-late-usage">
+		<classes>
+            <class name="com.sapienter.jbilling.server.item.PlanRelatedEnhancementsTest"/>
+			<class name="com.sapienter.jbilling.server.item.LateGuidedUsageTest"/>
+		</classes>
+	</test>
+
+	<test name="customer-enrollment">
+		<classes>
+			<class name="com.sapienter.jbilling.server.customerEnrollment.WSTest"/>
+		</classes>
+	</test>
+
+	<test name="edi-type">
+		<classes>
+			<class name="com.sapienter.jbilling.server.ediTransaction.EDITypeTest"/>
+		</classes>
+	</test>
+
+	<test name="company-metafield">
+		<classes>
+			<class name="com.sapienter.jbilling.server.metafield.CompanyMetaFieldTest"/>
+		</classes>
+	</test>
+
+	<test name="test-framework" verbose="9">
+		<classes>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestAccountCreationForTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestCompanyConfigurationForTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestEnvironmentCreatorTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestForMultipleTestsWithSameEnvironment"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestOrderCreationForTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestPaymentMethodTypeCreationForTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestProductCreatorTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestFupCreationForTests"/>
+			<class name="com.sapienter.jbilling.test.framework.tests.TestPlanCreationForTests"/>
+		</classes>
+	</test>
+
+    <test name="api-automation" verbose="9">
+        <classes>
+            <class name="com.sapienter.jbilling.api.automation.orders.fup.OrderAndFUPTest"/>
+            <class name="com.sapienter.jbilling.api.automation.orders.OrdersAndContractsTest"/>
+            <class name="com.sapienter.jbilling.api.automation.plans.PlansProductPricingTest"/>
+            <class name="com.sapienter.jbilling.api.automation.plans.PlansTest"/>
+            <class name="com.sapienter.jbilling.api.automation.mediation.MediationTest"/>
+            <class name="com.sapienter.jbilling.api.automation.collections.CollectionsTest"/>
+            <class name="com.sapienter.jbilling.api.automation.billing.BillingProcessTest"/>
+            <class name="com.sapienter.jbilling.api.automation.collections.CancellationInvoiceCollectionsTest"/>
+            <class name="com.sapienter.jbilling.api.automation.mediation.FutureDatedPlanWithPreUsageTest"/>
+        </classes>
+    </test>
+
+	<test name="pre-evaluated-sql">
+		<classes>
+			<class name="com.sapienter.jbilling.server.pre_evaluated_sql.PreEvaluatedSQLTest" />
+		</classes>
+	</test>
+
+	 <!-- FullCreative client specific test cases -->
+	<test name="fullcreative">
+		<classes>
+			<class name="com.sapienter.jbilling.fc.mediation.FullCreativeMediationTest" />
+			<class name="com.sapienter.jbilling.fc.mediation.FullCreativeMediationInvoiceGenerationTest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativeAccountPinMetaFieldTest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativeFreeUsagePoolTest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativeInvoiceLineAccountNumberTest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativeOrderAPITest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativePrimaryAccountNumberTest" />
+			<class name="com.sapienter.jbilling.fc.CustomerUsagePoolExpireTest"/>
+			<class name="com.sapienter.jbilling.fc.mediation.FullCreativeSingleMediationJobLauncherTest" />
+			<class name="com.sapienter.jbilling.fc.FreeTrialConsumptionTest" />
+			<class name="com.sapienter.jbilling.fc.FullCreativeCustomerAnnouncementsTest" />
+            <!-- <class name="com.sapienter.jbilling.fc.mediation.FullCreativeMediationWith30Under30Test" /> -->
+			<!-- <class name="com.sapienter.jbilling.fc.FullCreativeACHTest" /> -->
+		</classes>
+	</test>
+
+   <test name="invoicesummary">
+        <classes>
+            <class name="com.sapienter.jbilling.server.invoiceSummary.InvoiceSummaryTest" />
+        </classes>
+    </test>
+
+	<!-- Amaysim client specific test cases -->
+	<test name="amaysim">
+		<classes>
+			<class name="com.sapienter.jbilling.amaysim.DeleteEnteredRefundPaymentTest" />
+		</classes>
+	</test>
+
+	<test name="invoicerounding">
+		<classes>
+			<class name="com.sapienter.jbilling.server.invoice.InvoiceDecimalRoundingTest" />
+		</classes>
+	</test>
+
+	 <!-- External system dependent test cases like payment gateway etc -->
+    <test name="external-system">
+        <classes>
+            <class name="com.sapienter.jbilling.fc.FullCreativeCustomerPaymentViaPaypal" />
+            <class name="com.sapienter.jbilling.fc.FullCreativeACHTest" />
+            <class name="com.sapienter.jbilling.fc.FullCreativeRemovePaymentInstrumentTest" />
+            <class name="com.sapienter.jbilling.server.payment.ProcessSignPaymentAPITest"/>
+            <class name="com.sapienter.jbilling.fc.FullCreativeCustomerPaymentViaBrainTree" />
+            <class name="com.sapienter.jbilling.server.payment.PaymentPaySafeTaskTest"/>
+            <class name="com.sapienter.jbilling.fc.FullCreativePaymentViaUnifiedBrainTreeTest"/>
+            <class name="com.sapienter.jbilling.fc.FullCreativePaymentViaUnifiedBrainTreeTest"/>
+            <class name="com.sapienter.jbilling.server.payment.PaymentWorldPayTaskTest"/>
+            <class name="com.sapienter.jbilling.amaysim.PaymentEp2TaskTest"/>
+            <class name="com.sapienter.jbilling.server.distributel.CustomerEmergency911AddressExternalTest"/>
+        </classes>
+    </test>
+
+    <test name="rest" verbose="9">
+       <classes>
+            <class name="com.sapienter.jbilling.rest.AccountTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.AccountInformationTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.UserRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderPeriodRestTest"/>
+            <class name="com.sapienter.jbilling.rest.ItemTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.ItemRestTest"/>
+            <class name="com.sapienter.jbilling.rest.AssetRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PlanRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderChangeTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderChangeStatusRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderStatusRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PaymentMethodTemplateRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PaymentMethodTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PaymentRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PaymentActionRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PaymentLinkRestTest"/>
+            <class name="com.sapienter.jbilling.rest.InvoiceRestTest"/>
+            <class name="com.sapienter.jbilling.rest.BillingRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PluginTypeCategoryRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PluginTypeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PluginRestTest"/>
+            <class name="com.sapienter.jbilling.rest.PreferenceRestTest"/>
+            <class name="com.sapienter.jbilling.rest.EnumerationRestTest"/>
+            <class name="com.sapienter.jbilling.rest.MetaFieldRestTest"/>
+            <class name="com.sapienter.jbilling.rest.OrderChangeRestTest"/>
+            <class name="com.sapienter.jbilling.rest.DiscountRestTest"/>
+            <class name="com.sapienter.jbilling.rest.CommissionRestTest"/>
+            <class name="com.sapienter.jbilling.rest.CollectionsRestTest"/>
+            <class name="com.sapienter.jbilling.rest.MediationRestTest"/>
+		        <class name="com.sapienter.jbilling.rest.CurrencyRestTest"/>
+<!--		        <class name="com.sapienter.jbilling.rest.StripeRestTest"/>-->
+		        <class name="com.sapienter.jbilling.rest.UserImproperAccessRestTest"/>
+		        <class name="com.sapienter.jbilling.rest.OrderImproperAccessRestTest"/>
+		        <class name="com.sapienter.jbilling.rest.InvoiceImproperAccessRestTest"/>
+		        <class name="com.sapienter.jbilling.rest.PaymentImproperAccessRestTest"/>
+       </classes>
+	</test>
+
+
+	<!-- Distributel client specific test cases -->
+	<test name="test-distributel">
+		<classes>
+			<class name="com.sapienter.jbilling.server.distributel.EmergencyAddressUpdateNorthern911TestCases"/>
+			<class name="com.sapienter.jbilling.server.distributel.SpaImportEnrollmentTest"/>
+			<class name="com.sapienter.jbilling.server.distributel.DistributelMediationTest"/>
+			<class name="com.sapienter.jbilling.server.distributel.CustomerEmergency911AddressTest"/>
+			<class name="com.sapienter.jbilling.server.distributel.DistributelPriceUpdateTest" />
+			<class name="com.sapienter.jbilling.server.distributel.CustomerTicketInfoResultTest"/>
+		</classes>
+	</test>
+
+	<!-- Movius client specific test cases -->
+	<test name="movius" preserve-order = "true">
+         <classes>
+		    <class name = "com.sapienter.jbilling.server.movius.MoviusMediationTest" />
+			<class name = "com.sapienter.jbilling.server.movius.MoviusOrgHierarchyMappingTaskTest"/>
+			<class name = "com.sapienter.jbilling.server.movius.UniqueMetaFieldOrgIdValidationTest" />
+		 	<class name = "com.sapienter.jbilling.server.movius.MoviusOriginationChargesCreateUpdateTaskTest"/>
+			<class name = "com.sapienter.jbilling.server.movius.CreateUpdateOrderChangeAPITest" />
+		</classes>
+	</test>
+
+    <test name="prepaid-swapPlan">
+        <classes>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSwapPlanFreeUsagePoolTest"/>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidCustomerNextInvoiceDateUpdateTest"/>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidCustomerUsagepoolCreationAndEvaluationTest"/>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSubscriptionOrderBillingProcessScenariosTest"/>
+            <class name="com.sapienter.jbilling.server.prepaidswapplan.PrepaidSubscriptionOrderCancellationTest"/>
+        </classes>
+    </test>
+
+    <test name="test-ignition">
+        <classes>
+            <class name="com.sapienter.jbilling.ignition.IgnitionPaymentsTest"/>
+        </classes>
+    </test>
+
+    <test name="ageing-revaluation">
+        <classes>
+            <class name="com.sapienter.jbilling.server.process.AgeingStatusRevaluationTest"/>
+        </classes>
+    </test>
+
+	<test name="dt-rest">
+		<classes>
+	<!--		<class name="com.sapienter.jbilling.rest.DtCustomerRestTest"/>-->
+			<class name="com.sapienter.jbilling.rest.DtReserveInstanceRestTest"/>
+		</classes>
+	</test>
+
+	<test name="test-dt-bulkUpload">
+		<classes>
+			<class name="com.sapienter.jbilling.server.deutscheTelecom.BulkUploadTestCases"/>
+		</classes>
+	</test>
+
+	<test name="dt-mediation">
+		<classes>
+			<class name="com.sapienter.jbilling.server.dt.mediation.DtMediationTest"/>
+			<class name="com.sapienter.jbilling.server.dt.mediation.DtMediationWithRatingTest"/>
+		</classes>
+	</test>
+
+	<test name = "meteredUsageService">
+		<classes>
+			<class name = "com.sapienter.jbilling.server.MeteredUsageService.SimplePriceModelMeteredUsageTest"/>
+			<class name = "com.sapienter.jbilling.server.MeteredUsageService.ReservedIncludedUsageTest"/>
+			<class name = "com.sapienter.jbilling.server.MeteredUsageService.TieredModelMeteredUsageTest"/>
+		</classes>
+	</test>
+
+    <test name = "sapphire" preserve-order = "true">
+        <classes>
+            <class name = "com.sapienter.jbilling.server.sapphire.SapphireMediationTest"/>
+            <class name = "com.sapienter.jbilling.server.sapphire.SapphireSignupProcessTest"/>
+            <class name = "com.sapienter.jbilling.server.sapphire.UpdateCustomerLoginNameTaskTest"/>
+        </classes>
+    </test>
+    <test name = "invoiceLineTax">
+        <classes>
+            <class name="com.sapienter.jbilling.server.invoiceline.InvoiceLineTaxSupportTest"></class>
+        </classes>
+    </test>
+    <test name = "spc" preserve-order="true">
+        <classes>
+            <class name="com.sapienter.jbilling.server.spc.OptusFixedLineMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.AaptVoipMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.OptusMobileMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.Telstra4GMobileMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.TelstraFixedLineMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.EngineSConnectMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.ServiceElementsVoiceMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.ServiceElementsDataMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.AaptInternetMediationTest"></class>
+            <class name="com.sapienter.jbilling.server.spc.SConnectDataMediationTest"></class>
+
+        </classes>
+    </test>
+
+	<test name="test-earnbill">
+		<classes>
+			<class name="com.sapienter.jbilling.rest.MobileRestTest"/>
+			<class name="com.sapienter.jbilling.rest.PermissionRestTest"/>
+			<class name="com.sapienter.jbilling.server.createCustomInvoice.CreateCustomInvoiceTest"/>
+			<class name="com.sapienter.jbilling.server.gstr1.GenerateGSTR1JSONReportTest"/>
+		</classes>
+	</test>
+</suite>
