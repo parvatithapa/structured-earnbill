@@ -47,7 +47,6 @@ public class AccountTypeDTO extends AbstractDescription implements java.io.Seria
     private Set<CustomerDTO> customers = new HashSet<CustomerDTO>(0);
     private Set<PaymentMethodTypeDTO> paymentMethodTypes = new HashSet<PaymentMethodTypeDTO>(0);
 
-
 	public AccountTypeDTO() {
     }
 
@@ -249,7 +248,6 @@ public class AccountTypeDTO extends AbstractDescription implements java.io.Seria
 			.collect(Collectors.toList());
 	}
 
-	
     @Transient
     protected String getTable() {
         return Constants.TABLE_ACCOUNT_TYPE;

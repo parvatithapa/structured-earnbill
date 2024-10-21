@@ -20,6 +20,9 @@ import java.io.Serializable;
 
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.util.Constants;
+import org.apache.log4j.Logger;
+
+import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.util.Context;
 
 public abstract class AbstractDescription implements Serializable {
@@ -37,13 +40,11 @@ public abstract class AbstractDescription implements Serializable {
      * @return description DTO
      */
     public InternationalDescriptionDTO getDescriptionDTO(Integer languageId, String label) {
-        if (label == null || languageId == null) {
+        if (label == null || languageId == null)
             throw new SessionInternalError("Cannot find translation without label or language " + label + ":" + languageId);
-        }
 
-        if (getId() == 0) {
+        if (getId() == 0)
             return null;
-        }
 
         JbillingTableDAS tableDas = Context.getBean(Context.Name.JBILLING_TABLE_DAS);
         JbillingTable table = tableDas.findByName(getTable());
@@ -72,7 +73,7 @@ public abstract class AbstractDescription implements Serializable {
     @Deprecated
     public String getDescription() {
         if (description == null) {
-            description = getDescription(Constants.LANGUAGE_ENGLISH_ID);
+        	description = getDescription(Constants.LANGUAGE_ENGLISH_ID);
         }
         return description;
     }
@@ -97,13 +98,13 @@ public abstract class AbstractDescription implements Serializable {
      */
     public String getDescription(Integer languageId, String label) {
         InternationalDescriptionDTO description = getDescriptionDTO(languageId, label);
-        if (description == null
-                && !Constants.LANGUAGE_ENGLISH_ID.equals(languageId)) {
-            //get string for the given label and default language
-            description = getDescriptionDTO(Constants.LANGUAGE_ENGLISH_ID, label);
+		if (description == null
+				&& !Constants.LANGUAGE_ENGLISH_ID.equals(languageId)) {
+        	//get string for the given label and default language
+        	description = getDescriptionDTO(Constants.LANGUAGE_ENGLISH_ID, label);
         }
         return description != null ? description.getContent() : null;
-
+        
     }
 
     /**
@@ -146,14 +147,14 @@ public abstract class AbstractDescription implements Serializable {
     public void deleteDescription(int languageId) {
         deleteDescription("description", languageId);
     }
-
+    
     public void deleteDescription(String label, int languageId) {
         JbillingTableDAS tableDas = Context.getBean(Context.Name.JBILLING_TABLE_DAS);
         JbillingTable table = tableDas.findByName(getTable());
 
         InternationalDescriptionDAS descriptionDas = (InternationalDescriptionDAS) Context
                 .getBean(Context.Name.DESCRIPTION_DAS);
-
+        
         descriptionDas.delete(table.getId(), getId(), label, languageId);
     }
 }

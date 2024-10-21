@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.Resource;
+
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
@@ -61,6 +63,10 @@ import com.sapienter.jbilling.server.order.db.OrderProcessDAS;
 import com.sapienter.jbilling.server.order.db.OrderProcessDTO;
 import com.sapienter.jbilling.server.payment.db.PaymentProcessRunDAS;
 import com.sapienter.jbilling.server.payment.db.PaymentProcessRunDTO;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDAS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDTO;
 import com.sapienter.jbilling.server.process.db.BillingProcessConfigurationDTO;
 import com.sapienter.jbilling.server.process.db.BillingProcessDAS;
 import com.sapienter.jbilling.server.process.db.BillingProcessDTO;
@@ -68,6 +74,8 @@ import com.sapienter.jbilling.server.process.db.PeriodUnitDAS;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
 import com.sapienter.jbilling.server.process.db.ProcessRunDTO;
 import com.sapienter.jbilling.server.process.event.NoNewInvoiceEvent;
+import com.sapienter.jbilling.server.process.task.BasicUserFilterTask;
+import com.sapienter.jbilling.server.process.task.IBillableUserFilterTask;
 import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.UserBL;
@@ -91,6 +99,10 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final ConcurrentMap<Integer, Boolean> ageingRunning = new ConcurrentHashMap<>();
     private static final String BILLING_PROCESS_CACHE_KEY = "Billing Process Running for [%d]";
+
+    @Resource
+    private BasicUserFilterTask basicUserFilterTask;
+
     /**
      * Gets the invoices for the specified process id. The returned collection
      * is of extended dtos (InvoiceDTO).
@@ -103,14 +115,25 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
         // find the billing_process home interface
         BillingProcessDAS processHome = new BillingProcessDAS();
         Collection<InvoiceDTO> invoices =  new InvoiceDAS().findByProcess(processHome.find(processId));
-
         for (InvoiceDTO invoice : invoices) {
             invoice.getOrderProcesses().iterator().next().getId(); // it is a touch
         }
-
         return invoices;
+    }
 
+    @Override
+    public List<Integer> getPagedGeneratedInvoices(Integer processId, Integer limit, Integer offset) {
+        return new InvoiceDAS().findByProcess(processId, limit, offset);
+    }
 
+    @Override
+    public List<Integer> findAllInvoiceIdsForByProcessId(Integer processId) {
+        return new InvoiceDAS().findAllInvoiceIdsForByProcessId(processId);
+    }
+
+    @Override
+    public List<Integer> findAllInvoiceIdsForByProcessIdAndInvoiceDesign(Integer billingProcessId, String invoiceDesign) {
+        return new InvoiceDAS().findAllInvoiceIdsForByProcessIdAndInvoiceDesign(billingProcessId, invoiceDesign);
     }
 
     /**
@@ -296,14 +319,13 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
         return !cal.getTime().after(today);
     }
 
-    // always use new transaction as this method used by billing process,
-    // use of new transaction will not use connection used by spring batch JobRepository to store meta data in data base.
-    // transaction propagation change is done to avoid spring batch:https://jira.spring.io/browse/BATCH-1767.
+
     @Override
-    @Transactional( propagation = Propagation.REQUIRES_NEW )
+    @Transactional( propagation = Propagation.REQUIRED )
     public void email(Integer entityId, Integer invoiceId, Integer processId) {
         InvoiceBL invoice = new InvoiceBL(invoiceId);
         Integer userId = invoice.getEntity().getBaseUser().getUserId();
+
         logger.debug("email and payment for user {} invoice {}", userId, invoiceId);
 
         // last but not least, let this user know about his/her new
@@ -336,6 +358,38 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
     }
 
     /**
+     * return true when user is not billable.
+     * @param userId
+     * @param billingDate
+     * @return
+     */
+    private boolean skipUser(Integer userId, Date billingDate) {
+        UserBL user = new UserBL(userId);
+        if (!user.canInvoice()) {
+            logger.debug("Skipping non-customer / subaccount user {}", userId);
+            return Boolean.TRUE;
+        }
+        IBillableUserFilterTask userFilterTask;
+        try {
+            PluggableTaskTypeCategoryDTO category = new PluggableTaskTypeCategoryDAS().findByInterfaceName(IBillableUserFilterTask.class.getName());
+            Integer entityId = user.getEntity().getCompany().getId();
+            PluggableTaskManager<IBillableUserFilterTask> taskManager = new PluggableTaskManager<>(entityId, category.getId());
+            userFilterTask = taskManager.getNextClass(); // fetch configured task for entity.
+            if(null == userFilterTask) {
+                logger.debug("no {} configure for entity {}", IBillableUserFilterTask.class.getSimpleName(), entityId);
+                userFilterTask = basicUserFilterTask; // using default one.
+            }
+        } catch(PluggableTaskException taskException) {
+            throw new SessionInternalError("error during loading IBillableUserFilterTask plugin ", taskException);
+        }
+        if(userFilterTask.isNotBillable(userId, billingDate)) {
+            logger.debug("Skipping non billable user {}", userId);
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
+    /**
      * Process a user, generating the invoice/s
      * @param userId
      */
@@ -344,13 +398,7 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
     public Integer[] processUser(Integer processId, Date billingDate, Integer userId, boolean isReview, boolean onlyRecurring) {
         UserBL user = new UserBL(userId);
 
-        if (!user.canInvoice()) {
-            logger.debug("Skipping non-customer / subaccount user {}", userId);
-            return new Integer[0];
-        }
-
-        if (user.isNotBillable(billingDate)) {
-            logger.debug("Skipping non billable user {}", userId);
+        if(skipUser(userId, billingDate)) {
             return new Integer[0];
         }
 
@@ -390,7 +438,7 @@ public class BillingProcessSessionBean implements IBillingProcessSessionBean {
     }
 
     public void updateNextInvoiceDate(UserBL userBl, UserDTO user) {
-        userBl.setCustomerNextInvoiceDate(user);
+        userBl.setCustomerNextInvoiceDate(user,null);
     }
 
     @Override

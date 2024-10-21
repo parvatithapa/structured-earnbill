@@ -61,7 +61,7 @@
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression class="java.lang.Integer"><![CDATA[$P{required_referrals}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="516" y="1" width="76" height="20"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>

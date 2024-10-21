@@ -17,6 +17,7 @@ package com.sapienter.jbilling.server.item;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.provisioning.ProvisioningCommandWS;
 import com.sapienter.jbilling.server.security.HierarchicalEntity;
@@ -30,7 +31,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +38,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import com.sapienter.jbilling.server.item.db.AssetDTO;
 
 import static org.springframework.util.ObjectUtils.nullSafeEquals;
 import static org.springframework.util.ObjectUtils.nullSafeHashCode;
@@ -90,6 +88,18 @@ public class AssetWS implements WSSecured, HierarchicalEntity, Serializable {
 	private AssetAssignmentWS[] assignments;
 
     private SortedMap <Integer, MetaFieldValueWS[]> metaFieldsMap = new TreeMap<Integer, MetaFieldValueWS[]>();
+
+    // ICCID changes
+
+    private String subscriberNumber;
+    private String imsi;
+    public boolean isSuspended;
+    private String pin1;
+    private String pin2;
+    private String puk1;
+    private String puk2;
+    private String discardedIdentifier;
+    private String suspendedBy;
     public AssetWS() {
     }
 
@@ -104,6 +114,15 @@ public class AssetWS implements WSSecured, HierarchicalEntity, Serializable {
         this.orderLineId = (dto.getOrderLine() != null) ? dto.getOrderLine().getId() : null;
         this.global = dto.isGlobal();
         this.containedAssetIds = new Integer[dto.getContainedAssets().size()];
+        this.subscriberNumber = dto.getSubscriberNumber();
+        this.imsi= dto.getImsi();
+        this.isSuspended = dto.isSuspended();
+        this.pin1 = dto.getPin1();
+        this.pin2 = dto.getPin2();
+        this.puk1 = dto.getPuk1();
+        this.puk2 = dto.getPuk2();
+        this.discardedIdentifier= dto.getDiscardedIdentifier();
+        this.suspendedBy=dto.getSuspendedBy();
         int idx = 0;
         for(AssetDTO containtedAsset : dto.getContainedAssets()) {
             this.containedAssetIds[idx++] = containtedAsset.getId();
@@ -299,7 +318,88 @@ public class AssetWS implements WSSecured, HierarchicalEntity, Serializable {
 	public void setMetaFieldsMap(SortedMap <Integer, MetaFieldValueWS[]> metaFieldsMap) {
 		this.metaFieldsMap = metaFieldsMap;
 	}
-	
+
+    @ApiModelProperty(value = "subscriber number")
+
+    public String getSubscriberNumber() {
+        return subscriberNumber;
+    }
+
+    public void setSubscriberNumber(String subscriberNumber) {
+        this.subscriberNumber = subscriberNumber;
+    }
+
+    @ApiModelProperty(value = "Asset imsi string")
+    public String getImsi() {
+        return imsi;
+    }
+
+    public void setImsi(String imsi) {
+        this.imsi = imsi;
+    }
+
+    @ApiModelProperty(value = "Asset temporary suspended")
+    public boolean isSuspended() {
+        return isSuspended;
+    }
+
+    public void setSuspended(boolean suspended) {
+        isSuspended = suspended;
+    }
+
+    @ApiModelProperty(value = "pin 1")
+    public String getPin1() {
+        return pin1;
+    }
+
+    public void setPin1(String pin1) {
+        this.pin1 = pin1;
+    }
+
+    @ApiModelProperty(value = "pin 2")
+    public String getPin2() {
+        return pin2;
+    }
+
+    public void setPin2(String pin2) {
+        this.pin2 = pin2;
+    }
+
+    @ApiModelProperty(value = "puk 1")
+    public String getPuk1() {
+        return puk1;
+    }
+
+    public void setPuk1(String puk1) {
+        this.puk1 = puk1;
+    }
+
+    @ApiModelProperty(value = "puk 2")
+    public String getPuk2() {
+        return puk2;
+    }
+
+    public void setPuk2(String puk2) {
+        this.puk2 = puk2;
+    }
+
+    @ApiModelProperty(value = "discarded_identifier")
+    public String getDiscardedIdentifier() {
+        return this.discardedIdentifier;
+    }
+
+    public void setDiscardedIdentifier(String discardedIdentifier) {
+        this.discardedIdentifier = discardedIdentifier;
+    }
+
+    @ApiModelProperty(value = "suspended_by")
+    public String getSuspendedBy() {
+        return this.suspendedBy;
+    }
+
+    public void setSuspendedBy(String suspendedBy) {
+        this.suspendedBy = suspendedBy;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -363,6 +463,15 @@ public class AssetWS implements WSSecured, HierarchicalEntity, Serializable {
                 ", containedAssetIds=" + Arrays.toString(containedAssetIds) +
                 ", groupId=" + groupId +
                 ", metaFields=" + Arrays.toString(metaFields) +
+                "  subscriberNumber=" + subscriberNumber +
+                ", imsi=" + imsi +
+                ", isSuspended=" + isSuspended +
+                ", pin1=" + pin1 +
+                ", pin2=" + pin2 +
+                ", puk1=" + puk1 +
+                ", puk2=" + puk2 +
+                ", discardedIdentifier=" + discardedIdentifier +
+                ", suspendedBy=" + suspendedBy +
                 '}';
     }
 }

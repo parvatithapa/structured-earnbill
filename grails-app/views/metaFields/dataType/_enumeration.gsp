@@ -50,11 +50,11 @@
     <content tag="include.script">true</content>
     <g:select
             class="field ${validationRules} ${dependencies} ${field.fieldUsage ? 'field_usage':''} help_select"
-            id="enumerationMetaField "
+            id="enumerationMetaField"
             name="metaField_${field.id}.value"
             from="${enumValues}"
             optionKey=""
-            noSelection="['':'Please select a value']"
+            noSelection="['':message(code: 'select.option.default.value.name')]"
             value="${fieldValue}"/>
     <div class="fieldValue${field?.id}" style="display: none">${fieldValue}</div>
     <g:render template="/metaFields/metaFieldHelp" model="[field:field]" />

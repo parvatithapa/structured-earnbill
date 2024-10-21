@@ -28,7 +28,7 @@ public class CustomerNoteCreateProcessor implements ItemProcessor<DistributelPri
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String CONTENT_TEMPLATE = "Affected Order: %d - Current Order Total: %s  - New Order Total: %s  - "
-            + "Increase Amount: %s - New Rate Effective as of: %s - Notification Sent on: %s";
+            + "New Rate Effective as of: %s - Notification Sent on: %s";
 
     @Value("#{jobParameters['note_title']}")
     private String noteTitle;
@@ -137,10 +137,8 @@ public class CustomerNoteCreateProcessor implements ItemProcessor<DistributelPri
         futureTotalAmount = futureTotalAmount.setScale(CommonConstants.BIGDECIMAL_SCALE_STR,
                 CommonConstants.BIGDECIMAL_ROUND);
 
-        BigDecimal increasedAmount = futureTotalAmount.subtract(currentTotalAmount);
-
         String content = String.format(CONTENT_TEMPLATE, order.getId(), currentTotalAmount.toString(),
-                futureTotalAmount.toString(), increasedAmount.toString(), request.getScheduledDateForAdjustment(), processingDate);
+                futureTotalAmount.toString(), request.getScheduledDateForAdjustment(), processingDate);
 
         logger.debug("creating note content {} for date {} for user {}", content, processingDate, userBL.getEntity()
                 .getId());

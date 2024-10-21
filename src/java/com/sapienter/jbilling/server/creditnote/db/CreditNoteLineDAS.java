@@ -27,10 +27,10 @@ public class CreditNoteLineDAS extends AbstractDAS<CreditNoteLineDTO> {
 		criteria.add(Restrictions.eq("inv.deleted", 0));
 		criteria.add(Restrictions.eq("inv.baseUser.id", userId));
 		if(from != null) {
-			criteria.add(Restrictions.gt("creditNote.createDateTime", from));
+			criteria.add(Restrictions.gt("creditNote.creditNoteDate", from));
         }
-		criteria.add(Restrictions.le("creditNote.createDateTime", until));
-		criteria.addOrder(Order.desc("creditNote.createDateTime"));
+		criteria.add(Restrictions.le("creditNote.creditNoteDate", until));
+		criteria.addOrder(Order.desc("creditNote.creditNoteDate"));
 		return criteria.list();
 	}
 

@@ -15,56 +15,36 @@
  */
 package com.sapienter.jbilling.server.util.db;
 
-import java.util.List;
-
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.server.util.Constants;
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
 import org.hibernate.Query;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Projections;
-import org.hibernate.criterion.Restrictions;
-import org.hibernate.criterion.Subqueries;
-import org.hibernate.sql.JoinType;
+import org.hibernate.criterion.*;
 
-import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.server.util.Constants;
+import java.util.List;
 
 public class PreferenceDAS extends AbstractDAS<PreferenceDTO> {
 
-    private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(PreferenceDAS.class));
-    private static final LockOptions PESSIMISTIC_WRITE = new LockOptions(LockMode.PESSIMISTIC_WRITE);
+	private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(PreferenceDAS.class));
 
-
-    private static final String FIND_BY_TYPE_SQL =
-            "SELECT a " +
-                    "  FROM PreferenceDTO a " +
-                    " WHERE a.preferenceType.id = :typeId " +
-                    "   AND a.foreignId = :foreignId " +
-                    "   AND a.jbillingTable.name = :tableName ";
+    private static final String findByType_Row =
+        "SELECT a " + 
+        "  FROM PreferenceDTO a " + 
+        " WHERE a.preferenceType.id = :typeId " +
+        "   AND a.foreignId = :foreignId " +
+        "   AND a.jbillingTable.name = :tableName ";
 
     public PreferenceDTO findByType_Row(Integer typeId,Integer foreignId,String tableName) {
-        return (PreferenceDTO) createFindByTypeQuery(typeId, foreignId, tableName)
-                .setCacheable(true)
-                .uniqueResult();
+        Query query = getSession().createQuery(findByType_Row);
+        query.setParameter("typeId", typeId);
+        query.setParameter("foreignId", foreignId);
+        query.setParameter("tableName", tableName);
+        query.setCacheable(true);
+        return (PreferenceDTO) query.uniqueResult();
     }
-
-    public PreferenceDTO findByTypeWithLock(Integer typeId, Integer foreignId, String tableName) {
-        return (PreferenceDTO) createFindByTypeQuery(typeId, foreignId, tableName)
-                .setLockOptions(PESSIMISTIC_WRITE)
-                .uniqueResult();
-    }
-
-    private Query createFindByTypeQuery(Integer typeId,Integer foreignId,String tableName)  {
-        return getSession().createQuery(FIND_BY_TYPE_SQL)
-                .setParameter("typeId", typeId)
-                .setParameter("foreignId", foreignId)
-                .setParameter("tableName", tableName);
-    }
-
 
     /**
      * This method is used for caching preferences. The criteria query fetches
@@ -76,108 +56,106 @@ public class PreferenceDAS extends AbstractDAS<PreferenceDTO> {
      * @param entityId
      * @return an Object[] containing preference type id and preference values (both value set for entity and default)
      */
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings("unchecked")
     public List<Object[]> getPreferencesByEntity(Integer entityId) {
-
-        DetachedCriteria subCriteria = DetachedCriteria.forClass(JbillingTable.class, "jbillingTable");
-        subCriteria.setProjection(Projections.property("jbillingTable.id"));
-        subCriteria.add(Restrictions.eq("jbillingTable.name", Constants.TABLE_ENTITY));
-
-        Criteria criteria = getSession().createCriteria(PreferenceTypeDTO.class, "preferenceTypeDto");
-
-        criteria.createAlias("preferenceTypeDto.preferences",
-                "preference",
-                JoinType.LEFT_OUTER_JOIN,
-                Restrictions.and(
-                        Restrictions.eq("preference.foreignId", entityId),
-                        Subqueries.propertyEq("preference.jbillingTable.id", subCriteria)
-                        )
-                );
-
-        criteria.setProjection(Projections.projectionList()
-                .add(Projections.property("preferenceTypeDto.id"))
-                .add(Projections.property("preference.value"))
-                .add(Projections.property("preferenceTypeDto.defaultValue")));
-
-        return criteria.list();
+        
+    	DetachedCriteria subCriteria = DetachedCriteria.forClass(JbillingTable.class, "jbillingTable");
+    	subCriteria.setProjection(Projections.property("jbillingTable.id"));
+    	subCriteria.add(Restrictions.eq("jbillingTable.name", Constants.TABLE_ENTITY));
+    	
+    	Criteria criteria = getSession().createCriteria(PreferenceTypeDTO.class, "preferenceTypeDto");
+    	
+    	criteria.createAlias("preferenceTypeDto.preferences", 
+			"preference", 
+			CriteriaSpecification.LEFT_JOIN, 
+			Restrictions.and(
+				Restrictions.eq("preference.foreignId", entityId), 
+				Subqueries.propertyEq("preference.jbillingTable.id", subCriteria)
+			)
+		);
+    	
+    	criteria.setProjection(Projections.projectionList()
+    			.add(Projections.property("preferenceTypeDto.id"))
+    			.add(Projections.property("preference.value"))
+    			.add(Projections.property("preferenceTypeDto.defaultValue")));
+    	    	
+    	return criteria.list();
     }
 
-    /**
-     * Single object that we will be using to hold lock against.
-     */
-    private static final Object LOCK = new Object();
+	/**
+	 * Single object that we will be using to hold lock against.
+	 */
+	private static final Object LOCK = new Object();
 
-    private static final String PREF_VALUE_HQL =
-            "  FROM PreferenceDTO p" +
-                    " WHERE p.preferenceType.id = :typeId " +
-                    "   AND p.foreignId = :foreignId ";
+	private static final String PREF_VALUE_HQL =
+			"  FROM PreferenceDTO p" +
+			" WHERE p.preferenceType.id = :typeId " +
+			"   AND p.foreignId = :foreignId ";
 
-    private static final String PREF_VALUE_UPDATE_HQL =
-            "  UPDATE PreferenceDTO p" +
-                    " SET p.value = :value " +
-                    " WHERE p.preferenceType.id = :typeId " +
-                    "   AND p.foreignId = :foreignId ";
+	private static final String PREF_VALUE_UPDATE_HQL =
+			"  UPDATE PreferenceDTO p" +
+					" SET p.value = :value " +
+					" WHERE p.preferenceType.id = :typeId " +
+					"   AND p.foreignId = :foreignId ";
 
-    /**
-     * This method return the current value of invoice number and increment
-     * it to next invoice number. During read it gets lock over the LOCK
-     * object until record updates. When record updated successfully
-     * then release the lock so that can be read by other thread.
-     */
-    public Integer getPreferenceAndIncrement(Integer entityId, Integer typeId) {
-        Integer value = null;
+	/**
+	 * This method return the current value of invoice number and increment
+	 * it to next invoice number. During read it gets lock over the LOCK
+	 * object until record updates. When record updated successfully
+	 * then release the lock so that can be read by other thread.
+	 */
+	public Integer getPreferenceAndIncrement(Integer entityId, Integer typeId) {
+		Integer value = null;
 
-        synchronized (LOCK) {
-            StatelessSession session = null;
-            Transaction tx = null;
-            try {
-                session = getSessionFactory().openStatelessSession();
-                tx = session.beginTransaction();
+		synchronized (LOCK) {
+			StatelessSession session = null;
+			Transaction tx = null;
+			try {
+				session = getSessionFactory().openStatelessSession();
+				tx = session.beginTransaction();
 
-                Query query = session.createQuery(PREF_VALUE_HQL);
-                query.setParameter("typeId", typeId);
-                query.setParameter("foreignId", entityId);
-                //			query.setLockMode("p", LockMode.UPGRADE);//no pessimistic locking for now
-                PreferenceDTO preferenceDTO = (PreferenceDTO) query.uniqueResult();
+				Query query = session.createQuery(PREF_VALUE_HQL);
+				query.setParameter("typeId", typeId);
+				query.setParameter("foreignId", entityId);
+	//			query.setLockMode("p", LockMode.UPGRADE);//no pessimistic locking for now
+				PreferenceDTO preferenceDTO = (PreferenceDTO) query.uniqueResult();
 
-                //If no record is set then next invoice will be start from 1.
-                value = Integer.valueOf(1);
-                if (preferenceDTO == null) {
-                    //stop the generation of the invoice because an invoice number can not be generated
-                    //here the code does not assume that the invoice numbers should start from 1.
-                    //also there is a technical difficulty to do this insert in stateless session
-                    throw new IllegalStateException("The preference for next invoice number must be set for all companies");
+				//If no record is set then next invoice will be start from 1.
+				value = Integer.valueOf(1);
+				if (preferenceDTO == null) {
+					//stop the generation of the invoice because an invoice number can not be generated
+					//here the code does not assume that the invoice numbers should start from 1.
+					//also there is a technical difficulty to do this insert in stateless session
+					throw new IllegalStateException("The preference for next invoice number must be set for all companies");
 
-                } else if (preferenceDTO.getValue() != null) {
-                    //the preference existed so just increment and update
-                    value = preferenceDTO.getIntValue();
-                    preferenceDTO.setValue(value + 1);
+				} else if (preferenceDTO.getValue() != null) {
+					//the preference existed so just increment and update
+					value = preferenceDTO.getIntValue();
+					preferenceDTO.setValue(value + 1);
 
-                    Query updateQuery = session.createQuery(PREF_VALUE_UPDATE_HQL);
-                    updateQuery.setParameter("value", preferenceDTO.getValue());
-                    updateQuery.setParameter("typeId", typeId);
-                    updateQuery.setParameter("foreignId", entityId);
-                    updateQuery.executeUpdate();
-                }
+					Query updateQuery = session.createQuery(PREF_VALUE_UPDATE_HQL);
+					updateQuery.setParameter("value", preferenceDTO.getValue());
+					updateQuery.setParameter("typeId", typeId);
+					updateQuery.setParameter("foreignId", entityId);
+					updateQuery.executeUpdate();
+				}
 
-                //if this explodes for some reason
-                tx.commit();
-                session.close();
-            } catch (RuntimeException e) {
-                LOG.debug("Generation of invoice number failed.", e);
-                //no matter the exception, try doing the clean up and propagate the exception
-                try {
-                    if (null != tx) {if (tx.isActive() && !tx.wasRolledBack()) {
-                        tx.rollback();
-                    }}
-                    if (null != session) {session.close();}
-                } catch (Exception ex) {
-                    //swallow the attempt to do a clean up
-                }
-                throw e;
-            }
-        }
-        return value;
+				//if this explodes for some reason
+				tx.commit();
+				session.close();
+			} catch (RuntimeException e) {
+				LOG.debug("Generation of invoice number failed.", e);
+				//no matter the exception, try doing the clean up and propagate the exception
+				try {
+					if (null != tx) {if (tx.isActive() && !tx.wasRolledBack()) tx.rollback();}
+					if (null != session) {session.close();}
+				} catch (Exception ex) {
+					//swallow the attempt to do a clean up
+				}
+				throw e;
+			}
+		}
+		return value;
     }
 
 }

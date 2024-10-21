@@ -60,7 +60,7 @@ class JBillingDisplayTagLib {
         
         def countryCode= attrs.countryCode
         def areaCode= attrs.areaCode 
-        def number= attrs.number
+        def number= attrs.getSubscriberNumber
         
         StringBuffer sb= new StringBuffer("");
         

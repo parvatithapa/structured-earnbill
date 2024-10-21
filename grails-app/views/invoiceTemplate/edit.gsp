@@ -915,7 +915,7 @@
 <div class="form-edit">
 
     <div class="heading">
-        <div id="paging" style="float: right">
+        <div id="paging">
             <a id="previous-page" class="prev plus-icon" href="#" style="display: none;"
                title="${message(code: 'invoiceTemplate.previousPage.label')}">&#xe034;</a>
             <span id="page-number">1</span>
@@ -1024,8 +1024,7 @@
 </div>
 
 <div id="dialog-delete-confirm" title="Delete element?" style="display:none">
-    <p><span class="ui-icon ui-icon-alert"
-             style="float: left; margin: 0 7px 70px 0;"></span>This item will be permanently deleted and cannot be recovered. Are you sure?
+    <p><span class="ui-icon ui-icon-alert"></span>This item will be permanently deleted and cannot be recovered. Are you sure?
     </p>
 </div>
 
@@ -1035,14 +1034,14 @@
 
 <div id="dialog-save-error" title="Save Error" style="display:none">
     <p>
-        <span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 70px 0;"></span>
+        <span class="ui-icon ui-icon-alert"></span>
         <span id="save-error-msg"></span>
     </p>
 </div>
 
 <div id="dialog-delete-error" title="Save Error" style="display:none">
     <p>
-        <span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 70px 0;"></span>
+        <span class="ui-icon ui-icon-alert"></span>
         <span>
             You can not delete the last section in the template.
             Please, create a new section or remove all children from the current, if you want to make it empty.

@@ -1,15 +1,19 @@
 package com.sapienter.jbilling.server.order;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 
 public final class MediationEventResultList {
 
     private boolean isRolledBack = false;
-    private final List<MediationEventResult> results;
+    private final Map<JbillingMediationRecord, MediationEventResult> resultJmrRecordMap;
 
-    public MediationEventResultList(int size) {
-        this.results = new ArrayList<>(size);
+    public MediationEventResultList() {
+        this.resultJmrRecordMap = new LinkedHashMap<>();
     }
 
     public boolean isRolledBack() {
@@ -20,15 +24,19 @@ public final class MediationEventResultList {
         isRolledBack = rolledBack;
     }
 
-    public List<MediationEventResult> getResults() {
-        return results;
+    public List<MediationEventResult> results() {
+        return new ArrayList<>(resultJmrRecordMap.values());
     }
 
-    public void addResult(MediationEventResult result) {
-        this.results.add(result);
+    public void addResult(JbillingMediationRecord jmr, MediationEventResult result) {
+        this.resultJmrRecordMap.put(jmr, result);
     }
 
     public void clear() {
-        this.results.clear();
+        this.resultJmrRecordMap.clear();
+    }
+
+    public Map<JbillingMediationRecord, MediationEventResult> getResultJmrRecordMap() {
+        return resultJmrRecordMap;
     }
 }

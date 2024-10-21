@@ -85,7 +85,7 @@
 	           	<g:each var="action" in="${selected.consumptionActions.sort({it.percentage})}">
 	       		 <g:if test="${action.type}">
 	                 <tr class="attribute">
-		                <td style="text-align: right;padding-right: 30px;">
+		                <td id="custom-td">
 		                	<g:formatNumber number="${action.percentage}" formatName="decimal.format"/>
 		                </td>
 		                <td class="value">${action.type}</td>

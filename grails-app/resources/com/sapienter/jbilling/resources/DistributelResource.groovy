@@ -12,7 +12,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.sapienter.jbilling.server.spa.SpaHappyFox;
-import com.sapienter.jbilling.server.spa.SpaImportWS;
 import com.sapienter.jbilling.server.util.DistributelWebServicesSessionSpringBean;
 import com.sapienter.jbilling.server.util.api.JbillingDistributelAPI;
 import com.sapienter.jbilling.utils.RestErrorHandler;
@@ -46,22 +45,4 @@ class DistributelResource{
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
-					
-	@POST
-	@Path("/processSpaImport")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Customer creation using processSpaImport")
-	@ApiResponses(value = [
-		@ApiResponse(code = 200, message = "Customer added successfully.", response = SpaImportWS.class),
-		@ApiResponse(code = 400, message = "Invalid details provided"),
-		@ApiResponse(code = 500, message = "The call resulted with internal error.")
-	])
-	Response processSpaImport(
-			@ApiParam(value = "JSON represenation of SpaImportWS Request", required = true)SpaImportWS spaImportWS){
-		try {
-			return Response.ok().entity(distributelWebServicesSession.processSpaImport(spaImportWS)).build();
-		} catch (Exception e){
-			return RestErrorHandler.mapErrorToHttpResponse(e);
-		}
-	}
 }

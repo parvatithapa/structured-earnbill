@@ -1,8 +1,11 @@
 package com.sapienter.jbilling.server.mediation.custommediation.spc.processor;
 
+import java.lang.invoke.MethodHandles;
 import java.util.UUID;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,18 +29,16 @@ import com.sapienter.jbilling.server.util.Context;
  */
 public class SPCMediationProcessor implements ItemProcessor<CallDataRecord, ConversionResult> {
 
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     @Value("#{jobParameters['entityId']}")
     private Integer entityId;
-
     @Value("#{jobParameters['mediationCfgId']}")
     private Integer configId;
-
-    @Autowired
-    private JMRRepository jmrRepository;
-
     @Autowired
     private JMErrorRepository errorRepository;
-
+    @Autowired
+    private JMRRepository jmrRepository;
     @Value("#{jobExecutionContext['mediationProcessId']}")
     private UUID mediationProcessId;
 
@@ -73,6 +74,7 @@ public class SPCMediationProcessor implements ItemProcessor<CallDataRecord, Conv
         if(null == callDataRecord.getKey() || callDataRecord.getKey().isEmpty()) {
             return null;
         }
+        logger.debug("processing cdr {}", callDataRecord);
         callDataRecord.setEntityId(entityId);
         callDataRecord.setMediationCfgId(configId);
         MediationStepResult result = new MediationStepResult(callDataRecord);
@@ -88,19 +90,19 @@ public class SPCMediationProcessor implements ItemProcessor<CallDataRecord, Conv
 
         // checking JMR status and creating records in database.
         switch (mediationResolverStatus) {
-        case SUCCESS:
-            conversionResult.setRecordCreated(result.tojBillingMediationRecord());
-            break;
-        default:
-            conversionResult.setErrorRecord(result.toJBillingMediationError());
-            break;
+            case SUCCESS:
+                conversionResult.setRecordCreated(result.tojBillingMediationRecord());
+                break;
+            default:
+                conversionResult.setErrorRecord(result.toJBillingMediationError());
+                break;
         }
         conversionResult.setRecordProcessed(callDataRecord);
         writerConversionResult(conversionResult);
         return conversionResult;
     }
 
-    public ConversionResult writerConversionResult(ConversionResult result) {
+    private ConversionResult writerConversionResult(ConversionResult result) {
         if (result.getErrorRecord() != null) {
             result.getErrorRecord().setProcessId(mediationProcessId);
             result.setErrorRecord(DaoConverter.getMediationErrorRecord(

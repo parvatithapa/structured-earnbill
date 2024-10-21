@@ -4,7 +4,6 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertNull;
 import static org.testng.AssertJUnit.assertTrue;
-import static com.sapienter.jbilling.test.framework.helpers.ApiBuilderHelper.*;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -960,6 +959,15 @@ public class CancellationRequestAPITest{
             }
         });
     }
+    private CancellationRequestWS constructCancellationRequestWS(Date cancellationDate, Integer customerId, String reasonText) {
+		CancellationRequestWS cancellationRequestWS = new CancellationRequestWS();
+		cancellationRequestWS.setCancellationDate(cancellationDate);
+		cancellationRequestWS.setCreateTimestamp(new Date());
+		cancellationRequestWS.setCustomerId(customerId);
+		cancellationRequestWS.setReasonText(reasonText);
+		cancellationRequestWS.setStatus(CancellationRequestStatus.APPLIED);
+		return cancellationRequestWS;
+	}
     
     private Integer createCustomer(TestEnvironmentBuilder envBuilder,String code, Integer accountTypeId, Date nid){
         final JbillingAPI api = envBuilder.getPrancingPonyApi();
@@ -973,7 +981,14 @@ public class CancellationRequestAPITest{
         api.updateUser(user);
         return user.getId();
     }
-
+    
+    private static Date addDays(Date inputDate, int days) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(inputDate);
+		cal.add(Calendar.DATE, days);
+		return cal.getTime();
+	}
+    
     private static Integer getDay(Date inputDate) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(inputDate);

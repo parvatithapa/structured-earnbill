@@ -81,9 +81,6 @@ public interface UsageOrderReRater {
         }
         if(Constants.ORDER_BILLING_PRE_PAID.equals(subscriptionOrder.getBillingTypeId()) && null != subscriptionOrder.getNextBillableDay()) {
               billingCycleStart = DateConvertUtils.asUtilDate(periodUnit.addTo(DateConvertUtils.asLocalDate(billingCycleStart), orderPeriodDTO.getValue() * -1L));
-              if (billingCycleStart.before(subscriptionOrder.getActiveSince())) {
-                  billingCycleStart = subscriptionOrder.getActiveSince();
-              }
         }
 
         if (billingCycleStart.compareTo(billingCycleEnd) == 0) {

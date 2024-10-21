@@ -10,8 +10,8 @@ import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 
 
 public interface ISecurePayment {
-	
-	
+
+
 	/** Strong Customer Authentication(SCA) - Customer should authenticate transaction against 3D secure authentication.
 	 * Transactions that required customer authentication 
 	 * 		Process one time payment

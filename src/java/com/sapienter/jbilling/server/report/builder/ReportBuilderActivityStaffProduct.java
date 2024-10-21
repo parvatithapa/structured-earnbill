@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.server.report.builder;
 
 import com.sapienter.jbilling.server.report.util.ReportUtil;
-import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -68,8 +67,7 @@ public class ReportBuilderActivityStaffProduct extends AbstractReportBuilderActi
         Map<String, Object> row = new HashMap<>();
         row.put(STAFF_NAME_COLUMN, staff);
         row.put(PRODUCT_ID_COLUMN, productId);
-        row.put(CREATE_DATE_COLUMN, dateFormatter.format(TimezoneHelper.convertToTimezone(LocalDateTime.ofInstant(createDate.toInstant(), ZoneId.systemDefault()),
-                TimezoneHelper.getCompanyLevelTimeZone(entityId))));
+        row.put(CREATE_DATE_COLUMN, dateFormatter.format(LocalDateTime.ofInstant(createDate.toInstant(), ZoneId.systemDefault())));
         row.put(TERM_COLUMN, term);
         row.put(CATEGORIES_COLUMN, total);
         row.put(CUSTOMERS_COLUMN, total);

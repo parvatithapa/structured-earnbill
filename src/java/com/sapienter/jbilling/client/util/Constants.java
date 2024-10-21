@@ -248,4 +248,6 @@ public final class Constants implements PermissionConstants, CommonConstants {
     public static final String SETUP_META_FIELD = "Setup Fee Category Id";
     public static final String INVOICE_CSV="Invoices";
     public static final String PAYMENT_CSV="Payments";
+    
+    public static final String EMAIL_JOB_DEFAULT_CUT_OFF_TIME = "Email job cut off time";
 }

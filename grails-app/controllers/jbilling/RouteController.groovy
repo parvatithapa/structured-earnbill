@@ -1,7 +1,6 @@
 package jbilling
 
-import au.com.bytecode.opencsv.CSVWriter
-
+import com.opencsv.CSVWriter
 import com.sapienter.jbilling.client.ViewUtils
 import com.sapienter.jbilling.client.util.BindHelper
 import com.sapienter.jbilling.client.util.DownloadHelper
@@ -282,7 +281,7 @@ class RouteController {
 
         // outfile
         def file = File.createTempFile(route.tableName, '.csv')
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',' as char)
+        CSVWriter writer = new CSVWriter(new FileWriter(file))
 
         // write csv header
         def columns = rateCardService.getRouteTableColumnNames()
@@ -753,7 +752,7 @@ class RouteController {
 
         // outfile
         def file = File.createTempFile(route.tableName, '.csv')
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',' as char)
+        CSVWriter writer = new CSVWriter(new FileWriter(file))
 
         // write csv header
         writer.writeNext(columns.toArray(new String[columns.size()]))

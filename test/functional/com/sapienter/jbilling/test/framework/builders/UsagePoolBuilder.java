@@ -16,6 +16,7 @@ import java.util.List;
  */
 public class UsagePoolBuilder extends AbstractBuilder{
 
+    public static final Integer DEFAULT_PRECEDENCE = -1;
     private UsagePoolBuilder(JbillingAPI api, TestEnvironment testEnvironment, String code) {
         super(api, testEnvironment);
         this.code = code;
@@ -32,6 +33,7 @@ public class UsagePoolBuilder extends AbstractBuilder{
     private String code;
     private String name;
     private String quantity;
+    private Integer precedence = DEFAULT_PRECEDENCE;
     private String resetValue;
     private String cyclePeriodUnit;
     private Integer cyclePeriodValue;
@@ -47,6 +49,11 @@ public class UsagePoolBuilder extends AbstractBuilder{
 
     public UsagePoolBuilder withQuantity(String quantity){
         this.quantity = quantity;
+        return this;
+    }
+    
+    public UsagePoolBuilder withPrecedence(Integer precedence){
+        this.precedence = precedence;
         return this;
     }
 
@@ -100,6 +107,7 @@ public class UsagePoolBuilder extends AbstractBuilder{
 
         usagePool.setName(name);
         usagePool.setQuantity(quantity);
+        usagePool.setPrecedence(precedence);
         usagePool.setCyclePeriodUnit(cyclePeriodUnit);
         usagePool.setCyclePeriodValue(cyclePeriodValue);
         usagePool.setItemTypes(itemTypesIds.toArray(new Integer[itemTypesIds.size()]));

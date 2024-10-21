@@ -129,23 +129,23 @@ public class LBMPPlusBlendedRatePricingStrategyTest {
 
     private File createRateCardFile() throws Exception {
         File file = File.createTempFile("ratecard", "csv");
-        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,active_dates,zone",
-                "1,Jan,0,0,0,0.10,01/01/2016-01/02/2016,A",
-                "2,Jan,0,0,0,0.20,01/02/2016-01/03/2016,A",
-                "3,Jan,0,0,0,0.30,01/03/2016-01/04/2016,A",
-                "4,Jan,0,0,0,0.40,01/04/2016-01/05/2016,A",
-                "5,Jan,0,0,0,0.50,01/05/2016-01/06/2016,A");
+        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,active_dates,zone",
+                "1,Jan,0,0,0,0.10,0,0,0,0,01/01/2016-01/02/2016,A",
+                "2,Jan,0,0,0,0.20,0,0,0,0,01/02/2016-01/03/2016,A",
+                "3,Jan,0,0,0,0.30,0,0,0,0,01/03/2016-01/04/2016,A",
+                "4,Jan,0,0,0,0.40,0,0,0,0,01/04/2016-01/05/2016,A",
+                "5,Jan,0,0,0,0.50,0,0,0,0,01/05/2016-01/06/2016,A");
 
         FileUtils.writeLines(file, rows);
         return file;
     }
     private File createRateCardFile2() throws Exception {
         File file = File.createTempFile("ratecard", "csv");
-        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,active_dates,zone",
-                "1,Jan,0,0,0,0.10,01/01/2016-01/02/2016,A",
-                "3,Jan,0,0,0,0.30,01/03/2016-01/04/2016,A",
-                "4,Jan,0,0,0,0.40,01/04/2016-01/05/2016,A",
-                "5,Jan,0,0,0,0.50,01/05/2016-01/06/2016,A");
+        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,active_dates,zone",
+                "1,Jan,0,0,0,0.10,0,0,0,0,01/01/2016-01/02/2016,A",
+                "3,Jan,0,0,0,0.30,0,0,0,0,01/03/2016-01/04/2016,A",
+                "4,Jan,0,0,0,0.40,0,0,0,0,01/04/2016-01/05/2016,A",
+                "5,Jan,0,0,0,0.50,0,0,0,0,01/05/2016-01/06/2016,A");
 
         FileUtils.writeLines(file, rows);
         return file;

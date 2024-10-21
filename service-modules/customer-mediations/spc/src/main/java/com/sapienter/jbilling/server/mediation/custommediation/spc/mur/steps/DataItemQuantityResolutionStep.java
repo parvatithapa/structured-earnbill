@@ -3,21 +3,28 @@ package com.sapienter.jbilling.server.mediation.custommediation.spc.mur.steps;
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepContext;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.AbstractMediationStep;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.MediationStepResult;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCMediationHelperService;
 
 @Component("optusMurDataItemQuantityResolutionStep")
 class DataItemQuantityResolutionStep extends AbstractMediationStep<MediationStepResult> {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Autowired
+    private SPCMediationHelperService service;
+
     private static final String VOLUMN_DOWNLINK_FILED_NAME = "Volume Downlink";
     private static final String VOLUMN_UPLINK_FILED_NAME = "Volume Uplink";
 
@@ -44,7 +51,12 @@ class DataItemQuantityResolutionStep extends AbstractMediationStep<MediationStep
             BigDecimal downlinkVolume = new BigDecimal(downLinkField.getStrValue());
             logger.debug("{} is {} and {}  is {}", VOLUMN_UPLINK_FILED_NAME, uplinkVolume, VOLUMN_DOWNLINK_FILED_NAME, downLinkField);
             BigDecimal duration  = uplinkVolume.add(downlinkVolume);
-            result.setQuantity(duration);
+            Optional<BigDecimal> frequency = service.getRatingUnitIncrementQuantityByItemId(Integer.valueOf(result.getItemId()));
+            if(frequency.isPresent()){
+                result.setQuantity(duration.divide(frequency.get()));
+            } else {
+                result.setQuantity(duration);
+            }
             result.setOriginalQuantity(duration);
             logger.debug("resolved duration {}", duration);
             return true;

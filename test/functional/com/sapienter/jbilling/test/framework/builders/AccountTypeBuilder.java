@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.EntityType;
+import com.sapienter.jbilling.server.metafields.MetaFieldType;
 import com.sapienter.jbilling.server.metafields.MetaFieldWS;
 import com.sapienter.jbilling.server.user.AccountInformationTypeWS;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
@@ -93,9 +94,70 @@ public class AccountTypeBuilder extends AbstractBuilder {
     }
 
     public AccountTypeBuilder addAccountInformationType(String accountInformationTypeName, Map<String, DataType> informationTypeMetaFields) {
-        this.accountInformationTypeName.put(accountInformationTypeName, informationTypeMetaFields.entrySet().stream().map(entry ->
-        ApiBuilderHelper.getMetaFieldWS(entry.getKey(), entry.getValue(), EntityType.ACCOUNT_TYPE, api.getCallerCompanyId()))
-        .collect(Collectors.toList()));
+    	List<MetaFieldWS> listMetaField = new ArrayList<>();
+    	informationTypeMetaFields.forEach((key, value) -> {
+    		
+    		if (key.equals("PO Box")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.POST_BOX, null));
+    		}
+    		if (key.equals("Country")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.COUNTRY_CODE, null));
+    		}
+    		if (key.equals("Post Code")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.POSTAL_CODE, null));
+    		}
+    		if (key.equals("State")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.STATE_PROVINCE, null));
+    		}
+    		if (key.equals("Street Name")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.STREET_NAME, null));
+    		}
+    		if (key.equals("City")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.CITY, null));
+    		}
+    		if (key.equals("Street Number")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.STREET_NUMBER, null));
+    		}
+    		if (key.equals("Title")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.TITLE, null));
+    		}
+    		if (key.equals("First Name")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.FIRST_NAME, null));
+    		}
+    		if (key.equals("Last Name")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.LAST_NAME, null));
+    		}
+    		if (key.equals("Business Name")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.BUSINESS_NAME, null));
+    		}
+    		if (key.equals("Date of Birth")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.DATE, null));
+    		}
+    		if (key.equals("Email Address")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.EMAIL, null));
+    		}
+    		if (key.equals("Contact Number")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.PHONE_NUMBER, null));
+    		}
+    		if (key.equals("Street Type")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.STREET_TYPE, null));
+    		}
+    		if (key.equals("direct_marketing")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), null, null));
+    		}
+    		if (key.equals("Sub Premises")) {
+    			listMetaField.add(ApiBuilderHelper.getMetaFieldWithValidationRule(key, value, EntityType.ACCOUNT_TYPE, api.getCallerCompanyId(), MetaFieldType.SUB_PREMISES, null));
+    		}
+    	});
+    	
+    	if (listMetaField.isEmpty()) {
+			this.accountInformationTypeName.put(accountInformationTypeName, informationTypeMetaFields.entrySet().stream().map(entry ->
+	        ApiBuilderHelper.getMetaFieldWS(entry.getKey(), entry.getValue(), EntityType.ACCOUNT_TYPE, api.getCallerCompanyId()))
+	        .collect(Collectors.toList()));
+		} else {
+			this.accountInformationTypeName.put(accountInformationTypeName, listMetaField);
+		}
+    	
         return this;
     }
 

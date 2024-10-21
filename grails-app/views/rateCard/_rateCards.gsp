@@ -87,7 +87,7 @@
 					model="[steps: [10, 20, 50], update: 'column1' ]"  />
 			</div>
 		</div>
-		<div class="row">
+		<div class="row-center">
 			<jB:remotePaginate controller="rateCard" action="list"
 				params="${sortableParams(params: [partial: true])}"
 				total="${cards?.totalCount ?: 0}" update="column1" />

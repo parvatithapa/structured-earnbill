@@ -72,7 +72,6 @@ import com.sapienter.jbilling.server.user.event.AgeingNotificationEvent;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.PreferenceBL;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
-import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 
 /**
  *
@@ -206,9 +205,6 @@ public abstract class AgeingTask extends PluggableTask implements IAgeingTask {
             setOrderStatus(user, executorId, OrderStatusFlag.INVOICE, OrderStatusFlag.SUSPENDED_AGEING, today);
         } else {
             // status changed from suspended to active
-            // adding reactivate entry in customer status change history
-            EventManager.process(new ReactivatedStatusEvent(user, DateConvertUtils.getNow(), user.getEntity().getId(), getUserLoggedName(),
-                    getStatusDescription(status, user), status));
             // re-active suspended customer orders
             if (nextAgeingStep == null && status.getId() == UserDTOEx.STATUS_ACTIVE
                     && oldStatus.getAgeingEntityStep() != null && oldStatus.getAgeingEntityStep().getSuspend() == 1) {
@@ -302,10 +298,9 @@ public abstract class AgeingTask extends PluggableTask implements IAgeingTask {
         }
     }
 
-    protected boolean validateUserWithOutOverDueInvoice(UserDTO user, Integer excludedInvoiceId, Date effectiveDate) {
+    protected boolean validateUserWithOutOverDueInvoice(UserDTO user, Integer excludedInvoiceId) {
         try {
-            if (UserBL.isUserBalanceEnoughToAge(user, effectiveDate) &&
-                    new InvoiceBL().isUserWithOverdueInvoices(user.getUserId(), companyCurrentDate(), excludedInvoiceId)) {
+            if (new InvoiceBL().isUserWithOverdueInvoices(user.getUserId(), companyCurrentDate(), excludedInvoiceId)) {
                 logger.debug("User {} still has overdue invoices, cannot remove from ageing.", user.getId());
                 return true;
             }
@@ -331,7 +326,7 @@ public abstract class AgeingTask extends PluggableTask implements IAgeingTask {
                     if (flagTo.equals(OrderStatusFlag.SUSPENDED_AGEING)) {
                         EventManager.process(new NewSuspendOrderEvent(order.getId(), today));
                     } else if (flagTo.equals(OrderStatusFlag.INVOICE)) {
-                        EventManager.process(new NewActivateOrderEvent(order.getId(), order.getPlantWithUsagePool(), today));
+                        EventManager.process(new NewActivateOrderEvent(order.getId(), order.getPlanWithUsagePool(), today));
                     }
                 }
             }
@@ -411,7 +406,7 @@ public abstract class AgeingTask extends PluggableTask implements IAgeingTask {
     @Override
     public AgeingEntityStepDTO ageUser(Set<AgeingEntityStepDTO> steps, UserDTO user, InvoiceDTO unpaidInvoice, Date today, Integer executorId,
             boolean chronologicalAgeing, Boolean revaluate) {
-        if (!UserBL.isUserBalanceEnoughToAge(user,today)) {
+        if (!UserBL.isUserBalanceEnoughToAge(user)) {
             logger.debug("Wants to age user: {} but invoice balance is not enough to age: {}", user.getId(), unpaidInvoice.getId());
             return null;
         }
@@ -471,7 +466,7 @@ public abstract class AgeingTask extends PluggableTask implements IAgeingTask {
         }
 
         // validate that the user does not still have overdue invoices
-        if (validateUserWithOutOverDueInvoice(user, excludedInvoiceId, effectiveDate)) {
+        if (validateUserWithOutOverDueInvoice(user, excludedInvoiceId)) {
             if (getAgeRevaluationPreferenceValue(user.getEntity().getId())) {
                 Integer entityId = user.getEntity().getId();
                 CompanyDTO company = new EntityBL(entityId).getEntity();

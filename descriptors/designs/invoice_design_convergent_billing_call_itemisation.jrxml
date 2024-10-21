@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_convergent_billing_call_itemization" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="bddb673d-00a3-425e-b7bc-206bf6c43001">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="local_jbilling"/>
+    <parameter name="invoice_id" class="java.lang.Integer"/>
+    <parameter name="currency_symbol" class="java.lang.String"/>
+    <parameter name="page_number" class="java.lang.Integer"/>
+    <parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+    <queryString language="plsql">
+    <![CDATA[
+        SELECT
+            il.call_identifier,
+            il.description,
+            il.order_id,
+            rc.itemisation_order
+        FROM invoice_line il
+        LEFT OUTER JOIN rollup_codes rc ON rc.item_type_description = il.description
+        WHERE il.invoice_id = $P{invoice_id}
+        AND il.call_identifier IS NOT NULL
+        ORDER BY il.call_identifier, rc.itemisation_order ASC;
+    ]]>
+    </queryString>
+    <field name="call_identifier" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="call_identifier"/>
+        <property name="com.jaspersoft.studio.field.label" value="call_identifier"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="description" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="description"/>
+        <property name="com.jaspersoft.studio.field.label" value="description"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="order_id" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="order_id"/>
+        <property name="com.jaspersoft.studio.field.label" value="order_id"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="itemisation_order" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="itemisation_order"/>
+        <property name="com.jaspersoft.studio.field.label" value="itemisation_order"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="rollup_codes"/>
+    </field>
+    <group name="userNameCallIdentifierGroup">
+        <groupExpression><![CDATA[$F{call_identifier}]]></groupExpression>
+        <groupHeader>
+            <band height="26">
+                <rectangle radius="4">
+                    <reportElement mode="Opaque" x="0" y="-1" width="555" height="26" backcolor="#E3DADA" uuid="eeb31c86-d23f-438f-8143-08b025b54b1e">
+                        <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    </reportElement>
+                    <graphicElement>
+                        <pen lineWidth="0.0"/>
+                    </graphicElement>
+                </rectangle>
+                <textField>
+                    <reportElement x="2" y="0" width="208" height="26" uuid="a24775a5-f793-482b-945c-c99952dac84f">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    </reportElement>
+                    <box topPadding="8" leftPadding="5" rightPadding="0"/>
+                    <textElement>
+                        <font isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[$F{call_identifier}]]></textFieldExpression>
+                </textField>
+            </band>
+        </groupHeader>
+    </group>
+    <title>
+        <band height="20">
+            <staticText>
+                <reportElement positionType="Float" x="2" y="0" width="113" height="17" forecolor="#0F0F0F" uuid="e2370341-b6a1-4d5e-9bae-013b465a5ecf">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font fontName="SansSerif" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Call Itemisation]]></text>
+            </staticText>
+        </band>
+    </title>
+    <detail>
+        <band height="28" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <subreport>
+                <reportElement x="-20" y="0" width="220" height="26" printWhenGroupChanges="userNameCallIdentifierGroup" uuid="cba08443-85be-4b82-a3c4-d76de2356ce0">
+                    <printWhenExpression><![CDATA[$F{description}!="Mobile Data"]]></printWhenExpression>
+                </reportElement>
+                <subreportParameter name="invoice_id">
+                    <subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="currency_symbol">
+                    <subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="order_id">
+                    <subreportParameterExpression><![CDATA[$F{order_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="description">
+                    <subreportParameterExpression><![CDATA[$F{description}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="call_identifier">
+                    <subreportParameterExpression><![CDATA[$F{call_identifier}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="SUBREPORT_DIR">
+                    <subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+                </subreportParameter>
+                <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                <subreportExpression><![CDATA[$P{SUBREPORT_DIR}+"invoice_design_convergent_billing_call_itemisation_subreport.jasper"]]></subreportExpression>
+            </subreport>
+            <subreport>
+                <reportElement x="-20" y="4" width="220" height="24" uuid="9aedcd4e-3780-41b8-82fc-1d458b4ae1e5">
+                    <printWhenExpression><![CDATA[$F{description}=="Mobile Data"]]></printWhenExpression>
+                </reportElement>
+                <subreportParameter name="invoice_id">
+                    <subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="currency_symbol">
+                    <subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="order_id">
+                    <subreportParameterExpression><![CDATA[$F{order_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="description">
+                    <subreportParameterExpression><![CDATA[$F{description}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="call_identifier">
+                    <subreportParameterExpression><![CDATA[$F{call_identifier}]]></subreportParameterExpression>
+                </subreportParameter>
+                <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                <subreportExpression><![CDATA[$P{SUBREPORT_DIR}+"invoice_design_convergent_billing_mobile_data_subreport.jasper"]]></subreportExpression>
+            </subreport>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="20">
+            <textField>
+                <reportElement positionType="FixRelativeToBottom" x="460" y="0" width="95" height="20" uuid="31a8f6e9-61b2-4cd2-be24-5e0962924a3f">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <box rightPadding="5"/>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="false"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{page_number} + $V{PAGE_NUMBER} +$P{page_number}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

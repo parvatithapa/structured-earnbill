@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 /**
  * Creates execution context for remote processors.
@@ -34,12 +35,14 @@ public class JMRProcessorModuloPartitioner implements Partitioner, JmrProcessorC
 
     @Value("#{jobParameters['entityId']}")
     private Integer entityId;
+    @Value("#{jobExecutionContext['mediationProcessId']}")
+    private UUID mediationProcessId;
 
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {
         Map<String, ExecutionContext> contextMap = new HashMap<>(gridSize*2);
 
-        List<Integer> userIds = jmrRepository.findUsersByStatus("UNPROCESSED")
+        List<Integer> userIds = jmrRepository.findUsersByStatus("UNPROCESSED", mediationProcessId)
                 .stream()
                 .distinct()
                 .collect(Collectors.toList());

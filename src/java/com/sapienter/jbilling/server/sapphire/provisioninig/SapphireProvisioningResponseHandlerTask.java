@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.server.sapphire.provisioninig;
 
-import static com.sapienter.jbilling.server.sapphire.provisioninig.OrderProvisioninigStatus.NEW_SALE;
 import static com.sapienter.jbilling.server.sapphire.provisioninig.OrderProvisioninigStatus.PENDING_CHANGE_OF_PLAN;
 import static com.sapienter.jbilling.server.sapphire.provisioninig.OrderProvisioninigStatus.PLAN_CHANGED;
 import static com.sapienter.jbilling.server.sapphire.provisioninig.SapphireProvisioningHelper.updateCustomerProvisioningStatusMf;
@@ -135,173 +134,6 @@ public class SapphireProvisioningResponseHandlerTask extends PluggableTask imple
         api.updateOrder(order, OrderChangeBL.buildFromOrder(order, getOrderChangeApplyStatus(api)));
     }
 
-    /**
-     * process PLAN_CHANGED order provisioning status.
-     * @param orderMetaFieldUpdateEvent
-     * @throws PluggableTaskException
-     */
-    private void handlePlanChangeProvisioningStatus(OrderMetaFieldUpdateEvent orderMetaFieldUpdateEvent) throws PluggableTaskException {
-        IWebServicesSessionBean api = Context.getBean(Name.WEB_SERVICES_SESSION);
-        Integer entityId = getEntityId();
-        Map<String, ValueDifference<Object>> orderMetaFieldDiff = orderMetaFieldUpdateEvent.getDiffMap();
-        String orderProvisioningParamName = PARAM_ORDER_PROVISIONING_STATUS_MF_NAME.getName();
-        String orderProvisioningMfName = getParameters().get(orderProvisioningParamName);
-        String orderProvisoiningStatus = (String) orderMetaFieldDiff.get(orderProvisioningMfName).rightValue();
-        if(!PLAN_CHANGED.getStatus().equals(orderProvisoiningStatus)) {
-            logger.debug("skip swap asset for order {} since {} did not changed to {}", orderMetaFieldUpdateEvent.getOrderId(),
-                    orderProvisioningMfName, PLAN_CHANGED);
-            return;
-        }
-
-        OrderWS oldOrder = api.getOrder(orderMetaFieldUpdateEvent.getOrderId());
-        if(!isOrderRecurring(oldOrder)) {
-            logger.debug("change of plan only perform for monthly order and order {} is not monthly", oldOrder.getId());
-            return;
-        }
-        Calendar activeUntilDate = Calendar.getInstance();
-        activeUntilDate.setTime(TimezoneHelper.companyCurrentDate(entityId));
-        activeUntilDate.add(Calendar.DAY_OF_MONTH, -1);
-        oldOrder.setActiveUntil(activeUntilDate.getTime());
-        logger.debug("set newActiveUntilDate {} on old order {}", activeUntilDate.getTime(), oldOrder.getId());
-        Map<Integer, List<Integer>> oldOrderItemAssetsMap = createItemAssetsMapFromOrder(oldOrder);
-        logger.debug("Item asset map {} created from old order {}", oldOrderItemAssetsMap, oldOrder.getId());
-        AssetDAS assetDAS = new AssetDAS();
-        Map<Integer, List<Integer>> replacedItemAssetsMap = new HashMap<>();
-        if(MapUtils.isNotEmpty(oldOrderItemAssetsMap)) {
-            for(OrderLineWS orderLineWS : oldOrder.getOrderLines()) {
-                if(null!= orderLineWS.getItemId() &&
-                        oldOrderItemAssetsMap.containsKey(orderLineWS.getItemId())) {
-                    List<Integer> assetIds = oldOrderItemAssetsMap.get(orderLineWS.getItemId());
-                    for(Integer assetId : assetIds) {
-                        AssetDTO assetDTO = assetDAS.findNow(assetId);
-                        if(null == assetDTO) {
-                            logger.debug("asset {} not found", assetId);
-                            continue;
-                        }
-                        if(!assetDTO.getIdentifier().startsWith(SapphireSignupConstants.ASSET_PREFIX)) {
-                            Integer dummyAssetId = SapphireHelper.createAsset(orderLineWS.getItemId());
-                            List<Integer> replaceAssets = replacedItemAssetsMap.get(orderLineWS.getItemId());
-                            if(CollectionUtils.isEmpty(replaceAssets)) {
-                                replaceAssets = new ArrayList<>();
-                            }
-                            replaceAssets.add(assetId);
-                            replacedItemAssetsMap.put(orderLineWS.getItemId(), replaceAssets);
-                            assetIds.set(assetIds.indexOf(assetId), dummyAssetId);
-                            logger.debug("asset {} replaced with dummy asset {}", assetId, dummyAssetId);
-                        }
-
-                    }
-                    logger.debug("updating line {} with assets {}", orderLineWS.getId(), assetIds);
-                    orderLineWS.setAssetIds(assetIds.toArray(new Integer[0]));
-                }
-            }
-        }
-
-        Calendar startDate = Calendar.getInstance();
-        startDate.setTime(TimezoneHelper.companyCurrentDate(entityId));
-        startDate.add(Calendar.DAY_OF_MONTH, -2);
-        Integer statusId = getOrderChangeApplyStatus(api);
-        OrderChangeWS[] oldOrderChanges = OrderChangeBL.buildFromOrder(oldOrder, statusId);
-        for(OrderChangeWS oldOrderChangeWS : oldOrderChanges) {
-            oldOrderChangeWS.setStartDate(startDate.getTime());
-        }
-        api.updateOrder(oldOrder, oldOrderChanges);
-        logger.debug("old order {} updated", oldOrder.getId());
-
-        String newOrderIdParamName = PARAM_NEW_ORDER_ID_MF_NAME.getName();
-        String newOrderIdMfName = getParameters().get(newOrderIdParamName);
-        MetaFieldValueWS newOrderIdFieldValue = findOrderMetaFieldByName(oldOrder, newOrderIdMfName);
-        if(null == newOrderIdFieldValue || null == newOrderIdFieldValue.getValue()) {
-            logger.debug("{} not found on order level meta field for entity {}", newOrderIdMfName, entityId);
-            return;
-        }
-        OrderWS newOrder = api.getOrder(newOrderIdFieldValue.getIntegerValue());
-        if(newOrder == null) {
-            logger.debug("invalid {} order id saved on order {}", newOrderIdFieldValue.getValue(), oldOrder.getId());
-            return;
-        }
-        Map<Integer, List<Integer>> newOrderItemAssetsMap = createItemAssetsMapFromOrder(newOrder);
-        logger.debug("Item asset map {} created from new order {}", newOrderItemAssetsMap, newOrder.getId());
-        OrderStatusWS activeStatus = new OrderStatusWS();
-        activeStatus.setId(new OrderStatusDAS().getDefaultOrderStatusId(OrderStatusFlag.INVOICE, entityId));
-        setOrderStatusActiveSinceDateOnOrder(newOrder, null, activeStatus);
-        if(MapUtils.isNotEmpty(newOrderItemAssetsMap) &&
-                MapUtils.isNotEmpty(replacedItemAssetsMap)) {
-            for(OrderLineWS orderLineWS : newOrder.getOrderLines()) {
-                if(null!= orderLineWS.getItemId() &&
-                        newOrderItemAssetsMap.containsKey(orderLineWS.getItemId())) {
-                    List<Integer> assetIds = newOrderItemAssetsMap.get(orderLineWS.getItemId());
-                    for(Integer assetId : assetIds) {
-                        AssetDTO assetDTO = assetDAS.findNow(assetId);
-                        if(null == assetDTO) {
-                            logger.debug("asset {} not found", assetId);
-                            continue;
-                        }
-                        if(assetDTO.getIdentifier().startsWith(SapphireSignupConstants.ASSET_PREFIX) &&
-                                replacedItemAssetsMap.containsKey(orderLineWS.getItemId())) {
-                            List<Integer> replaceAssets = replacedItemAssetsMap.get(orderLineWS.getItemId());
-                            if(CollectionUtils.isNotEmpty(replaceAssets)) {
-                                Integer replaceAssetId = replaceAssets.remove(0);
-                                logger.debug("replaced dummy asset {} with asset {}", assetId, replaceAssetId);
-                                assetIds.set(assetIds.indexOf(assetId), replaceAssetId);
-                            }
-                        }
-
-                    }
-                    logger.debug("updating line {} with assets {}", orderLineWS.getId(), assetIds);
-                    orderLineWS.setAssetIds(assetIds.toArray(new Integer[0]));
-                }
-            }
-            api.updateOrder(newOrder, OrderChangeBL.buildFromOrder(newOrder, statusId));
-            logger.debug("new order {} updated", newOrder.getId());
-        }
-
-        Optional<OrderWS> oldChild = findAssetEnabledChildOrder(oldOrder);
-        if(!oldChild.isPresent()) {
-            logger.debug("no asset enabled child order found on old order {}", oldOrder.getId());
-            return;
-        }
-
-        Optional<OrderWS> newChild = findAssetEnabledChildOrder(newOrder);
-        if(!newChild.isPresent()) {
-            logger.debug("no asset enabled child order found on new order {}", newOrder.getId());
-            return;
-        }
-        OrderWS newChildOrder = newChild.get();
-        List<Integer> oldOrderAssetEnabledItems = collectItemIdsFromOrder(oldChild.get(), true);
-        List<Integer> oldOrderItems = collectItemIdsFromOrder(oldChild.get(), false);
-        for(OrderLineWS line : newChildOrder.getOrderLines()) {
-            if((oldOrderAssetEnabledItems.contains(line.getItemId()) && lineHasDummyAsset(line))
-                    || oldOrderItems.contains(line.getItemId())) {
-                logger.debug("deleting line {} from new child order {}", line.getId(), newChildOrder.getId());
-                line.setDeleted(1);
-            }
-        }
-        api.updateOrder(newChildOrder, OrderChangeBL.buildFromOrder(newChildOrder, statusId));
-        logger.debug("updated newchild order {}", newChildOrder.getId());
-    }
-
-    /**
-     * handle NEW_SALE provisioning status.
-     * @param orderMetaFieldUpdateEvent
-     * @throws PluggableTaskException
-     */
-    private void handleNewSaleOrderProvisioningStatus(OrderMetaFieldUpdateEvent orderMetaFieldUpdateEvent) throws PluggableTaskException {
-        String orderProvisioningParamName = PARAM_ORDER_PROVISIONING_STATUS_MF_NAME.getName();
-        String orderProvisioningMfName = getParameters().get(orderProvisioningParamName);
-        Map<String, ValueDifference<Object>> orderMetaFieldDiff = orderMetaFieldUpdateEvent.getDiffMap();
-        String orderProvisoiningStatus = (String) orderMetaFieldDiff.get(orderProvisioningMfName).rightValue();
-        if(!NEW_SALE.getStatus().equals(orderProvisoiningStatus)) {
-            logger.debug("skip handleNewSaleOrderProvisioningStatus for order {} since {} did not changed to {}",
-                    orderMetaFieldUpdateEvent.getOrderId(), orderProvisioningMfName, NEW_SALE);
-            return;
-        }
-
-        IWebServicesSessionBean api = Context.getBean(Name.WEB_SERVICES_SESSION);
-        OrderWS order = api.getOrder(orderMetaFieldUpdateEvent.getOrderId());
-        activateOrder(order);
-    }
-
     @Override
     public void process(Event event) throws PluggableTaskException {
         try {
@@ -338,6 +170,7 @@ public class SapphireProvisioningResponseHandlerTask extends PluggableTask imple
                 Map<String, String> signupParameters = collectParametersFromPlugin(signupPluginId, entityId);
                 createOrder(changeOfPlanEvent, signupParameters);
             } else if(event instanceof OrderMetaFieldUpdateEvent) {
+                IWebServicesSessionBean api = Context.getBean(Name.WEB_SERVICES_SESSION);
                 OrderMetaFieldUpdateEvent orderMetaFieldUpdateEvent = (OrderMetaFieldUpdateEvent) event;
                 Map<String, ValueDifference<Object>> orderMetaFieldDiff = orderMetaFieldUpdateEvent.getDiffMap();
                 if(MapUtils.isEmpty(orderMetaFieldDiff)) {
@@ -350,10 +183,140 @@ public class SapphireProvisioningResponseHandlerTask extends PluggableTask imple
                     logger.debug("{} not updated on order {}", orderProvisioningMfName, orderMetaFieldUpdateEvent.getOrderId());
                     return;
                 }
-                // handle PLAN_CHANGE order provisioning status.
-                handlePlanChangeProvisioningStatus(orderMetaFieldUpdateEvent);
-                // handle NEW_SALE order provisioning status.
-                handleNewSaleOrderProvisioningStatus(orderMetaFieldUpdateEvent);
+
+                String orderProvisoiningStatus = (String) orderMetaFieldDiff.get(orderProvisioningMfName).rightValue();
+                if(!PLAN_CHANGED.getStatus().equals(orderProvisoiningStatus)) {
+                    logger.debug("skip swap asset for order {} since {} did not changed to {}", orderMetaFieldUpdateEvent.getOrderId(),
+                            orderProvisioningMfName, PLAN_CHANGED);
+                    return;
+                }
+
+                OrderWS oldOrder = api.getOrder(orderMetaFieldUpdateEvent.getOrderId());
+                if(!isOrderRecurring(oldOrder)) {
+                    logger.debug("change of plan only perform for monthly order and order {} is not monthly", oldOrder.getId());
+                    return;
+                }
+                Calendar activeUntilDate = Calendar.getInstance();
+                activeUntilDate.setTime(TimezoneHelper.companyCurrentDate(entityId));
+                activeUntilDate.add(Calendar.DAY_OF_MONTH, -1);
+                oldOrder.setActiveUntil(activeUntilDate.getTime());
+                logger.debug("set newActiveUntilDate {} on old order {}", activeUntilDate.getTime(), oldOrder.getId());
+                Map<Integer, List<Integer>> oldOrderItemAssetsMap = createItemAssetsMapFromOrder(oldOrder);
+                logger.debug("Item asset map {} created from old order {}", oldOrderItemAssetsMap, oldOrder.getId());
+                AssetDAS assetDAS = new AssetDAS();
+                Map<Integer, List<Integer>> replacedItemAssetsMap = new HashMap<>();
+                if(MapUtils.isNotEmpty(oldOrderItemAssetsMap)) {
+                    for(OrderLineWS orderLineWS : oldOrder.getOrderLines()) {
+                        if(null!= orderLineWS.getItemId() &&
+                                oldOrderItemAssetsMap.containsKey(orderLineWS.getItemId())) {
+                            List<Integer> assetIds = oldOrderItemAssetsMap.get(orderLineWS.getItemId());
+                            for(Integer assetId : assetIds) {
+                                AssetDTO assetDTO = assetDAS.findNow(assetId);
+                                if(null == assetDTO) {
+                                    logger.debug("asset {} not found", assetId);
+                                    continue;
+                                }
+                                if(!assetDTO.getIdentifier().startsWith(SapphireSignupConstants.ASSET_PREFIX)) {
+                                    Integer dummyAssetId = SapphireHelper.createAsset(orderLineWS.getItemId());
+                                    List<Integer> replaceAssets = replacedItemAssetsMap.get(orderLineWS.getItemId());
+                                    if(CollectionUtils.isEmpty(replaceAssets)) {
+                                        replaceAssets = new ArrayList<>();
+                                    }
+                                    replaceAssets.add(assetId);
+                                    replacedItemAssetsMap.put(orderLineWS.getItemId(), replaceAssets);
+                                    assetIds.set(assetIds.indexOf(assetId), dummyAssetId);
+                                    logger.debug("asset {} replaced with dummy asset {}", assetId, dummyAssetId);
+                                }
+
+                            }
+                            logger.debug("updating line {} with assets {}", orderLineWS.getId(), assetIds);
+                            orderLineWS.setAssetIds(assetIds.toArray(new Integer[0]));
+                        }
+                    }
+                }
+
+                Calendar startDate = Calendar.getInstance();
+                startDate.setTime(TimezoneHelper.companyCurrentDate(entityId));
+                startDate.add(Calendar.DAY_OF_MONTH, -2);
+                Integer statusId = getOrderChangeApplyStatus(api);
+                OrderChangeWS[] oldOrderChanges = OrderChangeBL.buildFromOrder(oldOrder, statusId);
+                for(OrderChangeWS oldOrderChangeWS : oldOrderChanges) {
+                    oldOrderChangeWS.setStartDate(startDate.getTime());
+                }
+                api.updateOrder(oldOrder, oldOrderChanges);
+                logger.debug("old order {} updated", oldOrder.getId());
+
+                String newOrderIdParamName = PARAM_NEW_ORDER_ID_MF_NAME.getName();
+                String newOrderIdMfName = getParameters().get(newOrderIdParamName);
+                MetaFieldValueWS newOrderIdFieldValue = findOrderMetaFieldByName(oldOrder, newOrderIdMfName);
+                if(null == newOrderIdFieldValue || null == newOrderIdFieldValue.getValue()) {
+                    logger.debug("{} not found on order level meta field for entity {}", newOrderIdMfName, entityId);
+                    return;
+                }
+                OrderWS newOrder = api.getOrder(newOrderIdFieldValue.getIntegerValue());
+                if(newOrder == null) {
+                    logger.debug("invalid {} order id saved on order {}", newOrderIdFieldValue.getValue(), oldOrder.getId());
+                    return;
+                }
+                Map<Integer, List<Integer>> newOrderItemAssetsMap = createItemAssetsMapFromOrder(newOrder);
+                logger.debug("Item asset map {} created from new order {}", newOrderItemAssetsMap, newOrder.getId());
+                OrderStatusWS activeStatus = new OrderStatusWS();
+                activeStatus.setId(new OrderStatusDAS().getDefaultOrderStatusId(OrderStatusFlag.INVOICE, entityId));
+                setOrderStatusActiveSinceDateOnOrder(newOrder, null, activeStatus);
+                if(MapUtils.isNotEmpty(newOrderItemAssetsMap) &&
+                        MapUtils.isNotEmpty(replacedItemAssetsMap)) {
+                    for(OrderLineWS orderLineWS : newOrder.getOrderLines()) {
+                        if(null!= orderLineWS.getItemId() &&
+                                newOrderItemAssetsMap.containsKey(orderLineWS.getItemId())) {
+                            List<Integer> assetIds = newOrderItemAssetsMap.get(orderLineWS.getItemId());
+                            for(Integer assetId : assetIds) {
+                                AssetDTO assetDTO = assetDAS.findNow(assetId);
+                                if(null == assetDTO) {
+                                    logger.debug("asset {} not found", assetId);
+                                    continue;
+                                }
+                                if(assetDTO.getIdentifier().startsWith(SapphireSignupConstants.ASSET_PREFIX) &&
+                                        replacedItemAssetsMap.containsKey(orderLineWS.getItemId())) {
+                                    List<Integer> replaceAssets = replacedItemAssetsMap.get(orderLineWS.getItemId());
+                                    if(CollectionUtils.isNotEmpty(replaceAssets)) {
+                                        Integer replaceAssetId = replaceAssets.remove(0);
+                                        logger.debug("replaced dummy asset {} with asset {}", assetId, replaceAssetId);
+                                        assetIds.set(assetIds.indexOf(assetId), replaceAssetId);
+                                    }
+                                }
+
+                            }
+                            logger.debug("updating line {} with assets {}", orderLineWS.getId(), assetIds);
+                            orderLineWS.setAssetIds(assetIds.toArray(new Integer[0]));
+                        }
+                    }
+                    api.updateOrder(newOrder, OrderChangeBL.buildFromOrder(newOrder, statusId));
+                    logger.debug("new order {} updated", newOrder.getId());
+                }
+
+                Optional<OrderWS> oldChild = findAssetEnabledChildOrder(oldOrder);
+                if(!oldChild.isPresent()) {
+                    logger.debug("no asset enabled child order found on old order {}", oldOrder.getId());
+                    return;
+                }
+
+                Optional<OrderWS> newChild = findAssetEnabledChildOrder(newOrder);
+                if(!newChild.isPresent()) {
+                    logger.debug("no asset enabled child order found on new order {}", newOrder.getId());
+                    return;
+                }
+                OrderWS newChildOrder = newChild.get();
+                List<Integer> oldOrderAssetEnabledItems = collectItemIdsFromOrder(oldChild.get(), true);
+                List<Integer> oldOrderItems = collectItemIdsFromOrder(oldChild.get(), false);
+                for(OrderLineWS line : newChildOrder.getOrderLines()) {
+                    if((oldOrderAssetEnabledItems.contains(line.getItemId()) && lineHasDummyAsset(line))
+                            || oldOrderItems.contains(line.getItemId())) {
+                        logger.debug("deleting line {} from new child order {}", line.getId(), newChildOrder.getId());
+                        line.setDeleted(1);
+                    }
+                }
+                api.updateOrder(newChildOrder, OrderChangeBL.buildFromOrder(newChildOrder, statusId));
+                logger.debug("updated newchild order {}", newChildOrder.getId());
             } else if(event instanceof AssetUpdatedEvent) {
                 AssetUpdatedEvent assetUpdatedEvent = (AssetUpdatedEvent) event;
                 AssetDTO asset = assetUpdatedEvent.getAsset();

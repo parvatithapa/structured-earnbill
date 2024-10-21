@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="usageRatingScheme" action="${action ?: 'list'}"
                              params="${sortableParams(params: [partial: true])}"
                              total="${size ?: 0}" update="column1"/>

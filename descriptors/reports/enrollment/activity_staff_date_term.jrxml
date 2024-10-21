@@ -128,7 +128,7 @@
         </textElement>
         <text><![CDATA[End date:]]></text>
       </staticText>
-      <textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
+      <textField pattern="MMMMM dd, YYYY" isBlankWhenNull="true">
         <reportElement x="650" y="41" width="120" height="20"/>
         <textElement textAlignment="Right" verticalAlignment="Middle"/>
         <textFieldExpression class="java.util.Date"><![CDATA[$P{end_date}]]></textFieldExpression>

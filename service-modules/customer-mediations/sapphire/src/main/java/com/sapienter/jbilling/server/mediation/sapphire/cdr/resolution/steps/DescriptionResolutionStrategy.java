@@ -1,10 +1,6 @@
 package com.sapienter.jbilling.server.mediation.sapphire.cdr.resolution.steps;
 
 import static com.sapienter.jbilling.server.mediation.sapphire.SapphireUtil.getNationalNumber;
-import static com.sapienter.jbilling.server.mediation.sapphire.SapphireUtil.validateAndCheckAssetNumberInSystem;
-import static com.sapienter.jbilling.server.mediation.sapphire.SapphireUtil.validateAndGetAssetNumber;
-
-import org.apache.commons.lang.StringUtils;
 
 import com.sapienter.jbilling.server.item.PricingField;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepContext;
@@ -21,12 +17,12 @@ public enum DescriptionResolutionStrategy {
         public String generateDescription(MediationStepContext context) {
             PricingField callingPartyField = context.getPricingField(SapphireMediationConstants.CALLING_PARTY_ADDR);
             PricingField destField = context.getPricingField(SapphireMediationConstants.DEST_ADDR);
-            String fromNumber = validateAndGetAssetNumber(callingPartyField.getStrValue());
-            String destAddr = validateAndGetAssetNumber(destField.getStrValue());
+            String callingpartyAddr = getNationalNumber(callingPartyField.getStrValue());
+            String destAddr = getNationalNumber(context.getPricingField(SapphireMediationConstants.DEST_ADDR).getStrValue());
             MediationStepResult result = context.getResult();
             result.setSource(callingPartyField.getStrValue());
             result.setDestination(destField.getStrValue());
-            return String.format(SapphireMediationConstants.DESCRIPTION_FORMAT, fromNumber, destAddr);
+            return String.format(SapphireMediationConstants.DESCRIPTION_FORMAT, callingpartyAddr, destAddr);
         }
 
     }, OUTGOING(SapphireMediationConstants.OUT_GOING_CALL_CDR_TYPE) {
@@ -55,7 +51,7 @@ public enum DescriptionResolutionStrategy {
             SapphireMediationHelperService service = Context.getBean(SapphireMediationHelperService.class);
             boolean isLastRedirectingAddrFound = service.isIdentifierPresent(lastRedirectingAddr);
             PricingField destField = context.getPricingField(SapphireMediationConstants.DEST_ADDR);
-            String destAddr = validateAndGetAssetNumber(destField.getStrValue());
+            String destAddr = getNationalNumber(destField.getStrValue());
             MediationStepResult result = context.getResult();
             result.setSource(isLastRedirectingAddrFound ? lastRedirectingAddrField.getStrValue() : chargeAddrField.getStrValue());
             result.setDestination(destField.getStrValue());
@@ -89,16 +85,17 @@ public enum DescriptionResolutionStrategy {
     private static String getDescription(MediationStepContext context) {
         PricingField callingPartyField = context.getPricingField(SapphireMediationConstants.CALLING_PARTY_ADDR);
         PricingField destField = context.getPricingField(SapphireMediationConstants.DEST_ADDR);
-        String fromNumber = validateAndCheckAssetNumberInSystem(callingPartyField.getStrValue());
-        if(StringUtils.isEmpty(fromNumber)) {
-            PricingField chargeAddrField = context.getPricingField(SapphireMediationConstants.CHARGE_ADDR);
-            fromNumber = validateAndCheckAssetNumberInSystem(chargeAddrField.getStrValue());
-        }
-        String destAddr = validateAndGetAssetNumber(destField.getStrValue());
+        PricingField chargeAddrField = context.getPricingField(SapphireMediationConstants.CHARGE_ADDR);
+        String callingpartyAddr = getNationalNumber(callingPartyField.getStrValue());
+        String chargeAddr = getNationalNumber(chargeAddrField.getStrValue());
+        SapphireMediationHelperService service = Context.getBean(SapphireMediationHelperService.class);
+        boolean isCallingpartyAddrFound = service.isIdentifierPresent(callingpartyAddr);
+        String destAddr = getNationalNumber(destField.getStrValue());
         MediationStepResult result = context.getResult();
-        result.setSource(fromNumber);
+        result.setSource(isCallingpartyAddrFound ? callingPartyField.getStrValue() : chargeAddrField.getStrValue());
         result.setDestination(destField.getStrValue());
-        return String.format(SapphireMediationConstants.DESCRIPTION_FORMAT, fromNumber, destAddr);
+        return String.format(SapphireMediationConstants.DESCRIPTION_FORMAT,
+                isCallingpartyAddrFound ? callingpartyAddr : chargeAddr, destAddr);
     }
 
 }

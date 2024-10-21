@@ -15,20 +15,10 @@
  */
 package com.sapienter.jbilling.server.item.tasks;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-
-import com.sapienter.jbilling.server.mediation.CallDataRecord;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.pluggableTask.TaskException;
 
 public interface IItemPurchaseManager {
 
-    public void addItem(Integer itemID, BigDecimal quantity, Integer language, 
-            Integer userId, Integer entityId, Integer currencyId, OrderDTO order,
-            List<CallDataRecord> records, List<OrderLineDTO> lines, boolean singlePurchase, String sipUri, Date eventDate)
-            throws TaskException ;
+    public void addItem(ItemPurchaseManagerContext context) throws TaskException ;
 
 }

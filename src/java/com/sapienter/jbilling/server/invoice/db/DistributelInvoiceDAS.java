@@ -82,14 +82,7 @@ public class DistributelInvoiceDAS extends AbstractDAS<InvoiceDTO> {
      */
     private static final String AVERAGE_REVENUE_INVOICE_QUERY =
             "SELECT u.id AS userId, "
-                 + "CONCAT((SELECT mfv.string_value "
-                 + "        FROM   customer_account_info_type_timeline caitl JOIN meta_field_value mfv ON mfv.id=caitl.meta_field_value_id "
-                 + "             JOIN meta_field_name mfn on mfn.id = mfv.meta_field_name_id "
-                 + "             WHERE c.id = caitl.customer_id and mfn.field_usage='FIRST_NAME'), ' ', "
-                 + "        (SELECT mfv.string_value "
-                 + "         FROM   customer_account_info_type_timeline caitl JOIN meta_field_value mfv ON mfv.id=caitl.meta_field_value_id "
-                 + "               JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id "
-                 + "          WHERE c.id = caitl.customer_id AND mfn.field_usage='LAST_NAME')) AS customerName, "
+                 + "u.user_name AS customerName, "
                  + "c.account_type_id AS customerAccountId, "
                  + "(SELECT idesc.content "
                  + " FROM international_description idesc "

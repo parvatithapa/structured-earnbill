@@ -81,7 +81,7 @@ public enum SecuredMethodType {
         ITEM {
             public WSSecured getMappedSecuredWS(Serializable id) {
                 ItemDTO item = new ItemDAS().findNow(id);
-                if ((item != null && item.getEntities() != null && item.getEntities().size() == 1)) {
+                if ((item.getEntities() != null && item.getEntities().size() == 1)) {
                 	return new MappedSecuredWS(item.getEntities().iterator().next().getId(), null);
                 }
                 return null; //An item may not be owned by the caller company anymore. It is now a shared/shareable entity

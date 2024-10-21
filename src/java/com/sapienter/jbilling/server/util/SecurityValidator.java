@@ -18,9 +18,7 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.user.partner.PartnerBL;
 import com.sapienter.jbilling.server.user.partner.db.PartnerDTO;
 import com.sapienter.jbilling.server.user.permisson.db.RoleDTO;
-
 import grails.plugin.springsecurity.SpringSecurityService;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
 
@@ -40,20 +38,20 @@ public class SecurityValidator {
     private CompanyDAS companyDAS = new CompanyDAS();
     private UserDAS userDAS = new UserDAS();
 
-    public SecurityValidator (SpringSecurityService springSecurityService) {
+    public SecurityValidator(SpringSecurityService springSecurityService) {
         this.springSecurityService = springSecurityService;
     }
 
     /**
      * Validates that the given owningEntityId matches the entity of the user account making the web-service call.
      *
-     * @param inputObject entity that's being accessed
+     * @param inputObject   entity that's being accessed
      * @param validatorType enum used to change method logic depending its validation type
      * @throws SecurityException thrown if user is accessing data that does not belong to them
      */
     public void validateCompany(WSSecured inputObject, Integer owningEntityId, Validator.Type validatorType) throws SecurityException {
 
-        if ( null != inputObject && (null != inputObject.getOwningEntityId() || null != owningEntityId)) {
+        if (null != inputObject && (null != inputObject.getOwningEntityId() || null != owningEntityId)) {
             CompanyUserDetails userPrincipal = getPrincipal();
 
             if (userPrincipal.getCompanyId().equals(inputObject.getOwningEntityId())
@@ -61,31 +59,31 @@ public class SecurityValidator {
                 return;
             }
 
-            boolean allow= false;
-            if( Validator.Type.EDIT.equals(validatorType)) {
+            boolean allow = false;
+            if (Validator.Type.EDIT.equals(validatorType)) {
                 if (userPrincipal.getCompanyId().equals(inputObject.getOwningEntityId())
                         || userPrincipal.getCompanyId().equals(owningEntityId)) {
-                    allow= true;
+                    allow = true;
                 }
-            } else if ( inputObject instanceof HierarchicalEntity ) {
+            } else if (inputObject instanceof HierarchicalEntity) {
 
-                HierarchicalEntity hierarchyEntity= ((HierarchicalEntity) inputObject);
+                HierarchicalEntity hierarchyEntity = ((HierarchicalEntity) inputObject);
 
-                if ( null != hierarchyEntity.getAccessEntities()) {
-                    if ( hierarchyEntity.getAccessEntities().contains(userPrincipal.getCompanyId()) ) {
-                        allow= true;
+                if (null != hierarchyEntity.getAccessEntities()) {
+                    if (hierarchyEntity.getAccessEntities().contains(userPrincipal.getCompanyId())) {
+                        allow = true;
                     }
-                } else if (Boolean.TRUE.equals(hierarchyEntity.ifGlobal()) ) {
+                } else if (Boolean.TRUE.equals(hierarchyEntity.ifGlobal())) {
                     List<Integer> authorizedEntities = companyDAS.findAllHierarchyEntitiesIds(userPrincipal.getCompanyId());
-                    if ( authorizedEntities.contains( inputObject.getOwningEntityId() )
+                    if (authorizedEntities.contains(inputObject.getOwningEntityId())
                             || authorizedEntities.contains(owningEntityId)) {
-                        allow= true;
+                        allow = true;
                     }
                 }
-            }else if ( inputObject instanceof MappedSecuredWS ) { //This code allows parent company to view customer details of child company
-            	 if( Validator.Type.VIEW.equals(validatorType)) {
-            		 allow = isValidParentChildRelation(inputObject, owningEntityId, userPrincipal);
-            	 }
+            } else if (inputObject instanceof MappedSecuredWS) { //This code allows parent company to view customer details of child company
+                if (Validator.Type.VIEW.equals(validatorType)) {
+                    allow = isValidParentChildRelation(inputObject, owningEntityId, userPrincipal);
+                }
             }
 
             if (!allow) {
@@ -99,49 +97,19 @@ public class SecurityValidator {
         }
     }
 
-	/** This method validates company hierarchy by UserWS
-	 * @param inputObject
-	 * @param owningEntityId
-	 * @param userPrincipal
-	 * @return
-	 */
-	private boolean isValidParentChildRelation(WSSecured inputObject,
-			Integer owningEntityId, CompanyUserDetails userPrincipal
-			) {
-		
-			UserBL userBL = new UserBL(inputObject.getOwningUserId());
-			UserWS userWS = userBL.getUserWS();
-			if(userWS !=null){
-				HierarchicalEntity hierarchyEntity= ((HierarchicalEntity) userWS);
-
-		        if ( null != hierarchyEntity.getAccessEntities()) {
-		            if ( hierarchyEntity.getAccessEntities().contains(userPrincipal.getCompanyId()) ) {
-		                return true;
-		            }
-		        } else if (Boolean.TRUE.equals(hierarchyEntity.ifGlobal()) ) {
-		            List<Integer> authorizedEntities = companyDAS.findAllHierarchyEntitiesIds(userPrincipal.getCompanyId());
-		            if ( authorizedEntities.contains( userWS.getOwningEntityId() )
-		                    || authorizedEntities.contains(owningEntityId)) {
-		                return true;
-		            }
-		        }
-			}
-		return false;
-	}
-
     //For use from controllers, for checking pre-Gorm access
-    public boolean checkValidateCompany(Integer owningEntityId)  {
-        if ( null == owningEntityId ) {
+    public boolean checkValidateCompany(Integer owningEntityId) {
+        if (null == owningEntityId) {
             return true;
         }
         CompanyUserDetails userPrincipal = getPrincipal();
 
-        return ( owningEntityId.equals(userPrincipal.getCompanyId()));
+        return (owningEntityId.equals(userPrincipal.getCompanyId()));
     }
 
     //For use from controllers, for checking pre-Gorm access
     public void validateCompany(Integer owningEntityId, Validator.Type validatorType) throws SecurityException {
-        if ( !checkValidateCompany(owningEntityId)) {
+        if (!checkValidateCompany(owningEntityId)) {
             CompanyUserDetails userPrincipal = getPrincipal();
             String message = String.format("Unauthorized access to entity %s by caller '%s' (id %s)",
                     owningEntityId, userPrincipal.getUsername(), userPrincipal.getCompanyId());
@@ -152,12 +120,12 @@ public class SecurityValidator {
 
     //For use from controllers, for checking pre-Gorm access
     public void validateUser(Integer userId) throws SecurityException {
-        if ( null == userId ) {
+        if (null == userId) {
             return;
         }
         CompanyUserDetails userPrincipal = getPrincipal();
 
-        if ( ! userId.equals(userPrincipal.getUserId())) {
+        if (!userId.equals(userPrincipal.getUserId())) {
             throw new SecurityException(String.format("Unauthorized access to user %s by caller '%s' (id %s)",
                     userId, userPrincipal.getUsername(), userPrincipal.getUserId()));
         }
@@ -166,26 +134,26 @@ public class SecurityValidator {
     //For use from controllers, for checking pre-Gorm access
     public void validateCompany(Integer owningEntityId, List<Integer> accessEntities, Boolean global, Validator.Type validatorType) throws SecurityException {
 
-        if ( null != owningEntityId ) {
+        if (null != owningEntityId) {
             CompanyUserDetails userPrincipal = getPrincipal();
 
-            if ( owningEntityId.equals( userPrincipal.getCompanyId() )) {
+            if (owningEntityId.equals(userPrincipal.getCompanyId())) {
                 return;
             }
 
-            boolean allow= false;
-            if( Validator.Type.EDIT.equals(validatorType)) {
-                if ( userPrincipal.getCompanyId().equals( owningEntityId ) ) {
-                    allow= true;
+            boolean allow = false;
+            if (Validator.Type.EDIT.equals(validatorType)) {
+                if (userPrincipal.getCompanyId().equals(owningEntityId)) {
+                    allow = true;
                 }
-            } else if ( !CollectionUtils.isEmpty(accessEntities) ) {
-                if ( accessEntities.contains(userPrincipal.getCompanyId()) ) {
-                        allow= true;
+            } else if (!CollectionUtils.isEmpty(accessEntities)) {
+                if (accessEntities.contains(userPrincipal.getCompanyId())) {
+                    allow = true;
                 }
             } else {
                 List<Integer> authorizedEntities = companyDAS.findAllHierarchyEntitiesIds(userPrincipal.getCompanyId());
-                if ( Boolean.TRUE.equals(global) && authorizedEntities.contains( owningEntityId )) {
-                    allow= true;
+                if (Boolean.TRUE.equals(global) && authorizedEntities.contains(owningEntityId)) {
+                    allow = true;
                 }
             }
 
@@ -207,7 +175,7 @@ public class SecurityValidator {
      */
     public void validateCompanyHierarchy(List<Integer> owningEntityHierarchy) throws SecurityException {
         CompanyUserDetails userPrincipal = getPrincipal();
-        if(!CollectionUtils.containsAny(companyDAS.getCurrentAndDescendants(userPrincipal.getCompanyId()), owningEntityHierarchy)) {
+        if (!CollectionUtils.containsAny(companyDAS.getCurrentAndDescendants(userPrincipal.getCompanyId()), owningEntityHierarchy)) {
             String message = "Unauthorized access by caller '" + userPrincipal.getUsername() + "' (id " + userPrincipal.getCompanyId() + ")";
             LOG.warn(message);
             throw new SecurityException(message);
@@ -216,7 +184,7 @@ public class SecurityValidator {
 
     /**
      * Validates that the entity of the user account making the call matches with any of the given owning
-     * entity valid hierarchy 
+     * entity valid hierarchy
      *
      * @param owningEntityHierarchy entities id which own the data being accessed
      * @throws SecurityException thrown if user is accessing data that does not belong to them
@@ -226,7 +194,7 @@ public class SecurityValidator {
     }
 
     public void validateCompanyHierarchy(List<Integer> owningEntityHierarchy, Integer entityId, Boolean isGlobal, Boolean parentAllow) throws SecurityException {
-        if(owningEntityHierarchy!=null || entityId !=null) {
+        if (owningEntityHierarchy != null || entityId != null) {
             boolean allowed = false;
             CompanyUserDetails userPrincipal = getPrincipal();
             if (entityId != null) {
@@ -237,11 +205,11 @@ public class SecurityValidator {
                 } else {
                     if (userPrincipal.getCompanyId().equals(entityId)) {
                         allowed = true;
-                    }else if(parentAllow){
+                    } else if (parentAllow) {
                         CompanyDTO entity = companyDAS.findNow(entityId);
-                        if(entity != null && entity.getParent() != null){
+                        if (entity != null && entity.getParent() != null) {
                             allowed = entity.getParent().getId() == userPrincipal.getCompanyId() &&
-                                            !entity.isInvoiceAsReseller();
+                                    !entity.isInvoiceAsReseller();
                         }
                     }
                 }
@@ -274,9 +242,9 @@ public class SecurityValidator {
      * Validates that the given owningUserId is a descendants or the same user which is making the call depending on its
      * validation type.
      *
-     * @param owningUserId user id owning the data being accessed
+     * @param owningUserId  user id owning the data being accessed
      * @param validatorType enum used to change method logic depending its validation type
-     * @param allowAgent boolean used for give to the agent permissions to edit only Orders & Customers
+     * @param allowAgent    boolean used for give to the agent permissions to edit only Orders & Customers
      * @throws SecurityException thrown if user is accessing data that does not belonging to them
      */
     private void validateUser(WSSecured inputObject, Integer owningUserId, Integer owningUserEntityId,
@@ -289,7 +257,7 @@ public class SecurityValidator {
         Integer companyId = userPrincipal.getCompanyId();
         List<Integer> adminUsers = userDAS.findAdminUserIds(companyId);
         if (!CollectionUtils.isEmpty(adminUsers) && adminUsers.contains(callerUserId)) {
-            if (companyId.equals( owningUserEntityId )) {
+            if (companyId.equals(owningUserEntityId)) {
                 return;
             }
         }
@@ -304,25 +272,25 @@ public class SecurityValidator {
 
         //If the user does not have a Customer then do nothing
         CustomerDTO callerCustomer = user.getCustomer();
-        if ( null != callerCustomer ) {
+        if (null != callerCustomer) {
             if (callerUserId.equals(owningUserId)) {
                 return;
             }
         }
 
         //If callerUserId is agent do nothing
-        if(user.getRoles().stream()
-                          .map(RoleDTO::getRoleTypeId)
-                          .anyMatch(CommonConstants.TYPE_PARTNER::equals)){
+        if (user.getRoles().stream()
+                .map(RoleDTO::getRoleTypeId)
+                .anyMatch(CommonConstants.TYPE_PARTNER::equals)) {
             if (callerUserId.equals(owningUserId)) {
                 return;
             } else if (Validator.Type.EDIT.equals(validatorType) && allowAgent &&
-                       user.getEntity().getId() == owningUserEntityId) {
+                    user.getEntity().getId() == owningUserEntityId) {
                 return;
             }
         }
 
-        if( Validator.Type.VIEW.equals(validatorType)) {
+        if (Validator.Type.VIEW.equals(validatorType)) {
             if (inputObject instanceof HierarchicalEntity) {
                 HierarchicalEntity hierarchyEntity = ((HierarchicalEntity) inputObject);
                 if (null != hierarchyEntity.getAccessEntities()) {
@@ -337,9 +305,9 @@ public class SecurityValidator {
                     }
                 }
             } else if (callerCustomer == null && (inputObject instanceof MappedSecuredWS)) { //This code allows parent company to view customer details of child company
-            	if(isValidParentChildRelation(inputObject, owningUserEntityId, userPrincipal)){
-            		return;
-            	}
+                if (isValidParentChildRelation(inputObject, owningUserEntityId, userPrincipal)) {
+                    return;
+                }
             } else {
                 //Obtain descendants users
                 List<Integer> authorizedUsers = new CustomerBL().getDescendants(callerCustomer);
@@ -365,7 +333,7 @@ public class SecurityValidator {
      * Method in charge of calling validate user and validate company methods.
      *
      * @param accessedObject object the data being accessed
-     * @param validatorType enum used to change method logic depending its validation type
+     * @param validatorType  enum used to change method logic depending its validation type
      */
     public void validateUserAndCompany(WSSecured accessedObject, Validator.Type validatorType) {
         validateUserAndCompany(accessedObject, validatorType, false);
@@ -375,8 +343,8 @@ public class SecurityValidator {
      * Method in charge of calling validate user and validate company methods.
      *
      * @param accessedObject object the data being accessed
-     * @param validatorType enum used to change method logic depending its validation type
-     * @param allowAgent boolean used for give to the agent permissions to edit only Orders & Customers
+     * @param validatorType  enum used to change method logic depending its validation type
+     * @param allowAgent     boolean used for give to the agent permissions to edit only Orders & Customers
      */
     public void validateUserAndCompany(WSSecured accessedObject, Validator.Type validatorType, boolean allowAgent) {
         if (userDAS.isIdPersisted(accessedObject.getOwningUserId())) {
@@ -395,7 +363,7 @@ public class SecurityValidator {
         }
     }
 
-    private CompanyUserDetails getPrincipal () {
+    private CompanyUserDetails getPrincipal() {
         return (CompanyUserDetails) (springSecurityService.getPrincipal());
     }
 
@@ -405,15 +373,15 @@ public class SecurityValidator {
      * @param selected
      */
     public boolean validateCustomerAgentRelationship(Integer owningUserId, UserDTO selected, Validator.Type validatorType) {
-        if(null!=selected) {
+        if (null != selected) {
             UserDTO user = userDAS.find(owningUserId);
-            if(null!=user && user.getId()>0) {
-                for(RoleDTO role : user.getRoles()) {
-                    if(CommonConstants.TYPE_PARTNER.equals(role.getRoleTypeId())) {
+            if (null != user && user.getId() > 0) {
+                for (RoleDTO role : user.getRoles()) {
+                    if (CommonConstants.TYPE_PARTNER.equals(role.getRoleTypeId())) {
                         PartnerBL partnerBL = new PartnerBL();
                         partnerBL.set(user.getPartner().getId());
                         PartnerDTO partner = partnerBL.getDTO();
-                        if(!partner.getCustomers().contains(selected.getCustomer())) {
+                        if (!partner.getCustomers().contains(selected.getCustomer())) {
                             return false;
                         }
                     }
@@ -422,5 +390,35 @@ public class SecurityValidator {
         }
         return true;
     }
-    
+
+    /**
+     * This method validates company hierarchy by UserWS
+     *
+     * @param inputObject
+     * @param owningEntityId
+     * @param userPrincipal
+     * @return
+     */
+    private boolean isValidParentChildRelation(WSSecured inputObject,
+                                               Integer owningEntityId, CompanyUserDetails userPrincipal) {
+        UserBL userBL = new UserBL(inputObject.getOwningUserId());
+        if (userBL.getDto() != null) {
+            UserWS userWS = userBL.getUserWS();
+            if (userWS != null) {
+                HierarchicalEntity hierarchyEntity = ((HierarchicalEntity) userWS);
+                if (null != hierarchyEntity.getAccessEntities()) {
+                    if (hierarchyEntity.getAccessEntities().contains(userPrincipal.getCompanyId())) {
+                        return true;
+                    }
+                } else if (Boolean.TRUE.equals(hierarchyEntity.ifGlobal())) {
+                    List<Integer> authorizedEntities = companyDAS.findAllHierarchyEntitiesIds(userPrincipal.getCompanyId());
+                    if (authorizedEntities.contains(userWS.getOwningEntityId())
+                            || authorizedEntities.contains(owningEntityId)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }

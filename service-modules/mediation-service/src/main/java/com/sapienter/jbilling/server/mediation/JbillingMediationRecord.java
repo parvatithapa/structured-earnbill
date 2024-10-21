@@ -65,6 +65,7 @@ public class JbillingMediationRecord implements Serializable, Exportable {
         MEDIATION, DIAMETER
     }
 
+    private Long id;
     private STATUS status = STATUS.UNPROCESSED;
     private Integer jBillingCompanyId = null;
     private Integer mediationCfgId = null;
@@ -93,17 +94,19 @@ public class JbillingMediationRecord implements Serializable, Exportable {
     private String pricingFields = null;
     private TYPE type = TYPE.MEDIATION;
     private Boolean chargeable;
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+    private BigDecimal ratedPriceWithTax = BigDecimal.ZERO;
 
     public JbillingMediationRecord() {}
 
-    public JbillingMediationRecord(STATUS status, TYPE type, Integer jBillingCompanyId,
+    public JbillingMediationRecord(Long id, STATUS status, TYPE type, Integer jBillingCompanyId,
             Integer mediationCfgId, String recordKey, Integer userId,
             Date eventDate, BigDecimal quantity, String description,
             Integer currencyId, Integer itemId, Integer orderId, Integer orderLineId,
             String pricingFields, BigDecimal ratedPrice, BigDecimal ratedCostPrice,
             UUID processId, String source, String destination, String cdrType,
-            BigDecimal originalQuantity, String resourceId, Boolean chargeable) {
-
+            BigDecimal originalQuantity, String resourceId, Boolean chargeable, BigDecimal ratedPriceWithTax, BigDecimal taxAmount) {
+        this.id = id;
         this.status = status;
         this.type = type;
         this.jBillingCompanyId = jBillingCompanyId;
@@ -127,19 +130,21 @@ public class JbillingMediationRecord implements Serializable, Exportable {
         this.originalQuantity = originalQuantity;
         this.resourceId = resourceId;
         this.chargeable = chargeable;
+        this.ratedPriceWithTax = ratedPriceWithTax;
+        this.taxAmount = taxAmount;
     }
 
-    public JbillingMediationRecord(STATUS status, TYPE type, Integer jBillingCompanyId,
+    public JbillingMediationRecord(Long id, STATUS status, TYPE type, Integer jBillingCompanyId,
             Integer mediationCfgId, String recordKey, Integer userId,
             Date eventDate, BigDecimal quantity, String description,
             Integer currencyId, Integer itemId, Integer orderId, Integer orderLineId,
             String pricingFields, BigDecimal ratedPrice, BigDecimal ratedCostPrice,
             UUID processId, String source, String destination, String cdrType,
-            BigDecimal originalQuantity) {
+            BigDecimal originalQuantity,BigDecimal ratedPriceWithTax, BigDecimal taxAmount) {
 
-        this(status, type, jBillingCompanyId, mediationCfgId, recordKey, userId, eventDate, quantity,
+        this(id, status, type, jBillingCompanyId, mediationCfgId, recordKey, userId, eventDate, quantity,
                 description, currencyId, itemId, orderId, orderLineId, pricingFields, ratedPrice,
-                ratedCostPrice, processId, source, destination, cdrType, originalQuantity, null, Boolean.TRUE);
+                ratedCostPrice, processId, source, destination, cdrType, originalQuantity, null, Boolean.TRUE, ratedPriceWithTax, taxAmount);
     }
 
     @Override
@@ -360,6 +365,29 @@ public class JbillingMediationRecord implements Serializable, Exportable {
         this.chargeable = chargeable;
     }
 
+    public BigDecimal getTaxAmount() {
+        return taxAmount;
+    }
+
+    public void setTaxAmount(BigDecimal taxAmount) {
+        this.taxAmount = taxAmount;
+    }
+    public BigDecimal getRatedPriceWithTax() {
+        return ratedPriceWithTax;
+    }
+
+    public void setRatedPriceWithTax(BigDecimal ratedPriceWithTax) {
+        this.ratedPriceWithTax = ratedPriceWithTax;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     /**
      * Returns Status Enum by statusId
      * @param statusId
@@ -382,7 +410,6 @@ public class JbillingMediationRecord implements Serializable, Exportable {
             if(pricingField.isPresent()) {
                 return pricingField.get().getStrValue();
             }
-            throw new IllegalArgumentException("Enter Valid Pricing Field Name");
         }
         return "";
     }

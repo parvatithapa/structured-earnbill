@@ -18,6 +18,9 @@ package jbilling
 
 import com.sapienter.jbilling.client.metafield.MetaFieldBindHelper
 import com.sapienter.jbilling.common.SessionInternalError
+import com.sapienter.jbilling.server.adennet.ws.FeeWS
+import com.sapienter.jbilling.server.adennet.ws.PrimaryPlanWS
+import com.sapienter.jbilling.server.adennet.ws.RechargeRequestWS
 import com.sapienter.jbilling.server.discount.DiscountLineWS
 import com.sapienter.jbilling.server.discount.DiscountableItemWS
 import com.sapienter.jbilling.server.item.AssetBL
@@ -78,12 +81,18 @@ import com.sapienter.jbilling.server.util.Util
 
 import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
+import org.apache.commons.httpclient.HttpState
+import org.apache.http.HttpStatus
 
 import java.math.RoundingMode
 
 import org.apache.commons.lang.ArrayUtils
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 
+import java.time.OffsetDateTime
+
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.SOURCE_POS
+import static com.sapienter.jbilling.server.adennet.AdennetExternalConfigurationTask.SIM_PRICE_ID
 
 /**
  * OrderController
@@ -104,6 +113,7 @@ class OrderBuilderController {
     def productService
     def messageSource
     SecurityValidator securityValidator
+    def adennetHelperService
 
     def index () {
         redirect action: 'edit'
@@ -114,6 +124,9 @@ class OrderBuilderController {
          * Initializes the order builder, putting necessary data into the flow and conversation
          * contexts so that it can be referenced later.
          */
+        // subscriber number required to call UMS
+        List<Integer> assetList = new ArrayList<>()
+
         initialize {
             action {
                 if (!params.id && (!SpringSecurityUtils.ifAllGranted("ORDER_20") && (params.int('userId') == session['user_id'] && !SpringSecurityUtils.ifAllGranted("ORDER_200"))) ) {
@@ -626,6 +639,9 @@ class OrderBuilderController {
                 def lineProduct = findProduct(line.itemId, conversation.products, conversation.plans)
                 conversation.selectedAssets?.each {
                     assetIds << it.id
+                    if (PreferenceBL.getPreferenceValueAsIntegerOrZero(session['company_id'], Constants.PREFERENCE_CALL_UMS_ON_CREATE_ORDER)) {
+                        assetList.add(it.getSubscriberNumber())
+                    }
                 }
                 if (lineProduct.assetManagementEnabled == 1 ) {
                     //set the quantity on the line equal to the number of assets
@@ -636,7 +652,6 @@ class OrderBuilderController {
                     if(!assetIds.isEmpty()) {
                         line.assetIds = assetIds.toArray(new Integer[assetIds.size()])
                     }
-
                 }
 
                 //clear the selected assets from the conversation
@@ -1882,6 +1897,68 @@ class OrderBuilderController {
                             order.id = webServicesSession.createUpdateOrder(order, orderChanges.toArray(new OrderChangeWS[orderChanges.size()]))
                             // set success message in session, contents of the flash scope doesn't survive
                             // the redirect to the order list when the web-flow finishes
+
+                            /*
+                             Call UMS to create transaction for order
+                             This method will called on the create order from customer page
+                            */
+                            if (PreferenceBL.getPreferenceValueAsIntegerOrZero(session['company_id'], Constants.PREFERENCE_CALL_UMS_ON_CREATE_ORDER)) {
+
+                                def isSimIssued = false
+                                List<FeeWS> feesWSList = new ArrayList<>()
+                                PrimaryPlanWS primaryPlanWS
+                                FeeWS feeWS
+                                BigDecimal rechargeAmount = BigDecimal.ZERO
+                                def rechargeCreatedBy = adennetHelperService.getUserNameByUserId(session['user_id'] as Integer)
+                                def governorate = adennetHelperService.getLoggedInUserGovernorate(session['user_id'] as Integer)
+                                Integer entityId = adennetHelperService.entityIdByUserId(order.getUserId())
+                                Integer SimPriceId = adennetHelperService.getValueFromExternalConfigParams(SIM_PRICE_ID) as Integer
+
+                                def orderLine = order.getOrderLines()
+
+                                for (OrderLineWS lineWS : orderLine) {
+                                    if (lineWS.isPlan) {
+                                        primaryPlanWS = adennetHelperService.getPrimaryPlanWS(lineWS.getPlanId())
+                                        rechargeAmount = rechargeAmount.add(primaryPlanWS.getPrice())
+                                    } else {
+                                        if (lineWS.getItemId() == SimPriceId) {
+                                            isSimIssued = true
+                                        }
+
+                                        feeWS = FeeWS.builder()
+                                                .id(lineWS.getItemId())
+                                                .description(lineWS.getDescription())
+                                                .amount(new BigDecimal(lineWS.getPrice())).build()
+
+                                        rechargeAmount = rechargeAmount.add(feeWS.getAmount())
+                                        feesWSList.add(feeWS)
+                                    }
+                                    primaryPlanWS.setCashPrice(rechargeAmount)
+                                }
+
+                                if (assetList.size() > 1) {
+                                    session.message = "Order contain more than one asset"
+                                    throw SessionInternalError("Order contain more than one asset", HttpStatus.SC_BAD_REQUEST)
+                                }
+                                RechargeRequestWS rechargeRequestWS = RechargeRequestWS.builder()
+                                        .entityId(entityId)
+                                        .userId(order.getUserId())
+                                        .isSimIssued(isSimIssued)
+                                        .subscriberNumber(assetList.get(0))
+                                        .primaryPlan(primaryPlanWS)
+                                        .fees(feesWSList)
+                                        .rechargeAmount(rechargeAmount)
+                                        .rechargeDateTime(OffsetDateTime.now().toString())
+                                        .rechargedBy(rechargeCreatedBy)
+                                        .source(SOURCE_POS)
+                                        .governorate(governorate as String)
+                                        .orderId(order.id)
+                                        .build()
+
+                                def transactionId = adennetHelperService.callUmsToMakeRecharge(rechargeRequestWS)
+                                log.debug "TransactionID : " + transactionId
+                            }
+
                             session.message = 'order.created'
                             session.args = [ order.id, order.userId ]
                         } else {

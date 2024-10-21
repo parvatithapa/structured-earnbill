@@ -79,7 +79,7 @@
 				</textElement>
 				<text><![CDATA[From:]]></text>
 			</staticText>
-			<textField pattern="MMMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="750" y="21" width="119" height="20" uuid="4b6bdb70-4661-480c-8edf-d7786353a303"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
@@ -92,7 +92,7 @@
 				</textElement>
 				<text><![CDATA[To:]]></text>
 			</staticText>
-			<textField pattern="MMMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="750" y="41" width="119" height="20" uuid="c3740f34-05a5-4cbb-826c-5d50ebf5610c"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>

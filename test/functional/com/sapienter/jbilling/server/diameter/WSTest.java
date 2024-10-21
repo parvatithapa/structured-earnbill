@@ -644,7 +644,7 @@ public class WSTest extends BaseDiameterTest {
         deleteUser(new Integer(user.getUserId()));
     }
 
-    @Test
+    @Test(groups = {"test-single"})
     public void testConcurrentCall() throws Exception{
         setup();
         // Create a user and makes a deposit of $10.00

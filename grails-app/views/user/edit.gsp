@@ -69,14 +69,14 @@
                     <div class="column">
                         <g:applyLayout name="form/text">
                             <content tag="label"><g:message code="prompt.customer.number"/></content>
-                            <g:set var="existingId" value="${user.userId}"/>
+
                             <g:if test="${!isNew}">
                                 <span>${user.userId}</span>
                             </g:if>
                             <g:else>
                                 <em><g:message code="prompt.id.new"/></em>
                             </g:else>
-                            <g:hiddenField name="existingId" value="${existingId}"/>
+
                             <g:hiddenField name="user.userId" value="${user?.userId}"/>
                         </g:applyLayout>
 
@@ -84,7 +84,7 @@
                             <g:applyLayout name="form/input">
                                 <content tag="label"><g:message code="prompt.login.name"/><span id="mandatory-meta-field">*</span></content>
                                 <content tag="label.for">user.userName</content>
-                                <g:textField class="field toolTipElement" name="user.userName" value="${user?.userName}" title="${message(code: 'input.user.name')}"/>
+                                <g:textField class="field" name="user.userName" id="loginName" value="${user?.userName}"/>
                             </g:applyLayout>
                         </g:if>
                         <g:else>
@@ -184,24 +184,8 @@
                         <content tag="label"><g:message code="prompt.user.inactive"/></content>
                         <content tag="label.for">user.accountExpired</content>
                         <g:checkBox class="cb checkbox" name="user.accountExpired" checked="${user?.accountDisabledDate}" disabled="${isReadOnly}"/>
-                        <!-- Show Metafields For User -->
                         </g:applyLayout>
-                                <div id="user-metafields">
-                                    <g:render template="/metaFields/editMetaFields" model="[availableFields: availableFields, fieldValues: user?.metaFields]"/>
-                                </div>
-                                <g:if test="${availableFields.size()>0 && companyInfoTypes.size() > 0}">
-                                    <g:applyLayout name="form/select">
-                                        <content tag="label"><g:message code="prompt.idp.configurations"/></content>
-                                        <content tag="label.for">idpConfigurationIds</content>
-                                        <content tag="include.script">true</content>
-                                        <g:select id="idp-configuration-select" name="idpConfigurationIds"
-                                                  from="${companyInfoTypes}"
-                                                  optionKey="id"
-                                                  optionValue="name"
-                                                  value="${defaultIdp}"/>
-                                    </g:applyLayout>
-                                </g:if>
-                        <g:if test="${ssoActive}">
+
                             <sec:ifAllGranted roles="USER_158">
                                 <!-- meta fields -->
                                 <div id="user-metafields">
@@ -221,7 +205,7 @@
                                 </g:if>
 
                             </sec:ifAllGranted>
-                        </g:if>
+
                     </div>
 
                     <!-- contact information column -->
@@ -234,7 +218,7 @@
                     <div class="buttons">
                         <ul>
                             <li>
-                                <a onclick="submitUserEditForm()" class="submit save button-primary"><span><g:message code="button.save"/></span></a>
+                                <a onclick="submitUserEditForm()" class="submit save button-primary" data-cy="saveChanges"><span><g:message code="button.save"/></span></a>
                             </li>
                             <li>
                                 <g:link action="list" class="submit cancel"><span><g:message code="button.cancel"/></span></g:link>
@@ -248,13 +232,13 @@
     </div>
 </div>
 <div id="role-change-dialog" title="${message(code: 'popup.confirm.title')}">
-    <table style="margin: 3px 0 0 10px">
+    <table>
         <tbody>
         <tr>
             <td valign="top">
                 <img src="${resource(dir:'images', file:'icon34.gif')}" alt="confirm">
             </td>
-            <td id="roleChangeMsg" class="col2" style="padding-left: 7px">
+            <td id="roleChangeMsg" class="col2">
             </td>
         </tr>
         </tbody>
@@ -284,7 +268,26 @@
         });
     });
 
+    function showErrorMessage(errorField) {
+            $("#error-messages").css("display","block");
+            $("#error-messages ul").css("display","block");
+            $("#error-messages ul").html(errorField);
+            $("html, body").animate({ scrollTop: 0 }, "slow");
+    }
+
     function submitUserEditForm() {
+        //validation for login name field
+        if (${isNew}) {
+            var loginName = document.getElementById('loginName').value;
+            if (loginName !== loginName.trim()) {
+                showErrorMessage("<li><g:message code="login.name.whitespace.error"/></li>");
+                return false;
+            } else if (loginName === '') {
+                showErrorMessage("<li><g:message code="login.name.blank.error"/></li>");
+                return false;
+            }
+        }
+
         if(${user?.id?: 'null'} == null || ${user?.mainRoleId ?: 'null'} == $('#user\\.mainRoleId').val()) {
             $('#user-edit-form').submit();
         } else {

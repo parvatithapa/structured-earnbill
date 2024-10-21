@@ -16,9 +16,6 @@
 
 package com.sapienter.jbilling.server.notification;
 
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDAS;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDTO;
-import com.sapienter.jbilling.paymentUrl.db.Status;
 import com.sapienter.jbilling.server.payment.PaymentDTOEx;
 import com.sapienter.jbilling.server.spa.SpaImportBL;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
@@ -30,6 +27,10 @@ import org.apache.commons.lang.StringEscapeUtils;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.invoice.InvoiceBL;
+import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
+import com.sapienter.jbilling.server.notification.db.InvoiceEmailProcessInfoDAS;
+import com.sapienter.jbilling.server.notification.db.InvoiceEmailProcessInfoDTO;
+import com.sapienter.jbilling.server.notification.db.InvoiceNotificationMessageArchDAS;
 import com.sapienter.jbilling.server.notification.db.NotificationMessageArchDAS;
 import com.sapienter.jbilling.server.notification.db.NotificationMessageArchDTO;
 import com.sapienter.jbilling.server.payment.PaymentBL;
@@ -78,6 +79,7 @@ public class NotificationSessionBean implements INotificationSessionBean {
             NotificationBL notif = new NotificationBL();
             MessageDTO message = notif.getInvoiceEmailMessage(entityId,
                     languageId, invoice.getEntity());
+            message.setInvoiceId(invoiceId);
             retValue = notify(user.getEntity(), message);
 
         } catch (NotificationNotFoundException e) {
@@ -261,12 +263,21 @@ public class NotificationSessionBean implements INotificationSessionBean {
 
         NotificationTask task = taskManager.getNextClass();
         NotificationMessageArchDAS messageHome = new NotificationMessageArchDAS();
+        InvoiceNotificationMessageArchDAS inmDas = new InvoiceNotificationMessageArchDAS ();
+        InvoiceEmailProcessInfoDAS invoiceEmailProcessInfoDAS = new InvoiceEmailProcessInfoDAS();
         boolean delivered = false;
 
         // deliver the message to the first task it can process by medium type(s)
         // continue to the next notification task only if the message was not delivered by the previous
-        while (!delivered && executeTask(task, message.getMediumTypes())) {
+        while (!delivered && !task.getClass().getName().contains("Paper") && executeTask(task, message.getMediumTypes())) {
             NotificationMessageArchDTO messageRecord = messageHome.create(message.getTypeId(), sections, user);
+            /*Insert entry in table invoice_notification_message_arch*/
+            if(message.getInvoiceId() != null) {
+                logger.debug("Invoice id is : {}",message.getInvoiceId());
+                InvoiceDTO invoice = new InvoiceDTO();
+                invoice.setId(message.getInvoiceId());
+                inmDas.create(messageRecord, user, invoice, invoiceEmailProcessInfoDAS.getJobExecutionIdByInvoice(invoice.getId()));
+            }
             try {
                 delivered = deliverNotification("user", user, message, task);
 
@@ -417,39 +428,6 @@ public class NotificationSessionBean implements INotificationSessionBean {
             logger.error("Error creating/sending Payment Notification: \n {}", e.getMessage());
             retValue = new Boolean(false);
         }
-        return retValue;
-    }
-
-    /**
-     * Sends an email with a payment link to a customer.
-     * This is used to manually send a payment link from the GUI
-     *
-     * @param invoiceId
-     * @return
-     */
-    public Boolean sendPaymentLinkToCustomer(Integer invoiceId)
-            throws SessionInternalError {
-        Boolean retValue = false;
-        try {
-            InvoiceBL invoice = new InvoiceBL(invoiceId);
-            UserBL user = new UserBL(invoice.getEntity().getBaseUser());
-            NotificationBL notif = new NotificationBL();
-            MessageDTO message = notif.getPaymentLinkEmailMessage(user.getEntity().getEntity().getId(),
-                    user.getEntity().getLanguageIdField(), invoice.getEntity());
-            PaymentUrlLogDAS paymentUrlLogDAS = new PaymentUrlLogDAS();
-            PaymentUrlLogDTO paymentUrlLogDTO = paymentUrlLogDAS.findByInvoiceId(invoiceId);
-            if( paymentUrlLogDTO.getStatus().equals(Status.GENERATED) ) {
-                retValue = notify(user.getEntity(), message);
-                if( retValue ) {
-                    paymentUrlLogDTO.setStatus(Status.SENT);
-                    paymentUrlLogDAS.save(paymentUrlLogDTO);
-                }
-            }
-
-        } catch (NotificationNotFoundException e) {
-            retValue = new Boolean(false);
-        }
-
         return retValue;
     }
 }

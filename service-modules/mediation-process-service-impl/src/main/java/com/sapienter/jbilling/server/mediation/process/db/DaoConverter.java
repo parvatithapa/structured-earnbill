@@ -12,7 +12,7 @@ public class DaoConverter {
         return new MediationProcess(dao.getId(), dao.getEntityId(), dao.getConfigurationId(),
                 dao.getGlobal(), dao.getStartDate(), dao.getEndDate(),dao.getRecordsProcessed(),
                 dao.getDoneAndBillable(), dao.getErrors(), dao.getDuplicates(), dao.getDoneAndNotBillable(),
-                dao.getOrderAffectedCount(), dao.getAggregated());
+                dao.getOrderAffectedCount(), dao.getAggregated(), dao.getFileName());
     }
 
     public static MediationProcessDAO getMediationProcessDAO (MediationProcess mediationProcess) {
@@ -21,6 +21,6 @@ public class DaoConverter {
                 mediationProcess.getStartDate(), mediationProcess.getEndDate(), mediationProcess.getRecordsProcessed(),
                 mediationProcess.getDoneAndBillable(), mediationProcess.getErrors(), mediationProcess.getDuplicates(),
                 mediationProcess.getDoneAndNotBillable(), mediationProcess.getOrderAffectedCount(),
-                mediationProcess.getAggregated());
+                mediationProcess.getAggregated(), mediationProcess.getFileName());
     }
 }

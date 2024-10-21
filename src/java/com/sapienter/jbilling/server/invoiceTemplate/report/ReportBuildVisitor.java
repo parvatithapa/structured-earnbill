@@ -235,7 +235,7 @@ public class ReportBuildVisitor implements Visitor {
         JRLineBox lineBox = listFrame.getLineBox();
         for (JRPen linePen : asList(lineBox.getBottomPen(), lineBox.getLeftPen(), lineBox.getRightPen(), lineBox.getTopPen())) {
             linePen.setLineColor(convertColor(list.getBorderColor()));
-            linePen.setLineWidth(thickness);
+            linePen.setLineWidth((float) thickness);
         }
         lineBox.setPadding(list.getPadding());
 
@@ -368,7 +368,7 @@ public class ReportBuildVisitor implements Visitor {
         rectangle.setY(0);
         rectangle.setWidth(list.getWidth());
         rectangle.setHeight(list.getHeight());
-        rectangle.getLinePen().setLineWidth(0);
+        rectangle.getLinePen().setLineWidth(0f);
         result.addElement(rectangle);
 
         for (DocElement docElement : list.getElements()) {
@@ -713,7 +713,7 @@ public class ReportBuildVisitor implements Visitor {
         rectangle.setRadius(textBox.getRoundCornerRadius());
         JRPen linePen = rectangle.getLinePen();
         linePen.setLineColor(convertColor(textBox.getBorderColor()));
-        linePen.setLineWidth(textBox.getThickness());
+        linePen.setLineWidth((float)textBox.getThickness());
         return rectangle;
     }
 
@@ -739,12 +739,12 @@ public class ReportBuildVisitor implements Visitor {
     private JRDesignTextElement createTextElement(Text textBox, EvaluationTimeEnum evaluationTime) {
         String expression = textBox.getExpr() == null ? "" : textBox.getExpr();
         JRDesignTextElement designText = createTextElement(expression, evaluationTime, this);
-        designText.setHorizontalAlignment(textBox.getAlignment());
+        designText.setHorizontalTextAlign(textBox.getAlignment());
         ConvertUtils.setupFont(textBox.getFont(), designText);
         JRLineBox lineBox = designText.getLineBox();
         lineBox.setPadding(textBox.getPadding());
         ConvertUtils.setupRectangle(textBox, designText, columnWidth);
-        // Text boxes are accompanied with rectangles, which handle this
+        // Text boxes are accompanied by rectangles, which handle this
         if (!(textBox instanceof TextBox)) {
 
             designText.setMode(textBox.isTransparent() ? TRANSPARENT : OPAQUE);
@@ -752,7 +752,7 @@ public class ReportBuildVisitor implements Visitor {
 
             JRBoxPen pen = lineBox.getPen();
             pen.setLineColor(convertColor(textBox.getBorderColor()));
-            pen.setLineWidth(textBox.getThickness());
+            pen.setLineWidth((float)textBox.getThickness());
         }
         return designText;
     }

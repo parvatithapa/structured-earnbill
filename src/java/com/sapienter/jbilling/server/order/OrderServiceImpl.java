@@ -1,67 +1,67 @@
 package com.sapienter.jbilling.server.order;
 
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.sapienter.jbilling.server.order.db.*;
-import com.sapienter.jbilling.server.pricing.db.DataTableQueryDAS;
-import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
-import org.apache.commons.lang.StringUtils;
+import javax.annotation.Resource;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.PricingField;
-import com.sapienter.jbilling.server.item.db.ItemDAS;
-import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.mediation.CallDataRecord;
+import com.sapienter.jbilling.server.mediation.IJMRPostProcessor;
 import com.sapienter.jbilling.server.mediation.JMRQuantity;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.mediation.MediationProcessService;
 import com.sapienter.jbilling.server.mediation.MediationService;
-import com.sapienter.jbilling.server.metafields.EntityType;
-import com.sapienter.jbilling.server.metafields.MetaFieldBL;
+import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
-import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
-import com.sapienter.jbilling.server.metafields.MetaFieldWS;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
+import com.sapienter.jbilling.server.order.db.OrderDAS;
+import com.sapienter.jbilling.server.order.db.OrderDTO;
+import com.sapienter.jbilling.server.order.db.OrderLineDAS;
+import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.order.db.OrderStatusDAS;
 import com.sapienter.jbilling.server.pluggableTask.UndoMediationFilterTask;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskManager;
-import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
-import com.sapienter.jbilling.server.timezone.TimezoneHelper;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryDAS;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
-import scala.Array;
-import scala.Option;
-import scala.tools.cmd.Opt;
-
-import static com.sapienter.jbilling.server.util.BetaCustomerConstants.*;
-
 
 /**
  * Created by marcolin on 13/10/15.
  */
 public class OrderServiceImpl implements OrderService {
-    IWebServicesSessionBean webServicesSessionBean;
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Autowired
+    private PluggableTaskTypeCategoryDAS pluggableTaskTypeCategoryDAS;
+    private IWebServicesSessionBean webServicesSessionBean;
+    @Resource(name = "jBillingMediationJdbcTemplate")
+    private JdbcTemplate mediationJdbcTemplate;
+    @Autowired
+    private JMRRepository jmrRepository;
 
     public void setWebServicesSessionBean(IWebServicesSessionBean webServicesSessionBean) {
         this.webServicesSessionBean = webServicesSessionBean;
@@ -103,39 +103,54 @@ public class OrderServiceImpl implements OrderService {
         return Arrays.asList(webServicesSessionBean.getOrderChangeTypesForCompany());
     }
 
+    @Resource
+    private SessionFactory sessionFactory;
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED, value = "transactionManager")
     public MediationEventResultList addMediationEventList(List<JbillingMediationRecord> jmrList) {
-
-        MediationEventResultList resultList = new MediationEventResultList(jmrList.size());
+        MediationEventResultList resultList = new MediationEventResultList();
+        int count = 0;
         for (JbillingMediationRecord jmr : jmrList) {
             MediationEventResult result = addMediationEvent(jmr);
-
-            if (result == null || result.hasException()) {
+            if (null == result || result.hasException()) {
                 logger.info("Error JMR Key: {}", jmr.getRecordKey());
                 resultList.setRolledBack(true);
                 resultList.clear();
                 // return with flag `rolledBack` set
                 return resultList;
             }
-            resultList.addResult(result);
+            // flush and clear session after processing 10 jmrs.
+            if(++count % 10 == 0) {
+                Session session = sessionFactory.getCurrentSession();
+                session.flush();
+                session.clear();
+                logger.debug("session flush and cleared for user {}", jmr.getUserId());
+            }
+            resultList.addResult(jmr, result);
         }
         return resultList;
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRED, value = "jbillingMediationTransactionManager")
+    public boolean isJMRProcessed(JbillingMediationRecord jmr) {
+        if(jmrRepository.isJMRProcessed(jmr.getRecordKey())) {
+            logger.debug("jmr {} alreday processed", jmr.getRecordKey());
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     @Transactional(propagation = Propagation.REQUIRED, value = "transactionManager")
     public MediationEventResult addMediationEvent(JbillingMediationRecord jmr) {
+        long startTime = System.currentTimeMillis();
         MediationEventResult mediationEventResult = new MediationEventResult();
-
-        Integer userId = jmr.getUserId();
-        Integer itemId = jmr.getItemId();
-
-        OrderDTO order = null;
-        //normal processing
         try {
             String pricingFields = jmr.getPricingFields();
             PricingField[] fieldsArray = parsePricingFields(pricingFields);
+
             JMRQuantity resolvedJmrQty = resolveQuantity(jmr, fieldsArray);
             if (!JMRQuantity.NONE.equals(resolvedJmrQty)) {
                 if (!resolvedJmrQty.hasErrors()) {
@@ -143,10 +158,15 @@ public class OrderServiceImpl implements OrderService {
                 } else {
                     mediationEventResult.setQuantityResolutionSuccess(false);
                     mediationEventResult.setErrorCodes(resolvedJmrQty.getErrors());
-                    mediationEventResult.setExceptionMessage(resolvedJmrQty.getErrors());
                     return mediationEventResult;
                 }
             }
+
+            Integer userId = jmr.getUserId();
+            Integer itemId = jmr.getItemId();
+
+            OrderDTO order = null;
+            //normal processing
             UserBL userbl = new UserBL(userId);
 
             //NOTE: should be the same as ownerEntityId at this point
@@ -200,15 +220,14 @@ public class OrderServiceImpl implements OrderService {
                     bl.getDTO(), languageId, companyId,
                     userId, currencyId, pricingFields, itemId);
             /**
-             * Recalculate prices for mediated lines if Lines use FUP.
+             * Recalculate amount for mediated lines after processing lines.
              */
             if (null != order) {
-                for (OrderLineDTO line : order.getLines()) {
-                    if (line.hasOrderLineUsagePools() && itemId.equals(line.getItemId()) &&
-                            (line.getPrice() != null && line.getQuantity() != null)) {
+                for (OrderLineDTO line : getLinesFromOrder(order, jmr)) {
+                    if (line.hasOrderLineUsagePools() && null!= line.getPrice() && null!= line.getQuantity()) {
                         line.setAmount(line.getPrice().multiply(line.getQuantity()));
                     }
-                    calculateOrderLinePrice(line, eventDate);
+                    calculateOrderLinePrice(line);
                 }
             }
 
@@ -222,16 +241,16 @@ public class OrderServiceImpl implements OrderService {
                 amountForEvent = amountForEvent.add(amount);
             }
             mediationEventResult.setAmountForChange(amountForEvent);
-
             logger.debug("diffLines = {}", diffLines);
-
+            logger.debug("difflines size {} for jmr {}", diffLines.size(), jmr.getRecordKey());
             if (!diffLines.isEmpty()) {
                 //do processing for billable record
                 mediationEventResult.setOrderLinedId(diffLines.get(0).getId());
+                mediationEventResult.setQuantityEvaluated(diffLines.get(0).getQuantity());
+                // fire jmr post processing task.
+                fireJmrPostProcessorTask(jmr, order, mediationEventResult);
                 // generate NewQuantityEvents
                 fireOrderLineQuantitiesEvent(oldLines, bl.getDTO(), jmr);
-
-                mediationEventResult.setQuantityEvaluated(diffLines.get(0).getQuantity());
             } else {
                 /**
                  * The QuantityEvaluated attribute is used as a flag in order to differentiate
@@ -247,6 +266,9 @@ public class OrderServiceImpl implements OrderService {
             logger.error("Exception while creating order", ex);
             mediationEventResult.setExceptionMessage(ex.getMessage());
             return mediationEventResult;
+        } finally {
+            logger.debug("{} milliseconds taken to mediate one jmr for user {}",
+                    (System.currentTimeMillis() - startTime), jmr.getUserId());
         }
     }
 
@@ -255,6 +277,26 @@ public class OrderServiceImpl implements OrderService {
         UserBL userBL = new UserBL(jmr.getUserId());
         Integer entityId = userBL.getEntityId(jmr.getUserId());
         bl.checkOrderLineQuantities(oldLines, bl.getDTO().getLines(), entityId, bl.getDTO().getId(), true, false);
+    }
+
+    /**
+     * fires Jmr post processing task.
+     * @param jmr
+     * @param oldLines
+     * @param diffLines
+     * @param order
+     * @param mediationEventResult
+     * @throws PluggableTaskException
+     */
+    public void fireJmrPostProcessorTask(JbillingMediationRecord jmr,
+            OrderDTO order, MediationEventResult mediationEventResult) throws PluggableTaskException {
+        PluggableTaskManager<IJMRPostProcessor> taskManager = new PluggableTaskManager<>(jmr.getjBillingCompanyId(),
+                pluggableTaskTypeCategoryDAS.findByInterfaceName(IJMRPostProcessor.class.getName()).getId());
+        IJMRPostProcessor task = taskManager.getNextClass();
+        while(null!= task) {
+            task.afterProcessing(jmr, order, mediationEventResult);
+            task = taskManager.getNextClass(); // fetch next task.
+        }
     }
 
     private PricingField[] parsePricingFields(String pricingFields) {
@@ -283,8 +325,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     protected void processLines(OrderDTO order, Integer languageId,
-                                Integer entityId, Integer userId, Integer currencyId,
-                                String pricingFields, Integer itemId) {
+            Integer entityId, Integer userId, Integer currencyId,
+            String pricingFields, Integer itemId) {
         logger.debug("Processing order lines for item {}", itemId);
         new OrderBL(order).processLines(order, languageId,
                 entityId, userId, currencyId, pricingFields);
@@ -347,7 +389,7 @@ public class OrderServiceImpl implements OrderService {
         List<Integer> ordersToRemove = getOrdersToRemove(processId, entityId);
 
         List<JbillingMediationRecord> recordsToRemove = new ArrayList<>();
-
+        IJMRPostProcessor jmrPostProcessor = loadJMRPostProcessorForEntity(entityId);
         for (Integer orderId : ordersToRemove) {
             OrderBL orderBL = new OrderBL(orderId);
             if (orderBL.getEntity() != null && orderBL.getEntity().getDeleted() == 0) {
@@ -363,6 +405,9 @@ public class OrderServiceImpl implements OrderService {
                             orderLine.setAmount(orderLine.getAmount().subtract(recordLine.getRatedPrice()));
                             orderLine.setCallCounter(orderLine.getCallCounter()-1);
                             orderLine.setTotalReadOnly(true);
+                            if(null!= jmrPostProcessor) {
+                                jmrPostProcessor.afterProcessingUndo(recordLine, orderLine);
+                            }
                             new OrderLineDAS().save(orderLine);
                         }
                         recordsToRemove.add(recordLine);
@@ -424,24 +469,31 @@ public class OrderServiceImpl implements OrderService {
         mediationProcessService.deleteMediationProcess(processId);
     }
 
+    private IJMRPostProcessor loadJMRPostProcessorForEntity(Integer entityId) {
+        try {
+            PluggableTaskManager<IJMRPostProcessor> taskManager = new PluggableTaskManager<>(entityId,
+                    pluggableTaskTypeCategoryDAS.findByInterfaceName(IJMRPostProcessor.class.getName()).getId());
+            return taskManager.getNextClass();
+        } catch(PluggableTaskException ex) {
+            throw new SessionInternalError("JMRPostProcessor plugin loading failed", ex);
+        }
+
+    }
     private void recalculatePriceForRouteRateCardProduct(OrderBL orderBL, List<JbillingMediationRecord> orderRecordLines) {
         if (null != orderRecordLines) {
             for (JbillingMediationRecord recordLine : orderRecordLines) {
                 if (recordLine.getOrderLineId() != null) {
                     OrderLineDTO orderLine = orderBL.getDTO().getLineById(recordLine.getOrderLineId());
-                    calculateOrderLinePrice(orderLine, recordLine.getEventDate());
+                    calculateOrderLinePrice(orderLine);
                 }
             }
         }
     }
 
-    private void calculateOrderLinePrice(OrderLineDTO orderLine, Date eventDate) {
-        if (orderLine.getUseItem() && orderLine.getItem().isRouteRateCardPricingProduct(eventDate)) {
-            logger.debug("Recalculate Price for RouteRateCard Product Id : {}",orderLine.getItemId());
-            if(BigDecimal.ZERO.compareTo(orderLine.getQuantity()) != 0) {
-                orderLine.setPrice(orderLine.getAmount().divide(orderLine.getQuantity(),
-                        Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND));
-            }
+    private void calculateOrderLinePrice(OrderLineDTO orderLine) {
+        if(BigDecimal.ZERO.compareTo(orderLine.getQuantity()) != 0) {
+            orderLine.setPrice(orderLine.getAmount().divide(orderLine.getQuantity(),
+                    Constants.BIGDECIMAL_SCALE, Constants.BIGDECIMAL_ROUND));
         }
     }
 
@@ -516,281 +568,14 @@ public class OrderServiceImpl implements OrderService {
         MetaFieldHelper.setMetaField(entity, order, metafieldName, value);
     }
 
-    public Map<Integer, List<OrderWS>> getOrderForCustomInvoice(File file) {
-        List<CustomInvoiceCsvData> dataList = readAndCreateDataObject(file);
-        Map<Integer, List<OrderWS>> returnData = new HashMap<>();
-
-        for( CustomInvoiceCsvData data : dataList ) {
-            List<OrderWS> orderList = new ArrayList<>();
-            Integer customerId = data.getCustomerId();
-            Integer orderCount = VALUE_ZERO;
-            for( OrderMap orderMap : data.getOrderMaps() ) {
-                orderCount++;
-                Integer entityId = webServicesSessionBean.getUserWS(customerId).getEntityId(); // this method will throw exception if user is not found, it will not return null object.
-                OrderWS order = new OrderWS();
-                order.setUserId(customerId);
-                order.setBillingTypeId(Constants.ORDER_BILLING_POST_PAID);
-                order.setPeriod(orderMap.getOrderPeriod());
-                order.setCurrencyId(Constants.PRIMARY_CURRENCY_ID);
-                try {
-                    String[] date = data.getInvoiceDate().split("/");
-                    String invoiceDate = date[0] + "/" + date[1].replaceFirst("\\d{2}", "01") + "/" + date[2];
-                    order.setActiveSince(new SimpleDateFormat("MM/dd/yyyy").parse(invoiceDate));
-                } catch (ParseException parseException) {
-                    logAndThrowError("An exception occurred while parsing the Date :" + parseException);
-                }
-                order.setNotes(orderMap.getOrderNote());
-                List<MetaFieldValueWS> arrayList = new ArrayList<>();
-
-                MetaFieldDAS metaFieldDAS = new MetaFieldDAS();
-
-                MetaFieldValueWS tabletypeValue = getMetaFieldValueWS(metaFieldDAS, entityId, TABLE_TYPE, orderMap.getTabType());
-                arrayList.add(tabletypeValue);
-                if( orderCount == 1 ) {
-                    MetaFieldValueWS customInvoiceNumberValue = getMetaFieldValueWS(metaFieldDAS, entityId, CUSTOM_INVOICE_NUMBER, data.getCustomInvoiceNumber());
-                    arrayList.add(customInvoiceNumberValue);
-
-                    MetaFieldValueWS invoiceDateValue = getMetaFieldValueWS(metaFieldDAS, entityId, INVOICE_DATE, data.getInvoiceDate());
-                    arrayList.add(invoiceDateValue);
-                    MetaFieldValueWS invoiceDueDateValue = getMetaFieldValueWS(metaFieldDAS, entityId, INVOICE_DUE_DATE, data.getInvoiceDueDate());
-                    arrayList.add(invoiceDueDateValue);
-
-                    int i = 1;
-                    for( String sacCode : data.getSacCodes() ) {
-                        MetaFieldValueWS sacValue = getMetaFieldValueWS(metaFieldDAS, entityId, SAC + i++, sacCode);
-                        arrayList.add(sacValue);
-                    }
-                }
-                order.setMetaFields(arrayList.toArray(new MetaFieldValueWS[arrayList.size()]));
-                OrderLineWS[] orderLines = createOrderLines(orderMap, entityId);
-                order.setOrderLines(orderLines);
-                orderList.add(order);
-            }
-            returnData.put(customerId, orderList);
-        }
-        return returnData;
-    }
-
-    private static MetaFieldValueWS getMetaFieldValueWS(MetaFieldDAS metaFieldDAS, Integer entityId, String fieldName, String fieldValue) {
-        MetaFieldValueWS tabletypeValue = new MetaFieldValueWS();
-        MetaFieldWS tableTypeMfield = MetaFieldBL.getWS(metaFieldDAS.getFieldByName(entityId, new EntityType[] { EntityType.ORDER }, fieldName));
-        tabletypeValue.setMetaField(tableTypeMfield);
-        tabletypeValue.setStringValue(fieldValue);
-        return tabletypeValue;
-    }
-
-    private  List<CustomInvoiceCsvData> readAndCreateDataObject(File file) {
-        List<CustomInvoiceCsvData> dataList = new ArrayList<>();
-        CustomInvoiceCsvData currentCsvData = null;
-        String[] errmsgs = new String[1];
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String csvLine;
-            String previousLineType = null;
-            Integer lineNumber = VALUE_ZERO;
-            String currentTableType = null;
-
-            while ((csvLine = br.readLine()) != null) {
-                lineNumber++;
-                String[] csvLineData = csvLine.split(",", -1);
-                if( csvLineData.length > 0 ) {
-                    String lineType = csvLineData[0];
-                    boolean lineTypeFlag = isValidLineType(previousLineType, lineType, currentCsvData);
-                    if( lineTypeFlag ) {
-                        switch (lineType) {
-                            case H_TYPE:
-                                currentCsvData = validateAndAddHLine(csvLineData, lineNumber);
-                                dataList.add(currentCsvData);
-                                break;
-                            case O_TYPE:
-                                currentTableType = validateAndAddOLine(csvLineData, lineNumber, currentCsvData);
-                                break;
-                            case L_TYPE:
-                                validateAndAddLLine(csvLineData, lineNumber, currentCsvData, currentTableType);
-                                break;
-                            default:
-                                break;
-                        }
-                        previousLineType = lineType;
-                    } else {
-                        logAndThrowError("Error recognising the line format");
-                    }
-                }
-            }
-            if( !previousLineType.equals(L_TYPE) ) {
-                logAndThrowError("No order Lines for respective data ");
-            }
-        } catch (SessionInternalError sessionInternalError) {
-            throw sessionInternalError;
-        } catch (Exception exception) {
-            throw new SessionInternalError(errmsgs);
-        }
-        return dataList;
-    }
-
-    private static List<String> addSacCode(String[] csvLineData) {
-        List<String> sacCode = new ArrayList<>();
-        for( int i = 5; i < csvLineData.length; i++ ) {
-            if( StringUtils.isNotBlank(csvLineData[i]) ) {
-                sacCode.add(csvLineData[i]);
-            }
-        }
-        if( sacCode.isEmpty() ) {
-            logAndThrowError("An exception occurred for SAC code .Please review the details ");
-        }
-        return sacCode;
-    }
-
-    private static boolean isValidLineType(String previousLineType, String lineType, CustomInvoiceCsvData currentCsvData) {
-        boolean lineTypeFlag = currentCsvData == null && lineType.equals(H_TYPE);
-        if( previousLineType != null ) {
-            if( previousLineType.equals(H_TYPE) ) {
-                lineTypeFlag = lineType.equals(O_TYPE);
-            } else if( previousLineType.equals(O_TYPE) ) {
-                lineTypeFlag = lineType.equals(L_TYPE);
-            } else {
-                lineTypeFlag = lineType.equals(H_TYPE) || lineType.equals(L_TYPE) || lineType.equals(O_TYPE);
-            }
-        }
-        return lineTypeFlag;
-    }
-
-    private static CustomInvoiceCsvData validateAndAddHLine(String[] csvLineData, Integer lineNumber) {
-        incompleteDataError(csvLineData, lineNumber, 5);
-        String customerId = csvLineData[1];
-        isValidInteger(csvLineData[1], lineNumber, 1);
-        String invoiceId = csvLineData[2];
-        String invoiceDate = csvLineData[3];
-        String invoiceDueDate = csvLineData[4];
-        validateLine(new String[] { customerId, invoiceId, invoiceDate, invoiceDueDate }, lineNumber);
-        return new CustomInvoiceCsvData(Integer.parseInt(customerId), invoiceId, getValidDate(invoiceDate),
-                getValidDate(invoiceDueDate), addSacCode(csvLineData), new ArrayList<>());
-    }
-
-    private String validateAndAddOLine(String[] csvLineData, Integer lineNumber, CustomInvoiceCsvData currentCsvData) {
-
-        incompleteDataError(csvLineData, lineNumber, 2);
-        String currentTableType = null;
-        Integer orderPeriodId = 1;
-        validateLine(csvLineData, lineNumber);
-        if( currentCsvData != null ) {
-            String orderNote = csvLineData[1];
-            String tabType = csvLineData[2];
-            if(csvLineData.length == 4) {
-                orderPeriodId = getUnitId(Optional.ofNullable(csvLineData[3]));
-            }
-            currentTableType = tabType;
-            currentCsvData.addOrderMap(new OrderMap(orderNote, tabType,orderPeriodId, new HashMap<>()));
-        }
-        return currentTableType;
-    }
-
-    private static void validateAndAddLLine(String[] csvLineData, Integer lineNumber, CustomInvoiceCsvData currentCsvData,
-                                            String currentTableType) {
-        String quantity=null;
-        incompleteDataError(csvLineData, lineNumber, 2);
-        if( !currentCsvData.getOrderMaps().isEmpty() ) {
-            Map<String, String> productTypeMap = new HashMap<>();
-            productTypeMap.put(TABLE_TYPE_MONTH, "");
-            productTypeMap.put(TABLE_TYPE_WEEKDAY, WD);
-            productTypeMap.put(TABLE_TYPE_WEEKEND_HOLIDAY, WH);
-            productTypeMap.put(TABLE_TYPE_SPEED_DELIVERY, SD);
-            productTypeMap.put(TABLE_TYPE_SUBSCRIPTION, "");
-            validateLine(csvLineData, lineNumber);
-            String productCode = csvLineData[1] + productTypeMap.get(currentTableType);
-            if( csvLineData[2].matches(REG_EX_FOR_DECIMAL) ) {
-                quantity = csvLineData[2];
-            }else {
-                logAndThrowError("An exception occurred at Line " + lineNumber + ". Product quantity should not be character");
-            }
-            currentCsvData.getOrderMaps().get(currentCsvData.getOrderMaps().size() - 1).addOrderLine(productCode, quantity);
-        }
-    }
-
-    private static void validateLine(String[] csvLineData, Integer lineNumber) {
-        for( String data : csvLineData ) {
-            if( data.trim().isEmpty() ) {
-                logAndThrowError("An exception occurred at Line " + lineNumber + " .Please review the details ");
-            }
-        }
-    }
-
-    private OrderLineWS[] createOrderLines(OrderMap orderMap, Integer entityId) {
-        ArrayList<OrderLineWS> orderLines = new ArrayList<>();
-        for( Map.Entry<String, String> entry : orderMap.getOrderLineMap().entrySet() ) {
-            String productCode = entry.getKey();
-            String quantity = entry.getValue();
-
-            OrderLineWS orderLine = new OrderLineWS();
-            orderLine.setTypeId(Constants.ORDER_LINE_TYPE_ITEM);
-            orderLine.setQuantity(quantity);
-
-            ItemDTO item = new ItemDAS().findItemByInternalNumber(productCode, entityId);
-            if( item != null ) {
-                orderLine.setDescription(item.getDescription());
-                orderLine.setItemId(item.getId());
-                PriceModelDTO priceModelDTO = item.getPrice(TimezoneHelper.companyCurrentDate(item.getPriceModelCompanyId()), item.getPriceModelCompanyId());
-                orderLine.setPrice(priceModelDTO.getRate());
-                orderLine.setAmount(priceModelDTO.getRate().multiply(new BigDecimal(quantity)));
-            } else {
-                logAndThrowError("No product found with product code: " + productCode);
-            }
-            orderLines.add(orderLine);
-        }
-        return orderLines.toArray(new OrderLineWS[orderLines.size()]);
-    }
-
-    private static void incompleteDataError(String[] csvLineData, Integer lineNumber, Integer lineCount) {
-        if( csvLineData.length <= lineCount ) {
-            logAndThrowError("Incomplete Line detail at line " + lineNumber + ". Provide complete data");
-        }
-    }
-
-    private static void isValidInteger(String csvLineData, Integer lineNumber, Integer index) {
-        if( !csvLineData.matches(REG_EX_FOR_INTEGER) || Integer.parseInt(csvLineData) <= 0 ) {
-            logAndThrowError("An exception occurred at Line " + lineNumber + " : Provide positive number at index " + (index + 1));
-        }
-    }
-
-    private static String getValidDate(String invoiceDate) {
-        if( invoiceDate.split("/").length != 3 ) {
-            logAndThrowError("Invalid date format : " + invoiceDate + " is not a valid date.");
-        }
-        DateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-        sdf.setLenient(false);
-        try {
-            invoiceDate = new SimpleDateFormat("MM/dd/yyyy").format(sdf.parse(invoiceDate));
-        } catch (ParseException e) {
-            logAndThrowError("Invalid date: " + invoiceDate + " is not a valid date.");
-        }
-        return invoiceDate;
-    }
-
-    private static void logAndThrowError(String errorMessage) {
-        logger.debug(errorMessage);
-        throw new SessionInternalError(new String[] { errorMessage });
-    }
-
-    private Integer getUnitId(Optional<String> orderPeriod) {
-        final Map<String, Integer> PERIOD_UNIT_MAP = new HashMap<>();
-            PERIOD_UNIT_MAP.put("daily", PeriodUnitDTO.DAY);
-            PERIOD_UNIT_MAP.put("monthly", PeriodUnitDTO.MONTH);
-            PERIOD_UNIT_MAP.put("weekly", PeriodUnitDTO.WEEK);
-            PERIOD_UNIT_MAP.put("yearly", PeriodUnitDTO.YEAR);
-            PERIOD_UNIT_MAP.put("quarterly", PeriodUnitDTO.YEAR);
-
-        if (orderPeriod.isPresent()) {
-            String op = orderPeriod.get().trim().toLowerCase();
-            if (PERIOD_UNIT_MAP.containsKey(op)) {
-                Integer unitId = PERIOD_UNIT_MAP.get(op);
-                try {
-                    return new OrderPeriodDAS().findOrderPeriod(webServicesSessionBean.getCallerCompanyId(), 1, unitId).getId();
-                } catch (Exception e) {
-                    logAndThrowError("Order period '" + orderPeriod.get() + "' is not configured in your system.");
-                }
-            }
-        }
-        /* orderPeriod id 1 is for One time order period*/
-        return 1;
+    /**
+     * Returns lines from order based on {@link JbillingMediationRecord}.
+     * @param order
+     * @param jmr
+     * @return
+     */
+    protected List<OrderLineDTO> getLinesFromOrder(OrderDTO order, JbillingMediationRecord jmr) {
+        return order.getLines();
     }
 
 }

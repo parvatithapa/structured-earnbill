@@ -504,6 +504,9 @@ public class OrderChangeDTO extends CustomizedEntity implements java.io.Serializ
         if (getOrderLine() != null) {
             getOrderLine().touch();
         }
+        for(MetaFieldValue metaField : getMetaFields()) {
+            metaField.touch();
+        }
     }
 
     @Override

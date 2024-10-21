@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.resources.CustomerMetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.EntityType;
@@ -27,10 +29,12 @@ import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldGroup;
+import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.usagePool.CustomerUsagePoolWS;
 import com.sapienter.jbilling.server.user.db.AccountInformationTypeDAS;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
+import com.sapienter.jbilling.server.user.CustomerRestWS;
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
 
 @Transactional
@@ -99,7 +103,7 @@ public class UserResourceHelperService {
             throw new SessionInternalError("Validation failed",
                     new String [] {String.format("UserId mismatch, the JSON body and Api parameter both should have the same user id.")}, HttpStatus.SC_BAD_REQUEST);
         }
-        DiffResult diffResult = userRestWS.diff(reqCustomerRestWS);
+        DiffResult<CustomerRestWS> diffResult = userRestWS.diff(reqCustomerRestWS);
         if (diffResult == null || CollectionUtils.isEmpty(diffResult.getDiffs())) {
             logger.debug("There were no differences between existing object and supplied one for user {}", userId);
             return null;
@@ -200,11 +204,46 @@ public class UserResourceHelperService {
         UserDTO user = new UserDAS().findNow(userId);
         if(null == user) {
             logger.error("User {}, not found for entity {}", userId, entityId);
-            throw new SessionInternalError("user id not found for entity " + entityId, new String [] { "Please enter valid user id." },
+            throw new SessionInternalError("user id not found for entity " + entityId, new String [] { "Please enter valid userId." },
                     HttpStatus.SC_NOT_FOUND);
         }
         logger.debug("fetching customer usage pools for user {}", userId);
         return api.getCustomerUsagePoolsByCustomerId(user.getCustomer().getId());
+    }
+    
+	/**
+	 * Creates user with given AccountNumber.
+	 * @param createUserRequest
+	 * @return
+	 */
+	public CreateUserResponseWS createUser(CreateUserRequestWS createUserRequest) {
+		Integer entityId = api.getCallerCompanyId();
+		CreateUserEvent createUserEvent = CreateUserEvent.of(entityId, createUserRequest);
+		// trigger user creation task.
+		EventManager.process(createUserEvent);
+		if(null == createUserEvent.getUserId()) {
+			throw new SessionInternalError("createUser failed",
+					"createUserTask not configured for entity "+ entityId,
+					HttpStatus.SC_INTERNAL_SERVER_ERROR);
+		}
+		return CreateUserResponseWS.of(createUserRequest.getAccountNumber()
+				, createUserEvent.getUserId(), entityId);
+	}
+
+    public boolean validate(Integer userId) {
+        if(null == userId) {
+            logger.error("User {}, is null or empty", userId);
+            throw new SessionInternalError("Please provide user id parameter", new String [] { "Please enter an userId." },
+                    HttpStatus.SC_BAD_REQUEST);
+        }
+        UserDTO user = new UserDAS().findNow(userId);
+        if(null == user) {
+            logger.error("User {}, not found", userId);
+            throw new SessionInternalError("user id not found " , new String [] { "User not Found. Please enter a valid userId."},
+                    HttpStatus.SC_NOT_FOUND);
+        }
+        logger.debug("fetching customer invoice design for user {}", userId);
+        return true;
     }
 
     private String formatDate(Date date) {

@@ -35,6 +35,7 @@ import static org.springframework.util.ObjectUtils.nullSafeHashCode;
 public class PaymentAuthorizationDTOEx extends PaymentAuthorizationDTO implements Serializable {
     private Boolean result;
     
+    // BillingHub - Stripe payment gateway integration 
     // Strong customer Authentication (SCA) - authenticating with 3D Secure    
     SecurePaymentWS securePaymentWS;
     
@@ -54,7 +55,7 @@ public class PaymentAuthorizationDTOEx extends PaymentAuthorizationDTO implement
     public void setResult(Boolean result) {
         this.result = result;
     }
-
+    
     public SecurePaymentWS getSecurePaymentWS() {
 		return securePaymentWS;
 	}
@@ -62,8 +63,8 @@ public class PaymentAuthorizationDTOEx extends PaymentAuthorizationDTO implement
 	public void setSecurePaymentWS(SecurePaymentWS securePaymentWS) {
 		this.securePaymentWS = securePaymentWS;
 	}
-
-	public String toString() {
+	
+    public String toString() {
         return super.toString() + " result=" + result;
     }
 

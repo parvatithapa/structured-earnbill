@@ -42,4 +42,941 @@
             <column name  ="content"      value        ="Default value is 0, if value is 1, Asset Linked Free Usage Pools will be used." />
         </insert>
     </changeSet>
+
+    <changeSet context = "base" id = "JBSAPP-145" author = "Krunal Bhavsar">
+        <comment>JMR post processing Task Category</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.server.mediation.IJMRPostProcessor" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p), 1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name = 'com.sapienter.jbilling.server.mediation.IJMRPostProcessor')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.JMRPostProcessorTask" />
+            <column name = "min_parameters" valueNumeric  = "3" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Jmr post porcessing task."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context  = "base" id = "JB-3607 : Added-InvoicePaperDeliveryTask-Plugin" author = "Harshad Pathan">
+     <insert tableName  = "pluggable_task_type">
+          <column name  = "id"              valueComputed  = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+          <column name  = "category_id"     valueNumeric   = "22" />
+          <column name  = "class_name"      value          = "com.sapienter.jbilling.server.billing.task.InvoicePaperDeliveryTask" />
+          <column name  = "min_parameters"  valueNumeric   = "2" />
+     </insert>
+
+     <insert tableName  = "international_description">
+          <column name  = "table_id"    valueNumeric = "24" />
+          <column name  = "foreign_id" valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+          <column name  = "psudo_column"       value = "title" />
+          <column name  = "language_id" valueNumeric = "1" />
+          <column name  = "content"            value = "Task for generating paper invoice batch PDF" />
+     </insert>
+
+     <insert tableName = "international_description">
+         <column name  = "table_id"       valueNumeric = "24" />
+         <column name  = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+         <column name  = "psudo_column"          value = "description" />
+         <column name  = "language_id"    valueNumeric = "1" />
+         <column name  = "content"               value = "This task generates batch PDF for paper invoice and notify it to billing admin." />
+     </insert>
+    </changeSet>
+
+    <changeSet  context = "base" id = "JBSPC-610" author = "Pranay G. Raherkar">
+        <comment>Credit Usage Pool for Plans</comment>
+        <addColumn  tableName = "plan">
+            <column name      = "credit_usage_amount"    type = "java.sql.Types.NUMERIC(22,10)" defaultValueNumeric = "0">
+            </column>
+            <column name      = "unlimited_credit_usage" type = "java.sql.Types.BOOLEAN"        defaultValue        = "false">
+            </column>
+        </addColumn>
+        <addColumn  tableName = "plan_item_bundle">
+            <column name      = "use_in_credit_usage"   type = "java.sql.Types.BOOLEAN"        defaultValue        = "false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet  context = "base" id = "JBSPC-610 - Renamed the columns, removed unlimited flag" author = "Amol Gadre">
+        <comment>Renamed the columns</comment>
+        <dropColumn tableName = "plan"             columnName = "credit_usage_amount"/>
+        <dropColumn tableName = "plan"             columnName = "unlimited_credit_usage"/>
+        <dropColumn tableName = "plan_item_bundle" columnName = "use_in_credit_usage"/>
+        <addColumn  tableName = "plan">
+            <column name      = "credit_pool_amount"    type = "java.sql.Types.NUMERIC(22,10)" defaultValueNumeric = "0">
+            </column>
+        </addColumn>
+        <addColumn  tableName = "plan_item_bundle">
+            <column name      = "use_credit_pool"   type = "java.sql.Types.BOOLEAN"            defaultValue            = "false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context = "base" id="JBSPC-505: Added order_line_itemized_usage table" author="Krunal Bhavsar">
+        <createTable tableName = "order_line_itemized_usage">
+              <column name = "id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable       = "false"
+                               primaryKey     = "true"
+                               primaryKeyName = "order_line_itemized_usage_pkey"/>
+              </column>
+              <column name = "order_line_id" type = "java.sql.Types.INTEGER">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "separator" type = "java.sql.Types.VARCHAR(255)">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "amount" type = "java.sql.Types.NUMERIC(22,10)" defaultValueNumeric = "0">
+                  <constraints nullable = "false"/>
+              </column>
+              <column name = "quantity" type = "java.sql.Types.NUMERIC(22,10)" defaultValueNumeric = "0">
+                  <constraints nullable = "false"/>
+              </column>
+         </createTable>
+
+         <addForeignKeyConstraint constraintName         = "order_line_itemized_usage_fk_order_line"
+                                  baseTableName          = "order_line_itemized_usage"
+                                  referencedTableName    = "order_line"
+                                  baseColumnNames        = "order_line_id"
+                                  referencedColumnNames  = "id" />
+
+        <createIndex tableName = "order_line_itemized_usage"
+                     indexName = "order_line_itemized_usage_fk_order_line">
+            <column name = "order_line_id" />
+        </createIndex>
+	</changeSet>
+
+    <changeSet context = "base" id = "JBSPC-584" author = "Swapnil Patil">
+        <comment>Mediation evaluation strategy</comment>
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueNumeric = "COALESCE((SELECT MAX(type.id)+1 FROM pluggable_task_type_category type),1)" />
+            <column name = "interface_name" value        = "com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask" />
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.evaluation.task.BasicMediationEvaluationStrategyTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Basic Mediation evaluation strategy task"/>
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.evaluation.task.AssetMediationEvaluationStrategyTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Asset Mediation evaluation strategy task"/>
+        </insert>
+
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.mediation.evaluation.task.IMediationEvaluationStrategyTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.mediation.evaluation.task.SPCMediationEvaluationStrategyTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "SPC Mediation evaluation strategy task"/>
+       </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-397: Added IBillableUserFilterTask category." author = "Krunal Bhavsar">
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueComputed = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value         = "com.sapienter.jbilling.server.process.task.IBillableUserFilterTask" />
+        </insert>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT MAX(type.id) FROM pluggable_task_type_category type)" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.process.task.BasicUserFilterTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24" />
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"  value         = "title" />
+            <column name = "language_id"   valueNumeric  = "1" />
+            <column name ="content"        value         = "Basic User Filter Task." />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24" />
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "This plugin filters user based on billing run date." />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-500: Added IUsagePoolEvaluationTask category." author = "Krunal Bhavsar">
+        <insert tableName = "pluggable_task_type_category">
+            <column name = "id"             valueComputed = "(SELECT MAX(type.id)+1 FROM pluggable_task_type_category type)" />
+            <column name = "interface_name" value         = "com.sapienter.jbilling.server.usagePool.IUsagePoolEvaluationTask" />
+        </insert>
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT MAX(type.id) FROM pluggable_task_type_category type)" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.usagePool.DefaultUsagePoolEvaluationTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"      valueNumeric  = "24" />
+            <column name = "foreign_id"    valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column"  value         = "title" />
+            <column name = "language_id"   valueNumeric  = "1" />
+            <column name ="content"        value         = "Default UsagePool Evaluation Task." />
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24" />
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)" />
+            <column name = "psudo_column" value         = "description" />
+            <column name = "language_id"  valueNumeric  = "1" />
+            <column name = "content"      value         = "This plugin evaluates whether the usage pool is up for renewal for the next period.
+            It renews the pool on each billing day for the customer by creating the new pool for
+            the next billing period and expires the existing usage pool by
+            setting the cycle start and end dates of the pool to the epoch date and setting it's available quantity to zero." />
+        </insert>
+    </changeSet>
+
+    <changeSet  context = "base" id = "JBSPC-610 - Reverting the newly added columns" author = "Amol Gadre">
+        <comment>Renamed the columns</comment>
+        <dropColumn tableName = "plan" columnName = "credit_pool_amount"/>
+        <dropColumn tableName = "plan_item_bundle" columnName = "use_credit_pool"/>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBPC-637 - added fk and index on customer_usage_pool_map" author = "Krunal Bhavsar">
+
+        <createIndex tableName = "customer_usage_pool_map"
+                     indexName = "customer_usage_pool_map_fk_purchase_order">
+            <column name = "order_id" />
+        </createIndex>
+
+        <addForeignKeyConstraint constraintName         = "customer_usage_pool_map_fk_purchase_order"
+                                 baseTableName          = "customer_usage_pool_map"
+                                 referencedTableName    = "purchase_order"
+                                 baseColumnNames        = "order_id"
+                                 referencedColumnNames  = "id" />
+
+    </changeSet>
+
+    <changeSet context = "base" id = "JBPC-637 - added missing indexes." author = "Krunal Bhavsar">
+        <createIndex tableName = "asset"
+                     indexName = "asset_idx_identifier">
+            <column name = "identifier" />
+        </createIndex>
+
+        <createIndex tableName = "meta_field_name"
+                     indexName = "meta_field_name_idx_name">
+            <column name = "name" />
+        </createIndex>
+
+        <createIndex tableName = "meta_field_name"
+                     indexName = "meta_field_name_idx_entity_type">
+            <column name = "entity_type" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBPC-661 - added missing indexes." author = "Krunal Bhavsar">
+        <createIndex tableName = "order_line"
+                     indexName = "order_line_idx_call_identifier">
+            <column name = "call_identifier" />
+        </createIndex>
+
+        <createIndex tableName = "batch_step_execution"
+                     indexName = "batch_step_execution_fk_batch_job_execution">
+            <column name = "job_execution_id" />
+        </createIndex>
+
+        <createIndex tableName = "batch_job_execution_params"
+                     indexName = "batch_job_execution_params_fk_batch_job_execution">
+            <column name = "job_execution_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBFC-697 RemovalOfAssetsFromSubscriptionTask" author = "Ashish Srivastava">
+        <insert tableName = "pluggable_task_type">
+           <column name = "id"             valueComputed = "coalesce((select max(p.id)+1 from pluggable_task_type p),1)"/>
+           <column name = "category_id"    valueNumeric  = "22"/>
+           <column name = "class_name"     value         = "com.sapienter.jbilling.server.process.task.RemovalOfAssetsFromSubscriptionTask"/>
+           <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "Scheduled Task for Removal of asset from Finished Subscription"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(select max(p.id) from pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This plugin will remove assets from finished subscription orders on the basis
+             of the configured number of days parameter value. Assets will remove from finished subscription orders when the order Active
+             until/Finished date + number of days &lt; current time."/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-725-Payment Creation Date for calculating the Payments Received in Invoice Summary" author="Mahesh Shivarkar">
+        <comment>This preference is required for switching between Payment Date and Payment creation Date for calculating the Payments Received in Invoice Summary.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"         valueNumeric = "102" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric ="50" />
+            <column name  = "foreign_id"   valueNumeric ="102" />
+            <column name  = "psudo_column" value        ="description" />
+            <column name  = "language_id"  valueNumeric ="1" />
+            <column name  = "content"      value        ="Use Payment Creation Date for calculating the Payments Received in Invoice Summary" />
+        </insert>
+        <insert tableName ="international_description">
+            <column name  ="table_id"     valueNumeric ="50" />
+            <column name  ="foreign_id"   valueNumeric ="102" />
+            <column name  ="psudo_column" value        ="instruction" />
+            <column name  ="language_id"  valueNumeric ="1" />
+            <column name  ="content"      value        ="Default value is 0, if value is 1, Use Payment Creation Date for calculating the Payments Received in Invoice Summary." />
+        </insert>
+    </changeSet>
+
+    <changeSet id="JBSPC-667" author="Swapnil Patil" context="base">
+        <insert tableName = "pluggable_task_type">
+            <column name = "id"             valueComputed = "COALESCE((SELECT MAX(p.id)+1 FROM pluggable_task_type p),1)" />
+            <column name = "category_id"    valueComputed = "(SELECT type.id FROM pluggable_task_type_category type WHERE type.interface_name='com.sapienter.jbilling.server.system.event.task.IInternalEventsTask')" />
+            <column name = "class_name"     value         = "com.sapienter.jbilling.server.usagePool.task.SPCUsagePoolFeeChargingTask" />
+            <column name = "min_parameters" valueNumeric  = "0" />
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "When this plugin is set the service id will be added to the order line and the data boost charges will be included into the service summary section on the invoice"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-886 - use_anniversary_invoice_for_opening_balance_in_invoice_summary" author="Ashok Kale">
+        <comment>This preference is required to use anniversary invoice for opening balance in invoice summary.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"         valueNumeric = "103" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric ="50" />
+            <column name  = "foreign_id"   valueNumeric ="103" />
+            <column name  = "psudo_column" value        ="description" />
+            <column name  = "language_id"  valueNumeric ="1" />
+            <column name  = "content"      value        ="Use Anniversary Invoice for Opening Balance in Invoice Summary" />
+        </insert>
+        <insert tableName ="international_description">
+            <column name  ="table_id"     valueNumeric ="50" />
+            <column name  ="foreign_id"   valueNumeric ="103" />
+            <column name  ="psudo_column" value        ="instruction" />
+            <column name  ="language_id"  valueNumeric ="1" />
+            <column name  ="content"      value        ="Default value is 0. If the value is set to 1, system uses the last anniversary invoice that was generated as part of a bill run to retrieve the closing balance from that invoice, and set that as opening balance on the latest anniversary invoice." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-943-Invoice Creation Timestamp for calculating the Payments Received in Invoice Summary" author="Abhijeet Kore">
+        <comment>This preference is required for switching between Payment Date and Payment creation Date for calculating the Payments Received in Invoice Summary.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"         valueNumeric = "104" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric ="50" />
+            <column name  = "foreign_id"   valueNumeric ="104" />
+            <column name  = "psudo_column" value        ="description" />
+            <column name  = "language_id"  valueNumeric ="1" />
+            <column name  = "content"      value        ="Use Invoice Creation Timestamp for calculating the Payments Received in Invoice Summary" />
+        </insert>
+        <insert tableName ="international_description">
+            <column name  ="table_id"     valueNumeric ="50" />
+            <column name  ="foreign_id"   valueNumeric ="104" />
+            <column name  ="psudo_column" value        ="instruction" />
+            <column name  ="language_id"  valueNumeric ="1" />
+            <column name  ="content"      value        ="Default value is 0, if value is 1, Use Invoice Creation Timestamp for calculating the Payments Received in Invoice Summary." />
+        </insert>
+    </changeSet>
+    <changeSet  context = "base" id = "JBAGL-19" author = "Nandkumar">
+        <comment>This is for showing Last Payments on AGL Invoice PDF </comment>
+        <addColumn  tableName = "invoice_summary">
+            <column name      = "last_invoice_id"    type = "java.sql.Types.INTEGER" defaultValueNumeric = "0">
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet context="base" id="JBAGL-7 : Added for SPC for customer invoice update" author="Ashwinkumar Patra">
+        <insert tableName = "event_log_message">
+            <column name = "id"  valueNumeric = "41" />
+        </insert>
+
+        <insert tableName="international_description">
+            <column name = "foreign_id"    valueComputed = "41"/>
+            <column name = "table_id"      valueNumeric  = "47"/>
+            <column name = "psudo_column"  value         = "description"/>
+            <column name = "language_id"   valueNumeric  = "1"/>
+            <column name = "content"       value         = "Customer invoice design updated successfully"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1062 : Add ad hoc credit note new columns" author="Andres Canevaro">
+
+        <addColumn tableName = "credit_note">
+            <column name="credit_note_date" type="java.sql.Types.DATE"/>
+            <column name="user_id" type="java.sql.Types.INTEGER"/>
+            <column name="service_id" type="java.sql.Types.VARCHAR(50)"/>
+            <column name="subscription_order_id" type="java.sql.Types.INTEGER"/>
+            <column name="notes" type="VARCHAR(1000)"/>
+        </addColumn>
+
+        <dropNotNullConstraint tableName="credit_note" columnName="creation_invoice_id" />
+
+        <addColumn tableName="credit_note_line">
+            <column name="item_id" type="java.sql.Types.INTEGER"/>
+        </addColumn>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1062 : Add ad hoc credit note migration for existing credit notes" author="Andres Canevaro">
+        <sql>
+            UPDATE credit_note SET credit_note_date = create_datetime;
+            UPDATE credit_note cn SET user_id = (SELECT user_id FROM invoice i WHERE i.id = cn.creation_invoice_id);
+        </sql>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1062 : Adding new Credit Note category permissions" author="Andres Canevaro">
+        <comment>Create a new Permission Type with description ‘Credit Note’</comment>
+        <insert tableName="permission_type">
+            <column name="id" valueComputed="(select max(pt.id)+1 from permission_type pt)"/>
+            <column name="description" value="Credit Note"/>
+        </insert>
+
+        <insert tableName="permission">
+            <column name="id" valueComputed="2000"/>
+            <column name="type_id" valueComputed="(SELECT id FROM permission_type WHERE description='Credit Note')"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2000"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Credit Note"/>
+        </insert>
+
+        <insert tableName="permission">
+            <column name="id" valueComputed="2001"/>
+            <column name="type_id" valueComputed="(SELECT id FROM permission_type WHERE description='Credit Note')"/>
+            <column name="foreign_id"/>
+            <column name="role_assignable" valueBoolean="true"/>
+            <column name="user_assignable" valueBoolean="false"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="59"/>
+            <column name="foreign_id" valueNumeric="2001"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Delete Credit Note"/>
+        </insert>
+
+        <sql>
+            INSERT INTO permission_role_map (permission_id, role_id)(SELECT 2000,id FROM role WHERE role_type_id = -1);
+            INSERT INTO permission_role_map (permission_id, role_id)(SELECT 2001,id FROM role WHERE role_type_id = -1);
+        </sql>
+
+    </changeSet>
+    <changeSet context = "base" id = "JBSPC-1062: Added credit note id column" author = "Mahesh Shivarkar">
+        <addColumn tableName = "service_summary">
+            <column name                 = "credit_note_id"
+                    type                 = "java.sql.Types.INTEGER"
+                    defaultValue         = "null">
+                <constraints nullable = "true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1060: Add more information in the Audit log for Billing cycle change via API" author="Abhijeet Kore">
+        <insert tableName = "event_log_message">
+            <column name = "id"     valueNumeric  = "42"/>
+        </insert>
+
+        <insert tableName = "event_log_message">
+            <column name = "id"     valueNumeric  = "43"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "47"/>
+            <column name = "foreign_id"   valueComputed = "43"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "A Customer Next Invoice Date was Changed"/>
+        </insert>
+
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "47"/>
+            <column name = "foreign_id"   valueComputed = "42"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "A user billing cycle was changed"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="test" id="Delete the duplicate pluggable task type SPCUsagePoolFeeChargingTask." author="MaheshK">
+        <delete tableName="international_description">
+            <where>
+                foreign_id IN (
+					SELECT MIN(id)
+					FROM pluggable_task_type
+					WHERE class_name = 'com.sapienter.jbilling.server.usagePool.task.SPCUsagePoolFeeChargingTask'
+                )
+                AND table_id in (
+                	SELECT id
+                	FROM jbilling_table
+                	WHERE name ='pluggable_task_type')
+            </where>
+        </delete>
+        <delete tableName="pluggable_task_type">
+            <where>
+                id IN (
+					SELECT MIN(id)
+					FROM pluggable_task_type
+					WHERE class_name = 'com.sapienter.jbilling.server.usagePool.task.SPCUsagePoolFeeChargingTask'
+                )
+            </where>
+        </delete>
+    </changeSet>
+    <changeSet context="base" id="#JBSPC-1152 - Update Databasechangelog table" author="Ashok Kale">
+        <comment>Moved JBSPC-1044 core change-set for from spc-client-upgrade.xml to jbilling-upgrade-4.32.xml </comment>
+        <sql>
+            <![CDATA[
+            update databasechangelog set filename = 'descriptors/database/jbilling-upgrade-4.32.xml'
+            where id = 'JBSPC-1044: Added last_period_start_date column in Order Process table'
+              and filename = 'descriptors/database/spc-client-upgrade.xml';
+            ]]>
+		</sql>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1044: Added last_period_start_date column in Order Process table" author = "Ashwinkumar Patra">
+        <addColumn tableName = "order_process">
+            <column name     = "last_period_start_date"
+                    type     = "java.sql.Types.DATE">
+                <constraints nullable = "true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- BillingHub - Stripe payment gateway integration  -->
+
+    <changeSet context="base" id="SARATHI-PI001" author="ameyAtsarathi">
+    	<insert tableName="pluggable_task_type">
+            <column name="id" valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="6"/>
+            <column name="class_name" value="com.sapienter.jbilling.server.payment.tasks.PaymentStripeTask"/>
+            <column name="min_parameters" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Integration with Strip, payment gateway"/>
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Process the payment with Stripe payment gateway."/>
+        </insert>
+    </changeSet>
+
+    <!-- End BillingHub - Stripe payment gateway integration  -->
+
+    <!-- BillingHub - MEDASS  -->
+    <changeSet context = "base" id = "SARATHI-Added refresh_token table" author = "Krunal Bhavsar">
+        <createTable tableName = "refresh_token">
+            <column name = "id" type = "java.sql.Types.INTEGER">
+                <constraints nullable       = "false"
+                             primaryKey     = "true"
+                             primaryKeyName = "refresh_token_pkey"/>
+            </column>
+            <column name = "user_id" type = "java.sql.Types.INTEGER">
+                <constraints nullable = "false"/>
+            </column>
+            <column name = "token" type = "VARCHAR(100)">
+                <constraints nullable = "false" />
+            </column>
+            <column name = "expiry_date" type = "TIMESTAMP WITH OUT TIME ZONE">
+                <constraints nullable = "false" />
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint constraintName  = "refresh_token_fk_user"
+                                 baseTableName   = "refresh_token" referencedTableName   = "base_user"
+                                 baseColumnNames = "user_id"       referencedColumnNames = "id"
+        />
+
+        <createIndex tableName = "refresh_token"
+                     indexName = "refresh_token_fk_user" unique = "false">
+            <column name = "user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "Added CreateUserTask" author = "Krunal Bhavsar">
+        <comment>CreateUserTask (creates a user)</comment>
+        <insert tableName = "pluggable_task_type">
+                <column name = "id"             valueComputed = "(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+                <column name = "category_id"    valueNumeric  = "17"/>
+                <column name = "class_name"     value         = "com.sapienter.jbilling.server.user.tasks.CreateUserTask"/>
+                <column name = "min_parameters" valueNumeric  = "0"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "title"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "CreateUserTask (creates a user)"/>
+        </insert>
+        <insert tableName = "international_description">
+            <column name = "table_id"     valueNumeric  = "24"/>
+            <column name = "foreign_id"   valueComputed = "COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)"/>
+            <column name = "psudo_column" value         = "description"/>
+            <column name = "language_id"  valueNumeric  = "1"/>
+            <column name = "content"      value         = "This is task creates a user in jbilling with AccoutNumber"/>
+        </insert>
+    </changeSet>
+    <!--End BillingHub - MEDASS  -->
+    <!-- JBSPC-1063 changeset started -->
+    <changeSet context="base" id="JBSPC-1063: Added table invoice_notification_message_arch" author="Abhijeet Kore">
+        <createTable tableName="invoice_notification_message_arch">
+            <column name="id" type="int4">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="invoice_notification_message_arch_pkey" />
+            </column>
+            <column name="notification_message_arch_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="user_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="invoice_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="invoice_notification_message_arch_fk_notification_message_arch"
+                                 baseTableName="invoice_notification_message_arch"
+                                 referencedTableName="notification_message_arch"
+                                 baseColumnNames="notification_message_arch_id"
+                                 referencedColumnNames="id" />
+
+        <addForeignKeyConstraint constraintName="invoice_notification_message_arch_fk_base_user"
+                                 baseTableName="invoice_notification_message_arch"
+                                 referencedTableName="base_user"
+                                 baseColumnNames="user_id"
+                                 referencedColumnNames="id" />
+
+        <addForeignKeyConstraint constraintName="invoice_notification_message_arch_fk_invoice"
+                                 baseTableName="invoice_notification_message_arch"
+                                 referencedTableName="invoice"
+                                 baseColumnNames="invoice_id"
+                                 referencedColumnNames="id" />
+
+        <createIndex tableName="invoice_notification_message_arch"
+                     indexName="invoice_notification_message_arch_idx_notification_message_arch"
+                     unique="false">
+            <column name="notification_message_arch_id" />
+        </createIndex>
+
+        <createIndex tableName="invoice_notification_message_arch"
+                     indexName="invoice_notification_message_arch_idx_user"
+                     unique="false">
+            <column name="user_id" />
+        </createIndex>
+
+        <createIndex tableName="invoice_notification_message_arch"
+                     indexName="invoice_notification_message_arch_idx_invoice"
+                     unique="false">
+            <column name="invoice_id" />
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1063: Added table invoice_email_process_info" author="Abhijeet Kore">
+        <createTable tableName="invoice_email_process_info">
+            <column name="id" type="int4">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="invoice_email_process_info_arch_pkey" />
+            </column>
+            <column name="billing_process_id" type="java.sql.Types.INTEGER" />
+            <column name="job_execution_id" type="java.sql.Types.INTEGER" />
+            <column name="emails_estimated" type="java.sql.Types.INTEGER" />
+            <column name="emails_sent" type="java.sql.Types.INTEGER" />
+            <column name="emails_failed" type="java.sql.Types.INTEGER" />
+            <column name="start_datetime" type="TIMESTAMP WITHOUT TIME ZONE" />
+            <column name="end_datetime" type="TIMESTAMP WITHOUT TIME ZONE" />
+            <column name="source" type="java.sql.Types.VARCHAR(255)" />
+        </createTable>
+
+        <addForeignKeyConstraint constraintName="invoice_email_process_info_fk_billing_process"
+                                 baseTableName="invoice_email_process_info"
+                                 referencedTableName="billing_process"
+                                 baseColumnNames="billing_process_id"
+                                 referencedColumnNames="id" />
+
+        <addForeignKeyConstraint constraintName="invoice_email_process_info_fk_batch_job_execution"
+                                 baseTableName="invoice_email_process_info"
+                                 referencedTableName="batch_job_execution"
+                                 baseColumnNames="job_execution_id"
+                                 referencedColumnNames="job_execution_id" />
+
+        <createIndex tableName="invoice_email_process_info"
+                     indexName="invoice_email_process_info_idx_billing_process"
+                     unique="false">
+            <column name="billing_process_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1063: Added  skip_emails and skip_email_days" author="Abhijeet Kore">
+        <addColumn tableName="billing_process_configuration">
+            <column name="skip_emails" type="java.sql.Types.INTEGER" defaultValue = "0">
+                <constraints nullable="false" />
+            </column>
+            <column name="skip_email_days" type="java.sql.Types.VARCHAR(255)" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1063: Added table email_batch_job_data" author="Abhijeet Kore">
+        <createTable tableName="email_batch_job_data">
+            <column name="billing_process_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="invoice_id" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="partition_num" type="java.sql.Types.INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column name="status" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames="billing_process_id,invoice_id"
+                       constraintName="email_batch_job_data_arch_pkey"
+                       tableName="email_batch_job_data" />
+
+        <addForeignKeyConstraint constraintName="email_batch_job_data_fk_billing_process"
+                                 baseTableName="email_batch_job_data"
+                                 referencedTableName="billing_process"
+                                 baseColumnNames="billing_process_id"
+                                 referencedColumnNames="id" />
+
+        <addForeignKeyConstraint constraintName="email_batch_job_data_fk_invoice"
+                                 baseTableName="email_batch_job_data"
+                                 referencedTableName="invoice"
+                                 baseColumnNames="invoice_id"
+                                 referencedColumnNames="id" />
+
+        <createIndex tableName="email_batch_job_data"
+                     indexName="email_batch_job_data_idx_billing_process"
+                     unique="false">
+            <column name="billing_process_id" />
+        </createIndex>
+
+        <createIndex tableName="email_batch_job_data"
+                     indexName="email_batch_job_data_idx_invoice"
+                     unique="false">
+            <column name="invoice_id" />
+        </createIndex>
+
+        <createIndex tableName="email_batch_job_data"
+                     indexName="email_batch_job_data_idx_status"
+                     unique="false">
+            <column name="status" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1063: InvoiceEmailDispatcherTask" author="Abhijeet Kore">
+        <comment>Invoice Email Dispatcher Task</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id"             valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)" />
+            <column name="category_id"    valueNumeric="22" />
+            <column name="class_name"     value="com.sapienter.jbilling.server.billing.task.InvoiceEmailDispatcherTask" />
+            <column name="min_parameters" valueNumeric="0" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="24" />
+            <column name="foreign_id"   valueComputed="COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)" />
+            <column name="psudo_column" value="title" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"      value="Invoice Email Dispatcher Task" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="24" />
+            <column name="foreign_id"   valueComputed="COALESCE((SELECT MAX(id) FROM pluggable_task_type),1)" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"      value="This plugin is used to trigger the invoice email job when emails are skipped from the billing process on weekends and holidays." />
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="JBSPC-1063-New Permission added for button Send Invoice Emails" author="Abhijeet Kore" >
+        <insert tableName="permission">
+            <column name="id"              valueComputed="1920" />
+            <column name="type_id"         valueComputed="(SELECT id FROM permission_type WHERE description='Billing')" />
+            <column name="role_assignable" valueBoolean="true" />
+            <column name="user_assignable" valueBoolean="true" />
+            <column name="foreign_id" />
+        </insert>
+        <insert tableName="international_description">
+            <column name="table_id"     valueNumeric="59" />
+            <column name="foreign_id"   valueComputed="1920" />
+            <column name="psudo_column" value="description" />
+            <column name="language_id"  valueNumeric="1" />
+            <column name="content"      value="Send Invoice Emails" />
+        </insert>
+    </changeSet>
+    <!-- JBSPC-1063 changeset completed -->
+    <changeSet context="base" id="JBSPC-1388 - Preference to force set invoice delivery method on customer account" author="Mahesh Shivarkar">
+        <comment>This preference is required to force set invoice delivery method to Email and Paper if email id is not provided.</comment>
+        <insert tableName = "preference_type">
+            <column name  = "id"         valueNumeric = "105" />
+            <column name  = "def_value"  value        = "0" />
+        </insert>
+        <insert tableName = "international_description">
+            <column name  = "table_id"     valueNumeric ="50" />
+            <column name  = "foreign_id"   valueNumeric ="105" />
+            <column name  = "psudo_column" value        ="description" />
+            <column name  = "language_id"  valueNumeric ="1" />
+            <column name  = "content"      value        ="Set Invoice Delivery Method as Email and Paper on the Customer Account if Email Address is not provided." />
+        </insert>
+        <insert tableName ="international_description">
+            <column name  ="table_id"     valueNumeric ="50" />
+            <column name  ="foreign_id"   valueNumeric ="105" />
+            <column name  ="psudo_column" value        ="instruction" />
+            <column name  ="language_id"  valueNumeric ="1" />
+            <column name  ="content"      value        ="Default value is 0, if value is 1, system will set the invoice delivery method to Email and Paper on the customer account if email id is not provided." />
+        </insert>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1377 - Added index on string_value column for meta_field_value table." author = "Ashok Kale">
+        <createIndex tableName = "meta_field_value"
+                     indexName = "meta_field_value_fk_string_value">
+            <column name = "string_value"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet context = "base" id = "JBSPC-1062 - Update preference 102 and 104 descriptions" author = "Mahesh Shivarkar">
+        <comment>Updates Preference 102 description</comment>
+        <update tableName="international_description">
+            <column name="content" value="Use Payment/Credit Note Creation Date for calculating the Payments Received And Total Adjustment Amount in Invoice Summary."/>
+            <where> table_id = 50 AND foreign_id = 102 AND language_id = 1 AND psudo_column = 'description' </where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Default value is 0, if value is 1, Use Payment/Credit Note Creation Date for calculating the Payments Received And Total Adjustment Amount in Invoice Summary."/>
+            <where> table_id = 50 AND foreign_id = 102 AND language_id = 1 AND psudo_column = 'instruction' </where>
+        </update>
+        <comment>Updates Preference 104 description</comment>
+        <update tableName="international_description">
+            <column name="content" value="Use Invoice Creation Timestamp for calculating the Payments Received And Total Adjustment Amount in Invoice Summary."/>
+            <where> table_id = 50 AND foreign_id = 104 AND language_id = 1 AND psudo_column = 'description' </where>
+        </update>
+        <update tableName="international_description">
+            <column name="content" value="Default value is 0, if value is 1, Use Invoice Creation Timestamp for calculating the Payments Received And Total Adjustment Amount in Invoice Summary."/>
+            <where> table_id = 50 AND foreign_id = 104 AND language_id = 1 AND psudo_column = 'instruction' </where>
+        </update>
+    </changeSet>
+
+	<changeSet context = "base" id = "JBSPC-1063 Add new column job_execution_id in table invoice_notification_message_arch" author = "Abhijeet Kore">
+        <addColumn tableName = "invoice_notification_message_arch">
+            <column name = "job_execution_id" type = "java.sql.Types.INTEGER"/>
+        </addColumn>
+	</changeSet>
+
+    <changeSet context="base" id="JBPI-1096 jBilling LE Revenue Reporting" author="Andres Canevaro">
+        <insert tableName="report">
+            <column name="id" valueComputed="(SELECT MAX(id) + 1 FROM report)" />
+            <column name="type_id" valueNumeric="6" />
+            <column name="name" value="platform_net_revenue" />
+            <column name="file_name" value="platform_net_revenue.jasper" />
+            <column name="optlock" valueNumeric="0" />
+        </insert>
+
+        <sql>
+            INSERT INTO entity_report_map(report_id, entity_id)
+            SELECT (SELECT r.id
+            FROM report r
+            WHERE r.name = 'platform_net_revenue'), id
+            FROM entity
+            WHERE deleted = 0
+        </sql>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="100"/>
+            <column name="foreign_id" valueNumeric="29"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="The report shows the net revenue for the last twelve months of operation"/>
+        </insert>
+    </changeSet>
+
+    <changeSet context="base" id="EARNBILL-854: Added CRM Integration Task " author="Ashwinkumar Patra">
+        <comment>Event listener to create invoice and payment in CRM</comment>
+        <insert tableName="pluggable_task_type">
+            <column name="id" valueComputed="(SELECT MAX(p.id)+1 FROM pluggable_task_type p)"/>
+            <column name="category_id" valueNumeric="17"/>
+            <column name="class_name"
+                    value="com.sapienter.jbilling.server.crm.task.CRMIntegrationTask"/>
+            <column name="min_parameters" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="title"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content" value="Create Invoices and Payments in CRM for generated invoices and payments."/>
+        </insert>
+
+        <insert tableName="international_description">
+            <column name="table_id" valueNumeric="24"/>
+            <column name="foreign_id" valueComputed="(SELECT MAX(p.id) FROM pluggable_task_type p)"/>
+            <column name="psudo_column" value="description"/>
+            <column name="language_id" valueNumeric="1"/>
+            <column name="content"
+                    value="This plug-in will create Invoices and Payments in CRM for generated invoices and payments."/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>

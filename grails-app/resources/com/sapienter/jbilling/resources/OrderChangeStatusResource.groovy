@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.order.OrderChangeStatusWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -44,8 +43,8 @@ class OrderChangeStatusResource {
         OrderChangeStatusWS[] orderChangeStatuses;
         try {
             orderChangeStatuses = webServicesSession.getOrderChangeStatusesForCompany();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return (null == orderChangeStatuses || orderChangeStatuses.length == 0) ?
                 Response.ok().build() :
@@ -70,8 +69,8 @@ class OrderChangeStatusResource {
         Integer orderChangeStatusId;
         try {
             orderChangeStatusId = webServicesSession.createOrderChangeStatus(orderChangeStatusWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return orderChangeStatusId != null ?
                 Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(orderChangeStatusId)).build())
@@ -122,8 +121,8 @@ class OrderChangeStatusResource {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             webServicesSession.deleteOrderChangeStatus(id);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.status(Response.Status.NO_CONTENT).build();
     }

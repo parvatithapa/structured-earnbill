@@ -6,15 +6,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 
+import lombok.Data;
+
+@Data
 public class ErrorWS  implements Serializable {
 
-	String code;
-	String message;
+	@JsonProperty(value = "code")
+	private final String code;
 	
-	public ErrorWS() {
-		
-	}
+	@JsonProperty(value = "message")
+	private final String message;
 	
+	// Below constructor is required for StripeRestTest.java
 	@JsonCreator
 	public ErrorWS(
 				  @JsonProperty(value = "code") String code 
@@ -22,18 +25,4 @@ public class ErrorWS  implements Serializable {
 		this.code = code;
 		this.message = message;
 	}
-	
-	public String getCode() {
-		return code;
-	}
-	public void setCode(String code) {
-		this.code = code;
-	}
-	public String getMessage() {
-		return message;
-	}
-	public void setMessage(String message) {
-		this.message = message;
-	}
-	
 }

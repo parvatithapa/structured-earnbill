@@ -636,22 +636,6 @@ public class InvoiceTemplateBL {
         parameters.put(InvoiceParameters.OTHER_CHARGES_AND_CREDITS_PRODUCT_CATEGORY_ID.getName(),
                 (null != otherChargesAndCreditsProdCatId) ? Integer.valueOf(otherChargesAndCreditsProdCatId) : null);
 
-        //Put InvoiceSummary Fields
-        InvoiceSummaryDAS summaryDas = new InvoiceSummaryDAS();
-        InvoiceSummaryDTO summary = summaryDas.findInvoiceSummaryByInvoice(invoice.getId());
-        if(null!= summary){
-            parameters.put(InvoiceParameters.MONTHLY_CHARGES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getMonthlyCharges().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.USAGE_CAHRGES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getUsageCharges().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.FEES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getFees().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.TAXES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getTaxes().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.ADJUSTMENT_CHARGES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getAdjustmentCharges().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.AMOUNT_OF_LAST_STATEMENT.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getAmountOfLastStatement().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.PAYMENT_RECEIVED.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getPaymentReceived().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.NEW_CHARGES.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getNewCharges().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.TOTAL_DUE.getName(),symbol + "" + ConvertUtils.formatMoney(summary.getTotalDue().setScale(2, BigDecimal.ROUND_HALF_UP), locale));
-            parameters.put(InvoiceParameters.INVOICE_DATE.getName(),Util.formatDate(summary.getInvoiceDate(),summary.getUserId()));
-            parameters.put(InvoiceParameters.LAST_INVOICE_DATE.getName(),Util.formatDate(summary.getLastInvoiceDate(),summary.getUserId()));
-        }
         return parameters;
     }
 

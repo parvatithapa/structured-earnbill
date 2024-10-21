@@ -67,6 +67,7 @@ public class Context {
 
         // persistence
         DATA_SOURCE         ("dataSource"),
+        DATA_SOURCE_UMS     ("dataSourceUms"),
         TRANSACTION_MANAGER ("transactionManager"),
         HIBERNATE_SESSION   ("sessionFactory"),
         JDBC_TEMPLATE       ("jdbcTemplate"),
@@ -181,8 +182,9 @@ public class Context {
         BATCH_JOB_UPDATE_CUSTOMER_NEXT_ACTION_DATE      ("updateIgnitionCustomerJob"),
 
         //DT Cluster cache clear topic
-        DT_CLSUTER_CACHE_CLEAR_DESTINATION           ("dtLocalCacheClearDestination");
-
+        DT_CLSUTER_CACHE_CLEAR_DESTINATION           ("dtLocalCacheClearDestination"),
+        BATCH_JOB_DISPATCH_INVOICE_EMAILS     ("invoiceEmailDispatcherJob");
+        
         private String name;
         Name(String name) { this.name = name; }
         public String getName() { return name; }

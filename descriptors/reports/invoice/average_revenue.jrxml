@@ -157,7 +157,7 @@
 			<textField>
 				<reportElement x="90" y="0" width="138" height="20" uuid="48e3ceca-da4c-4df6-8121-85e64bb5fa0f"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{customer_name}.indexOf("_")!=-1 ? $F{customer_name}.substring( 0, $F{customer_name}.indexOf("_")) : $F{customer_name}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="229" y="0" width="62" height="20" uuid="e9b88fa2-f59c-45f1-a191-d05daab14568"/>

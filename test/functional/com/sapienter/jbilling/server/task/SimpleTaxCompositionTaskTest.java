@@ -57,7 +57,7 @@ import static org.hamcrest.Matchers.*;
  * @author Alexander Aksenov, Vikas Bodani
  * @since 30.04.11
  */
-@Test(groups = { "integration", "task", "tax", "simpletax" }, testName = "SimpleTaxCompositionTaskTest", priority = 6)
+@Test(groups = { "integration", "task", "tax", "simpletax" }, testName = "SimpleTaxCompositionTaskTest")
 public class SimpleTaxCompositionTaskTest extends ApiTestCase {
 
     private static final Integer SIMPLE_TAX_PLUGIN_TYPE_ID = 86;
@@ -232,7 +232,7 @@ public class SimpleTaxCompositionTaskTest extends ApiTestCase {
         linePercentagePrice.setRate(BigDecimal.TEN); // tax rate is %10
         linePercentagePrice.setCurrencyId(CURRENCY_USD);
         taxItem.addDefaultPrice(CommonConstants.EPOCH_DATE, linePercentagePrice);
-
+        
         taxItem.setHasDecimals(1);
         taxItem.setDescription("Tax");
         taxItem.setEntityId(TEST_ENTITY_ID);
@@ -463,7 +463,7 @@ public class SimpleTaxCompositionTaskTest extends ApiTestCase {
 
         user.setUserId(api.createUser(user)); // create user
         assertNotNull("customer created", user.getUserId());
-
+        
         updateCustomerNextInvoiceDate(user.getId(), api);
 
         // purchase order without any taxable items
@@ -580,7 +580,7 @@ public class SimpleTaxCompositionTaskTest extends ApiTestCase {
 		type.setOnePerOrder(false);
 		return type;
 	}
-
+	
 	private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
         UserWS user = api.getUserWS(userId);
         Calendar nextInvoiceDate = Calendar.getInstance();

@@ -30,7 +30,7 @@
                 <tbody>
                 <g:each var="transition" in="${transitions}" status="idx">
                     <tr>
-                        <td class="innerContent" style="min-width: 75px">
+                        <td class="innerContent" style="min-width: 75px" data-cy="assetTransitionStatus">
                             ${transition.newStatus.description}
                         </td>
                         <td class="innerContent">

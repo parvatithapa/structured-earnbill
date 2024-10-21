@@ -16,25 +16,12 @@
 
 package com.sapienter.jbilling.server.util;
 
-
-import java.io.File;
-import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Optional;
-
-import javax.jws.WebService;
-
-import com.cashfree.model.UpiAdvanceResponseSchema;
 import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDTO;
-import com.sapienter.jbilling.paymentUrl.domain.response.PaymentResponse;
+import com.sapienter.jbilling.resources.CancelOrderInfo;
 import com.sapienter.jbilling.resources.CustomerMetaFieldValueWS;
 import com.sapienter.jbilling.resources.OrderMetaFieldValueWS;
+import com.sapienter.jbilling.server.adennet.ws.ConsumptionUsageDetailsWS;
+import com.sapienter.jbilling.server.adennet.ws.RechargeWS;
 import com.sapienter.jbilling.server.apiUserDetail.ApiUserDetailWS;
 import com.sapienter.jbilling.server.company.CompanyInformationTypeWS;
 import com.sapienter.jbilling.server.creditnote.CreditNoteInvoiceMapWS;
@@ -55,25 +42,13 @@ import com.sapienter.jbilling.server.invoiceSummary.CreditAdjustmentWS;
 import com.sapienter.jbilling.server.invoiceSummary.InvoiceSummaryWS;
 import com.sapienter.jbilling.server.invoiceSummary.ItemizedAccountWS;
 import com.sapienter.jbilling.server.item.*;
-import com.sapienter.jbilling.server.mediation.JbillingMediationErrorRecord;
-import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
-import com.sapienter.jbilling.server.mediation.MediationConfigurationWS;
-import com.sapienter.jbilling.server.mediation.MediationProcess;
-import com.sapienter.jbilling.server.mediation.MediationRatingSchemeWS;
-import com.sapienter.jbilling.server.mediation.RecordCountWS;
+import com.sapienter.jbilling.server.mediation.*;
 import com.sapienter.jbilling.server.metafields.MetaFieldGroupWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldWS;
 import com.sapienter.jbilling.server.notification.MessageDTO;
 import com.sapienter.jbilling.server.order.*;
-import com.sapienter.jbilling.server.payment.PaymentAuthorizationDTOEx;
-import com.sapienter.jbilling.server.payment.PaymentInformationWS;
-import com.sapienter.jbilling.server.payment.PaymentMethodTemplateWS;
-import com.sapienter.jbilling.server.payment.PaymentMethodTypeWS;
-import com.sapienter.jbilling.server.payment.PaymentTransferWS;
-import com.sapienter.jbilling.server.payment.PaymentWS;
-import com.sapienter.jbilling.server.payment.SecurePaymentWS;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
+import com.sapienter.jbilling.server.payment.*;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
@@ -81,11 +56,7 @@ import com.sapienter.jbilling.server.pricing.DataTableQueryWS;
 import com.sapienter.jbilling.server.pricing.RateCardWS;
 import com.sapienter.jbilling.server.pricing.RatingUnitWS;
 import com.sapienter.jbilling.server.pricing.RouteRecordWS;
-import com.sapienter.jbilling.server.process.AgeingWS;
-import com.sapienter.jbilling.server.process.BillingProcessConfigurationWS;
-import com.sapienter.jbilling.server.process.BillingProcessWS;
-import com.sapienter.jbilling.server.process.CollectionType;
-import com.sapienter.jbilling.server.process.ProcessStatusWS;
+import com.sapienter.jbilling.server.process.*;
 import com.sapienter.jbilling.server.process.signup.SignupRequestWS;
 import com.sapienter.jbilling.server.process.signup.SignupResponseWS;
 import com.sapienter.jbilling.server.provisioning.ProvisioningCommandType;
@@ -107,6 +78,11 @@ import com.sapienter.jbilling.server.user.partner.PartnerWS;
 import com.sapienter.jbilling.server.util.search.SearchCriteria;
 import com.sapienter.jbilling.server.util.search.SearchResultString;
 
+import javax.jws.WebService;
+import java.io.File;
+import java.math.BigDecimal;
+import java.time.ZonedDateTime;
+import java.util.*;
 
 /**
  * Web service bean interface.
@@ -245,7 +221,7 @@ public interface IWebServicesSessionBean {
     public Integer createUpdateOrder(OrderWS order, OrderChangeWS[] orderChanges) ;
     @Validator(type = Validator.Type.EDIT)
     public Integer copyCreateUpdateOrder(OrderWS order, OrderChangeWS[] orderChanges, Integer targetCompanyId,
-            Integer targetCompanyLanguageId, Integer newUserId);
+                                         Integer targetCompanyLanguageId, Integer newUserId);
     @Validator(type = Validator.Type.EDIT)
     public String deleteOrder(Integer id) ;
 
@@ -724,17 +700,17 @@ public interface IWebServicesSessionBean {
        Diameter Protocol
      */
     DiameterResultWS createSession(String sessionId, Date timestamp, BigDecimal units,
-            String string) ;
+                                   String string) ;
     DiameterResultWS reserveUnits(String sessionId, Date timestamp, int units,
-            String string) ;
+                                  String string) ;
     DiameterResultWS updateSession(String sessionId, Date timestamp, BigDecimal usedUnits,
-            BigDecimal reqUnits, String string) ;
+                                   BigDecimal reqUnits, String string) ;
     DiameterResultWS extendSession(String sessionId, Date timestamp, BigDecimal usedUnits,
-            BigDecimal reqUnits) ;
+                                   BigDecimal reqUnits) ;
     DiameterResultWS endSession(String sessionId, Date timestamp, BigDecimal usedUnits,
-            int causeCode) ;
+                                int causeCode) ;
     DiameterResultWS consumeReservedUnits(String sessionId, Date timestamp, int usedUnits,
-            int causeCode) ;
+                                          int causeCode) ;
     /*
       Route Based Rating
      */
@@ -754,6 +730,8 @@ public interface IWebServicesSessionBean {
     @Validator(type = Validator.Type.EDIT)
     public void updateRouteRateCard(RouteRateCardWS routeRateCardWS, File routeRateCardFile);
     public RouteRateCardWS getRouteRateCard(Integer routeRateCardId);
+    public Integer createRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath);
+    public void updateRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath);
 
     public Integer createRatingUnit(RatingUnitWS ratingUnitWS) ;
     public void updateRatingUnit(RatingUnitWS ratingUnitWS) ;
@@ -836,9 +814,7 @@ public interface IWebServicesSessionBean {
      * Copy Company
      * */
     public UserWS copyCompany(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
-            boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail);
-    public UserWS copyCompanyInSaas(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
-                              boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail, String systemAdminLoginName);
+                              boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail);
 
     public UserWS createUserWithCIMProfileValidation(UserWS newUser) ;
     public UserWS updateUserWithCIMProfileValidation(UserWS newUser) ;
@@ -902,6 +878,7 @@ public interface IWebServicesSessionBean {
     /*
      * Credit Note
      */
+    public Integer createAdhocCreditNote(CreditNoteWS creditNoteWS);
     public CreditNoteWS[] getAllCreditNotes(Integer entityId);
     public CreditNoteWS getCreditNote(Integer creditNoteId);
     public void updateCreditNote(CreditNoteWS creditNoteWs);
@@ -929,6 +906,7 @@ public interface IWebServicesSessionBean {
     public InvoiceLineDTO[] getFeesByInvoiceId(Integer invoiceId);
     public InvoiceLineDTO[] getTaxesByInvoiceId(Integer invoiceId);
     public PaymentWS[] getPaymentsAndRefundsByInvoiceId(Integer invoiceId);
+    public PaymentResourceWS[] getPaymentsByDateRange(ZonedDateTime fromDate, ZonedDateTime toDate, Integer offset, Integer limit);
     public CreditAdjustmentWS[] getCreditAdjustmentsByInvoiceId(Integer invoiceId);
 
     /*
@@ -950,7 +928,7 @@ public interface IWebServicesSessionBean {
      * CreateOrUpdateOrderChange Request
      */
     void createUpdateOrderChange(Integer userId, String productCode,
-            BigDecimal newPrice, BigDecimal newQuantity, Date changeEffectiveDate) ;
+                                 BigDecimal newPrice, BigDecimal newQuantity, Date changeEffectiveDate) ;
 
     public boolean notifyUserByEmail(Integer userId, Integer notificationId) ;
     public Integer getIdFromCreateUpdateNotification(Integer messageId, MessageDTO dto);
@@ -985,7 +963,7 @@ public interface IWebServicesSessionBean {
     public UserProfileWS getUserProfile(Integer userId);
 
     public JbillingMediationRecord[] getMediationEventsForUserDateRange(Integer userId, Date startDate,
-            Date endDate, int offset, int limit);
+                                                                        Date endDate, int offset, int limit);
     public AssetRestWS[] getAllAssetsForUser(Integer userId);
     public OrderWS[] getOrderMetaFieldMap(OrderWS[] orderWS);
 
@@ -1000,13 +978,36 @@ public interface IWebServicesSessionBean {
     public PaymentInformationWS[] getPaymentInstruments(Integer userId);
     public CustomerMetaFieldValueWS getCustomerMetaFields(Integer userId);
     public UserWS updateCustomerContactInfo(ContactInformationWS contactInformation);
-    public SecurePaymentWS addPaymentInstrument(PaymentInformationWS instrument);
+    public SecurePaymentWS addPaymentInstrument(PaymentInformationWS instrument); // BillingHub - Stripe payment gateway integration
 
     // updates customer meta fields values
     public void updateCustomerMetaFields(Integer userId, MetaFieldValueWS[] customerMetaFieldValues);
+    public String getCustomerInvoiceDesign(Integer userId);
+    public void updateCustomerInvoiceDesign(Integer userId, String invoiceDesign);
 
-    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId, int offset, int limit);
+    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId);
     public OrderWS[] getUsersAllSubscriptions(Integer userId);
+    public void updatePassword(Integer userId, String currentPassword, String newPassword);
+    public Integer[] getPagedBillingProcessGeneratedInvoices(Integer processId, Integer limit, Integer offset);
+
+    /**
+     * Returns OrderLineItemizedUsageWS for given orderId.
+     * @param orderId
+     * @return
+     */
+    public OrderLineItemizedUsageWS[] getItemizedUsagesForOrder(Integer orderId);
+    public void cancelServiceOrder(CancelOrderInfo cancelOrderInfo);
+
+    public void createMigrationUsers(UserWS[] users);
+    public void createMigrationOrders(OrderWS[] orders);
+    public void createMigrationProductOrders(OrderWS[] orders);
+    public InvoiceWS[] getInvoicesByDateRange(String fromDate, String toDate, Integer offset, Integer limit);
+    public CreditNoteWS[] getCreditNotesByDateRange(String fromDate, String toDate, Integer offset, Integer limit);
+    public void removeAssetFromActiveOrder(String assetIdentifier);
+    public Integer createDataTableRecord(RouteRecordWS routeRecord, String dataTableName);
+    public Integer updateDataTableRecord(RouteRecordWS routeRecord, String dataTableName);
+    public Integer deleteDataTableRecord(Integer recordId, String dataTableName);
+    public void triggerCustomerUsagePoolEvaluation(Integer entityId, Date runDate);
     /**
      * fetches payments for given userId
      * @param userId
@@ -1015,17 +1016,17 @@ public interface IWebServicesSessionBean {
      * @return {@link PaymentWS[]}
      */
     public PaymentWS[] findPaymentsForUser(Integer userId, int offset, int limit);
-    void updatePassword(Integer userId, String currentPassword, String newPassword);
-    public Integer[] createCustomInvoice(File csvFile);
 
-    public CreateResponseWS createWithExistingUser(Integer userId, OrderWS order,  OrderChangeWS[] orderChanges);
-
-    public PaymentUrlLogDTO createPaymentUrl(Map<String, Object> map);
-
-    public String generateGstR1JSONFileReport(String startDate, String endDate) throws Exception;
-
-    public boolean notifyPaymentLinkByEmail(Integer invoiceId);
-
-    public Optional<Object> executePaymentTask(Integer paymentLogUrlLogId, String payerVPA,
-                                               String action) throws PluggableTaskException;
+    // adennet
+    Integer associateAssetAndPlanWithCustomer(RechargeWS rechargeWS, Integer previousOrderId);
+    boolean updateImage(Integer userId, String identificationType, String number, String imageFileName);
+    void releaseSim(String identifier);
+    List<AssetWS> getReleasedAssetsByUserId(Integer userId);
+    void validateAdennetAsset(AssetWS asset);
+    boolean validateUserName(String userName);
+    AssetWS reIssueSIM(String oldIdentifier, String newIdentifier, String note, Integer reissueDuration);
+    AssetWS cancelReIssueSIM(String identifier, String note);
+    boolean validateReissueAsset(String userName);
+    void refundBuySubscription(String currentIdentifier);
+    String getUserRating(String crmAccountId);
 }

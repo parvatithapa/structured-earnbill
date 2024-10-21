@@ -21,6 +21,7 @@ import java.util.Date;
 
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.Util;
+import com.sapienter.jbilling.server.item.db.AssetDAS;
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.util.Context;
@@ -55,8 +56,10 @@ public class EventLogger {
     public static final Integer DYNAMIC_BALANCE_CHANGE = new Integer(33);
     public static final Integer INVOICE_IF_CHILD_CHANGE = new Integer(34);
     public static final Integer ORDER_CREATED_FOR_RESELLER_IN_ROOT = new Integer(35);
-    public static final Integer NEXT_INVOICE_DATE_CHANGE= new Integer(35);
-    
+    public static final Integer NEXT_INVOICE_DATE_CHANGE= new Integer(43);
+    public static final Integer BILLING_CYCLE_CHANGE= new Integer(42);
+    public static final Integer INVOICE_DESIGN_CHANGE = 41;
+
     public static final Integer SUCESSFULL_USER_LOGIN= new Integer(38);
     public static final Integer USER_LOGOUT= new Integer(39);
     public static final Integer FAILED_USER_LOGIN= new Integer(40);
@@ -104,7 +107,7 @@ public class EventLogger {
     public static final Integer MODULE_MEDIATION = new Integer(13);
     public static final Integer MODULE_BLACKLIST = new Integer(14);
     public static final Integer MODULE_PROVISIONING=new Integer(15);
-
+    public static final Integer MODULE_PAYMENT_INFORMATION_MAINTENANCE =16;
 
     // levels of logging
     public static final Integer LEVEL_DEBUG = new Integer(1);
@@ -112,6 +115,31 @@ public class EventLogger {
     public static final Integer LEVEL_WARNING = new Integer(3);
     public static final Integer LEVEL_ERROR = new Integer(4);
     public static final Integer LEVEL_FATAL = new Integer(5);
+
+    // log reissue
+    public static final Integer REISSUE_LIMIT_EXCEEDED = 44;
+    public static final Integer ASSET_UPDATED = 45;
+
+    // Message ids for audit log report
+    public static final Integer SIM_REISSUED = 46;
+    public static final Integer CUSTOMER_TYPE_UPDATED = 47;
+    public static final Integer GOVERNORATE_UPDATED = 48;
+    public static final Integer IDENTIFICATION_TYPE_UPDATED = 49;
+    public static final Integer IDENTIFICATION_TEXT_UPDATED = 50;
+    public static final Integer IDENTIFICATION_IMAGE_UPDATED = 51;
+    public static final Integer FIRST_NAME_UPDATED = 52;
+    public static final Integer LAST_NAME_UPDATED = 53;
+    public static final Integer ADDRESS_LINE_1_UPDATED = 54;
+    public static final Integer ADDRESS_LINE_2_UPDATED = 55;
+    public static final Integer CITY_UPDATED = 56;
+    public static final Integer STATE_UPDATED = 57;
+    public static final Integer POSTAL_CODE_UPDATED = 58;
+    public static final Integer COUNTRY_UPDATED = 59;
+    public static final Integer CONTACT_NO_UPDATED = 60;
+    public static final Integer EMAIL_ID_UPDATED = 61;
+    public static final Integer SIM_REISSUE_REFUND = 62;
+    public static final Integer USER_DELETED = 63;
+    public static final Integer CUSTOMER_CSV = 64;
 
     private EventLogDAS eventLogDAS = null;
     private EventLogMessageDAS eventLogMessageDAS = null;
@@ -224,4 +252,20 @@ public class EventLogger {
         String logMsg = eventLog.toString();
         LOG.info(logMsg);
     }
+
+    public void auditLog(Integer userExecutingId, Integer userAffectedId,
+                         String table, Integer rowId, Integer module, Integer message,
+                         Integer oldInt, String oldStr, Date oldDate) {
+
+        UserDAS user = new UserDAS();
+        AssetDAS asset = new AssetDAS();
+
+        EventLogDTO dto = new EventLogDTO(null, jbDAS.findByName(table),
+                user.find(userExecutingId), (userAffectedId == null) ? null : user.find(userAffectedId),
+                eventLogMessageDAS.find(message), eventLogModuleDAS.find(module),
+                userExecutingId == null ? null : user.find(userExecutingId).getCompany(),
+                rowId, LEVEL_INFO, oldInt, oldStr, oldDate, (userAffectedId == null) ? null : asset.findSubscriberNumberByUserId(userAffectedId));
+        storeEventLog(dto);
+    }
+
 }

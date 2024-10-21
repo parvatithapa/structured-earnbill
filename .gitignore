@@ -9,6 +9,7 @@ changelog
 # temp files
 activemq-data/
 out/
+production/
 tmp/
 logs/
 *.log
@@ -19,11 +20,16 @@ logs/
 *.BAK
 # external libraries
 libs/
+dev_libs/
 # project files
 .idea/
 *.iml
 *.ipr
 *.iws
+*.swo
+*.swp
+run-app.bat
+run-app.sh
 .project
 .classpath
 .settings
@@ -47,5 +53,7 @@ ediCommunication/
 .slcache
 
 .DS_Store
-/webapps/
-/lib
+
+# test files
+test/mediation-service-impl/
+test/test/

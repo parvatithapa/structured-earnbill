@@ -2,7 +2,6 @@ package com.sapienter.jbilling.server.usagePool.task;
 
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -10,9 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.item.db.PlanDAS;
@@ -29,7 +30,6 @@ import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.system.event.Event;
-import com.sapienter.jbilling.server.system.event.EventManager;
 import com.sapienter.jbilling.server.system.event.task.IInternalEventsTask;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.usagePool.CustomerUsagePoolBL;
@@ -37,7 +37,6 @@ import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDAS;
 import com.sapienter.jbilling.server.usagePool.db.CustomerUsagePoolDTO;
 import com.sapienter.jbilling.server.usagePool.db.SwapPlanHistoryDAS;
 import com.sapienter.jbilling.server.usagePool.db.SwapPlanHistoryDTO;
-import com.sapienter.jbilling.server.usagePool.event.CustomerPlanSubscriptionEvent;
 import com.sapienter.jbilling.server.usagePool.event.SwapPlanFUPTransferEvent;
 import com.sapienter.jbilling.server.usagePool.task.UsageOrderReRater.UsagePeriod;
 import com.sapienter.jbilling.server.user.UserBL;
@@ -122,7 +121,7 @@ public class SwapPlanFUPTransferTask extends PluggableTask implements IInternalE
         expireOldCustomerUsagePools(customerDto, existingPlan, orderDto.getId());
 
         // Call the subscription events to create new customer usage pools
-        processCustomerPlanSubscription(orderDto);
+        CustomerPlanSubscriptionHelper.processCustomerPlanSubscription(orderDto);
 
         BigDecimal newPlanAmount = getAmountFromOrderByPlan(orderDto, swapPlanItemId);
 
@@ -165,7 +164,7 @@ public class SwapPlanFUPTransferTask extends PluggableTask implements IInternalE
 
         OrderDAS orderDAS = new OrderDAS();
         for (Integer orderId : orderDAS.getCustomersAllOneTimeUsageOrdersInCurrentBillingCycle(userId, billingCycleStart, billingCycleEnd,
-        		OrderStatusFlag.INVOICE)) {
+                OrderStatusFlag.INVOICE)) {
             OrderDTO usageOrder = orderDAS.find(orderId);
             oldPlanOverageQuantity = oldPlanOverageQuantity.add(usageOrder.getTotalOrderLineQuantity());
             oldPlanOverageAmount = oldPlanOverageAmount.add(usageOrder.getTotal());
@@ -300,27 +299,9 @@ public class SwapPlanFUPTransferTask extends PluggableTask implements IInternalE
                         && oldCustomerUsagePool.getPlan().getId().equals(existingPlan.getId())
                         && oldCustomerUsagePool.getOrder().getId().equals(orderId)) {
                     //To expire FUP set cycle end date as 1970-01-01
-                    oldCustomerUsagePool.setCycleEndDate(Util.getEpochDate());
-                    oldCustomerUsagePool.setCycleStartDate(Util.getEpochDate());
-                    oldCustomerUsagePool.setQuantity(BigDecimal.ZERO);
+                    oldCustomerUsagePool.expire();
                 }
             }
-        }
-    }
-
-    /**
-     * This method fires the customer plan subscription event for the new swapped plan.
-     * This will take care of creating all new customer usage pools belonging to the new plan.
-     * @param orderDto
-     */
-    private void processCustomerPlanSubscription(OrderDTO orderDto) {
-        List<CustomerPlanSubscriptionEvent> subscriptionEvents = new ArrayList<>();
-        subscriptionEvents.addAll(new OrderBL().generateCustomerPlanSubscriptionEvents(orderDto.getLines(),
-                orderDto.getUserId(), orderDto, null, true, false));
-
-        // creating customer usage pool and re rating usage order.
-        for(CustomerPlanSubscriptionEvent subscriptionEvent : subscriptionEvents) {
-            EventManager.process(subscriptionEvent);
         }
     }
 

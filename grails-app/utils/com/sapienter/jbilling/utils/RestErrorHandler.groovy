@@ -1,22 +1,25 @@
 package com.sapienter.jbilling.utils
 
-import com.sapienter.jbilling.client.util.Constants;
-import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError
 
 import org.apache.http.HttpStatus
 
 import javax.ws.rs.core.Response
+
+import com.sapienter.jbilling.common.CommonConstants;
+import com.sapienter.jbilling.common.ErrorDetails
+
 import java.lang.SecurityException
 
-import com.sapienter.jbilling.common.ErrorDetails
-import com.sapienter.jbilling.server.payment.SecurePaymentWS
+import com.sapienter.jbilling.server.payment.SecurePaymentWS;
 
 /**
  * @author Vojislav Stanojevikj
  * @since 23-Aug-2016.
  */
 final class RestErrorHandler {
+	
+	public static final String ERROR_MSG_NO_DATA_FOUND = "No data found.";
 	
 	private RestErrorHandler(){}
 
@@ -38,9 +41,9 @@ final class RestErrorHandler {
             }
             return Response.status(error.errorCode).entity(error.errorDetails).build()
         } else if(error instanceof java.lang.SecurityException ){
-			String[] errorMessages = [error.getMessage()]
-			ErrorDetails errorDetails =  ErrorDetails.newInstance(null, errorMessages , CommonConstants.ERROR_CODE_UNAUTHORIZED_DATA_ACCESS)
-			return Response.status(CommonConstants.ERROR_CODE_UNAUTHORIZED_DATA_ACCESS).entity(errorDetails).build()
+			String[] errorMessages = [ error.getMessage().contains("Unauthorized") ?  ERROR_MSG_NO_DATA_FOUND : error.getMessage()]
+			ErrorDetails errorDetails =  ErrorDetails.newInstance(null, errorMessages , Response.Status.NOT_FOUND.getStatusCode())
+			return Response.status(Response.Status.NOT_FOUND.getStatusCode()).entity(errorDetails).build()
 		}
 		
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build()
@@ -61,8 +64,8 @@ final class RestErrorHandler {
                 error.errorCode <= HttpStatus.SC_INSUFFICIENT_STORAGE
     }
 	
-	
-	/** Return appropriate response status 
+	/** 
+	 * Return appropriate response status
 	 * @param securePaymentWS
 	 * @return
 	 */
@@ -72,5 +75,4 @@ final class RestErrorHandler {
 		}
 		return Response.ok().entity(securePaymentWS).build();
 	}
-
 }

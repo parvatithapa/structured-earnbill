@@ -39,6 +39,8 @@ public class MediationProcessDAO implements Serializable {
     private Integer orderAffectedCount;
     @Column(name="aggregated")
     private Integer aggregated;
+    @Column(name="file_name")
+    private String fileName;
 
     public MediationProcessDAO() {
     }
@@ -46,7 +48,7 @@ public class MediationProcessDAO implements Serializable {
     public MediationProcessDAO(UUID id, Integer entityId, Integer configurationId, Boolean global, Date startDate,
                                Date endDate, Integer recordsProcessed, Integer doneAndBillable, Integer errors,
                                Integer duplicates, Integer doneAndNotBillable, Integer orderAffectedCount,
-                               Integer aggregated) {
+                               Integer aggregated, String fileName) {
         this.id = id;
         this.entityId = entityId;
         this.configurationId = configurationId;
@@ -60,6 +62,7 @@ public class MediationProcessDAO implements Serializable {
         this.doneAndNotBillable = doneAndNotBillable;
         this.orderAffectedCount = orderAffectedCount;
         this.aggregated = aggregated;
+        this.fileName = fileName;
     }
 
     @Override
@@ -74,6 +77,7 @@ public class MediationProcessDAO implements Serializable {
                 ", duplicates=" + duplicates +
                 ", doneAndNotBillable=" + doneAndNotBillable +
                 ", aggregated=" + aggregated +
+                ", fileName=" + fileName +
                 '}';
     }
 
@@ -179,5 +183,13 @@ public class MediationProcessDAO implements Serializable {
 
     public void setAggregated(Integer aggregated) {
         this.aggregated = aggregated;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }

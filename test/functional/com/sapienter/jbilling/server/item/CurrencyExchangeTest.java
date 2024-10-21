@@ -43,7 +43,7 @@ import static org.testng.AssertJUnit.*;
  * @author kkulagin
  * @since 10.01.12
  */
-@Test(groups = { "integration", "currency" }, testName = "CurrencyExchangeTest", priority = 1)
+@Test(groups = { "integration", "currency" }, testName = "CurrencyExchangeTest")
 public class CurrencyExchangeTest {
 
     private static final Logger logger = LoggerFactory.getLogger(CurrencyExchangeTest.class);

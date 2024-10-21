@@ -44,7 +44,8 @@
                     <div class="input-bg">
                         <g:textField  name = "filters.${filter.name}.integerValue"
                                      value = "${filter.integerValue}"
-                                     class = "${filter.value ? 'autoFill' : ''}"/>
+                                     class = "${filter.value ? 'autoFill' : ''}"
+                                     data-cy="accountNumber"/>
                         <script>
                             $('input[name="filters.${filter.name}.integerValue"]').keyup(function() {
                                 if (/\D/g.test(this.value)) this.value = this.value.replace(/\D/g,'')

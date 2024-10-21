@@ -31,7 +31,6 @@ public class SystemAdminCopyTask extends AbstractCopyTask {
 
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(ConfigurationCopyTask.class));
 
-
     UserDAS userDAS;
     CompanyDAS companyDAS;
     ContactDAS contactDas;
@@ -71,17 +70,6 @@ public class SystemAdminCopyTask extends AbstractCopyTask {
         }
 
         LOG.debug("All System Admin has been created.");
-    }
-
-    public void create(Integer entityId, Integer targetEntityId, String systemAdminLoginName, String systemAdminEmail) {
-        initialise(entityId, targetEntityId);  // This will create all the entities on which the current entity is dependent.
-        LOG.debug("System admin creation has been started.");
-        CompanyDTO targetEntity = companyDAS.find(targetEntityId);
-        ContactDTO contact = contactDas.findEntityContact(entityId);
-
-        String[] credentials = new String[]{systemAdminLoginName,systemAdminEmail};
-        createUser(credentials, entityId, targetEntity,  Constants.TYPE_SYSTEM_ADMIN, contact.getCountryCode());
-        LOG.debug("System Admin has been created: "+systemAdminLoginName);
     }
 
     private String createUser(String [] credentials, Integer entityId, CompanyDTO targetEntity, Integer roleTypeId,

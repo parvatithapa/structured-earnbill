@@ -36,7 +36,7 @@
             <p><g:message code="asset.upload.format"/></p><br/>
 
             <p><g:message code="asset.upload.label.columns"/>
-            <strong>'${product.findItemTypeWithAssetManagement().assetIdentifierLabel ?: message([code:  'asset.detail.identifier'])}' (*), '<g:message code="asset.detail.notes"/>'
+            <strong>'${product.findItemTypeWithAssetManagement().assetIdentifierLabel ?: message([code:  'asset.detail.identifier'])}' (*), '<g:message code="asset.detail.notes"/>', '<g:message code="label.adennet.subscriber.number"/>' , '<g:message code="asset.upload.message.imsi"/>' (*), '<g:message code="label.adennet.temporary.suspended"/>' , '<g:message code="label.adennet.pin1"/>', '<g:message code="label.adennet.pin2"/>' , '<g:message code="label.adennet.puk1"/>' , '<g:message code="label.adennet.puk2"/>'
             <g:each in="${category.assetMetaFields.sort {it.displayOrder}}" var="metaField">
                 , ${"'"+metaField.name + (metaField.mandatory ? "' (*)" : "'") }
             </g:each>
@@ -50,11 +50,11 @@
                 <g:hiddenField name="prodId" value="${product.id}"/>
                 <g:applyLayout name="form/text">
                     <content tag="label"><g:message code="asset.label.csv.file"/></content>
-                    <input type="file" name="assetFile"/>
+                    <input type="file" name="assetFile" data-cy="uploadAssetFile"/>
                 </g:applyLayout>
                 <div class="btn-row">
                     <br/>
-                    <a onclick="$('#upload-assets-form').submit();" class="submit save"><span><g:message
+                    <a onclick="$('#upload-assets-form').submit();" class="submit save" data-cy="uploadAssetButton"><span><g:message
                             code="button.upload"/></span></a>
                 </div>
             </g:uploadForm>

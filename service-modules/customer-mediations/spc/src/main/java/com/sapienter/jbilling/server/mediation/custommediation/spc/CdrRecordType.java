@@ -87,7 +87,8 @@ public class CdrRecordType {
 
     public enum TelstraRecord {
 
-        UIR("UIR");
+        UIR("UIR"),SMS("GSMS"), MMS("GMMS"),GPRS("GPRS"),VIDEO("3GVID"),GTEL("GTEL"),PREMIUM_SMS("GPSMS"),
+        BYTE("Byte"),SECOND("Sec"),MSG("Msg");
         private final String typeCode;
 
         TelstraRecord(String typeCode) {
@@ -144,4 +145,34 @@ public class CdrRecordType {
             throw new IllegalArgumentException("Invalid data usage name "+usageName);
         }
     }
+
+    public enum TelstraMonthlyRecord {
+
+        SED("SED"), OCD("OCD");
+        private final String typeCode;
+
+        TelstraMonthlyRecord(String typeCode) {
+            this.typeCode = typeCode;
+        }
+
+
+        public String getTypeCode() {
+            return typeCode;
+        }
+
+        public static TelstraMonthlyRecord fromTypeCode(String recordType) {
+            for(TelstraMonthlyRecord telstraMonthlyRecord : TelstraMonthlyRecord.values()) {
+                if(telstraMonthlyRecord.getTypeCode().equals(recordType)) {
+                    return telstraMonthlyRecord;
+                }
+            }
+            throw new IllegalArgumentException("Invalid telstra monthly record type "+recordType);
+        }
+
+        public static String[] getTypeCodes() {
+            return Stream.of(TelstraMonthlyRecord.values()).map(TelstraMonthlyRecord::getTypeCode).toArray(String[]::new);
+        }
+    }
+
+
 }

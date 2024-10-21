@@ -134,7 +134,7 @@
                     </td>
                     <td class="small">
                         <jB:secRemoteLink class="cell" action="show" id="${payment.id}" before="register(this);" onSuccess="render(data, next);">
-                            <span>${StringEscapeUtils.escapeHtml(payment?.paymentMethod?.getDescription(payment, session['language_id']))}</span>
+                            <span>${StringEscapeUtils.escapeHtml(payment?.paymentMethod?.getDescription(session['language_id']))}</span>
                         </jB:secRemoteLink>
                     </td>
                     <td class="small">
@@ -156,9 +156,9 @@
             <g:render template="/layouts/includes/pagerShowResults" model="[steps: [10, 20, 50], update: 'column1', contactFieldTypes: contactFieldTypes]"/>
         </div>
         
-         <div class="download">
+         <div id="download-div" class="download">
 			<g:if test="${csvExportFlag}">
-				<div class="pager-button" id="generateCsv" style="text-align: right;">
+				<div class="pager-button" id="generateCsv">
 					<a onclick="generateCSV(); showMessage()"><g:message code="generate.csv.link" /></a>
                 </div>
 			</g:if>

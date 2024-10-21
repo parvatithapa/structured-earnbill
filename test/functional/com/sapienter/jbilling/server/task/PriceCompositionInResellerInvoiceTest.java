@@ -40,7 +40,7 @@ import com.sapienter.jbilling.test.framework.builders.ItemBuilder;
 
 
 
-@Test(groups = { "integration", "task", "tax", "countrytax" }, testName = "PriceCompositionInResellerInvoiceTest", priority = 19)
+@Test(groups = { "integration", "task", "tax", "countrytax" }, testName = "PriceCompositionInResellerInvoiceTest")
 public class PriceCompositionInResellerInvoiceTest extends APITestCase {
     private static final Logger logger = LoggerFactory.getLogger(PriceCompositionInResellerInvoiceTest.class);
     private EnvironmentHelper envHelper;
@@ -60,10 +60,10 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
     private String usageProduct = "UsageProduct";
     private String resellerTestAccount = "Reseller Account Type";
     private String taxPercentageProduct = "Tax Percentage product";
-
+    
     private static String SCENARIO_01_USER = "testScenario01User";
     private String SCENARIO_01_ONE_TIME_ORDER = "testScenario01OneTimeOrder";
-
+    
     BillingProcessConfigurationWS configBackup;
     BillingProcessConfigurationWS config;
 
@@ -98,7 +98,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
 
 
         }).test((testEnv, testEnvBuilder) -> {
-
+            
             assertNotNull("Reseller Account Creation Failed", testEnvBuilder.idForCode(resellerTestAccount));
             assertNotNull("Category with item type Creation Failed", testEnvBuilder.idForCode(usageCategory));
             assertNotNull("Flat product for category with item type Creation Failed", testEnvBuilder.idForCode(usageProduct));
@@ -129,35 +129,35 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
 
                 //final JbillingAPI api = envBuilder.getPrancingPonyApi();
                 final JbillingAPI resellerApi = envBuilder.getResellerApi();
-
+                
                 InvoiceSummaryScenarioBuilder scenario01 = new InvoiceSummaryScenarioBuilder(testBuilder);
                 scenario01.createUser(resellerApi, SCENARIO_01_USER, envBuilder.idForCode(resellerTestAccount), nextInvoiceDate.getTime(), MONTHLY_ORDER_PERIOD, nextInvoiceDay);
-
+                
                 Integer userId = resellerApi.getUserId(SCENARIO_01_USER);
-
+                
                 Integer itemId = envBuilder.idForCode(taxPercentageProduct);
                 ItemDTOEx itemDTOEx = resellerApi.getItem(itemId, userId, null);
                 SortedMap<Date, PriceModelWS> prices1 =new TreeMap<Date, PriceModelWS>();
-
+                
                 PriceModelWS newLinePercentagePrice = new PriceModelWS();
                 newLinePercentagePrice.setType(PriceModelStrategy.LINE_PERCENTAGE.name());
                 newLinePercentagePrice.setRate(new BigDecimal(8.5));
-
+                
                 prices1.put(new Date(), newLinePercentagePrice);
                 itemDTOEx.setDefaultPrices(prices1);
-
+                
                 itemDTOEx.setEntityId(3);
                 itemDTOEx.setPriceModelCompanyId(3);
                 resellerApi.updateItem(itemDTOEx);
-
+                
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 productQuantityMap.put(environment.idForCode(usageProduct), BigDecimal.ONE);
                 productQuantityMap.put(environment.idForCode(taxPercentageProduct), BigDecimal.ONE);
-
+                
                 scenario01.createOrder(resellerApi,userId,SCENARIO_01_ONE_TIME_ORDER, activeSince.getTime(), null, ONE_TIME_ORDER_PERIOD, postPaidOrderTypeId, RESELLER_ORDER_CHANGE_STATUS_APPLY_ID, true,
                 			productQuantityMap);
 
-
+                
                 //Validating invoice summary data generated on 01-Sept-2016
             }).validate((testEnv, envBuilder) -> {
                 Calendar runDate = Calendar.getInstance();
@@ -198,7 +198,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
                 .global(global)
                 .build();
     }
-
+    
     private Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
             boolean global, Integer categoryId, String flatPrice, boolean allowDecimal) {
         return envBuilder.itemBuilder(api)
@@ -221,7 +221,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
         }
         api.updatePlugin(plugin);
     }
-
+    
     private TestBuilder getTestEnvironment() {
 
         return TestBuilder.newTest(false).givenForMultiple(testEnvCreator -> {
@@ -229,7 +229,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
             this.envHelper = EnvironmentHelper.getInstance(testEnvCreator.getPrancingPonyApi(), testEnvCreator.getResellerApi());
         });
     }
-
+    
     private Integer buildAndPersistLinePercentageProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
             boolean global, Integer categoryId, String percentage, boolean allowDecimal) {
         return envBuilder.itemBuilder(api)
@@ -241,7 +241,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
                 .allowDecimal(allowDecimal)
                 .build();
     }
-
+    
     private Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
 
         AccountTypeWS accountTypeWS = envBuilder.accountTypeBuilder(api)
@@ -255,7 +255,7 @@ public class PriceCompositionInResellerInvoiceTest extends APITestCase {
     @AfterClass
     public void tearDown() {
         testBuilder.given(envBuilder -> {
-            final JbillingAPI api = envBuilder.getPrancingPonyApi();
+            final JbillingAPI api = envBuilder.getPrancingPonyApi(); 
             api.createUpdateBillingProcessConfiguration(configBackup);
         });
        //Configuring Order Change Based Composition Task

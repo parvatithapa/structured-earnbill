@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.server.company.task;
 
-import au.com.bytecode.opencsv.CSVWriter;
-
+import com.opencsv.CSVWriter;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.company.CopyCompanyUtils;
@@ -97,7 +96,7 @@ public class RouteRateCardCopyTask extends AbstractCopyTask {
 
         // outfile
         File file = File.createTempFile(routeRateCardDTO.getTableName(), ".csv");
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',');
+        CSVWriter writer = new CSVWriter(new FileWriter(file));
 
         // write csv header
         List<String> columns = routeRateCardService.getRouteTableColumnNames(routeRateCardDTO.getTableName());

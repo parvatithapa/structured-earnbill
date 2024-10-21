@@ -148,6 +148,21 @@ public class TimezoneHelper {
         return Date.from(convertToTimezone(date, timezone).atZone(ZoneId.of(Constants.DEFAULT_TIMEZONE)).toInstant());
     }
 
+
+    public static Date convertToTimezoneAsUtilDateWithTx(LocalDateTime date, Integer entityId) {
+        IMethodTransactionalWrapper txAction = Context.getBean(IMethodTransactionalWrapper.class);
+        Callable<Date> action = new Callable<Date>() {
+            @Override
+            public Date call() throws Exception {
+                if (date == null || entityId == null) {
+                    return null;
+                }
+                return Date.from(convertToTimezone(date, getCompanyLevelTimeZone(entityId)).atZone(ZoneId.of(Constants.DEFAULT_TIMEZONE)).toInstant());
+            }
+        };
+        return txAction.execute(action);
+    }
+
     public static Date convertToTimezoneByEntityId(Date date, Integer entityId) {
         IMethodTransactionalWrapper txAction = Context.getBean(IMethodTransactionalWrapper.class);
         Callable<Date> action = new Callable<Date>() {
@@ -189,5 +204,9 @@ public class TimezoneHelper {
         }
         logger.debug("returning default offset value {}", defaultOffSet);
         return defaultOffSet;
+    }
+    
+    public static LocalDateTime convertTimezoneToUTC(LocalDateTime date, String timezone) {
+        return date.atZone(ZoneId.of(timezone)).toInstant().atZone(ZoneId.of(Constants.DEFAULT_TIMEZONE)).toLocalDateTime();
     }
 }

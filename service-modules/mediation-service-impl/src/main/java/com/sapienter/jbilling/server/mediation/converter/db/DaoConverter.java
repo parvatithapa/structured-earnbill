@@ -38,14 +38,15 @@ public class DaoConverter {
     }
 
     public static JbillingMediationRecord getMediationRecord(JbillingMediationRecordDao dao) {
-        return new JbillingMediationRecord(
+        return new JbillingMediationRecord(dao.getId(),
                 JbillingMediationRecord.STATUS.valueOf(dao.getStatus().name()),
                 JbillingMediationRecord.TYPE.valueOf(dao.getType().name()),
                 dao.getjBillingCompanyId(), dao.getMediationCfgId(), dao.getRecordKey(),
                 dao.getUserId(), dao.getEventDate(), dao.getQuantity(), dao.getDescription(),
                 dao.getCurrencyId(), dao.getItemId(), dao.getOrderId(), dao.getOrderLineId(),
                 dao.getPricingFields(), dao.getRatedPrice(), dao.getRatedCostPrice(), dao.getProcessId(), dao.getSource(), dao.getDestination(),
-                dao.getCdrType(), dao.getOriginalQuantity(), dao.getResourceId(), dao.getChargeable());
+                dao.getCdrType(), dao.getOriginalQuantity(), dao.getResourceId(), dao.getChargeable(),dao.getRatedPriceWithTax(),dao.getTaxAmount());
+
     }
 
     public static JbillingMediationRecordDao getMediationRecordDao(ConversionResult result) {
@@ -53,7 +54,7 @@ public class DaoConverter {
     }
 
     public static JbillingMediationRecordDao getMediationRecordDao(JbillingMediationRecord created) {
-        return new JbillingMediationRecordDao(
+        return new JbillingMediationRecordDao(created.getId(),
                 JbillingMediationRecordDao.STATUS.valueOf(created.getStatus().name()),
                 JbillingMediationRecordDao.TYPE.valueOf(created.getType().name()),
                 created.getjBillingCompanyId(), created.getMediationCfgId(), created.getRecordKey(),
@@ -61,7 +62,7 @@ public class DaoConverter {
                 created.getCurrencyId(), created.getItemId(), created.getOrderId(), created.getOrderLineId(),
                 created.getPricingFields(), created.getRatedPrice(), created.getRatedCostPrice(),  created.getProcessId(),
                 created.getSource(), created.getDestination(), created.getCdrType(), created.getOriginalQuantity(),
-                created.getResourceId(), created.getChargeable());
+                created.getResourceId(), created.getChargeable(), created.getTaxAmount(), created.getRatedPriceWithTax());
     }
 
     public static JMErrorUsageRecordDao getErrorUsageRecordDao(JbillingMediationRecord jmr) {

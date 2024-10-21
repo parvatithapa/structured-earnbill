@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -45,8 +44,8 @@ class PluginTypeResource {
         PluggableTaskTypeWS pluginType;
         try {
             pluginType = webServicesSession.getPluginTypeWS(id);
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(pluginType).build();
     }
@@ -68,8 +67,8 @@ class PluginTypeResource {
         PluggableTaskTypeWS pluginType;
         try {
             pluginType = webServicesSession.getPluginTypeWSByClassName(className);
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(pluginType).build();
     }

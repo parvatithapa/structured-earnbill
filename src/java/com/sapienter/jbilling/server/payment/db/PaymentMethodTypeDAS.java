@@ -21,7 +21,6 @@ import com.sapienter.jbilling.server.util.db.AbstractDAS;
 import org.hibernate.Query;
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Restrictions;
-import org.hibernate.SQLQuery;
 
 import java.util.List;
 

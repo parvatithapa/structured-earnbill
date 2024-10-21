@@ -35,6 +35,10 @@
         top: -17px !important;
         right: 2px !important;
     }
+    html[dir="rtl"].date img {
+        left: 2px !important;
+        right: auto !important;
+    }
     </style>
 </head>
 

@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_convergent_postpaid_subreport" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" whenResourceMissingType="Empty" uuid="9109d1f0-001d-4c38-ad1f-518f0d51ab1a">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="local_jbilling"/>
+    <parameter name="invoice_line_tax_id" class="java.lang.Integer"/>
+    <parameter name="invoice_id" class="java.lang.Integer"/>
+    <parameter name="currency_symbol" class="java.lang.String"/>
+    <parameter name="subscriber_number" class="java.lang.String"/>
+    <queryString language="plsql">
+        <![CDATA[SELECT
+      ss.start_date,
+      ss.end_date,
+      CASE
+            WHEN ss.plan_description IS NULL THEN ss.service_description
+            ELSE ss.plan_description
+      END AS service_description,
+      CASE WHEN ss.service_description = 'Mobile Data'
+            THEN ROUND((il.quantity/1024), 2)
+            ELSE ROUND(il.quantity, 2)
+      END AS quantity,
+      CASE WHEN ss.service_description = 'Mobile Data'
+            THEN ROUND((il.price*1024), 2)
+            ELSE ROUND(il.price, 2)
+      END AS unit_price,
+      ROUND(il.amount, 2) as line_total,
+     ss.display_identifier,
+      mfv.string_value
+    FROM
+      invoice_line il
+      JOIN purchase_order po ON il.order_id = po.id
+      JOIN service_summary ss ON ss.invoice_line_id = il.id
+      JOIN order_meta_field_map om ON ss.subscription_order_id = om.order_id
+      JOIN meta_field_value mfv ON mfv.id = om.meta_field_value_id
+    WHERE
+      il.deleted = 0
+      AND il.invoice_id = $P{invoice_id}
+      AND mfv.string_value = 'post paid'
+      AND ss.display_identifier = $P{subscriber_number}
+    ORDER BY
+      end_date desc;]]>
+    </queryString>
+    <field name="start_date" class="java.sql.Timestamp">
+        <property name="com.jaspersoft.studio.field.name" value="start_date"/>
+        <property name="com.jaspersoft.studio.field.label" value="start_date"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="service_summary"/>
+    </field>
+    <field name="end_date" class="java.sql.Timestamp">
+        <property name="com.jaspersoft.studio.field.name" value="end_date"/>
+        <property name="com.jaspersoft.studio.field.label" value="end_date"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="service_summary"/>
+    </field>
+    <field name="service_description" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="service_description"/>
+        <property name="com.jaspersoft.studio.field.label" value="service_description"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="service_summary"/>
+    </field>
+    <field name="quantity" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="unit_price" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="unit_price"/>
+        <property name="com.jaspersoft.studio.field.label" value="unit_price"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="line_total" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="line_total"/>
+        <property name="com.jaspersoft.studio.field.label" value="line_total"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <field name="display_identifier" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="display_identifier"/>
+        <property name="com.jaspersoft.studio.field.label" value="display_identifier"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="service_summary"/>
+    </field>
+    <field name="string_value" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="string_value"/>
+        <property name="com.jaspersoft.studio.field.label" value="string_value"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="meta_field_value"/>
+    </field>
+    <variable name="total" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{line_total}]]></variableExpression>
+    </variable>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="49" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <staticText>
+                <reportElement x="246" y="29" width="75" height="20" uuid="ca4459a1-ffcd-4fac-8b55-a2acf7b338dc">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <box rightPadding="10"/>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Valid till]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="29" width="172" height="20" uuid="bac7c8f9-e500-4579-a604-7778b925bce1">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <box leftPadding="5" rightPadding="0"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Plan Description]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="471" y="29" width="85" height="20" uuid="dbfc9785-a9e2-4df7-b912-58a87d06af99">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total price]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="321" y="29" width="69" height="20" uuid="d2307d52-126a-414c-a32e-10e459b9d917">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <box rightPadding="7"/>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Quantity]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="0" width="555" height="29" uuid="9189ee7f-94ea-4b27-b00c-f18199ece284">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <textElement>
+                    <font size="14" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Postpaid Usage Summary "+ $F{display_identifier}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="172" y="29" width="74" height="20" uuid="474c8bea-1638-4003-9b32-f834b8a2656b"/>
+                <box leftPadding="3"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Valid from]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="390" y="29" width="81" height="20" uuid="5bb6bd45-7771-4f0f-acb3-8b0e4b34c32f">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <box rightPadding="7"/>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Unit price]]></text>
+            </staticText>
+        </band>
+    </title>
+    <detail>
+        <band height="32" splitType="Stretch">
+            <rectangle>
+                <reportElement x="0" y="0" width="556" height="30" backcolor="#E3DADA" uuid="c8aecc64-be5f-425f-b2d9-df2231d45a4f">
+                    <printWhenExpression><![CDATA[Boolean.valueOf($V{REPORT_COUNT}.intValue()%2==1)]]></printWhenExpression>
+                </reportElement>
+                <graphicElement>
+                    <pen lineWidth="0.0"/>
+                </graphicElement>
+            </rectangle>
+            <textField>
+                <reportElement x="0" y="0" width="172" height="30" uuid="300b9b16-17bd-490b-9516-65e2c73cecd2">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="1" rightPadding="0"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{service_description} .equals( "Mobile Data")? "Mobile Data in MB":$F{service_description}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="246" y="0" width="75" height="30" uuid="9b5997a9-9cdf-480d-bce1-28388d57e4dc">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="0" rightPadding="0"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[new SimpleDateFormat("dd-MM-yyyy").format($F{end_date})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="321" y="0" width="69" height="30" uuid="51e68f17-f5b6-42f4-9166-6ef9c8faab75">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="0" rightPadding="7"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="471" y="0" width="85" height="30" uuid="613a468c-90c4-4efe-830a-20c45e9cf083">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="0" rightPadding="3"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{line_total}+$P{currency_symbol}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="172" y="0" width="74" height="30" uuid="50e87976-a449-48c1-af54-ef811b565ce4">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="3"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[new SimpleDateFormat("dd-MM-yyyy").format($F{start_date})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="390" y="0" width="82" height="30" uuid="5a731d62-4b20-468d-b82e-193a6644e1e8">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <box topPadding="0" leftPadding="0" rightPadding="7"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{unit_price}+$P{currency_symbol}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <summary>
+        <band height="25" splitType="Stretch">
+            <staticText>
+                <reportElement x="414" y="5" width="60" height="20" uuid="82b4e411-8e4c-4a66-9cd2-f4de46693036">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Subtotal]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="474" y="5" width="80" height="20" uuid="a7dda6c0-708f-4070-a419-3587e3473f2d">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$V{total}.setScale(2, BigDecimal.ROUND_HALF_UP)+$P{currency_symbol}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="0" y="4" width="308" height="20" forecolor="#707070" uuid="b99a5d10-b01d-4ae2-a5df-1b77d7d06571">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <text><![CDATA[ Notes: Postpaid plan, Payment is due]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="0" width="554" height="1" uuid="ba366e4a-7da6-4cad-b6ee-b4ce1a463dc2">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.x" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+            </line>
+        </band>
+    </summary>
+</jasperReport>

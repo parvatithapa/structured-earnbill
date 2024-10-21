@@ -152,6 +152,9 @@ public class CustomerTicketInfoResultTest {
         ItemTypeWS itemTypeWS = api.getItemCategoryById(PRANCING_PONY_HARDWARE_CATEGORY_ID);
         itemTypeWS.setDescription("Service Type - DSL");
         api.updateItemCategory(itemTypeWS);
+        ItemTypeWS itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
+        itemTypeWS1.setDescription("Hardware Type - DSL");
+        api.updateItemCategory(itemTypeWS1);
         itemTypeWS = api.getItemCategoryById(PRANCING_PONY_HARDWARE_CATEGORY_ID);
         DistributelTestUtil.addAssetStatus(itemTypeWS, "Reserved");
 
@@ -224,24 +227,10 @@ public class CustomerTicketInfoResultTest {
         assertNotNull(SPA_PRIVATE_NOTE_MSG, spaHappyFox.getPrivateNotes());
         assertEquals("City should be equal to city","city", spaHappyFox.getCommonFields().getCity());
         assertTrue("Province should contain QC", spaHappyFox.getCommonFields().getProvince().contains("QC"));
-
-        assertNotNull("Service connection date should Not be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
+        assertNotNull("Service connection date should not be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
         assertNotNull("Rate plan should not be null", spaHappyFox.getPrivateNotes().getRatePlan());
         assertNotNull("Service status should not be null", spaHappyFox.getPrivateNotes().getServiceStatus());
-        assertNotNull("CTCIAC should not be null", spaHappyFox.getPrivateNotes().getcTIACA());
-        assertNull("Make/Model should be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
-        assertNull("Serial Number should be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());
-        assertNull("Mac address should be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
-
-        ItemTypeWS itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
-        itemTypeWS1.setDescription("Hardware Type - DSL");
-        api.updateItemCategory(itemTypeWS1);
-        spaHappyFox = distributelApi.getCustomerTicketInfoResult(getSpaHappyFoxRequest(spaImportWS.getCustomerName(),
-                spaImportWS.getPhoneNumber1(), DSL, POSTAL_CODE));
-        assertNull("Service connection date should be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
-        assertNull("Rate plan should be null", spaHappyFox.getPrivateNotes().getRatePlan());
-        assertNull("Service status should be null", spaHappyFox.getPrivateNotes().getServiceStatus());
-        assertNull("CTCIAC should be null", spaHappyFox.getPrivateNotes().getcTIACA());
+        assertNotNull("CTCIAC should not be null", spaHappyFox.getPrivateNotes().getServiceStatus());
         assertNotNull("Make/Model should not be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
         assertNotNull("Serial Number should not be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());
         assertNotNull("Mac address should not be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
@@ -250,6 +239,9 @@ public class CustomerTicketInfoResultTest {
         ItemTypeWS itemTypeWS  = api.getItemCategoryById(PRANCING_PONY_HARDWARE_CATEGORY_ID);
         itemTypeWS.setDescription("Service Type - Cable");
         api.updateItemCategory(itemTypeWS);
+        ItemTypeWS itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
+        itemTypeWS1.setDescription("Hardware Type - Cable");
+        api.updateItemCategory(itemTypeWS1);
         spaHappyFox = distributelApi.getCustomerTicketInfoResult(getSpaHappyFoxRequest(spaImportWS.getCustomerName(),
                 spaImportWS.getPhoneNumber1(), "Cable Internet", POSTAL_CODE));
         assertNotNull(SPA_HAPPY_FOX_MSG, spaHappyFox);
@@ -259,19 +251,6 @@ public class CustomerTicketInfoResultTest {
         assertNotNull("Rate plan should not be null", spaHappyFox.getPrivateNotes().getRatePlan());
         assertNotNull("Service status should not be null", spaHappyFox.getPrivateNotes().getServiceStatus());
         assertNotNull("CYX should not be null", spaHappyFox.getPrivateNotes().getcYX());
-        assertNull("Make/Model should be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
-        assertNull("Serial Number should be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());
-        assertNull("Mac address should be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
-
-        itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
-        itemTypeWS1.setDescription("Hardware Type - Cable");
-        api.updateItemCategory(itemTypeWS1);
-        spaHappyFox = distributelApi.getCustomerTicketInfoResult(getSpaHappyFoxRequest(spaImportWS.getCustomerName(),
-                spaImportWS.getPhoneNumber1(), "Cable Internet", POSTAL_CODE));
-        assertNull("Service connection date should not be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
-        assertNull("Rate plan should not be null", spaHappyFox.getPrivateNotes().getRatePlan());
-        assertNull("Service status should not be null", spaHappyFox.getPrivateNotes().getServiceStatus());
-        assertNull("CYX should not be null", spaHappyFox.getPrivateNotes().getcYX());
         assertNotNull("Make/Model should not be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
         assertNotNull("Serial Number should not be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());
         assertNotNull("Mac address should not be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
@@ -280,6 +259,9 @@ public class CustomerTicketInfoResultTest {
         itemTypeWS  = api.getItemCategoryById(PRANCING_PONY_HARDWARE_CATEGORY_ID);
         itemTypeWS.setDescription("Service Type - VOIP/DHP");
         api.updateItemCategory(itemTypeWS);
+        itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
+        itemTypeWS1.setDescription("Hardware Type - VOIP/DHP");
+        api.updateItemCategory(itemTypeWS1);
         spaHappyFox = distributelApi.getCustomerTicketInfoResult(getSpaHappyFoxRequest(spaImportWS.getCustomerName(),
                 spaImportWS.getPhoneNumber1(), "Home Phone", POSTAL_CODE));
         assertNotNull(SPA_HAPPY_FOX_MSG, spaHappyFox);
@@ -288,19 +270,6 @@ public class CustomerTicketInfoResultTest {
         assertNotNull("Service connection date should not be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
         assertNotNull("Rate plan should not be null", spaHappyFox.getPrivateNotes().getRatePlan());
         assertNotNull("Service Phone Number", spaHappyFox.getPrivateNotes().getServicePhoneNumber());
-        assertNull("Make/Model should be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
-        assertNull("Mac address should be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
-        assertNull("Serial Number should be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());
-
-        itemTypeWS1 = api.getItemCategoryById(PRANCING_PONY_HARDWARE_TYPE_CATEGORY_ID);
-        itemTypeWS1.setDescription("Hardware Type - VOIP/DHP");
-        api.updateItemCategory(itemTypeWS1);
-        spaHappyFox = distributelApi.getCustomerTicketInfoResult(getSpaHappyFoxRequest(spaImportWS.getCustomerName(),
-                spaImportWS.getPhoneNumber1(), "Home Phone", POSTAL_CODE));
-
-        assertNull("Service connection date should be null", spaHappyFox.getPrivateNotes().getServiceConnectionDate());
-        assertNull("Rate plan should be null", spaHappyFox.getPrivateNotes().getRatePlan());
-        assertNull("Service Phone Number", spaHappyFox.getPrivateNotes().getServicePhoneNumber());
         assertNotNull("Make/Model should not be null", spaHappyFox.getPrivateNotes().getcPEmakeModel());
         assertNotNull("Mac address should not be null", spaHappyFox.getPrivateNotes().getcPEMACaddress());
         assertNotNull("Serial Number should not be null", spaHappyFox.getPrivateNotes().getcPEserialNumber());

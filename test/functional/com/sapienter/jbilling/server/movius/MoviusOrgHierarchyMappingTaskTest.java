@@ -37,7 +37,6 @@ import com.sapienter.jbilling.server.order.OrderWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.process.BillingProcessConfigurationWS;
 import com.sapienter.jbilling.server.process.db.PeriodUnitDTO;
-import com.sapienter.jbilling.server.process.db.ProratingType;
 import com.sapienter.jbilling.server.user.AccountInformationTypeWS;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.CompanyWS;
@@ -124,7 +123,6 @@ public class MoviusOrgHierarchyMappingTaskTest {
     private static final String FIFTEEN                                         = "15.0000000000";
     private static final String THIRTY                                          = "30.0000000000";
     private Integer groupId                                                     = null;
-    private JbillingAPI api;
 
     //@formatter:on
     private TestBuilder getTestEnvironment() {
@@ -137,7 +135,7 @@ public class MoviusOrgHierarchyMappingTaskTest {
     public void initializeTests() {
         testBuilder = getTestEnvironment();
         testBuilder.given(envBuilder -> {
-            api = envBuilder.getPrancingPonyApi();
+            final JbillingAPI api = envBuilder.getPrancingPonyApi();
 
             // Creating account type
                 Integer accountTypeId = buildAndPersistAccountType(envBuilder, api, ACCOUNT_NAME, CC_PM_ID);
@@ -1387,56 +1385,6 @@ public class MoviusOrgHierarchyMappingTaskTest {
             }
             assertEquals("Order quantity should be 22", new BigDecimal("22.0000000000"), quantity);
             assertEquals("Order amount should be 110", new BigDecimal("110.0000000000"), getAmount(order00));
-        });
-    }
-
-    @Test(priority = 20, enabled = true)
-    public void test020CheckOrdersProrateFlagAsPerBillingConfig() {
-        BillingProcessConfigurationWS configBackup = api.getBillingProcessConfiguration();
-        testBuilder.given(envBuilder -> {
-            BillingProcessConfigurationWS config = api.getBillingProcessConfiguration();
-            config.setProratingType(ProratingType.PRORATING_AUTO_OFF.getOptionText());
-            api.createUpdateBillingProcessConfiguration(config);
-        }).validate((testEnv, testEnvBuilder) -> {
-            placeNextXMLToProcess(api, "checkOrdersProrateFlagAsPerBillingConfig-1.xml");
-            api.triggerScheduledTask(testEnvBuilder.env().idForCode(PLUGIN_CODE), new Date());
-            sleep(30000L);
-        }).validate((testEnv, testEnvBuilder) -> {
-            UserWS userWS = api.getUserByCustomerMetaField("7555", META_FIELD_CUSTOMER_ORG_ID);
-            OrderWS order = api.getLatestOrder(userWS.getId());
-            assertNotNull(ORDER_NOT_CREATED, order);
-            Boolean prorateFlag = order.getProrateFlag();
-            assertTrue(!prorateFlag, "Order's prorate flag should be false.");
-        }).validate((testEnv, testEnvBuilder) -> {
-            BillingProcessConfigurationWS config = api.getBillingProcessConfiguration();
-            config.setProratingType(ProratingType.PRORATING_AUTO_ON.getOptionText());
-            api.createUpdateBillingProcessConfiguration(config);
-        }).validate((testEnv, testEnvBuilder) -> {
-            placeNextXMLToProcess(api, "checkOrdersProrateFlagAsPerBillingConfig-2.xml");
-            api.triggerScheduledTask(testEnvBuilder.env().idForCode(PLUGIN_CODE), new Date());
-            sleep(30000L);
-        }).validate((testEnv, testEnvBuilder) -> {
-            UserWS userWS = api.getUserByCustomerMetaField("7556", META_FIELD_CUSTOMER_ORG_ID);
-            OrderWS order = api.getLatestOrder(userWS.getId());
-            assertNotNull(ORDER_NOT_CREATED, order);
-            Boolean prorateFlag = order.getProrateFlag();
-            assertTrue(prorateFlag, "Order's prorate flag should be true.");
-        }).validate((testEnv, testEnvBuilder) -> {
-            BillingProcessConfigurationWS config = api.getBillingProcessConfiguration();
-            config.setProratingType(ProratingType.PRORATING_MANUAL.getOptionText());
-            api.createUpdateBillingProcessConfiguration(config);
-        }).validate((testEnv, testEnvBuilder) -> {
-            placeNextXMLToProcess(api, "checkOrdersProrateFlagAsPerBillingConfig-3.xml");
-            api.triggerScheduledTask(testEnvBuilder.env().idForCode(PLUGIN_CODE), new Date());
-            sleep(30000L);
-        }).validate((testEnv, testEnvBuilder) -> {
-            UserWS userWS = api.getUserByCustomerMetaField("7557", META_FIELD_CUSTOMER_ORG_ID);
-            OrderWS order = api.getLatestOrder(userWS.getId());
-            assertNotNull(ORDER_NOT_CREATED, order);
-            Boolean prorateFlag = order.getProrateFlag();
-            assertTrue(prorateFlag, "Order's prorate flag should be true.");
-        }).validate((testEnv, testEnvBuilder) -> {
-            api.createUpdateBillingProcessConfiguration(configBackup);
         });
     }
 

@@ -15,7 +15,7 @@
  */
 
 /**
- *
+ * 
  */
 package com.sapienter.jbilling.server.task;
 
@@ -63,12 +63,12 @@ import static org.hamcrest.Matchers.*;
 /**
  * Test class to unit test the functionality of Tax applied to invoices that
  * belong to user from a configured country.
- *
+ * 
  * @author Vikas Bodani
  * @since 29-Jul-2011
- *
+ * 
  */
-@Test(groups = { "integration", "task", "tax", "paymentpenalty" }, testName = "PaymentTermPenaltyTaskTest", priority = 9)
+@Test(groups = { "integration", "task", "tax", "paymentpenalty" }, testName = "PaymentTermPenaltyTaskTest")
 public class PaymentTermPenaltyTaskTest extends ApiTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentTermPenaltyTaskTest.class);
@@ -211,7 +211,7 @@ public class PaymentTermPenaltyTaskTest extends ApiTestCase {
         linePercentagePrice.setRate(BigDecimal.ONE);
         linePercentagePrice.setCurrencyId(CURRENCY_USD);
         item.addDefaultPrice(CommonConstants.EPOCH_DATE, linePercentagePrice);
-
+		
 		item.setDescription("1 % Penalty Item");
 		item.setEntityId(TEST_ENTITY_ID);
 		item.setNumber("PYMPEN");
@@ -353,7 +353,7 @@ public class PaymentTermPenaltyTaskTest extends ApiTestCase {
 
 		return api.createPlugin(plugin);
 	}
-
+	
 	private UserWS updateCustomerNextInvoiceDate(Integer userId, JbillingAPI api) {
         UserWS user = api.getUserWS(userId);
         Calendar nextInvoiceDate = Calendar.getInstance();

@@ -33,7 +33,6 @@ import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import javax.persistence.Transient;
 
-
 import com.sapienter.jbilling.server.process.BillingProcessConfigurationWS;
 import com.sapienter.jbilling.server.user.db.CompanyDTO;
 
@@ -71,6 +70,8 @@ public class BillingProcessConfigurationDTO implements Serializable {
     private ProratingType proratingType;
     private int autoPayment;
     private Integer retryCount;
+    private Integer skipEmails;
+    private String skipEmailsDays;
 
     public BillingProcessConfigurationDTO() {
     }
@@ -151,6 +152,8 @@ public class BillingProcessConfigurationDTO implements Serializable {
         this.proratingType = ProratingType.getProratingTypeByOptionText(ws.getProratingType());
         this.autoPayment = ws.getAutoPayment();
         this.retryCount = ws.getRetryCount();
+        this.skipEmails = ws.getSkipEmails();
+        this.skipEmailsDays = ws.getSkipEmailsDays();
     }
 
     @Id
@@ -392,6 +395,29 @@ public class BillingProcessConfigurationDTO implements Serializable {
 	public void setRetryCount(Integer retryCount) {
 		this.retryCount = retryCount;
 	}
+	
+	@Column(name = "skip_emails")
+    public Integer getSkipEmails() {
+        return skipEmails;
+    }
+
+    public void setSkipEmails(Integer skipEmails) {
+        this.skipEmails = skipEmails;
+    }
+    
+    @Transient
+    public boolean shouldSkipEmails() {
+        return skipEmails == 1;
+    }
+    
+    @Column(name = "skip_email_days")
+    public String getSkipEmailsDays() {
+        return skipEmailsDays;
+    }
+
+    public void setSkipEmailsDays(String skipEmailsDays) {
+        this.skipEmailsDays = skipEmailsDays;
+    }
 
 	@Override
 	public String toString() {

@@ -148,7 +148,7 @@ public class MediationProcessServiceImplTest {
     }
 
     private MediationProcess saveMediationProcessForTest(int entityId, int configurationId) {
-        MediationProcess mediationProcess = mediationProcessService.saveMediationProcess(entityId, configurationId);
+        MediationProcess mediationProcess = mediationProcessService.saveMediationProcess(entityId, configurationId, null);
         mediationProcessIdCreatedDuringTests.add(mediationProcess.getId());
         return mediationProcess;
     }

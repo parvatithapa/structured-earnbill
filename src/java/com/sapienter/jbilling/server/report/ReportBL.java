@@ -23,7 +23,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,16 +40,22 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 
+import com.sapienter.jbilling.server.adennet.AdennetConstants;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.export.JRHtmlExporterParameter;
+import net.sf.jasperreports.engine.fill.JRFileVirtualizer;
 
 import org.apache.log4j.Logger;
+import java.time.LocalDateTime;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -54,7 +64,6 @@ import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.report.db.ReportDAS;
 import com.sapienter.jbilling.server.report.db.ReportDTO;
@@ -88,6 +97,7 @@ public class ReportBL {
     public static final String PARAMETER_SPC_COLUMN_BEFORE_TAX = "spc_column_before_tax";
     public static final String PARAMETER_SPC_COLUMN_TAX = "spc_column_tax";
     public static final String PARAMETER_SPC_COLUMN_AFTER_TAX = "spc_column_after_tax";
+    public static final String PARAMETER_AUDIT_LOG_REPORT_START_DATE = "report_start_date";
     private ReportDTO report;
     private Locale locale;
     private Integer entityId;
@@ -146,6 +156,7 @@ public class ReportBL {
         parameters.put(PARAMETER_USER_IS_ADMIN, userIsAdmin);
         parameters.put(PARAMETER_FORMAT, format);
         parameters.put(JRParameter.REPORT_RESOURCE_BUNDLE, bundle);
+        parameters.put(JRParameter.REPORT_VIRTUALIZER, new JRFileVirtualizer(1));
         if (ReportExportFormat.CSV.name().equals(format)) {
             parameters.put(JRParameter.IS_IGNORE_PAGINATION, Boolean.TRUE);
         }
@@ -153,6 +164,9 @@ public class ReportBL {
             parameters.put(PARAMETER_SPC_COLUMN_BEFORE_TAX, SPCConstants.SPC_COLUMN_BEFORE_TAX);
             parameters.put(PARAMETER_SPC_COLUMN_TAX, SPCConstants.SPC_COLUMN_TAX);
             parameters.put(PARAMETER_SPC_COLUMN_AFTER_TAX, SPCConstants.SPC_COLUMN_AFTER_TAX);
+        }
+        if (reportName.equals(AdennetConstants.REPORT_AUDIT_LOG)) {
+            parameters.put(PARAMETER_AUDIT_LOG_REPORT_START_DATE, new Timestamp(getAuditLogReportDate().getTime()));
         }
 
         CompanyDTO companyDTO = new CompanyDAS().find(entityId);
@@ -183,8 +197,7 @@ public class ReportBL {
         }
         parameters.put(CHILD_ENTITIES, childs);
 
-        LOG.debug("Generating report " + report.getPath() + " ...");
-        LOG.debug(parameters.toString());
+        LOG.info("Generating report={} and parameters={}", report.getPath(), parameters.toString());
 
         // run report
         JasperPrint print = null;
@@ -192,16 +205,24 @@ public class ReportBL {
         try (FileInputStream inputStream = new FileInputStream(report)) {
             ReportBuilder builder = ReportBuilder.getReport(reportName);
             if (builder != null) {
-                LOG.debug("Filling report builder");
+                LOG.info("Filling report builder");
                 print = JasperFillManager.fillReport(inputStream, parameters, new JRMapCollectionDataSource(builder.getData(entityId, childs, parameters)));        
             } else {
-                DataSource dataSource = Context.getBean(Context.Name.DATA_SOURCE);
+                DataSource dataSource;
+                if(reportName.startsWith("ums_")){
+                    dataSource = Context.getBean(Context.Name.DATA_SOURCE_UMS);
+                }else {
+                    dataSource = Context.getBean(Context.Name.DATA_SOURCE);
+                }
                 // If tx is active then DataSourceUtils  returns tx bind connection
                 // else it will get it from Connection Pool. DataSourceUtils will not always get connection from pool,
                 // so code will not use additional connection from pool when tx is active,
                 // so it will reduce number of busy connection at a time.
                 Connection connection = DataSourceUtils.getConnection(dataSource);
                 try {
+                    DefaultJasperReportsContext context = DefaultJasperReportsContext.getInstance();
+                    JRPropertiesUtil.getInstance(context).setProperty("net.sf.jasperreports.xpath.executer.factory",
+                        "net.sf.jasperreports.engine.util.xml.JaxenXPathExecuterFactory");
                     print = JasperFillManager.fillReport(inputStream, parameters, connection);
                 } finally {
                     // Release Connection immediately if tx is not active else tx is active then spring
@@ -308,7 +329,7 @@ public class ReportBL {
      * @throws JRException 
      */
     public ReportExportDTO export(ReportExportFormat format) {
-        LOG.debug("Exporting report to " + format.name() + " ...");
+        LOG.info("Exporting report to " + format.name() + " ...");
         this.format = format.name();
         JasperPrint print = run();
 
@@ -365,5 +386,19 @@ public class ReportBL {
         return entityId;
     }
 
-
+    private static Date getAuditLogReportDate() {
+        try {
+            JdbcTemplate jdbcTemplate = Context.getBean(Context.Name.JDBC_TEMPLATE);
+            String query = "select str_value from pluggable_task_parameter where name = 'audit_log_report_start_date_time' " +
+                "AND  task_id =( select id from pluggable_task where type_id = " +
+                "(select id from pluggable_task_type where class_name = 'com.sapienter.jbilling.server.adennet.AdennetExternalConfigurationTask'));";
+            LocalDateTime dateTime = LocalDateTime.parse(jdbcTemplate.queryForObject(query, String.class),
+                DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss"));
+            return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+        } catch (Exception exception) {
+            LOG.error("Exception occurred while parsing the audit log report date: " + exception.getMessage(), exception);
+        }
+        LOG.warn("Audit Log ReportDate is not defined.");
+        return new Date();
+    }
 }

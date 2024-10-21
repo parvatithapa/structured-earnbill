@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="monthly_termination_costs" language="groovy" pageWidth="842" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isSummaryWithPageHeaderAndFooter="true" uuid="4945617d-a05c-4c25-85f9-5ff9a4f828b4">
 	<property name="ireport.zoom" value="1.000000000000004"/>
-	<property name="ireport.x" value="299"/>
+	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="event_date_start" class="java.util.Date"/>
 	<parameter name="event_date_end" class="java.util.Date"/>
@@ -53,6 +53,9 @@
 		<variableExpression><![CDATA[$F{amount}]]></variableExpression>
 		<initialValueExpression><![CDATA[]]></initialValueExpression>
 	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
 	<pageHeader>
 		<band height="79" splitType="Stretch">
 			<printWhenExpression><![CDATA[$V{PAGE_NUMBER} == 1]]></printWhenExpression>
@@ -191,9 +194,9 @@
 		</band>
 	</columnHeader>
 	<detail>
-		<band height="26" splitType="Stretch">
+		<band height="23" splitType="Stretch">
 			<textField isStretchWithOverflow="true" pattern="MM/dd/yyyy" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="0" y="0" width="73" height="25" uuid="b9287345-05fa-406c-90bb-4659aef78701"/>
+				<reportElement x="0" y="0" width="73" height="20" uuid="b9287345-05fa-406c-90bb-4659aef78701"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -205,7 +208,7 @@
 				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="145" y="0" width="150" height="25" uuid="e4dc5634-a4ad-4cae-b37d-befe4ce94ac5"/>
+				<reportElement x="145" y="0" width="150" height="20" uuid="e4dc5634-a4ad-4cae-b37d-befe4ce94ac5"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -217,7 +220,7 @@
 				<textFieldExpression><![CDATA[$F{sub_org}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="hh:mm:ss a" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="73" y="0" width="72" height="25" uuid="81bb3b1d-9786-4730-8387-1c9e2787ab6f"/>
+				<reportElement x="73" y="0" width="72" height="20" uuid="81bb3b1d-9786-4730-8387-1c9e2787ab6f"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -229,7 +232,7 @@
 				<textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="295" y="0" width="129" height="25" uuid="b6136759-8c2e-4a69-850e-f41a01920bb9"/>
+				<reportElement x="295" y="0" width="129" height="20" uuid="b6136759-8c2e-4a69-850e-f41a01920bb9"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -241,7 +244,7 @@
 				<textFieldExpression><![CDATA[$F{source}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="424" y="0" width="129" height="25" uuid="a2a82b9d-1c9d-492c-a218-0d624ad7a704"/>
+				<reportElement x="424" y="0" width="129" height="20" uuid="a2a82b9d-1c9d-492c-a218-0d624ad7a704"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -253,7 +256,7 @@
 				<textFieldExpression><![CDATA[$F{destination}]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="553" y="0" width="65" height="25" isRemoveLineWhenBlank="true" uuid="06472cd3-4ee7-43b1-aa38-781bd549f519">
+				<reportElement x="553" y="0" width="65" height="20" isRemoveLineWhenBlank="true" uuid="06472cd3-4ee7-43b1-aa38-781bd549f519">
 					<printWhenExpression><![CDATA[$P{cdrType} == "CALL"]]></printWhenExpression>
 				</reportElement>
 				<box>
@@ -267,7 +270,7 @@
 				<textFieldExpression><![CDATA[null != $F{original_quantity} ? $F{original_quantity}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP) + " min" : ""]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" pattern="#,##0.0000" isBlankWhenNull="true">
-				<reportElement stretchType="RelativeToBandHeight" x="618" y="0" width="100" height="25" uuid="c3d140e7-8f08-4dee-8693-01bab6e212c5"/>
+				<reportElement x="618" y="0" width="100" height="20" uuid="c3d140e7-8f08-4dee-8693-01bab6e212c5"/>
 				<box>
 					<pen lineWidth="0.0"/>
 					<topPen lineWidth="0.0"/>
@@ -283,15 +286,18 @@
 	<columnFooter>
 		<band height="25" splitType="Stretch"/>
 	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
 	<summary>
-		<band height="23" splitType="Stretch">
-			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="618" y="0" width="100" height="23" uuid="66d3b8b0-eb35-49ca-8192-918f6460c8e5"/>
+		<band height="42" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="618" y="0" width="100" height="20" uuid="66d3b8b0-eb35-49ca-8192-918f6460c8e5"/>
 				<textElement textAlignment="Right"/>
 				<textFieldExpression><![CDATA[$P{currency_symbol} + $V{total}.setScale(4, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement mode="Opaque" x="424" y="0" width="194" height="23" isRemoveLineWhenBlank="true" backcolor="#A9A9A9" uuid="e4dbd59c-4b8b-4a14-a782-0c65c3ddaff0"/>
+				<reportElement mode="Opaque" x="424" y="0" width="194" height="20" isRemoveLineWhenBlank="true" backcolor="#A9A9A9" uuid="e4dbd59c-4b8b-4a14-a782-0c65c3ddaff0"/>
 				<textElement textAlignment="Right">
 					<font isBold="false"/>
 				</textElement>

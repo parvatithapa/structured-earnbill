@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_convergent_postpaid_report" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="286436c4-302b-4cc2-8b5d-fa9ac583612d">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="local_jbilling"/>
+    <parameter name="invoice_id" class="java.lang.Integer"/>
+    <parameter name="invoice_line_tax_id" class="java.lang.Integer"/>
+    <parameter name="currency_symbol" class="java.lang.String"/>
+    <parameter name="subscriber_number" class="java.lang.String"/>
+    <parameter name="SUBREPORT_DIR" class="java.lang.String">
+        <defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+    </parameter>
+    <parameter name="subcriber_number" class="java.lang.String"/>
+    <queryString language="plsql">
+        <![CDATA[SELECT
+      DISTINCT(ss.display_identifier) as subscriber_number,
+      COALESCE(ROUND(SUM(tax_amount),2),0.00) as tax_amount,
+      COALESCE(ROUND(SUM(amount),2),0.00) as amount
+    FROM
+      invoice_line il
+      JOIN purchase_order po ON il.order_id = po.id
+      JOIN service_summary ss ON ss.invoice_line_id = il.id
+      JOIN order_meta_field_map om ON ss.subscription_order_id = om.order_id
+      JOIN meta_field_value mfv ON mfv.id = om.meta_field_value_id
+    WHERE
+      il.deleted = 0
+      AND il.invoice_id = $P{invoice_id}
+      AND mfv.string_value = 'post paid'
+   Group by subscriber_number;]]>
+    </queryString>
+    <field name="subscriber_number" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="subscriber_number"/>
+        <property name="com.jaspersoft.studio.field.label" value="subscriber_number"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="service_summary"/>
+    </field>
+    <field name="tax_amount" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="tax_amount"/>
+        <property name="com.jaspersoft.studio.field.label" value="tax_amount"/>
+    </field>
+    <field name="amount" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="amount"/>
+        <property name="com.jaspersoft.studio.field.label" value="amount"/>
+    </field>
+    <variable name="tax_total" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{tax_amount}]]></variableExpression>
+    </variable>
+    <variable name="amount_total" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{amount}]]></variableExpression>
+    </variable>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <detail>
+        <band height="18" splitType="Stretch">
+            <subreport>
+                <reportElement x="-20" y="0" width="200" height="18" uuid="8add2079-b552-44b3-b56e-b3353dddef05">
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+                <subreportParameter name="invoice_line_tax_id">
+                    <subreportParameterExpression><![CDATA[$P{invoice_line_tax_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="invoice_id">
+                    <subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="currency_symbol">
+                    <subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="subscriber_number">
+                    <subreportParameterExpression><![CDATA[$F{subscriber_number}]]></subreportParameterExpression>
+                </subreportParameter>
+                <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+                <subreportExpression><![CDATA[$P{SUBREPORT_DIR} +"invoice_design_convergent_postpaid_subreport.jasper"]]></subreportExpression>
+            </subreport>
+        </band>
+    </detail>
+</jasperReport>

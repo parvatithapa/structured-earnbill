@@ -19,10 +19,9 @@ import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.payment.PaymentInformationRestWS;
 import com.sapienter.jbilling.server.payment.PaymentInformationWS;
 import com.sapienter.jbilling.server.payment.PaymentWS
-import com.sapienter.jbilling.server.payment.SecurePaymentWS;
 import com.sapienter.jbilling.server.usagePool.CustomerUsagePoolWS;
-import com.sapienter.jbilling.server.user.PortalCredential;
 import com.sapienter.jbilling.server.user.ContactInformationWS;
+import com.sapienter.jbilling.server.user.CreateUserRequestWS;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.UserWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
@@ -53,10 +52,10 @@ import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriInfo
 
 import org.apache.http.HttpStatus
+import org.eclipse.core.resources.IFolder;
 import org.json.JSONObject
 
 import com.sapienter.jbilling.common.ErrorDetails
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.invoice.InvoiceWS
 import com.sapienter.jbilling.server.payment.PaymentWS
 import com.sapienter.jbilling.server.user.UserProfileWS
@@ -69,6 +68,10 @@ import com.wordnik.swagger.annotations.ApiOperation
 import com.wordnik.swagger.annotations.ApiParam
 import com.wordnik.swagger.annotations.ApiResponse
 import com.wordnik.swagger.annotations.ApiResponses
+import com.sapienter.jbilling.server.payment.SecurePaymentWS;
+import com.sapienter.jbilling.server.item.AssetWS
+import java.util.function.Supplier;
+import com.sapienter.jbilling.server.user.UserDTOEx;
 
 @Path("/api/users")
 @Api(value="/api/users", description = "Users.")
@@ -119,32 +122,53 @@ class UserResource {
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
-
-    @PUT
-    @Path("/{userId}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Updates existing user.", response = UserWS.class)
-    @ApiResponses(value = [
-        @ApiResponse(code = 200, message = "User created."),
-        @ApiResponse(code = 400, message = "Invalid user supplied."),
-        @ApiResponse(code = 404, message = "User not found."),
-        @ApiResponse(code = 500, message = "The call resulted with internal error.")])
-    Response updateUser(
-            @ApiParam(name = "userId", value = "User id that needs to be updated.", required = true)
-            @PathParam("userId")
-            Integer userId,
-            @ApiParam(value = "User object containing update data.", required = true)
-            UserWS user){
-
-        try {
-            webServicesSession.getUserWS(userId)
-            user.setId(userId);
-            webServicesSession.updateUser(user);
-            return Response.ok().entity(webServicesSession.getUserWS(userId)).build();
-        } catch (Exception e){
-            return RestErrorHandler.mapErrorToHttpResponse(e);
-        }
-    }
+			
+	@POST
+	@Path("/createUser")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "MEDAAS - Create user.")
+	@ApiResponses(value = [
+	@ApiResponse(code = 201, message = "User created.", response = Integer.class),
+	@ApiResponse(code = 400, message = "Invalid user supplied."),
+	@ApiResponse(code = 500, message = "The call resulted with internal error.")])
+	Response create(
+		@ApiParam(value = "Created user object.", required = true)
+		CreateUserRequestWS createUserRequest){
+		try {
+			def userResponse = userResourceHelperService.createUser(createUserRequest)
+			return Response.ok()
+				.entity(userResponse)
+					.build();
+		} catch (Exception e){
+			return RestErrorHandler.mapErrorToHttpResponse(e);
+		}
+	}
+			
+	@PUT
+	@Path("/{userId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Updates existing user.", response = UserWS.class)
+	@ApiResponses(value = [
+	@ApiResponse(code = 200, message = "User created."),
+	@ApiResponse(code = 400, message = "Invalid user supplied."),
+	@ApiResponse(code = 404, message = "User not found."),
+	@ApiResponse(code = 500, message = "The call resulted with internal error.")])
+	Response updateUser(
+		@ApiParam(name = "userId", value = "User id that needs to be updated.", required = true)
+			@PathParam("userId")
+			Integer userId,
+			@ApiParam(value = "User object containing update data.", required = true)
+			UserWS user){
+		
+			try {
+				webServicesSession.getUserWS(userId)
+				user.setId(userId);
+				webServicesSession.updateUser(user);
+				return Response.ok().entity(webServicesSession.getUserWS(userId)).build();
+			} catch (Exception e){
+				return RestErrorHandler.mapErrorToHttpResponse(e);
+			}
+	}
 
     @GET
     @Path("/customerattributes/{userId}")
@@ -241,8 +265,8 @@ class UserResource {
             } else {
                 invoices = webServicesSession.getAllInvoicesForUser(userId);
             }
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
         return Response.ok().entity(invoices).build();
     }
@@ -276,8 +300,8 @@ class UserResource {
             } else {
                 return Response.ok().entity(webServicesSession.getLatestInvoice(userId)).build();
             }
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
     }
 
@@ -305,7 +329,7 @@ class UserResource {
     @ApiOperation(value = "Get user payments page.", response = PaymentWS.class)
     @ApiResponses(value = [
         @ApiResponse(code = 200, message = "User payments page found.", response = PaymentWS.class),
-        @ApiResponse(code = 400, message = "Invalid parameters passed."),
+        @ApiResponse(code = 400, message = "Invalid user supplied."),
         @ApiResponse(code = 404, message = "User not found."),
         @ApiResponse(code = 500, message = "The call resulted with internal error.")])
     public Response getUserPaymentsPage(
@@ -315,7 +339,7 @@ class UserResource {
 
         try {
             return Response.ok().entity(webServicesSession.getLastPaymentsPage(userId, limit, offset)).build();
-        } catch (Exception e) {
+        } catch (Exception e){
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
@@ -368,8 +392,8 @@ class UserResource {
         }
     }
 
-    @POST
-    @Path("/validatelogin")
+    @GET
+    @Path("/validatelogin/{username}/{password}")
     @ApiOperation(value = "validate user credential and retrun UserWS.", response = UserWS.class)
     @ApiResponses(value = [
         @ApiResponse(code = 200, message = "Returning user ws for given credential.", response = UserWS.class),
@@ -378,32 +402,13 @@ class UserResource {
         @ApiResponse(code = 500, message = "validating credential failed.")
     ])
     Response validateLogin(
-             @ApiParam(value = "JSON representation of the username and password to validate user.", required = true)
-             PortalCredential portalCredential) {
+            @ApiParam(name = "username", value = "user name.", required = true) @PathParam("username") String userName,
+            @ApiParam(name = "password", value = "password", required = true) @PathParam("password")  String password
+    ) {
         try {
-            return Response.ok().entity(webServicesSession
-                    .validateLogin(portalCredential.getUsername(), portalCredential.getCurrentPassword())).build();
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
-        }
-    }
-    @POST
-    @Path("/updatepassword")
-    @ApiOperation(value = "update user password of existing user", response = String.class)
-    @ApiResponses(value = [
-        @ApiResponse(code = 200, message = "user password updated successfully.", response = String.class),
-        @ApiResponse(code = 400, message = "Invalid parameters passed."),
-        @ApiResponse(code = 404, message = "User not found."),
-        @ApiResponse(code = 500, message = "The call resulted with internal error.")
-    ])
-    Response updatePassword(
-            @ApiParam(value = "JSON representation of the username and password to validate user.", required = true)
-            PortalCredential portalCredential) {
-        try {
-            webServicesSession.updatePassword(portalCredential.getUserId(), portalCredential.getCurrentPassword(), portalCredential.getNewPassword());
-            return Response.ok().entity(JSONObject.quote("Password updated successfully")).build();
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+            return Response.ok().entity(webServicesSession.validateLogin(userName, password)).build();
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
     }
 
@@ -420,10 +425,6 @@ class UserResource {
             value = "The id of the user that needs to reset the password.", required = true)
             @PathParam("userId") Integer userId) {
         try {
-            if(null == userId) {
-                throw new SessionInternalError("invalid user id parameter ", ["user id parameter can not be null!"] as String[],
-                HttpStatus.SC_BAD_REQUEST);
-            }
             webServicesSession.resetPassword(userId);
             return Response.ok().entity(JSONObject.quote("Reset password request sent successfully")).build();
         } catch (Exception e) {
@@ -479,8 +480,9 @@ class UserResource {
         @ApiResponse(code = 500, message = "The call resulted with internal error.")
     ])
     public Response getPaymentInstruments(
-        @ApiParam(name = "userId", value = "The user id for that payment instrument needs to be fetched.", required = true)  @PathParam("userId") Integer userId) 
-    {
+            @ApiParam(name = "userId"
+				, value = "The user id to fetch payment instruments."
+				, required = true) @PathParam("userId") Integer userId) {
         try {
             PaymentInformationWS[] paymentInformationWSs = webServicesSession.getPaymentInstruments(userId)
             PaymentInformationRestWS[] paymentInformationRestWSs = UserBL.getPaymentInformationWSForRestWS(paymentInformationWSs)
@@ -503,10 +505,6 @@ class UserResource {
             @PathParam("userName") String userName
     ) {
         try {
-            if(null == userName) {
-                throw new SessionInternalError("invalid user name parameter ", ["user name parameter can not be null!"] as String[],
-                HttpStatus.SC_BAD_REQUEST);
-            }
             webServicesSession.resetPasswordByUserName(userName);
             return Response.ok().entity(JSONObject.quote("Reset password request sent successfully")).build();
         } catch (Exception e) {
@@ -541,8 +539,10 @@ class UserResource {
         @ApiResponse(code = 404, message = "User not found."),
         @ApiResponse(code = 500, message = "The call resulted with internal error.")
     ])
-    Response getCustomerMetaFields(            
-            @ApiParam(name = "userId", value = "The id of the user that needs to be fetched.", required = true) @PathParam("userId") Integer userId) {
+    Response getCustomerMetaFields(
+            @ApiParam(name = "userId"
+				, value = "The user id to fetch the customer meta fields."
+				, required = true) @PathParam("userId") Integer userId) {
         try {
             CustomerMetaFieldValueWS customerMetaFieldValue = webServicesSession.getCustomerMetaFields(userId)
             return Response.ok().entity(customerMetaFieldValue).build()
@@ -551,7 +551,7 @@ class UserResource {
         }
     }
 
-    @POST
+	@POST
     @Path("/addpaymentinstrument")
 	@Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add payment instrument to the given user", response = SecurePaymentWS.class)
@@ -572,7 +572,6 @@ class UserResource {
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
-
 
     //Private helper methods
     private def populatePaymentInformationWSFromRestWS(PaymentInformationRestWS piRestWS) {
@@ -652,6 +651,95 @@ class UserResource {
                     .build()
         } catch (Exception e) {
             return RestErrorHandler.mapErrorToHttpResponse(e)
+        }
+    }
+
+    @GET
+    @Path("/getinvoicedesign/{userId}")
+    @ApiOperation(value = "get user's invoice design", response = String.class)
+    @ApiResponses(value = [
+        @ApiResponse(code = 200, message = "Returning user's invoice design.", response = String.class),
+        @ApiResponse(code = 404, message = "User not found."),
+        @ApiResponse(code = 500, message = "The call resulted with internal error.")
+    ])
+    Response getCustomerInvoiceDesign(@ApiParam(name = "userId",
+            value = "The id of the user to fetch customer invoice design.", required = true)
+            @PathParam("userId") Integer userId) {
+        try {
+            userResourceHelperService.validate(userId);
+            String invoiceDesign = webServicesSession.getCustomerInvoiceDesign(userId);
+            return Response.ok()
+                    .entity(JSONObject.quote(invoiceDesign))
+                    .build();
+        } catch (Exception e) {
+            return RestErrorHandler.mapErrorToHttpResponse(e)
+        }
+    }
+
+    @PUT
+    @Path("/invoicedesign/{userId}")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @ApiOperation(value = "Update customer invoice design.", response = String.class)
+    @ApiResponses(value = [
+        @ApiResponse(code = 200, message = "Customer invoice design updated."),
+        @ApiResponse(code = 400, message = "Invalid request supplied."),
+        @ApiResponse(code = 404, message = "Customer not found."),
+        @ApiResponse(code = 500, message = "The call resulted with internal error.")])
+    Response updateCustomerInvoiceDesign(
+            @ApiParam(name = "userId", value = "User id that needs to be updated.", required = true)
+            @PathParam("userId")
+            Integer userId,
+            @ApiParam(value = "Customer invoice design to be updated.")
+            String invoiceDesign) {
+        try {
+            userResourceHelperService.validate(userId);
+            webServicesSession.updateCustomerInvoiceDesign(userId, invoiceDesign);
+            return Response.ok().entity(JSONObject.quote("Customer invoice design has been updated successfully")).build();
+        } catch (Exception e){
+            return RestErrorHandler.mapErrorToHttpResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/getUserRating/{crmId}")
+    @ApiOperation(value = "Get rating by CRM id.", response = String.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "rating created.", response = String.class),
+            @ApiResponse(code = 404, message = "Rating not created."),
+            @ApiResponse(code = 500, message = "The call resulted with internal error.")])
+    Response getUserRating(
+            @ApiParam(name = "crmId",
+                    value = "The CRM id of the user that needs to be fetched.",
+                    required = true)
+            @PathParam("crmId") String crmId) {
+        try {
+            def rating = webServicesSession.getUserRating(crmId)
+            return Response.ok().entity(JSONObject.quote(rating)).build()
+        } catch (Exception e){
+            return RestErrorHandler.mapErrorToHttpResponse(e);
+        }
+    }
+
+    @GET
+    @Path("userbyidentifier/{identifier}")
+    @ApiOperation(value = "Get user by identifier.", response = UserWS.class)
+    @ApiResponses(value = [
+            @ApiResponse(code = 200, message = "User found.", response = UserWS.class),
+            @ApiResponse(code = 404, message = "User not found."),
+            @ApiResponse(code = 500, message = "The call resulted with internal error.")])
+    Response getUserByIdentifier(
+            @ApiParam(name = "identifier",
+                    value = "The identifier of the asset that needs to be fetched.",
+                    required = true)
+            @PathParam("identifier") String identifier) {
+        try {
+            AssetWS assetWS =Optional.ofNullable(webServicesSession.getAssetByIdentifier(identifier))
+                    .orElseThrow(new RuntimeException("Asset not found for identifier: " + identifier) as Supplier<? extends Throwable>)
+
+            UserWS user = UserBL.getWS(new UserDTOEx(new UserBL().getUserByAssetId(assetWS.getId())))
+            return Response.ok().entity(user).build();
+        } catch (Exception e){
+            return RestErrorHandler.mapErrorToHttpResponse(e);
         }
     }
 }

@@ -29,13 +29,15 @@ public class MediationProcess implements Serializable, Exportable {
     private Integer orderAffectedCount= 0;
     private Integer aggregated = 0;
     private Integer[] orderIds = new Integer[0];
+    private String fileName = "";
 
     public MediationProcess() {
     }
 
     public MediationProcess(UUID id, Integer entityId, Integer configurationId, Boolean global, Date startDate,
 							Date endDate, Integer recordsProcessed, Integer doneAndBillable, Integer errors,
-							Integer duplicates, Integer doneAndNotBillable, Integer orderAffectedCount, Integer aggregated) {
+							Integer duplicates, Integer doneAndNotBillable, Integer orderAffectedCount, Integer aggregated,
+							String fileName) {
         this.id = id;
         this.entityId = entityId;
         this.configurationId = configurationId;
@@ -49,6 +51,7 @@ public class MediationProcess implements Serializable, Exportable {
         this.doneAndNotBillable = doneAndNotBillable;
         this.orderAffectedCount = orderAffectedCount;
         this.aggregated = aggregated;
+        this.fileName = fileName;
     }
 
     @ApiModelProperty(value = "Unique identifier")
@@ -176,7 +179,16 @@ public class MediationProcess implements Serializable, Exportable {
         this.aggregated = aggregated;
     }
 
-	@Override
+    @ApiModelProperty(value = "File name of the CDR file processed")
+	public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    @Override
     @JsonIgnore
     public String[] getFieldNames() {
         return new String[]{
@@ -192,7 +204,8 @@ public class MediationProcess implements Serializable, Exportable {
             "duplicates",
             "doneAndNotBillable",
             "orderAffectedCount",
-            "aggregated"
+            "aggregated",
+            "fileName"
         };
     }
 
@@ -213,7 +226,8 @@ public class MediationProcess implements Serializable, Exportable {
                 duplicates,
                 doneAndNotBillable,
                 orderAffectedCount,
-                aggregated
+                aggregated,
+                fileName
             }
         };
     }
@@ -227,7 +241,8 @@ public class MediationProcess implements Serializable, Exportable {
                 + ", duplicates=" + duplicates + ", configurationId="
                 + configurationId + ", doneAndNotBillable="
                 + doneAndNotBillable + ", orderAffectedCount="
-                + orderAffectedCount + "]";
+                + orderAffectedCount
+                +", fileName=" + fileName + "]";
     }
 
 }

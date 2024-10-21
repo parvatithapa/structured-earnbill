@@ -346,7 +346,7 @@
     					<g:set var="flag" value="${true}" />
     					<div class="row">
     						<label><g:message code="prompt.edit.notification.bodytext" />:</label>
-    						<div style='float: left;' >
+    						<div id="custom-div">
     							<g:each in="${dto?.getNotificationMessageSections()}"
     								var="section">
     								<g:if test="${(section.section == 2)}">
@@ -382,7 +382,7 @@
     					<g:set var="flag" value="${true}" />
     					<div class="row">
     						<label><g:message code="prompt.edit.notification.bodyhtml" />:</label>
-    						<div style='float: left;'>
+    						<div id="custom-div">
     							<g:each in="${dto?.getNotificationMessageSections()}"
     								var="section">
     								<g:if test="${(section?.section == 3)}">

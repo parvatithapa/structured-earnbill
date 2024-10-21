@@ -109,7 +109,6 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
     public static final int INBOUND_USAGE_PRODUCT_ID = 320101;
     public static final int CHAT_USAGE_PRODUCT_ID = 320102;
     public static final int ACTIVE_RESPONSE_USAGE_PRODUCT_ID = 320103;
-    private static Integer customerUsagePoolEvalutionPluginId;
     private String testAccount = "Account Type";
     private String testCat1 = "MediatedUsageCategory";
     private AssetWS scenario01Asset;
@@ -149,13 +148,6 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
             BillingProcessConfigurationWS newBillingProcessConfig = api.getBillingProcessConfiguration();
             newBillingProcessConfig.setProratingType(ProratingType.PRORATING_MANUAL.getProratingType());
             api.createUpdateBillingProcessConfiguration(newBillingProcessConfig);
-
-            //Configure Customer Usage Pool Evalution Task
-            PluggableTaskWS customerUsagePoolEvaluationTask= new PluggableTaskWS();
-            customerUsagePoolEvaluationTask.setProcessingOrder(523);
-            customerUsagePoolEvaluationTask.setTypeId(118);
-            customerUsagePoolEvaluationTask.setNotes("customerUsagePoolEvaluationTask");
-            customerUsagePoolEvalutionPluginId = api.createPlugin(customerUsagePoolEvaluationTask);
 
             //Create account type
             buildAndPersistAccountType(envBuilder, api, testAccount, CC_PM_ID);
@@ -206,9 +198,6 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
     public void tearDown() {
         JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
         api.createUpdateBillingProcessConfiguration(oldBillingProcessConfig);
-        if(null != customerUsagePoolEvalutionPluginId){
-            api.deletePlugin(customerUsagePoolEvalutionPluginId);
-        }
         testBuilder.removeEntitiesCreatedOnJBillingForMultipleTests();
         testBuilder.removeEntitiesCreatedOnJBilling();
         if (null != envHelper) {
@@ -321,13 +310,12 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                 List<String> inboundCdrs = buildInboundCDR(Arrays.asList(scenario01Asset.getIdentifier()), "300", "02/10/2018");
 
                 scenario01.triggerMediation(INBOUND_MEDIATION_LAUNCHER, inboundCdrs);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 }
-
                 Calendar cycleStartDate = Calendar.getInstance();
                 cycleStartDate.set(Calendar.YEAR, 2018);
                 cycleStartDate.set(Calendar.MONTH, 1);
@@ -364,7 +352,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(invoiceDate.getTime(), false)
                     .makePayment("428.99", invoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -414,13 +402,12 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(nextInvoiceDate.getTime(), false)
                     .makePayment("328.99", nextInvoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId ,new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 }
-
             }).validate((testEnv, envBuilder) -> {
                 final JbillingAPI api = envBuilder.getPrancingPonyApi();
                 Calendar lastInvoiceDate = Calendar.getInstance();
@@ -443,11 +430,16 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                                                             .validate();
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_01), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_01));
+            cleanUp(USER_01);
         }
+    }
+    private void cleanUp(String user) {
+        final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(user), 10, 0))
+                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
+        Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(user), 10, 0))
+                .forEach(order -> api.deleteOrder(order.getId()));
+        api.deleteUser(testBuilder.getTestEnvironment().idForCode(user));
     }
 
     /**
@@ -553,7 +545,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                                                             .validate();
                 List<String> inboundCdrs = buildInboundCDR(Arrays.asList(scenario01Asset.getIdentifier()), "300", "02/10/2018");
                 scenario01.triggerMediation(INBOUND_MEDIATION_LAUNCHER, inboundCdrs);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -596,7 +588,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(invoiceDate.getTime(), false)
                     .makePayment("303.99", invoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -647,7 +639,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(nextInvoiceDate.getTime(), false)
                     .makePayment("403.99", nextInvoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId ,new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -676,10 +668,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                                                             .validate();
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_02), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_02));
+            cleanUp(USER_02);
         }
     }
 
@@ -791,7 +780,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                 List<String> inboundCdrs = buildInboundCDR(Arrays.asList(scenario01Asset.getIdentifier()), "300", "02/10/2018");
 
                 scenario01.triggerMediation(INBOUND_MEDIATION_LAUNCHER, inboundCdrs);
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -851,7 +840,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(invoiceDate.getTime(), false)
                     .makePayment("403.99", invoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , invoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -902,7 +891,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                     .generateInvoice(nextInvoiceDate.getTime(), false)
                     .makePayment("403.99", nextInvoiceDate.getTime(), false);
 
-                api.triggerScheduledTask(customerUsagePoolEvalutionPluginId ,new Date());
+                api.triggerCustomerUsagePoolEvaluation(1 , nextInvoiceDate.getTime());
                 try {
                     Thread.sleep(3000);
                 } catch (Exception e) {
@@ -931,10 +920,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                                                             .validate();
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_03), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_03));
+            cleanUp(USER_03);
         }
     }
 
@@ -1080,12 +1066,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
 
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_04), 10, 0))
-            .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            UserWS user = api.getUserWS(testBuilder.getTestEnvironment().idForCode(USER_04));
-            updateCustomerStatusToActive(user.getId(), api);
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_04));
+            cleanUp(USER_04);
         }
     }
 
@@ -1196,8 +1177,8 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
             });
         } finally {
             final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_05));
             api.deleteDiscount(discountId);
+            cleanUp(USER_05);
         }
 
     }
@@ -1285,8 +1266,8 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
             });
         } finally {
             final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_06));
             api.deleteDiscount(discountId);
+            cleanUp(USER_06);
         }
 
     }
@@ -1374,8 +1355,8 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
             });
         } finally {
             final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_07));
             api.deleteDiscount(discountId);
+            cleanUp(USER_07);
         }
 
     }
@@ -1436,10 +1417,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                 }
             });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_08), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_08));
+            cleanUp(USER_08);
         }
     }
 
@@ -1447,7 +1425,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
         return TestBuilder.newTest(false).givenForMultiple(testEnvCreator -> this.envHelper = EnvironmentHelper.getInstance(testEnvCreator.getPrancingPonyApi()));
     }
 
-    public Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
+    private Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
         AccountTypeWS accountTypeWS = envBuilder.accountTypeBuilder(api)
                 .withName(name)
                 .withPaymentMethodTypeIds(paymentMethodTypeId)
@@ -1455,7 +1433,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
         return accountTypeWS.getId();
     }
 
-    public Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
+    private Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
         return envBuilder.itemBuilder(api)
                 .itemType()
                 .withCode(code)
@@ -1464,7 +1442,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                 .build();
     }
 
-    public Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
+    private Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
             boolean global, Integer categoryId, String flatPrice, boolean allowDecimal) {
         return envBuilder.itemBuilder(api)
                 .item()
@@ -1508,7 +1486,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
                 .build().getId();
     }
 
-    public Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
+    private Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
             Integer accountTypeId, Date nextInvoiceDate, Integer periodId, Integer nextInvoiceDay) {
 
         UserWS userWS = envBuilder.customerBuilder(api)
@@ -1523,7 +1501,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
         return userWS.getId();
     }
 
-    public Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
+    private Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
             Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId,
             boolean prorate, Map<Integer, BigDecimal> productQuantityMap) {
 
@@ -1547,7 +1525,7 @@ public class PrepaidSwapPlanFreeUsagePoolTest {
         return orderBuilder.build();
     }
 
-    public Integer createOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api,String code,Integer userId,Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId, int statusId, 
+    private Integer createOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api,String code,Integer userId,Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId, int statusId,
             boolean prorate, Map<Integer, BigDecimal> productQuantityMap, Map<Integer, Integer> productAssetMap, boolean createNegativeOrder) {
         List<OrderLineWS> lines = productQuantityMap.entrySet()
                 .stream()

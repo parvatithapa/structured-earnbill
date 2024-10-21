@@ -1,8 +1,11 @@
 package com.sapienter.jbilling.server.item;
 
 import com.sapienter.jbilling.server.item.db.AssetAssignmentDTO;
+import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.hibernate.Query;
 
 import java.util.Date;
@@ -30,10 +33,25 @@ public class AssetAssignmentDAS extends AbstractDAS<AssetAssignmentDTO> {
 					" ol.purchaseOrder.id = :order_id " +
 					" order by aa.startDatetime desc";
 
+	private final static String FIND_ASSETS_FROM_ASSET_ASSIGNMENT_FOR_ORDER =
+			"select a from AssetAssignmentDTO aa " + 
+					" inner join aa.orderLine ol " + 
+					" inner join aa.asset a " + 
+					" where ol.purchaseOrder.id = :order_id " +
+					" order by aa.startDatetime desc";
+
 	public List<AssetAssignmentDTO> getAssignmentsForOrder(Integer orderId) {
 		Query query = getSession().createQuery(FIND_ASSETS_FOR_ORDER);
 		query.setParameter("order_id", orderId);
 		return query.list();
+	}
+
+	public AssetDTO getAssetsFromAssignmentsForOrder(Integer orderId) {
+		Query query = getSession().createQuery(FIND_ASSETS_FROM_ASSET_ASSIGNMENT_FOR_ORDER);
+		query.setParameter("order_id", orderId);
+
+		List<AssetDTO> result = query.list();
+		return (CollectionUtils.isNotEmpty(result)) ? result.get(0) : null;
 	}
 
 	private final static String FIND_CURRENT_ORDER_LINE_FOR_ASSET =

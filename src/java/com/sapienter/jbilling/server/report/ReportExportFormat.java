@@ -17,12 +17,14 @@
 package com.sapienter.jbilling.server.report;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.JRXlsExporter;
-import net.sf.jasperreports.engine.export.JRXlsExporterParameter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimpleWriterExporterOutput;
+import net.sf.jasperreports.export.SimpleXlsReportConfiguration;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,12 +39,12 @@ public enum ReportExportFormat {
 
     PDF {
         public ReportExportDTO export(JasperPrint print) throws JRException, IOException {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-            JasperExportManager.exportReportToPdfStream(print, baos);
+            JasperExportManager.exportReportToPdfStream(print, byteArrayOutputStream);
 
-            byte[] bytes = baos.toByteArray();
-            baos.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
 
             return new ReportExportDTO(print.getName() + ".pdf", "application/pdf", bytes);
         }
@@ -50,21 +52,15 @@ public enum ReportExportFormat {
 
     XLS {
         public ReportExportDTO export(JasperPrint print) throws JRException, IOException {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            JRXlsExporter exporter = new JRXlsExporter();
-            exporter.setParameter(JRXlsExporterParameter.JASPER_PRINT, print);
-            exporter.setParameter(JRXlsExporterParameter.IS_DETECT_CELL_TYPE, false);
-            exporter.setParameter(JRXlsExporterParameter.IS_WHITE_PAGE_BACKGROUND, false);
-            exporter.setParameter(JRXlsExporterParameter.IS_COLLAPSE_ROW_SPAN, true);
-            exporter.setParameter(JRXlsExporterParameter.IS_REMOVE_EMPTY_SPACE_BETWEEN_COLUMNS, true);
-            exporter.setParameter(JRXlsExporterParameter.IS_REMOVE_EMPTY_SPACE_BETWEEN_ROWS, true);
-            exporter.setParameter(JRXlsExporterParameter.OUTPUT_STREAM, baos);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            //exclude iReport page footer from excel file
+            print.getPropertiesMap().setProperty("net.sf.jasperreports.export.xls.exclude.origin.band.2","pageFooter");
+            JRXlsExporter exporter = getJrXlsExporter(print, byteArrayOutputStream);
 
             exporter.exportReport();
 
-            byte[] bytes = baos.toByteArray();
-            baos.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
 
             return new ReportExportDTO(print.getName() + ".xls", "application/vnd.ms-excel", bytes);
         }
@@ -72,12 +68,11 @@ public enum ReportExportFormat {
 
     CSV {
         public ReportExportDTO export(JasperPrint print) throws JRException, IOException {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.remove.empty.space.between.rows", "true");
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.remove.empty.space.between.columns", "true");
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.parameters.override.IgnorePagination", "true");
-            print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.exclude.origin.band.*", "title");
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.exclude.origin.band.1", "pageHeader");
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.exclude.origin.keep.first.band.1","columnHeader");
             print.getPropertiesMap().setProperty("net.sf.jasperreports.export.csv.exclude.origin.keep.first.band.2","columnHeader");
@@ -88,16 +83,32 @@ public enum ReportExportFormat {
             print.getPropertiesMap().setProperty("net.sf.jasperreports.page.break.no.pagination", "apply");
 
             JRCsvExporter exporter = new JRCsvExporter();
-            exporter.setParameter(JRExporterParameter.JASPER_PRINT, print);
-            exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baos);           
+            exporter.setExporterInput(new SimpleExporterInput(print));
+            exporter.setExporterOutput(new SimpleWriterExporterOutput(byteArrayOutputStream));
             exporter.exportReport();
 
-            byte[] bytes = baos.toByteArray();
-            baos.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
 
             return new ReportExportDTO(print.getName() + ".csv", "text/csv", bytes);
         }
     };
+
+    private static JRXlsExporter getJrXlsExporter(JasperPrint print, ByteArrayOutputStream byteArrayOutputStream) {
+        SimpleXlsReportConfiguration configuration = new SimpleXlsReportConfiguration();
+        configuration.setDetectCellType(Boolean.TRUE);
+        configuration.setWhitePageBackground(Boolean.FALSE);
+        configuration.setCollapseRowSpan(Boolean.TRUE);
+        configuration.setAutoFitPageHeight(Boolean.TRUE);
+        configuration.setRemoveEmptySpaceBetweenColumns(Boolean.TRUE);
+        configuration.setRemoveEmptySpaceBetweenRows(Boolean.TRUE);
+
+        JRXlsExporter exporter = new JRXlsExporter();
+        exporter.setExporterInput(new SimpleExporterInput(print));
+        exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(byteArrayOutputStream));
+        exporter.setConfiguration(configuration);
+        return exporter;
+    }
 
     public abstract ReportExportDTO export(JasperPrint print) throws JRException, IOException;
 

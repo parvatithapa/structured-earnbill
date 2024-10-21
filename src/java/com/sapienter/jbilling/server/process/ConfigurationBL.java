@@ -126,6 +126,8 @@ public class ConfigurationBL {
 
         configuration.setAutoPayment(dto.getAutoPayment());
         configuration.setRetryCount(dto.getRetryCount());
+        configuration.setSkipEmails(dto.getSkipEmails());
+        configuration.setSkipEmailsDays(dto.getSkipEmailsDays());
         return configuration.getId();
     }
 
@@ -154,6 +156,8 @@ public class ConfigurationBL {
 
         dto.setAutoPayment(configuration.getAutoPayment());
         dto.setRetryCount(configuration.getRetryCount());
+        dto.setSkipEmails(configuration.getSkipEmails());
+        dto.setSkipEmailsDays(configuration.getSkipEmailsDays());
         return dto;
     }
 
@@ -204,6 +208,8 @@ public class ConfigurationBL {
 				.getProratingType().getOptionText() : Constants.BLANK_STRING);
 		ws.setAutoPayment(dto.getAutoPayment());
 		ws.setRetryCount(dto.getRetryCount());
+		ws.setSkipEmails(dto.getSkipEmails());
+		ws.setSkipEmailsDays(dto.getSkipEmailsDays());
 		return ws;
     }
 

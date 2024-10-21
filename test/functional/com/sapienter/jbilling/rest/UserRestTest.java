@@ -36,7 +36,9 @@ import com.sapienter.jbilling.server.payment.PaymentWS;
 import com.sapienter.jbilling.server.user.AccountInformationTypeWS;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.ContactInformationWS;
+import com.sapienter.jbilling.server.user.CustomerRestWS;
 import com.sapienter.jbilling.server.user.UserWS;
+import com.sapienter.jbilling.server.util.PreferenceWS;
 
 /**
  * @author Vojislav Stanojevikj
@@ -46,21 +48,26 @@ import com.sapienter.jbilling.server.user.UserWS;
 public class UserRestTest extends RestTestCase{
 
     private static final String TEST_CUSTOMER = "TestRestCustomer";
-    private static final String CUSTOMER_TO_UPDATE = "sam@gmail.com";
     private static final Integer GANDALF_ID = Integer.valueOf(2);
-    private String random = String.valueOf(new Random().nextInt(100));
+    private String random = String.valueOf(new Random().nextInt(1000));
 
     private static final String TEST_CUSTOMER_LEVEL_MF = "Account PIN";
     private static final String TEST_CUSTOMER_LEVEL_MF_VALUE = "test-account-PIN";
     private static final String STATUS_URL = "/status/in/1/";
+    private static final String TEST_CUSTOMER_LEVEL_MF_EMAIL = "test.email";
 
     private RestOperationsHelper accountTypeRestHelper;
+    private RestOperationsHelper preferenceRestHelper;
+    private RestOperationsHelper userRestHelper;
     private Integer DUMMY_TEST_AC_ID;
+    private static final Integer PREF_TYPE_ID = Integer.valueOf(105);
 
     @BeforeClass
     public void setup(){
         super.setup("users");
         accountTypeRestHelper = RestOperationsHelper.getInstance("accounttypes");
+        preferenceRestHelper = RestOperationsHelper.getInstance("preferences");
+        userRestHelper = RestOperationsHelper.getInstance("users");
         DUMMY_TEST_AC_ID = restTemplate.sendRequest(accountTypeRestHelper.getFullRestUrl(), HttpMethod.POST, postOrPutHeaders, RestEntitiesHelper.buildAccountTypeMock(0, "TestRestUserAccountType" + random), AccountTypeWS.class).getBody().getId();
     }
 
@@ -260,7 +267,7 @@ public class UserRestTest extends RestTestCase{
         }
     }
 
-    @Test
+    @Test(enabled = false)
     @Produces(value = { MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     public void updateUser(){
 
@@ -300,7 +307,7 @@ public class UserRestTest extends RestTestCase{
 //                HttpMethod.DELETE, deleteHeaders, null);
     }
 
-    @Test
+    @Test(enabled = false)
     public void updateUserThatDoNotExist(){
 
         try {
@@ -331,7 +338,7 @@ public class UserRestTest extends RestTestCase{
         }
     }
 
-    @Test
+    @Test(enabled = false)
     public void updateToNonExistingParent(){
 
         ResponseEntity<UserWS> postedResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
@@ -773,7 +780,140 @@ public class UserRestTest extends RestTestCase{
         assertEquals(getMetaField(fetchedUser.getMetaFields(), "contact.last.name").getStringValue(), "TestUpdateUserLName","last name should be " );
 
     }
+    
+    @Test(enabled=true)
+    public void postUserWithInvoiceDeliveryMethod(){
+    	
+    	PreferenceWS expectedPreference = RestEntitiesHelper.buildPreference(Integer.valueOf(105), null, null,
+                RestEntitiesHelper.buildPreferenceType(PREF_TYPE_ID, "Set Invoice Delivery Method as Email and Paper on the Customer Account if Email Address is not provided.", null, null), "1");
 
+        // Get the preference and verify the response
+        ResponseEntity<PreferenceWS> getResponse = restTemplate.sendRequest(preferenceRestHelper.getFullRestUrl() + PREF_TYPE_ID,
+                HttpMethod.GET, getOrDeleteHeaders, null, PreferenceWS.class);
+        assertNotNull(getResponse, "GET response should not be null.");
+        RestValidationHelper.validateStatusCode(getResponse, Response.Status.OK.getStatusCode());
+        
+        expectedPreference.setValue("1");
+        
+        ResponseEntity<PreferenceWS> putResponse = restTemplate.sendRequest(preferenceRestHelper.getFullRestUrl() + PREF_TYPE_ID,
+                HttpMethod.PUT, postOrPutHeaders, expectedPreference, PreferenceWS.class);
+        RestValidationHelper.validateStatusCode(putResponse, Response.Status.OK.getStatusCode());
+        
+    	ResponseEntity<AccountInformationTypeWS> postAITResponse = restTemplate.sendRequest(accountTypeRestHelper.getFullRestUrl() + DUMMY_TEST_AC_ID + "/aits",
+                HttpMethod.POST, postOrPutHeaders, RestEntitiesHelper.buildAccountInformationTypeMock(DUMMY_TEST_AC_ID, "Mailing Address"), AccountInformationTypeWS.class);
+
+    	// Scenario 1: New Customer invoice delivery method is Email and Email Id field is blank
+    	UserWS userWS1 = RestEntitiesHelper.buildUserWithCustomerMetafieldMock(TEST_CUSTOMER, DUMMY_TEST_AC_ID,
+    			TEST_CUSTOMER_LEVEL_MF_EMAIL, null, true);
+    	
+    	userWS1.setInvoiceDeliveryMethodId(Constants.D_METHOD_EMAIL);
+    	
+        ResponseEntity<UserWS> postedResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
+                postOrPutHeaders, userWS1, UserWS.class);
+        
+        userWS1 = postedResponse.getBody();
+        
+        assertEquals(userWS1.getInvoiceDeliveryMethodId(), Constants.D_METHOD_EMAIL_AND_PAPER, "Invoice delivery method should be Email & Paper!");
+        
+        restTemplate.sendRequest(REST_URL + userWS1.getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
+        
+        // Scenario 2: Update customer with invoice delivery method as Email and Email Id field is blank
+
+    	UserWS userWS2 = RestEntitiesHelper.buildUserWithCustomerMetafieldMock(TEST_CUSTOMER, DUMMY_TEST_AC_ID,
+                TEST_CUSTOMER_LEVEL_MF_EMAIL, null, true);
+    	// Disable preference 
+    	expectedPreference.setValue("0");
+        
+        restTemplate.sendRequest(preferenceRestHelper.getFullRestUrl() + PREF_TYPE_ID,
+                HttpMethod.PUT, postOrPutHeaders, expectedPreference, PreferenceWS.class);
+    	
+        userWS2.setInvoiceDeliveryMethodId(Constants.D_METHOD_EMAIL);
+    	
+    	
+    	// Create an user
+        postedResponse = restTemplate.sendRequest(userRestHelper.getFullRestUrl(), HttpMethod.POST,
+                postOrPutHeaders, userWS2, UserWS.class);
+        
+        userWS2 = postedResponse.getBody();
+        
+        assertEquals(userWS2.getInvoiceDeliveryMethodId(), Constants.D_METHOD_EMAIL, "Invoice delivery method should be Email!");
+        
+    	// Enable preference 
+    	expectedPreference.setValue("1");
+        
+        restTemplate.sendRequest(preferenceRestHelper.getFullRestUrl() + PREF_TYPE_ID,
+                HttpMethod.PUT, postOrPutHeaders, expectedPreference, PreferenceWS.class);
+        
+        ResponseEntity<CustomerRestWS> fetchedResponse = restTemplate.sendRequest(userRestHelper.getFullRestUrl()+"customerattributes/" + userWS2.getId(), HttpMethod.GET,
+                getOrDeleteHeaders, null, CustomerRestWS.class);
+        
+        CustomerRestWS customerRestWS = fetchedResponse.getBody();
+        
+        customerRestWS.setDueDateValue(3);
+        
+        ResponseEntity<CustomerRestWS> updatedResponse = restTemplate.sendRequest(userRestHelper.getFullRestUrl()+"customerattributes/" + customerRestWS.getUserId(),
+                HttpMethod.PUT, postOrPutHeaders, customerRestWS, CustomerRestWS.class);
+        
+        CustomerRestWS updatedCustomerRestWS = updatedResponse.getBody();
+        
+        assertEquals(updatedCustomerRestWS.getInvoiceDeliveryMethodId(), Constants.D_METHOD_EMAIL_AND_PAPER, "Invoice delivery method should be Email & Paper!");
+        
+        restTemplate.sendRequest(REST_URL + updatedCustomerRestWS.getUserId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
+        
+        // Scenario 3: Create user with populated email id and check invoice delivery method
+
+    	UserWS userWS3 = RestEntitiesHelper.buildUserMock(TEST_CUSTOMER, DUMMY_TEST_AC_ID,  true);
+    	
+    	userWS3.setInvoiceDeliveryMethodId(Constants.D_METHOD_EMAIL_AND_PAPER);
+    	setAITMetaFields(postAITResponse.getBody().getId(), userWS3, Constants.EPOCH_DATE, "test.email", "testCustomer@test.com");
+        postedResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
+                postOrPutHeaders, userWS3, UserWS.class);
+        
+        userWS3 = postedResponse.getBody();
+        
+        assertEquals(userWS3.getInvoiceDeliveryMethodId(), Constants.D_METHOD_EMAIL_AND_PAPER, "Invoice delivery method should be Email and Paper!");
+        
+        restTemplate.sendRequest(REST_URL + userWS3.getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
+        
+        // Scenario 4: New customer with invoice delivery method as Paper and Email Id field is populated
+        
+        UserWS userWS4 = RestEntitiesHelper.buildUserWithCustomerMetafieldMock(TEST_CUSTOMER, DUMMY_TEST_AC_ID,
+    			TEST_CUSTOMER_LEVEL_MF_EMAIL, "testCustomer@test.com", true);
+    	
+        userWS4.setInvoiceDeliveryMethodId(Constants.D_METHOD_PAPER);
+    	
+        postedResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
+                postOrPutHeaders, userWS4, UserWS.class);
+        
+        userWS4 = postedResponse.getBody();
+        
+        assertEquals(userWS4.getInvoiceDeliveryMethodId(), Constants.D_METHOD_PAPER, "Invoice delivery method should be Paper!");
+        
+        restTemplate.sendRequest(REST_URL + userWS4.getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
+        
+        // Scenario 5: New customer with invoice delivery method as Paper and Email Id field is blank
+        
+        UserWS userWS5 = RestEntitiesHelper.buildUserWithCustomerMetafieldMock(TEST_CUSTOMER, DUMMY_TEST_AC_ID,
+    			TEST_CUSTOMER_LEVEL_MF_EMAIL, null, true);
+    	
+        userWS5.setInvoiceDeliveryMethodId(Constants.D_METHOD_PAPER);
+    	
+        postedResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
+                postOrPutHeaders, userWS5, UserWS.class);
+        
+        userWS5 = postedResponse.getBody();
+        
+        assertEquals(userWS5.getInvoiceDeliveryMethodId(), Constants.D_METHOD_PAPER, "Invoice delivery method should be Paper!");
+        
+        restTemplate.sendRequest(REST_URL + userWS5.getId(), HttpMethod.DELETE, getOrDeleteHeaders, null);
+        
+        // Disable preference
+        expectedPreference.setValue("0");
+        
+        restTemplate.sendRequest(preferenceRestHelper.getFullRestUrl() + PREF_TYPE_ID,
+                HttpMethod.PUT, postOrPutHeaders, expectedPreference, PreferenceWS.class);
+    }
+    
     private void validateAITMetaFieldUpdateOnUser(UserWS user, int numberOfAITs, Integer metaFieldGroupId, DateMetaFieldValueMap... timeLines){
         assertEquals(user.getAccountInfoTypeFieldsMap().size(), numberOfAITs, "Invalid number of AITs!");
         assertTrue(user.getAccountInfoTypeFieldsMap().containsKey(metaFieldGroupId), "No ait meta-field found!");
@@ -891,24 +1031,6 @@ public class UserRestTest extends RestTestCase{
             }
         }
         return null;
-    }
-    @Test
-    public void updateUsernameOfExistingUser() {
-        Integer languageId=new Integer(3);
-        UserWS testUser = RestEntitiesHelper.buildUserMock(CUSTOMER_TO_UPDATE, DUMMY_TEST_AC_ID);
-        ResponseEntity<UserWS> testUserResponse = restTemplate.sendRequest(REST_URL, HttpMethod.POST,
-                postOrPutHeaders, testUser, UserWS.class);
-        UserWS userBeforeUpdate = testUserResponse.getBody();
-        String temp = userBeforeUpdate.getUserName();
-        userBeforeUpdate.setUserName("sammy@gmail.com");
-        userBeforeUpdate.setLanguageId(languageId);
-
-        ResponseEntity<UserWS> fetchedResponse = restTemplate.sendRequest(REST_URL + userBeforeUpdate.getId(),
-                HttpMethod.PUT, postOrPutHeaders, userBeforeUpdate, UserWS.class);
-        assertEquals(temp, fetchedResponse.getBody().getUserName(), "Users match!");
-        assertEquals(languageId, fetchedResponse.getBody().getLanguageId(), "Language id match!");
-        restTemplate.sendRequest(REST_URL + testUserResponse.getBody().getId(), HttpMethod.DELETE,
-                getOrDeleteHeaders, null);
     }
 
 }

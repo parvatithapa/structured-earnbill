@@ -43,7 +43,7 @@
     </script>
 </g:if>
 <g:elseif test="${'done' == jobStatus}">
-    <div><g:message code="asset.upload.label.done"/></div>
+    <div data-cy="uploadCompleted"><g:message code="asset.upload.label.done"/></div>
     
     <div>
         <g:if test="${executionParams?.getInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, 0) > 0}">
@@ -56,12 +56,12 @@
     <table class="dataTable" cellspacing="0" cellpadding="0">
         <tbody>
         <tr>
-            <td><g:message code="asset.upload.label.total.count"/></td>
-            <td class="value">${executionParams?.getInt(AssetImportConstants.JOB_PARM_TOTAL_LINE_COUNT, 0)}</td>
+            <td data-cy="labelTotalAsset"><g:message code="asset.upload.label.total.count"/></td>
+            <td class="value" data-cy="valueTotalAsset">${executionParams?.getInt(AssetImportConstants.JOB_PARM_TOTAL_LINE_COUNT, 0)}</td>
         </tr>
         <tr>
-            <td><g:message code="asset.upload.label.error.count"/></td>
-            <td class="value">${executionParams?.getInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, 0)}</td>
+            <td data-cy="labelErrorLine"><g:message code="asset.upload.label.error.count"/></td>
+            <td class="value" data-cy="valueErrorLine">${executionParams?.getInt(AssetImportConstants.JOB_PARM_ERROR_LINE_COUNT, 0)}</td>
         </tr>
         </tbody>
     </table>

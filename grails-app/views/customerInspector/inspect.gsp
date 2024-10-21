@@ -15,7 +15,7 @@
   --}%
 
 <%@ page import="com.sapienter.jbilling.server.timezone.TimezoneHelper; com.sapienter.jbilling.server.metafields.db.MetaField; com.sapienter.jbilling.server.user.db.UserDTO; com.sapienter.jbilling.server.user.db.AccountInformationTypeDTO; com.sapienter.jbilling.server.user.db.AccountTypeDTO; com.sapienter.jbilling.server.invoice.InvoiceLineComparator; com.sapienter.jbilling.server.metafields.DataType; com.sapienter.jbilling.server.process.db.PeriodUnitDTO;	com.sapienter.jbilling.server.customer.CustomerBL; com.sapienter.jbilling.server.user.UserBL; com.sapienter.jbilling.common.Constants; com.sapienter.jbilling.server.util.Util; com.sapienter.jbilling.server.user.contact.db.ContactDTO"%>
-
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.ORDER_POST_PAID;" %>
 <html>
 <head>
     <meta name="layout" content="main" />
@@ -60,7 +60,7 @@
             <div style="margin: 20px 0;">
                 <div class="btn-row fix-width">
                     <sec:access url="/auditLog/user">
-                        <g:link controller="auditLog" action="user" id="${user.id}" class="submit show"><span><g:message code="customer.view.audit.log.button"/></span></g:link>
+                        <g:link controller="auditLog" action="user" id="${user.id}" class="submit show" data-cy="auditLogBtn"><span><g:message code="customer.view.audit.log.button"/></span></g:link>
                     </sec:access>
 
                     <sec:access url="/invoice/user">
@@ -132,6 +132,112 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </g:if>
+
+            <div id="wallet" class="box-cards">
+                <div class="box-cards-title">
+                    <a class="btn-open" data-cy="walletLedger"><span><g:message code="user.wallet.ledger"/></span></a>
+                </div>
+                <div class="box-card-hold">
+                    <div id="wallet-column" class="column">
+                        <g:render template="walletLedger"/>
+                    </div>
+                </div>
+            </div>
+            <!-- pre paid usage pools -->
+            <div id="consumption" class="box-cards">
+                <div class="box-cards-title">
+                    <a class="btn-open" data-cy="consumptionUsageMap"><span><g:message code="user.consumption.usage.map"/></span></a>
+                </div>
+                <div class="box-card-hold">
+                    <div id="consumption-column" class="column">
+                        <g:render template="consumptionUsage"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- post paid usage pools -->
+            <g:if test="${customerUsagePools}">
+                <div id="customerUsagePools" class="box-cards">
+                    <div class="box-cards-title">
+                        <a class="btn-open"><span><g:message code="customer.inspect.customerUsagePools.title"/></span></a>
+                    </div>
+                    <div class="box-card-hold">
+
+                        <table cellpadding="0" cellspacing="0" class="innerTable">
+                            <thead class="innerHeader">
+                            <tr>
+                                <th class="first" style="text-align:center;width:5%;"><g:message code="customerUsagePools.label.id"/></th>
+                                <th style="text-align:center;width:11%;"><g:message code="customerUsagePools.usage.pool.id"/></th>
+                                <th style="text-align:center;width:18%;"><g:message code="customerUsagePools.label.free.usage.name"/></th>
+                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.cycleStartDate"/></th>
+                                <th style="text-align:center;width:8%;"><g:message code="customerUsagePools.label.quantity"/></th>
+                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.consumption"/></th>
+                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.cycle.end.date"/></th>
+                                <th style="text-align:center;width:13%;"><g:message code="customerUsagePools.label.cycle.period"/></th>
+                                <th class="last" style="text-align:center;width:11%;"><g:message code="customerUsagePools.label.reset.value"/></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <g:each var="customerusagePools" in="${customerUsagePools}">
+                                <g:set var="metaFields" value="${customerusagePools.order.metaFields}"/>
+                                <g:set var="metaFieldValue" value="${metaFields.find{it.field.name?.equalsIgnoreCase(subscriberTypeMF)}?.value ?: 'NA'}"/>
+                                <!--usage pool for post paid orders -->
+                                <g:if test="${metaFieldValue == ORDER_POST_PAID}">
+                                    <g:each var="customerusagePool" in="${customerusagePools}">
+                                        <tr>
+                                            <td id="custom-td2" class="innerContent">
+                                                ${customerusagePool.id}
+                                            </td>
+                                            <td id="custom-td3" class="innerContent">
+                                                <jB:secLink url="/usagePool/show" controller="usagePool" action="list"
+                                                            id="${customerusagePool.usagePool.id}">
+                                                    ${customerusagePool.usagePool.id}
+                                                </jB:secLink>
+                                            </td>
+                                            <td class="innerContent" style="text-align:center;width:18%;">
+                                                ${customerusagePool.usagePool.getDescription(session['language_id'],
+                                                'name')}
+                                            </td>
+                                            <td class="innerContent" style="text-align:center;width:10%;">
+                                                <span><g:formatDate date="${customerusagePool.cycleStartDate}"
+                                                                    formatName="date.timeSecsAMPM.format"/></span>
+                                            </td>
+                                            <td id="custom-td4" class="innerContent" style="width:8%;">
+                                                <g:formatNumber number="${customerusagePool.quantity}"
+                                                                formatName="decimal.format"/>
+                                            </td>
+                                            <td id="custom-td4" class="innerContent" style="width:10%;">
+                                                <g:if test="${(customerusagePool.initialQuantity.compareTo(BigDecimal.ZERO) != 0)}">
+                                                    <g:formatNumber
+                                                            number="${((customerusagePool.initialQuantity - customerusagePool.quantity)/customerusagePool.initialQuantity)*100}"
+                                                            formatName="decimal.format"/>
+                                                </g:if>
+                                                <g:else>
+                                                    <g:formatNumber number="${BigDecimal.ZERO}"
+                                                                    formatName="decimal.format"/>
+                                                </g:else>
+                                                %
+                                            </td>
+                                            <td class="innerContent" style="text-align:center;width:10%;">
+                                                <span><g:formatDate date="${customerusagePool.cycleEndDate}"
+                                                                    formatName="date.timeSecsAMPM.format"/></span>
+                                            </td>
+                                            <td class="innerContent" style="text-align:center;width:13%;">
+                                                ${customerusagePool.usagePool.cyclePeriodValue}
+                                                ${customerusagePool.usagePool.cyclePeriodUnit}
+                                            </td>
+                                            <td class="innerContent" style="text-align:center;width:11%;">
+                                                ${customerusagePool.usagePool.usagePoolResetValue}
+                                            </td>
+                                        </tr>
+                                    </g:each>
+                                </g:if>
+                            </g:each>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </g:if>
@@ -341,10 +447,10 @@
                                             <g:formatNumber number="${orderLine.getQuantityAsDecimal()}" formatName="decimal.format"/>
                                         </td>
                                         <td class="innerContent">
-                                            <g:formatNumber number="${orderLine.getPriceAsDecimal()}" type="currency" currencySymbol="${currency.symbol}"/>
+                                            <g:formatNumber number="${orderLine.getPriceAsDecimal()}" type="currency" currencySymbol="${currency?.symbol}"/>
                                         </td>
                                         <td class="innerContent">
-                                            <g:formatNumber number="${orderLine.getAmountAsDecimal()}" type="currency" currencySymbol="${currency.symbol}"/>
+                                            <g:formatNumber number="${orderLine.getAmountAsDecimal()}" type="currency" currencySymbol="${currency?.symbol}"/>
                                         </td>
                                     </tr>
                                 </g:each>
@@ -360,7 +466,7 @@
                                 <th class="first"><g:message code="subscription.label.id"/></th>
                                 <th><g:message code="subscription.account.name"/></th>
                                 <th><g:message code="label.gui.description"/></th>
-                              	<th><g:message code="subscription.asset.id"/></th>
+                                <th><g:message code="subscription.asset.id"/></th>
                                 <th><g:message code="label.gui.period"/></th>
                                 <th><g:message code="label.gui.quantity"/></th>
                                 <th><g:message code="label.gui.price"/></th>
@@ -383,9 +489,9 @@
                                             ${orderLine.description}
                                         </td>
                                         <td class="innerContent">
-                                        	<g:each var="asset" in="${orderLine.assetIds}">
-                                        		${asset}
-                                        	</g:each>
+                                            <g:each var="asset" in="${orderLine.assetIds}">
+                                                ${asset}
+                                            </g:each>
                                         </td>
                                         <td class="innerContent">
                                             ${order.periodStr}
@@ -456,75 +562,6 @@
 		        </div>
 		        </div>
 		    </g:if>
-                        
-            <!-- customer usage pools -->
-            <g:if test="${customerUsagePools}">
-                <div id="customerUsagePools" class="box-cards">
-                    <div class="box-cards-title">
-                        <a class="btn-open"><span><g:message code="customer.inspect.customerUsagePools.title"/></span></a>
-                    </div>
-                    <div class="box-card-hold">
-
-                        <table cellpadding="0" cellspacing="0" class="innerTable">
-                            <thead class="innerHeader">
-                            <tr>
-                                <th class="first" style="text-align:center;width:5%;"><g:message code="customerUsagePools.label.id"/></th>
-                                <th style="text-align:center;width:11%;"><g:message code="customerUsagePools.usage.pool.id"/></th>
-                                <th style="text-align:center;width:18%;"><g:message code="customerUsagePools.label.free.usage.name"/></th>
-                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.cycleStartDate"/></th>
-                                <th style="text-align:center;width:8%;"><g:message code="customerUsagePools.label.quantity"/></th>
-                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.consumption"/></th>
-                                <th style="text-align:center;width:10%;"><g:message code="customerUsagePools.label.cycle.end.date"/></th>
-                                <th style="text-align:center;width:13%;"><g:message code="customerUsagePools.label.cycle.period"/></th>
-                                <th class="last" style="text-align:center;width:11%;"><g:message code="customerUsagePools.label.reset.value"/></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <g:each var="customerusagePools" in="${customerUsagePools}">
-                                <g:each var="customerusagePool" in="${customerusagePools}">
-                                    <tr>
-                                        <td class="innerContent" style="text-align:right;width:5%;padding-right: 1%;">
-                                            ${customerusagePool.id}
-                                        </td>
-                                        <td class="innerContent" style="text-align:right;width:11%;padding-right: 3%;">
-                                             <jB:secLink url="/usagePool/show" controller="usagePool" action="list" id="${customerusagePool.usagePool.id}">${customerusagePool.usagePool.id}</jB:secLink>
-                                        </td>
-                                        <td class="innerContent" style="text-align:center;width:18%;">
-                                       		${customerusagePool.usagePool.getDescription(session['language_id'], 'name')}
-                                        </td>
-                                        <td class="innerContent" style="text-align:center;width:10%;">
-                                             <span><g:formatDate date="${customerusagePool.cycleStartDate}" formatName="date.timeSecsAMPM.format"/></span>
-                                        </td>
-                                        <td class="innerContent" style="text-align:right;width:8%;padding-right: 2%;">
-                                        	<g:formatNumber number="${customerusagePool.quantity}" formatName="decimal.format"/>
-                                        </td>
-                                        <td class="innerContent" style="text-align:right;width:10%;padding-right: 2%;">
-                                            <g:if test="${(customerusagePool.initialQuantity.compareTo(BigDecimal.ZERO) != 0)}">
-                                               <g:formatNumber number="${((customerusagePool.initialQuantity - customerusagePool.quantity)/customerusagePool.initialQuantity)*100}" formatName="decimal.format"/>
-                                            </g:if>
-                                            <g:else>
-                                               <g:formatNumber number="${BigDecimal.ZERO}" formatName="decimal.format"/>
-                                            </g:else>
-                                        	%
-                                        </td>
-                                        <td class="innerContent" style="text-align:center;width:10%;">
-                                        	 <span><g:formatDate date="${customerusagePool.cycleEndDate}" formatName="date.timeSecsAMPM.format"/></span>
-                                        </td>
-                                        <td class="innerContent" style="text-align:center;width:13%;">
-                                            ${customerusagePool.usagePool.cyclePeriodValue} ${customerusagePool.usagePool.cyclePeriodUnit} 
-                                        </td>
-                                        <td class="innerContent" style="text-align:center;width:11%;">
-                                            ${customerusagePool.usagePool.usagePoolResetValue}
-                                        </td>
-                                    </tr>
-                                </g:each>
-                            </g:each>
-                            </tbody>
-                        </table>
-
-                    </div>
-                </div>
-            </g:if>
 
             <!-- notes -->
             <div id="notes" class="box-cards">
@@ -557,7 +594,7 @@
 
                             </td>
                             <td>
-                                <g:submitButton name="configurationFile2" value="Upload" class="submit apply"/>
+                                <g:submitButton name="configurationFile2" value="${message(code:'button.upload')}" class="submit apply"/>
                             </td>
                         </tr>
                     </table>

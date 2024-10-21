@@ -8,11 +8,12 @@
        xmlns:batch="http://www.springframework.org/schema/batch"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans    http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+       http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.8.xsd
        http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/tx       http://www.springframework.org/schema/tx/spring-tx.xsd
        http://www.springframework.org/schema/batch    http://www.springframework.org/schema/batch/spring-batch.xsd
-       http://www.springframework.org/schema/jdbc     http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
+       http://www.springframework.org/schema/jdbc     http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+       http://www.springframework.org/schema/tool    http://www.springframework.org/schema/tool/spring-tool.xsd">
 
     <bean id="jbillingMediationEntitiyManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
         <property name="dataSource" ref="jBillingMediationDataSource" />
@@ -20,16 +21,11 @@
         <property name="jpaVendorAdapter">
             <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
         </property>
-
-        <property name="jpaProperties">
-            <props>
-<!--
-                <prop key="hibernate.hbm2ddl.auto">update</prop>
--->
-                <prop key="hibernate.dialect">org.hibernate.dialect.HSQLDialect</prop>
-            </props>
-        </property>
-
+        <!--<property name="jpaProperties">-->
+            <!--<props>-->
+                <!--<prop key="hibernate.hbm2ddl.auto">update</prop>-->
+            <!--</props>-->
+        <!--</property>-->
     </bean>
 
     <bean id="jBillingMediationDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
@@ -57,15 +53,15 @@
         systemEnvironment['JBILLING_DB_PASSWORD']?:
         ''
         }" />
-
         <property name="initialPoolSize" value="3" />
         <property name="maxPoolSize" value="20" />
-        <property name="minPoolSize" value="1"></property>
+        <property name="minPoolSize" value="1"/>
         <property name="acquireIncrement" value="1" />
         <property name="maxIdleTime" value="300" />
         <property name="checkoutTimeout" value="10000" />
-        <property name="testConnectionOnCheckout" value="false"></property>
+        <property name="testConnectionOnCheckout" value="true"/>
         <property name="idleConnectionTestPeriod" value="20" />
+        <property name="preferredTestQuery" value="SELECT 1" />
 
         <!-- DEBUG - Temp to be removed in the next build -->
         <!--<property name="unreturnedConnectionTimeout" value="120" />
@@ -94,8 +90,8 @@
         <property name="jobExplorer" ref="mediationJobExplorer" />
     </bean>
 
-    <!--  Initialise the database if enabled, always try to inizialize it on start.
-    Failure are ignored because it means it was already inizialized -->
+    <!--  Initialise the database if enabled, always try to initialize it on start.
+    Failure are ignored because it means it was already initialized -->
     <jdbc:initialize-database data-source="jBillingMediationDataSource" ignore-failures="ALL">
         <jdbc:script location="classpath:/org/springframework/batch/core/schema-postgresql.sql"/>
     </jdbc:initialize-database>
@@ -105,4 +101,8 @@
     <jpa:repositories base-package="com.sapienter.jbilling.server.mediation.converter.db,com.sapienter.jbilling.server.mediation.process.db,com.sapienter.jbilling.server.audit.db,com.sapienter.jbilling.server.sql.api.db"
                       entity-manager-factory-ref="jbillingMediationEntitiyManagerFactory"
                       transaction-manager-ref="jbillingMediationTransactionManager"/>
+
+    <bean id="jBillingMediationJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="jBillingMediationDataSource" />
+    </bean>
 </beans>

@@ -43,7 +43,6 @@ public class MessageDTO implements Serializable {
     public static final Integer TYPE_BAL_BELOW_THRESHOLD_EMAIL = new Integer(24); //below threshold message
     public static final Integer TYPE_SSO_ENABLED_USER_CREATED_EMAIL = new Integer(35); //sso enabled user creation message
     public static final String PARAMETER_SPECIFIC_EMAIL_ADDRESS = "specificEmailAddress";
-    public static final Integer TYPE_PAYMENT_LINK_EMAIL = new Integer(39);
 
     // below credit limitation 1
     public static final Integer TYPE_BAL_BELOW_CREDIT_LIMIT_1 = new Integer(26);

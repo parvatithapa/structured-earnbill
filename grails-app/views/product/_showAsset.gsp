@@ -32,7 +32,7 @@
 	    <strong>
 	    	${asset.identifier}
 	    	<g:if test="${asset.deleted}">
-                <span style="color: #ff0000;">(<g:message code="object.deleted.title"/>)</span>
+                <span style="color: #ff0000;" data-cy="deletedTitle">(<g:message code="object.deleted.title"/>)</span>
             </g:if>
 	    </strong>
 	</div>
@@ -43,12 +43,24 @@
             <table class="dataTable" cellspacing="0" cellpadding="0">
                 <tbody>
                     <tr>
-                        <td><g:message code="asset.detail.id"/></td>
-                        <td class="value">${asset.id}</td>
+                        <td data-cy="labelId"><g:message code="asset.detail.id"/></td>
+                        <td class="value" data-cy="valueId">${asset.id}</td>
                     </tr>
                     <tr>
-                        <td>${category?.assetIdentifierLabel?: g.message([code: "asset.detail.identifier"])}</td>
-                        <td class="value">${asset.identifier}</td>
+                        <td data-cy="labelIccid">${category?.assetIdentifierLabel?: g.message([code: "asset.detail.identifier"])}</td>
+                        <td class="value" data-cy="valueIccid">${asset.identifier}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelSubscriberNumber"><g:message code="label.adennet.subscriber.number"/></td>
+                        <td class="value" data-cy="valueSubscriberNumber">${asset.subscriberNumber}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelImsi"><g:message code="label.adennet.imsi"/></td>
+                        <td class="value" data-cy="valueImsi">${asset.imsi}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelSuspended"><g:message code="label.adennet.temporary.suspended"/></td>
+                        <td class="value" data-cy="valueSuspended">${asset.isSuspended}</td>
                     </tr>
                     <tr>
                         <g:if test="${asset.isReserved()}">
@@ -61,8 +73,8 @@
                                 </td>
                             </tr>
                         </g:if><g:else>
-                            <td><g:message code="asset.detail.assetStatus"/></td>
-                            <td class="value">${asset.assetStatus?.description}</td>
+                            <td data-cy="labelAssetStatus"><g:message code="asset.detail.assetStatus"/></td>
+                            <td class="value" data-cy="valueAssetStatus">${asset.assetStatus?.description}</td>
                         </g:else>
                     </tr>
                     <tr>
@@ -73,6 +85,23 @@
                         <td><g:message code="asset.detail.order"/></td>
                         <td class="value"><g:link controller="order" action="list" id="${asset.orderLine?.purchaseOrder?.id}">${asset.orderLine?.purchaseOrder?.id}</g:link></td>
                     </tr>
+                    <tr>
+                        <td data-cy="labelPin1"><g:message code="label.adennet.pin1"/></td>
+                        <td class="value" data-cy="valuePin1">${asset.pin1}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelPin2"><g:message code="label.adennet.pin2"/></td>
+                        <td class="value" data-cy="valuePin2">${asset.pin2}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelPuk1"><g:message code="label.adennet.puk1"/></td>
+                        <td class="value" data-cy="valuePuk1">${asset.puk1}</td>
+                    </tr>
+                    <tr>
+                        <td data-cy="labelPuk2"><g:message code="label.adennet.puk2"/></td>
+                        <td class="value" data-cy="valuePuk2">${asset.puk2}</td>
+                    </tr>
+
                     <g:if test="${asset.group != null}" >
                         <tr>
                             <td><g:message code="asset.detail.group"/></td>
@@ -113,7 +142,7 @@
 
         <sec:ifAllGranted roles="PRODUCT_CATEGORY_STATUS_AND_ASSETS_132">
             <g:if test="${asset?.entity?.id == session['company_id']}">
-                <a onclick="showConfirm('deleteAsset-${asset.id}');" class="submit delete"><span><g:message code="button.delete"/></span></a>
+                <a onclick="showConfirm('deleteAsset-${asset.id}');" class="submit delete" data-cy="deleteAssetBtn"><span><g:message code="button.delete"/></span></a>
             </g:if>
         </sec:ifAllGranted>
 

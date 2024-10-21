@@ -18,13 +18,14 @@ package com.sapienter.jbilling.server.payment.db;
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.Constants;
 import com.sapienter.jbilling.server.customerInspector.domain.ListField;
-import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
+import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
 import com.sapienter.jbilling.server.util.db.CurrencyDAS;
 import com.sapienter.jbilling.server.util.db.CurrencyDTO;
 import com.sapienter.jbilling.server.util.db.TotalBalance;
+import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -678,18 +679,38 @@ public class PaymentDAS extends AbstractDAS<PaymentDTO> {
      * @param until  (optional) Until date for payments
      * @return
      */
-    public BigDecimal findTotalRevenueByUserInBetweenTwoInvoices(Integer userId, Date from, Date until) {
+    public BigDecimal findTotalRevenueByUserInBetweenTwoInvoices(Integer userId, Date from, Date until, String useDatePreference, Integer entityId) {
         Criteria criteria = getSession().createCriteria(PaymentDTO.class);
         criteria.add(Restrictions.eq("deleted", 0))
                 .createAlias("baseUser", "u")
                 .add(Restrictions.eq("u.id", userId))
                 .createAlias("paymentResult", "pr");
-
-        if (from != null) {
-            criteria.add(Restrictions.ge("paymentDate", from));
+        switch(useDatePreference) {
+            case CommonConstants.INVOICE_DATE : 
+                if (from != null) {
+                    from = DateConvertUtils.asUtilDate(
+                    TimezoneHelper.convertTimezoneToUTC(DateConvertUtils.asLocalDateTime(from),
+                    TimezoneHelper.getCompanyLevelTimeZone(entityId)));
+                    criteria.add(Restrictions.ge("createDatetime", from));
+                }
+                until = DateConvertUtils.asUtilDate(
+                TimezoneHelper.convertTimezoneToUTC(DateConvertUtils.asLocalDateTime(until),
+                TimezoneHelper.getCompanyLevelTimeZone(entityId)));
+                criteria.add(Restrictions.lt("createDatetime", until));
+                break;
+            case CommonConstants.INVOICE_TIMESTAMP : 
+                if (from != null) {
+                    criteria.add(Restrictions.ge("createDatetime", from));
+                }
+                criteria.add(Restrictions.lt("createDatetime", until));
+                break;
+            case CommonConstants.PAYMENT_DATE :
+                if (from != null) {
+                    criteria.add(Restrictions.ge("paymentDate", from));
+                }
+                criteria.add(Restrictions.lt("paymentDate", until));
+                break;   
         }
-        criteria.add(Restrictions.lt("paymentDate", until));
-
         Criterion PAYMENT_SUCCESSFUL = Restrictions.eq("pr.id", CommonConstants.PAYMENT_RESULT_SUCCESSFUL);
         Criterion PAYMENT_ENTERED = Restrictions.eq("pr.id", CommonConstants.PAYMENT_RESULT_ENTERED);
 
@@ -799,6 +820,18 @@ public class PaymentDAS extends AbstractDAS<PaymentDTO> {
         return criteria.list();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<PaymentDTO> getPaymentsByDate(Date startDate, Date endDate, Integer offset, Integer limit) {
+        return getSession().createCriteria(PaymentDTO.class)
+                    .add(Restrictions.between("createDatetime", startDate, endDate))
+                    .add(Restrictions.eq("deleted", 0))
+                    .add(Restrictions.eq("isPreauth", 0))
+                    .addOrder(Order.asc("id"))
+                    .setFirstResult(offset)
+                    .setMaxResults(limit)
+                    .list();
+    }
+
     public Integer findPaymentByMetaFields(Map<String, String> metaFieldMap) {
 
         String db_query = "select p.id from payment p";
@@ -869,7 +902,7 @@ public class PaymentDAS extends AbstractDAS<PaymentDTO> {
 
         return (Integer) sqlQuery.uniqueResult();
     }
-
+    
     /**
      * Get the count of payments for the given userId.
      *
@@ -883,6 +916,18 @@ public class PaymentDAS extends AbstractDAS<PaymentDTO> {
         criteria.add(Restrictions.eq("u.id", userId));
         criteria.setProjection(Projections.count("id"));
         return (Long) criteria.uniqueResult();
+    }
+
+    private final String FIND_LAST_PAYMENT_BY_USER_ID =
+            "select id from payment where create_datetime = " +
+                    "(select max(create_datetime) from payment where deleted = 0 and user_id = :userId) " +
+                    " and deleted = 0 " +
+                    " and user_id = :userId";
+
+    public Integer getLatestByUser(Integer userId) {
+        SQLQuery query = getSession().createSQLQuery(FIND_LAST_PAYMENT_BY_USER_ID);
+        query.setParameter("userId", userId);
+        return (Integer) query.uniqueResult();
     }
 }
 

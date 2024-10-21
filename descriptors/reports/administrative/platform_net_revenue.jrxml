@@ -3,42 +3,41 @@
 	<property name="ireport.zoom" value="1.5"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-
 	<parameter name="start_date" class="java.util.Date"/>
 	<parameter name="end_date" class="java.util.Date"/>
 	<parameter name="entity_id" class="java.lang.Integer"/>
-	<parameter name="installation"/>
-	<parameter name="hash"/>
-
-	<field name="date_str"/>
+	<parameter name="installation" class="java.lang.String"/>
+	<parameter name="hash" class="java.lang.String"/>
+	<field name="date_str" class="java.lang.String"/>
 	<field name="no_companies" class="java.lang.Integer"/>
 	<field name="no_customers" class="java.lang.Integer"/>
-	<field name="currency_code"/>
+	<field name="currency_code" class="java.lang.String"/>
 	<field name="charges" class="java.math.BigDecimal"/>
 	<field name="credits" class="java.math.BigDecimal"/>
 	<field name="net_revenue" class="java.math.BigDecimal"/>
 
-	<variable name="subtotal_charges" class="java.math.BigDecimal" calculation="Sum" resetType="Group" resetGroup="currency_code">
+	<variable name="subtotal_charges" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_code" calculation="Sum">
 		<variableExpression><![CDATA[$F{charges}]]></variableExpression>
 		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
 	</variable>
 
-	<variable name="subtotal_credits" class="java.math.BigDecimal" calculation="Sum" resetType="Group" resetGroup="currency_code">
+	<variable name="subtotal_credits" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_code" calculation="Sum">
 		<variableExpression><![CDATA[$F{credits}]]></variableExpression>
 		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
 	</variable>
 
-	<variable name="subtotal_net" class="java.math.BigDecimal" calculation="Nothing" resetType="Group" resetGroup="currency_code">
-		<variableExpression><![CDATA[$V{subtotal_charges}.subtract($V{subtotal_credits})]]></variableExpression>
+	<variable name="subtotal_net" class="java.math.BigDecimal" resetType="Group" resetGroup="currency_code">
+		<variableExpression><![CDATA[$V{subtotal_charges}.add($V{subtotal_credits})]]></variableExpression>
 		<initialValueExpression><![CDATA[new BigDecimal("0.00")]]></initialValueExpression>
 	</variable>
 
-	<group name="currency_code">
+	<group name="currency_code" minHeightToStartNewPage="150">
 		<groupExpression><![CDATA[$F{currency_code}]]></groupExpression>
 		<groupHeader>
 			<band height="40">
+				<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
 				<staticText>
-					<reportElement x="0" y="5" width="100" height="20"/>
+					<reportElement x="0" y="0" width="278" height="40" uuid="a6673b7b-047b-481e-b294-98547b1ebb69"/>
 					<box rightPadding="5"/>
 					<textElement textAlignment="Left" verticalAlignment="Middle">
 						<font isBold="true"/>
@@ -46,7 +45,7 @@
 					<text><![CDATA[Currency:]]></text>
 				</staticText>
 				<textField pattern="" isBlankWhenNull="true">
-					<reportElement x="100" y="5" width="130" height="20"/>
+					<reportElement x="100" y="0" width="277" height="40" uuid="f96e85d8-e94d-4ada-a621-2e8ef59e7476"/>
 					<textElement verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
@@ -55,49 +54,49 @@
 			</band>
 			<band height="21">
 				<staticText>
-					<reportElement x="0" y="0" width="60" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Center">
+					<reportElement x="0" y="0" width="60" height="20" uuid="acb30024-1b7e-4fd7-8dea-2d266217c2a6"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[Month]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="60" y="0" width="90" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Center">
+					<reportElement x="60" y="0" width="90" height="20" uuid="a5571275-7ccf-4b03-8115-d9166131451d"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[No. Companies]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="150" y="0" width="90" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Center">
+					<reportElement x="150" y="0" width="90" height="20" uuid="e00a01a4-6db3-44a9-9d83-2ec7d4102751"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[No. Customers]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="240" y="0" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="240" y="0" width="100" height="20" uuid="fe153f1a-3695-4596-97ba-cf882b45ccd7"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[Charges]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="340" y="0" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="340" y="0" width="100" height="20" uuid="970502e6-b875-4f5a-8b25-eb28b9ad3928"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[Credits]]></text>
 				</staticText>
 				<staticText>
-					<reportElement x="440" y="0" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="440" y="0" width="100" height="20" uuid="c08473b0-02ea-4852-88cb-ccb1ed95f56a"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true"/>
 					</textElement>
 					<text><![CDATA[Net Revenues]]></text>
 				</staticText>
 				<line>
-					<reportElement x="0" y="20" width="540" height="1"/>
+					<reportElement x="0" y="20" width="540" height="1" uuid="678d5973-da80-497c-9186-221b66797c17"/>
 					<graphicElement>
 						<pen lineWidth="2.0"/>
 					</graphicElement>
@@ -107,7 +106,7 @@
 		<groupFooter>
 			<band height="61">
 				<staticText>
-					<reportElement x="0" y="12" width="260" height="20"/>
+					<reportElement x="0" y="12" width="260" height="20" uuid="67852305-8364-48cf-8b6e-a3d57e55bbb6"/>
 					<box rightPadding="5"/>
 					<textElement textAlignment="Left" verticalAlignment="Middle">
 						<font fontName="SansSerif" size="10" isBold="true" isItalic="false"/>
@@ -115,34 +114,28 @@
 					<text><![CDATA[Total]]></text>
 				</staticText>
 				<textField evaluationTime="Group" evaluationGroup="currency_code">
-					<reportElement x="240" y="12" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="240" y="12" width="100" height="20" uuid="88e5f501-279b-4b3c-b38a-337544914d0f"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true" isItalic="false" isStrikeThrough="false"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal">
-						<![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_charges})]]>
-					</textFieldExpression>
+					<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_charges})]]></textFieldExpression>
 				</textField>
 				<textField evaluationTime="Group" evaluationGroup="currency_code">
-					<reportElement x="340" y="12" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="340" y="12" width="100" height="20" uuid="11345170-5504-4c32-8dbc-56a359b02bee"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true" isItalic="false" isStrikeThrough="false"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal">
-						<![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_credits})]]>
-					</textFieldExpression>
+					<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_credits})]]></textFieldExpression>
 				</textField>
 				<textField evaluationTime="Group" evaluationGroup="currency_code">
-					<reportElement x="440" y="12" width="100" height="20"/>
-					<textElement verticalAlignment="Middle" textAlignment="Right">
+					<reportElement x="440" y="12" width="100" height="20" uuid="d8cf81b7-8dd6-4a48-917e-7756804720a2"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
 						<font isBold="true" isItalic="false" isStrikeThrough="false"/>
 					</textElement>
-					<textFieldExpression class="java.math.BigDecimal">
-						<![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_net})]]>
-					</textFieldExpression>
+					<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($V{subtotal_net})]]></textFieldExpression>
 				</textField>
 				<line>
-					<reportElement x="0" y="10" width="540" height="1"/>
+					<reportElement x="0" y="10" width="540" height="1" uuid="9a9fa43e-59df-4853-9fe7-edc04fca81bb"/>
 					<graphicElement>
 						<pen lineWidth="2.0"/>
 					</graphicElement>
@@ -150,62 +143,53 @@
 			</band>
 		</groupFooter>
 	</group>
-
 	<title>
 		<band height="100">
 			<staticText>
-				<reportElement x="0" y="1" width="190" height="20"/>
+				<reportElement x="0" y="1" width="190" height="20" uuid="abf77d26-cb0a-495e-91f2-e9018a975e4b"/>
 				<textElement>
 					<font size="14" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Platform Net Revenue Report]]></text>
 			</staticText>
-
 			<staticText>
-				<reportElement x="340" y="1" width="100" height="20"/>
+				<reportElement x="340" y="1" width="100" height="20" uuid="641f5b99-145d-4814-bb6c-c660c534e164"/>
 				<box rightPadding="5"/>
-				<textElement verticalAlignment="Middle" textAlignment="Left" >
-				</textElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
 				<text><![CDATA[Report date:]]></text>
 			</staticText>
-
 			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
-				<reportElement x="440" y="1" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
+				<reportElement x="440" y="1" width="100" height="20" uuid="8185230a-061e-47f5-80f3-c747a49d537c"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
 				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
 			</textField>
-
 			<staticText>
-				<reportElement x="340" y="21" width="100" height="20"/>
+				<reportElement x="340" y="21" width="100" height="20" uuid="0e8a8594-a542-4001-b2cd-d339f0965452"/>
 				<box rightPadding="5"/>
-				<textElement verticalAlignment="Middle" textAlignment="Left" >
-				</textElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
 				<text><![CDATA[From date:]]></text>
 			</staticText>
 			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
-				<reportElement x="440" y="21" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
-				<textFieldExpression class="java.util.Date"><![CDATA[$P{start_date}]]></textFieldExpression>
+				<reportElement x="440" y="21" width="100" height="20" uuid="dd5d0965-4cf4-4c86-a926-a8ca3fd46216"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
 				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
 			</textField>
-
 			<staticText>
-				<reportElement x="340" y="41" width="100" height="20"/>
+				<reportElement x="340" y="41" width="100" height="20" uuid="59794163-c907-4c8d-a4d7-bdcb77d710bf"/>
 				<box rightPadding="5"/>
-				<textElement verticalAlignment="Middle" textAlignment="Left">
-				</textElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
 				<text><![CDATA[To date:]]></text>
 			</staticText>
 			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
-				<reportElement x="440" y="41" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
-				<textFieldExpression class="java.util.Date"><![CDATA[$P{end_date}]]></textFieldExpression>
+				<reportElement x="440" y="41" width="100" height="20" uuid="b9585784-6c7c-45b5-8594-e721b23e4f90"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
 				<patternExpression><![CDATA[$P{REPORT_RESOURCE_BUNDLE}.getString( "format.date" )]]></patternExpression>
 			</textField>
-
 			<staticText>
-				<reportElement x="0" y="61" width="100" height="20"/>
+				<reportElement x="0" y="61" width="100" height="20" uuid="4b23d51a-2105-4bb5-b93b-1537e0857899"/>
 				<box rightPadding="5"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font isBold="true"/>
@@ -213,18 +197,17 @@
 				<text><![CDATA[Installation:]]></text>
 			</staticText>
 			<textField pattern="" isBlankWhenNull="true">
-				<reportElement x="100" y="61" width="150" height="20"/>
+				<reportElement x="100" y="61" width="150" height="20" uuid="3a67fbfd-d941-4687-978b-992e4e5a93dd"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{installation}]]></textFieldExpression>
 			</textField>
 		</band>
 	</title>
-
 	<pageHeader>
 		<band height="20">
 			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
 			<staticText>
-				<reportElement x="0" y="0" width="190" height="20"/>
+				<reportElement x="0" y="0" width="190" height="20" uuid="73059e5c-f66b-4247-afe2-cba54683dac5"/>
 				<textElement>
 					<font size="10" isBold="false"/>
 				</textElement>
@@ -232,70 +215,55 @@
 			</staticText>
 		</band>
 	</pageHeader>
-
 	<detail>
 		<band height="20">
 			<textField>
-				<reportElement x="0" y="0" width="60" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Center"/>
-				<textFieldExpression class="java.lang.String">
-					<![CDATA[$F{date_str}]]>
-				</textFieldExpression>
+				<reportElement x="0" y="0" width="60" height="20" uuid="a4530676-f012-4bed-a68a-60f9fa64b264"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{date_str}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="60" y="0" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Center"/>
-				<textFieldExpression class="java.lang.Long">
-					<![CDATA[$F{no_companies}]]>
-				</textFieldExpression>
+				<reportElement x="60" y="0" width="100" height="20" uuid="e7624458-7281-4f0d-a108-8bce90ca4fe9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{no_companies}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="160" y="0" width="80" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Center"/>
-				<textFieldExpression class="java.lang.String">
-					<![CDATA[$F{no_customers}]]>
-				</textFieldExpression>
+				<reportElement x="160" y="0" width="80" height="20" uuid="c8880e24-4ed1-4e66-aab8-c3b0cac901f5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{no_customers}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="240" y="0" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
-				<textFieldExpression class="java.lang.String">
-					<![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{charges})]]>
-				</textFieldExpression>
+				<reportElement x="240" y="0" width="100" height="20" uuid="2b00da0b-9f27-4ca9-bb66-64452bcc3deb"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{charges})]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="340" y="0" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
-				<textFieldExpression class="java.lang.String">
-					<![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{credits})]]>
-				</textFieldExpression>
+				<reportElement x="340" y="0" width="100" height="20" uuid="cc464f40-5b04-45e4-b6df-0884e88969a5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{credits})]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="440" y="0" width="100" height="20"/>
-				<textElement verticalAlignment="Middle" textAlignment="Right"/>
-				<textFieldExpression class="java.lang.String">
-					<![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{net_revenue})]]>
-				</textFieldExpression>
+				<reportElement x="440" y="0" width="100" height="20" uuid="bfe2ccd5-8a06-4aab-977d-fed25c262e20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00").format($F{net_revenue})]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
-
 	<pageFooter>
 		<band height="25">
 			<textField pattern="" isBlankWhenNull="true">
-				<reportElement x="0" y="0" width="200" height="20"/>
+				<reportElement x="0" y="0" width="200" height="20" uuid="ee412be3-6462-40de-9461-3ae4906819a4"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{hash}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="434" y="0" width="80" height="20"/>
+				<reportElement x="434" y="0" width="80" height="20" uuid="2cae6074-056f-42ac-beec-6d9ad242f146"/>
 				<textElement textAlignment="Right"/>
-				<textFieldExpression class="java.lang.String"><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="514" y="0" width="40" height="20"/>
-				<textElement/>
-				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+				<reportElement x="514" y="0" width="40" height="20" uuid="88e47da1-e539-4f28-844c-9f56deab0c83"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>

@@ -474,7 +474,6 @@ public class MetaFieldBL {
             ws.getMetaField().setFieldUsage( metaFieldValue.getField().getFieldUsage() );
             ws.setDefaultValue(metaFieldValue.getField().getDefaultValue() != null ? metaFieldValue.getField().getDefaultValue().getValue() : null);
             ws.getMetaField().setEntityId(metaFieldValue.getField().getEntityId());
-            ws.getMetaField().setEntityType(metaFieldValue.getField().getEntityType());
         }
 
         if (null!=metaFieldValue.getField() && null != metaFieldValue.getField().getMetaFieldGroups()) {
@@ -484,6 +483,7 @@ public class MetaFieldBL {
                 }
             }
         }
+
         ws.setId(metaFieldValue.getId());
         ws.setValue(metaFieldValue.getValue());
         return ws;

@@ -52,6 +52,7 @@ public class ConcurrentOperationFailureInterceptor implements Ordered {
                     logger.debug("Optimistic locking detected, {} remaining retries on {}", times, Arrays.toString(retryOn));
                     return tryProceeding(pjp, times, retryOn);
                 }
+                logger.debug("Login issue full stacktrace: {}", org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(throwable));
                 throw new SessionInternalError("Concurrent operation retries exausted.",throwable);
             }
         }

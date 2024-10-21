@@ -6,6 +6,8 @@ import java.util.*;
 import com.sapienter.jbilling.server.order.OrderChangeBL;
 import com.sapienter.jbilling.server.order.OrderChangeWS;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateMidnight;
 import org.testng.annotations.Test;
 
@@ -21,6 +23,9 @@ import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.PlanWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderWS;
+import com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.process.BillingProcessConfigurationWS;
@@ -31,6 +36,7 @@ import com.sapienter.jbilling.server.user.UserWS;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.PreferenceTypeWS;
 import com.sapienter.jbilling.server.util.PreferenceWS;
+import com.sapienter.jbilling.server.util.Util;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.server.util.api.JbillingAPIFactory;
 import com.sapienter.jbilling.server.util.CreateObjectUtil;
@@ -38,7 +44,62 @@ import com.sapienter.jbilling.server.util.CreateObjectUtil;
 
 @Test(groups = { "billing-and-discounts", "discounts" }, testName = "PercentageDiscountOrderTest")
 public class PercentageDiscountOrderTest extends BaseDiscountApiTest {
-	
+	private Map<String, String> parameters = new HashMap<>();
+	private Integer processingOrder = 777777;
+
+	@Override
+	protected void beforeTestClass() throws Exception {
+		super.beforeTestClass();
+		JbillingAPI api = JbillingAPIFactory.getAPI();
+		setITGInvoiceNotification(api, "0");
+		deleteFullCreativeCustomInvoiceFieldsTokenPlugin(api);
+	}
+
+	@Override
+	protected void afterTestClass() throws Exception {
+		super.afterTestClass();
+		JbillingAPI api = JbillingAPIFactory.getAPI();
+		setITGInvoiceNotification(api, "1");
+		configureFullCreativeCustomInvoiceFieldsTokenPlugin(api);
+	}
+
+	private void deleteFullCreativeCustomInvoiceFieldsTokenPlugin(JbillingAPI api) {
+		PluggableTaskWS[] pluginsWS = api.getPluginsWS(1, FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+		if(ArrayUtils.isNotEmpty(pluginsWS) && pluginsWS.length >= 1) {
+			PluggableTaskWS fullCreativeCustomInvoiceFieldsTokenTask = pluginsWS[0];
+			parameters = fullCreativeCustomInvoiceFieldsTokenTask.getParameters();
+			processingOrder = fullCreativeCustomInvoiceFieldsTokenTask.getProcessingOrder();
+			api.deletePlugin(fullCreativeCustomInvoiceFieldsTokenTask.getId());
+		}
+	}
+
+	private void setITGInvoiceNotification(JbillingAPI api, String value) {
+		PreferenceWS preference = api.getPreference(Constants.PREFERENCE_ITG_INVOICE_NOTIFICATION);
+		preference.setValue(value);
+		api.updatePreference(preference);
+	}
+
+	private void configureFullCreativeCustomInvoiceFieldsTokenPlugin(JbillingAPI api) {
+		PluggableTaskWS[] pluginsWS = api.getPluginsWS(1, FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+		if(ArrayUtils.isEmpty(pluginsWS)) {
+			PluggableTaskWS fullCreativeCustomInvoiceFieldsTokenTask = new PluggableTaskWS();
+			fullCreativeCustomInvoiceFieldsTokenTask.setProcessingOrder(processingOrder);
+			PluggableTaskTypeWS fullCreativeCustomInvoiceFieldsTokenTaskType = api.getPluginTypeWSByClassName(FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+			fullCreativeCustomInvoiceFieldsTokenTask.setTypeId(fullCreativeCustomInvoiceFieldsTokenTaskType.getId());
+			Hashtable<String, String> newParams = new Hashtable<>();
+			String date = Util.formatDate(new Date(), "yyyyMMdd");
+			if(parameters.isEmpty()) {
+				newParams.put("new_invoice_cut_over_date", date);
+			} else {
+				for (Map.Entry<String, String> e : parameters.entrySet()) {
+					newParams.put(e.getKey(), StringUtils.isNotBlank(e.getValue()) ? e.getValue() : date);
+				}
+			}
+			fullCreativeCustomInvoiceFieldsTokenTask.setParameters(newParams);
+			api.createPlugin(fullCreativeCustomInvoiceFieldsTokenTask);
+		}
+	}
+
 	@Test(priority=1)
 	public void test100PercentageDiscountOrderTotalWithThreeDecimal() {
 

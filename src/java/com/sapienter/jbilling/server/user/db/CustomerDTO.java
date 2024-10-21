@@ -139,8 +139,11 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
     private BigDecimal currentMonthlyAmount;
     private Date currentMonth;
     private List<CancellationRequestDTO> cancellationRequests;
-    private Integer numberOfFreeCalls;
-
+    private String identificationType;
+    private String identificationText;
+    private String identificationImage;
+    private Integer reissueCount = 0;
+    private Date reissueDate;
     public CustomerDTO() {
     }
 
@@ -158,7 +161,7 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
             Integer referralFeePaid, Integer autoPaymentType, Integer dueDateUnitId,
             Integer dueDateValue, Integer dfFm, CustomerDTO parent, Integer isParent, int excludeAging,
             Integer invoiceChild, MainSubscriptionDTO mainSubscription, AccountTypeDTO accountType,
-            String invoiceDesign, Date nextInvoiceDate, InvoiceTemplateDTO invoiceTemplate) {
+            Date nextInvoiceDate, InvoiceTemplateDTO invoiceTemplate) {
         this.id = id;
         this.baseUser = baseUser;
         this.invoiceDeliveryMethod = invoiceDeliveryMethod;
@@ -174,7 +177,6 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
         this.invoiceChild = invoiceChild;
         this.mainSubscription = mainSubscription;
         this.accountType = accountType;
-        this.invoiceDesign = invoiceDesign;
         this.nextInvoiceDate = nextInvoiceDate;
         this.invoiceTemplate = invoiceTemplate;
     }
@@ -246,9 +248,34 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
         setRechargeThreshold(user.getRechargeThresholdAsDecimal());
         setLowBalanceThreshold(user.getLowBalanceThresholdAsDecimal());
         setMonthlyLimit(user.getMonthlyLimitAsDecimal());
-        setNumberOfFreeCalls(user.getNumberOfFreeCalls());
+        setReissueCount(user.getReissueCount());
+        setReissueDate(user.getReissueDate());
 
         LOG.debug("Customer created with auto-recharge: " + getAutoRecharge() + " incoming var, " + user.getAutoRecharge());
+    }
+
+    @Column(name = "identification_type")
+    public String getIdentificationType() {
+        return identificationType;
+    }
+    public void setIdentificationType(String identificationType) {
+        this.identificationType = identificationType;
+    }
+
+    @Column(name = "identification_number")
+    public String getIdentificationText() {
+        return identificationText;
+    }
+    public void setIdentificationText(String identificationText) {
+        this.identificationText = identificationText;
+    }
+
+    @Column(name = "identification_image")
+    public String getIdentificationImage() {
+        return identificationImage;
+    }
+    public void setIdentificationImage(String identificationImage) {
+        this.identificationImage = identificationImage;
     }
 
     @Id @GeneratedValue(strategy = GenerationType.TABLE, generator = "customer_GEN")
@@ -576,15 +603,6 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
         this.rechargeThreshold = rechargeThreshold;
     }
 
-    @Column(name = "free_calls_limit")
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
-    }
-
     @Column(name = "low_balance_threshold", nullable = true)
     public BigDecimal getLowBalanceThreshold () {
         return lowBalanceThreshold;
@@ -645,6 +663,24 @@ implements java.io.Serializable, UserCodeAssociate<UserCodeCustomerLinkDTO>, Aud
     public void setCancellationRequests(
             List<CancellationRequestDTO> cancellationRequests) {
         this.cancellationRequests = cancellationRequests;
+    }
+
+    @Column(name = "reissue_count")
+    public Integer getReissueCount() {
+        return reissueCount;
+    }
+
+    public void setReissueCount(Integer reissueCount) {
+        this.reissueCount = reissueCount;
+    }
+
+    @Column(name = "reissue_date")
+    public Date getReissueDate() {
+        return reissueDate;
+    }
+
+    public void setReissueDate(Date reissueDate) {
+        this.reissueDate = reissueDate;
     }
 
     @Transient

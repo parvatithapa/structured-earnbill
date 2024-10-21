@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.server.user;
 
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -24,6 +23,7 @@ import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
+import org.hibernate.HibernateException;
 
 
 public class CancellationRequestBL{
@@ -257,9 +257,9 @@ public class CancellationRequestBL{
 			if(null !=invoiceId ){
 				return new InvoiceDAS().find(invoiceId).getCreateDatetime().before(requestedDate);
 			}
-		} catch (SQLException e) {
-			LOG.error("SQL exception occured while checking cancellation request date for user %s ",userId);
-			throw new SessionInternalError("SQL exception occured while checking cancellation request date ", e);
+		}  catch (HibernateException e){
+			LOG.error("Exception occurred while checking cancellation request date for user %s ",userId);
+			throw new SessionInternalError("Exception occurred while checking cancellation request date ", e);
 		}
 		return true;
 	}

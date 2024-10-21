@@ -1,0 +1,160 @@
+pipeline {
+    agent any
+
+    environment {
+        PORT_MAPPING= "8080:8080"
+        JMX_PORT_MAPPING= "9090:9090"
+
+        MOUNT_JBILLING_HOME= "/home/jbilling/billinghub/jbilling-home:/home/billinghub/jbilling-home"
+        MOUNT_LOG_LOCATION= "/home/jbilling/billinghub/logs/jbilling:/home/billinghub/logs"
+
+        CONTAINER_NAME = "billinghub-jbilling"
+        REPO_CONTAINER_NAME = "192.168.1.119:8082/billinghub-jbilling"
+        IMAGE_TAG = "${REPO_CONTAINER_NAME}:${params.IMAGE_TAG}"
+
+        JBILLING_DB_HOST = "192.168.1.113"
+        JBILLING_DB_PORT = "7432"
+
+        JBILLING_DB_NAME = "jbilling_test"
+        CRED_JBILLING_DB= credentials('db-dev-billinghub')
+        JBILLING_DB_USER = "$CRED_JBILLING_DB_USR"
+        JBILLING_DB_PASSWORD = "$CRED_JBILLING_DB_PSW"
+
+        JBILLING_SERVER_URL = "http://multiserver.billinghub.net/jbilling"
+        SPRING_PROFILES_ACTIVE = "billing.master,mediation.slave"
+
+        UMS_DB_NAME = "billinghub_usage_management_db"
+        CRED_UMS_DB= credentials('db-dev-billinghub')
+        UMS_DB_USER = "$CRED_UMS_DB_USR"
+        UMS_DB_PASSWORD = "$CRED_UMS_DB_PSW"
+
+        DOCKER_REG_HOST= "http://192.168.1.119:8082"
+        CRED_DOCKER_REG= credentials('docker-registry')
+        DOCKER_USERNAME= "$CRED_DOCKER_REG_USR"
+        DOCKER_PASSWORD= "$CRED_DOCKER_REG_PSW"
+
+        JAVA_OPTS="'-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.rmi.port=9090 -Djava.rmi.server.hostname=localhost'"
+    }
+
+    stages {
+        stage('Verify Tag') {
+            steps {
+                script {
+                    if (IMAGE_TAG.isEmpty()) {
+                        error('Docker image tag is a required parameter')
+                    }
+                }
+            }
+        }
+        stage('Deploy to 192.168.1.113') {
+            when {
+                expression { params.DEPLOY_TO_SERVER_1 }
+            }
+            steps {
+                script {
+                    def remote = [:]
+                    remote.name = "server-192.168.1.113"
+                    remote.host = "192.168.1.113"
+                    remote.allowAnyHosts = true
+                    def imagesToRemove
+
+                    withCredentials([usernamePassword(credentialsId: 'db-dev-billinghub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD'),
+                                    usernamePassword(credentialsId: 'ssh-113', usernameVariable: 'USERNAME_113', passwordVariable: 'PASSWORD_113')
+                                ]) {
+
+                        remote.user = USERNAME_113
+                        remote.password=PASSWORD_113
+
+                        echo "Login to Docker registry(${DOCKER_REG_HOST})"
+                        sshCommand remote: remote, command: "docker login ${DOCKER_REG_HOST}"
+
+                        echo "Pulling docker image ${IMAGE_TAG}"
+                        sshCommand remote: remote, command: "docker pull ${IMAGE_TAG}"
+
+                        echo "Stopping existing container"
+                        sshCommand remote: remote, command: "docker ps -f name=${CONTAINER_NAME} -q | xargs --no-run-if-empty docker stop"
+
+                        echo "Removing old container if any"
+                        sshCommand remote: remote, command: "docker ps -a -f name=${CONTAINER_NAME} -q | xargs --no-run-if-empty docker rm"
+
+                        echo "Starting docker container..."
+                        sshCommand remote: remote, command: "docker run -dt --restart=always --add-host=host.docker.internal:host-gateway -e JBILLING_DB_HOST=${JBILLING_DB_HOST} -e JBILLING_DB_PORT=${JBILLING_DB_PORT} -e JBILLING_DB_NAME=${JBILLING_DB_NAME} -e JBILLING_DB_USER=${JBILLING_DB_USER} -e JBILLING_DB_PASSWORD=${JBILLING_DB_PASSWORD} -e JBILLING_SERVER_URL=${JBILLING_SERVER_URL} -e SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -e JBILLING_DB_HOST_MEDIATION4=${JBILLING_DB_HOST} -e UMS_DB_NAME=${UMS_DB_NAME} -e UMS_DB_USER=${UMS_DB_USER} -e UMS_DB_PASSWORD=${UMS_DB_PASSWORD} -e JAVA_OPTS=${JAVA_OPTS} -v ${MOUNT_JBILLING_HOME} -v ${MOUNT_LOG_LOCATION} --name ${CONTAINER_NAME} -p ${PORT_MAPPING} -p ${JMX_PORT_MAPPING} ${IMAGE_TAG}"
+
+                        echo "Removing all older images except latest 3 images"
+                        imagesToRemove = sshCommand(remote: remote, command: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep ${REPO_CONTAINER_NAME} | sort -k 2 -r | tail -n +4 | awk '{print \$1}'")
+
+                        if(!imagesToRemove.isEmpty()) {
+                            imagesToRemove.split('\n').each { image ->
+                                sshCommand remote: remote, command: "docker rmi -f ${image}"
+                             }
+                        } else {
+                            echo "No images to remove"
+                        }
+
+                        echo "Sending notification on slack channel"
+                        if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                            slackSend color: '#36a64f', message: "Job : Deployment of ${CONTAINER_NAME}:${params.IMAGE_TAG} on 192.168.1.113\nStatus : *SUCCESS*\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+                        } else {
+                            slackSend color: '#ff0000', message: "Job : Deployment of ${CONTAINER_NAME}:${params.IMAGE_TAG} on 192.168.1.113\nStatus : *FAILURE*\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy to 192.168.1.130') {
+            when {
+                expression { params.DEPLOY_TO_SERVER_2 }
+            }
+            steps {
+                script {
+                    def remote = [:]
+                    remote.name = "server-192.168.1.130"
+                    remote.host = "192.168.1.130"
+                    remote.allowAnyHosts = true
+                    def imagesToRemove
+
+                    withCredentials([usernamePassword(credentialsId: 'db-dev-billinghub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD'),
+                                    usernamePassword(credentialsId: 'ssh-130', usernameVariable: 'USERNAME_130', passwordVariable: 'PASSWORD_130')
+                                ]) {
+
+                        remote.user = USERNAME_130
+                        remote.password=PASSWORD_130
+
+                        echo "Login to Docker registry(${DOCKER_REG_HOST})"
+                        sshCommand remote: remote, command: "docker login ${DOCKER_REG_HOST}"
+
+                        echo "Pulling docker image ${IMAGE_TAG}"
+                        sshCommand remote: remote, command: "docker pull ${IMAGE_TAG}"
+
+                        echo "Stopping existing container"
+                        sshCommand remote: remote, command: "docker ps -f name=${CONTAINER_NAME} -q | xargs --no-run-if-empty docker stop"
+
+                        echo "Removing old container if any"
+                        sshCommand remote: remote, command: "docker ps -a -f name=${CONTAINER_NAME} -q | xargs --no-run-if-empty docker rm"
+
+                        echo "Starting docker container..."
+                        sshCommand remote: remote, command: "docker run -dt --restart=always --add-host=host.docker.internal:host-gateway -e JBILLING_DB_HOST=${JBILLING_DB_HOST} -e JBILLING_DB_PORT=${JBILLING_DB_PORT} -e JBILLING_DB_NAME=${JBILLING_DB_NAME} -e JBILLING_DB_USER=${JBILLING_DB_USER} -e JBILLING_DB_PASSWORD=${JBILLING_DB_PASSWORD} -e JBILLING_SERVER_URL=${JBILLING_SERVER_URL} -e SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -e JBILLING_DB_HOST_MEDIATION4=${JBILLING_DB_HOST} -e UMS_DB_NAME=${UMS_DB_NAME} -e UMS_DB_USER=${UMS_DB_USER} -e UMS_DB_PASSWORD=${UMS_DB_PASSWORD} -e JAVA_OPTS=${JAVA_OPTS} -v ${MOUNT_JBILLING_HOME} -v ${MOUNT_LOG_LOCATION} --name ${CONTAINER_NAME} -p ${PORT_MAPPING} -p ${JMX_PORT_MAPPING} ${IMAGE_TAG}"
+
+                        echo "Removing all older images except latest 3 images"
+                        imagesToRemove = sshCommand(remote: remote, command: "docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | grep ${REPO_CONTAINER_NAME} | sort -k 2 -r | tail -n +4 | awk '{print \$1}'")
+
+                        if(!imagesToRemove.isEmpty()) {
+                            imagesToRemove.split('\n').each { image ->
+                                sshCommand remote: remote, command: "docker rmi -f ${image}"
+                             }
+                        } else {
+                            echo "No images to remove"
+                        }
+
+                        echo "Sending notification on slack channel"
+                        if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                            slackSend color: '#36a64f', message: "Job : Deployment of ${CONTAINER_NAME}:${params.IMAGE_TAG} on 192.168.1.130\nStatus : *SUCCESS*\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+                        } else {
+                            slackSend color: '#ff0000', message: "Job : Deployment of ${CONTAINER_NAME}:${params.IMAGE_TAG} on 192.168.1.130\nStatus : *FAILURE*\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

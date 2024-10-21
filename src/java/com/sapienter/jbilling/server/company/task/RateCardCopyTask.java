@@ -1,6 +1,6 @@
 package com.sapienter.jbilling.server.company.task;
 
-import au.com.bytecode.opencsv.CSVWriter;
+import com.opencsv.CSVWriter;
 import com.sapienter.jbilling.server.pricing.RateCardBL;
 import com.sapienter.jbilling.server.pricing.RateCardWS;
 import com.sapienter.jbilling.server.pricing.db.RateCardDAS;
@@ -100,7 +100,7 @@ public class RateCardCopyTask extends AbstractCopyTask {
         // read rows and write file
         ScrollableResults resultSet = null;
 
-        try (CSVWriter writer = new CSVWriter(new FileWriter(file), ',')) {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
             writer.writeNext(columns.toArray(new String[columns.size()]));
             resultSet = rateCardService.getRateTableRows();
             while (resultSet.next()) {

@@ -39,11 +39,9 @@ import javax.validation.constraints.NotNull;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.springframework.util.ObjectUtils.nullSafeEquals;
 import static org.springframework.util.ObjectUtils.nullSafeHashCode;
@@ -140,8 +138,6 @@ public class OrderWS implements WSSecured, Serializable, HierarchicalEntity {
     private String freeUsageQuantity;
     private Boolean prorateAdjustmentFlag = Boolean.FALSE;
 
-    private Boolean isFreeTrial = Boolean.FALSE;
-    private Boolean isDiscountOrderFinished = Boolean.FALSE;
     private Boolean autoRenew = Boolean.FALSE;
     private Integer renewNotification = 1;
     private Boolean isMediated = Boolean.FALSE;
@@ -208,7 +204,6 @@ public class OrderWS implements WSSecured, Serializable, HierarchicalEntity {
 		 objectId = UUID.randomUUID().toString();
 		 setProrateFlag(prorateFlag);
 		 setProrateAdjustmentFlag(prorateAdjustmentFlag);
-         setFreeTrial(Boolean.FALSE);
     }
 
     @ApiModelProperty(value = "Order status for the order")
@@ -545,17 +540,7 @@ public class OrderWS implements WSSecured, Serializable, HierarchicalEntity {
 		this.prorateAdjustmentFlag = prorateAdjustmentFlag;
 	}
 
-    public void setFreeTrial(Boolean freeTrial) {
-        isFreeTrial = freeTrial;
-    }
-
-    public void setDiscountOrderFinished(Boolean discountOrderFinished) {
-        isDiscountOrderFinished = discountOrderFinished;
-    }
-
-
-
-    @JsonIgnore
+	@JsonIgnore
 	public Integer getVersionNum() {
         return versionNum;
     }
@@ -746,7 +731,6 @@ public class OrderWS implements WSSecured, Serializable, HierarchicalEntity {
         sb.append("OrderWS");
         sb.append("{id=").append(id);
         sb.append(", userId=").append(userId);
-        sb.append(", prorateFlag=").append(prorateFlag);
         sb.append(", currencyId=").append(currencyId);
         sb.append(", activeUntil=").append(activeUntil);
         sb.append(", activeSince=").append(activeSince);
@@ -916,15 +900,6 @@ public class OrderWS implements WSSecured, Serializable, HierarchicalEntity {
             }
         }
         return taxOrderLines.toArray();
-    }
-
-    @Transient
-    @JsonIgnore
-    public Long getAllFreeCallCount() {
-        return Stream.of(this.getOrderLines())
-                .filter(line -> null != line && null != line.getFreeCallCounter())
-                .mapToLong(line -> line.getFreeCallCounter())
-                .reduce(0L, Long :: sum);
     }
 
     @Override

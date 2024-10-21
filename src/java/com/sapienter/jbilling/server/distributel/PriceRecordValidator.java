@@ -63,26 +63,4 @@ public class PriceRecordValidator {
                 .stream()
                 .anyMatch(orderLine -> orderLine.getItemId().equals(productId));
     }
-    
-    public void validateIncreaseAndReversal(DistributelPriceUpdateRequest record) {
-        List<String> errors = new ArrayList<>();
-        if(!isUserPresent(record.getCustomerId())) {
-            errors.add(String.format(USER_NOT_FOUND, record.getCustomerId()));
-        }
-        boolean isOrderFound = isOrderPresent(record.getOrderId());
-        if(!isOrderFound) {
-            errors.add(String.format(ORDER_NOT_FOUND, record.getOrderId()));
-        }
-        if(!isProductPresent(record.getProductId())) {
-            errors.add(String.format(PRODUCT_NOT_FOUND, record.getProductId()));
-        }
-        if(CollectionUtils.isNotEmpty(errors)) {
-            String errorMessage = errors.stream()
-                    .collect(Collectors.joining(","));
-            throw new InvalidProductPriceUpdateRequestException(errorMessage);
-
-        }
-
-    }
-
 }

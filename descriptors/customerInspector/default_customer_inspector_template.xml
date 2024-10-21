@@ -2,7 +2,7 @@
 <customerInformation>
     <row>
         <column>
-            <static header="true" label="Label" value="CUSTOMER INFORMATION"/>
+            <static header="true" label="Label" value="label.customer.information"/>
         </column>
     </row>
     <row>
@@ -10,27 +10,13 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <basic label="Login Name" entity="CUSTOMER" name="userName" style="font-weight: bold"/>
+            <basic label="label.customer.login.name" entity="CUSTOMER" name="userName" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Last Login" entity="CUSTOMER" name="lastLogin" style="font-weight: bold"/>
+            <basic label="label.customer.last.login" entity="CUSTOMER" name="lastLogin" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Type" entity="CUSTOMER" name="role" style="font-weight: bold"/>
-        </column>
-    </row>
-    <row>
-        <column>
-            <static label="" value="" style="font-weight:bold; text-align: right"/>
-        </column>
-        <column>
-            <basic label="Locked" entity="CUSTOMER" name="isAccountLocked" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Language" entity="CUSTOMER" name="language" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Status" entity="CUSTOMER" name="userStatus" style="font-weight: bold"/>
+            <basic label="label.type" entity="CUSTOMER" name="role" style="font-weight: bold"/>
         </column>
     </row>
     <row>
@@ -38,27 +24,13 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <basic label="User ID" entity="CUSTOMER" name="id" style="font-weight: bold"/>
+            <basic label="label.status.locked" entity="CUSTOMER" name="isAccountLocked" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Account Type" entity="CUSTOMER" name="accountType" style="font-weight: bold"/>
+            <basic label="label.customer.language" entity="CUSTOMER" name="language" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Currency" entity="CUSTOMER" name="currency" style="font-weight: bold"/>
-        </column>
-    </row>
-    <row>
-        <column>
-            <static label="" value="" style="font-weight:bold; text-align: right"/>
-        </column>
-        <column>
-            <basic label="Invoice Design" entity="CUSTOMER" name="invoiceDesign" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Exclude from Collections" entity="CUSTOMER" name="excludeAgeing" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Credit Limit" entity="CUSTOMER" name="creditLimitAsDecimal" style="font-weight: bold"/>
+            <basic label="label.status" entity="CUSTOMER" name="userStatus" style="font-weight: bold"/>
         </column>
     </row>
     <row>
@@ -66,27 +38,13 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <basic label="Invoice Delivery Method" entity="CUSTOMER" name="invoiceDeliveryMethod" style="font-weight: bold"/>
+            <basic label="label.user.Id" entity="CUSTOMER" name="id" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Next Invoice Date" entity="CUSTOMER" name="nextInvoiceDate" style="font-weight: bold"/>
+            <basic label="label.customer.account.type" entity="CUSTOMER" name="accountType" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Dynamic Balance" entity="CUSTOMER" name="dynamicBalanceAsDecimal" style="font-weight: bold"/>
-        </column>
-    </row>
-    <row>
-        <column>
-            <static label="" value="" style="font-weight:bold; text-align: right"/>
-        </column>
-        <column>
-            <basic label="Due Date Period" name="dueDateValue" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Total Owed" entity="CUSTOMER" name="owingBalance" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Auto-Recharge Amount" entity="CUSTOMER" name="autoRechargeAsDecimal" style="font-weight: bold"/>
+            <basic label="label.customer.currency" entity="CUSTOMER" name="currency" style="font-weight: bold"/>
         </column>
     </row>
     <row>
@@ -94,27 +52,13 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <basic label="Billing Cycle" entity="CUSTOMER" name="billingCycle" style="font-weight: bold"/>
+            <basic label="label.customer.invoice.design" entity="CUSTOMER" name="invoiceDesign" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Lifetime Revenue" entity="CUSTOMER" name="lifeTimeRevenue" style="font-weight: bold"/>
+            <basic label="label.customer.exclude.collection" entity="CUSTOMER" name="excludeAgeing" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Has Credential" entity="CUSTOMER" name="createCredentials" style="font-weight: bold"/>
-        </column>
-    </row>
-    <row>
-        <column>
-            <static label="" value="" style="font-weight:bold; text-align: right"/>
-        </column>
-        <column>
-            <basic label="Invoice if Child" entity="CUSTOMER" name="invoiceChild" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Is Parent Account" entity="CUSTOMER" name="isParent" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Parent ID" entity="CUSTOMER" name="parentId" style="font-weight: bold"/>
+            <basic label="label.customer.credit.limit" entity="CUSTOMER" name="creditLimitAsDecimal" style="font-weight: bold"/>
         </column>
     </row>
     <row>
@@ -122,27 +66,13 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <basic label="Child Invoicing" entity="CUSTOMER" name="childInvoicing" style="font-weight: bold"/>
+            <basic label="label.customer.invoice.delivery.method" entity="CUSTOMER" name="invoiceDeliveryMethod" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Agents IDs" name="agentIds" style="font-weight: bold"/>
+            <basic label="label.customer.next.invoice.date" entity="CUSTOMER" name="nextInvoiceDate" style="font-weight: bold"/>
         </column>
         <column>
-            <basic label="Sub-Accounts" name="subAccounts" style="font-weight: bold"/>
-        </column>
-    </row>
-    <row>
-        <column>
-            <static label="" value="" style="font-weight:bold; text-align: right"/>
-        </column>
-        <column>
-            <metaFieldType label="First Name" name="FIRST_NAME" style="font-weight: bold"/>
-        </column>
-        <column>
-            <metaFieldType label="Last Name" name="LAST_NAME" style="font-weight: bold"/>
-        </column>
-        <column>
-            <basic label="Phone Number" name="phoneNumbers" style="font-weight: bold"/>
+            <basic label="label.customer.dynamic.balance" entity="CUSTOMER" name="dynamicBalanceAsDecimal" style="font-weight: bold"/>
         </column>
     </row>
     <row>
@@ -150,7 +80,77 @@
             <static label="" value="" style="font-weight:bold; text-align: right"/>
         </column>
         <column>
-            <metaFieldType label="Email" name="EMAIL" style="font-weight: bold"/>
+            <basic label="label.customer.due.date.period" name="dueDateValue" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.total.owed" entity="CUSTOMER" name="owingBalance" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.auto.recharge.amount" entity="CUSTOMER" name="autoRechargeAsDecimal" style="font-weight: bold"/>
+        </column>
+    </row>
+    <row>
+        <column>
+            <static label="" value="" style="font-weight:bold; text-align: right"/>
+        </column>
+        <column>
+            <basic label="label.customer.billing.cycle" entity="CUSTOMER" name="billingCycle" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.lifetime.revenue" entity="CUSTOMER" name="lifeTimeRevenue" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.has.credentials" entity="CUSTOMER" name="createCredentials" style="font-weight: bold"/>
+        </column>
+    </row>
+    <row>
+        <column>
+            <static label="" value="" style="font-weight:bold; text-align: right"/>
+        </column>
+        <column>
+            <basic label="label.customer.invoice.if.child" entity="CUSTOMER" name="invoiceChild" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.is.parent.account" entity="CUSTOMER" name="isParent" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.parent.id" entity="CUSTOMER" name="parentId" style="font-weight: bold"/>
+        </column>
+    </row>
+    <row>
+        <column>
+            <static label="" value="" style="font-weight:bold; text-align: right"/>
+        </column>
+        <column>
+            <basic label="label.customer.child.invoicing" entity="CUSTOMER" name="childInvoicing" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.agent.id" name="agentIds" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="label.customer.sub.accounts" name="subAccounts" style="font-weight: bold"/>
+        </column>
+    </row>
+    <row>
+        <column>
+            <static label="" value="" style="font-weight:bold; text-align: right"/>
+        </column>
+        <column>
+            <metaFieldType label="label.token.users.firstname" name="FIRST_NAME" style="font-weight: bold"/>
+        </column>
+        <column>
+            <metaFieldType label="label.token.users.lastname" name="LAST_NAME" style="font-weight: bold"/>
+        </column>
+        <column>
+            <basic label="contact.phone.number" name="phoneNumbers" style="font-weight: bold"/>
+        </column>
+    </row>
+    <row>
+        <column>
+            <static label="" value="" style="font-weight:bold; text-align: right"/>
+        </column>
+        <column>
+            <metaFieldType label="contact.email" name="EMAIL" style="font-weight: bold"/>
         </column>
     </row>
 </customerInformation>

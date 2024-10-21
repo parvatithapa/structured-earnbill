@@ -9,6 +9,10 @@
     float: right;
 }
 
+html[dir="rtl"] #field-setup button.add-field {
+    float: left;
+}
+
 #field-setup label {
     vertical-align: middle;
 }

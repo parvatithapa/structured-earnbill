@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.server.account;
 
-import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.customerEnrollment.db.CustomerEnrollmentBL;
 import com.sapienter.jbilling.server.invoice.InvoiceTemplateDAS;
@@ -12,17 +11,24 @@ import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.MainSubscriptionWS;
 import com.sapienter.jbilling.server.user.UserBL;
-import com.sapienter.jbilling.server.user.db.*;
+import com.sapienter.jbilling.server.user.db.AccountInformationTypeDTO;
+import com.sapienter.jbilling.server.user.db.AccountTypeDAS;
+import com.sapienter.jbilling.server.user.db.AccountTypeDTO;
+import com.sapienter.jbilling.server.user.db.CompanyDTO;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.db.CurrencyDAS;
 import com.sapienter.jbilling.server.util.db.LanguageDAS;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.http.HttpStatus;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class AccountTypeBL {
 

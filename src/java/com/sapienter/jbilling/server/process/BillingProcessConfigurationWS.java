@@ -28,6 +28,7 @@ import java.util.Date;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.AssertTrue;
 
 import com.sapienter.jbilling.server.order.validator.DateBetween;
 import com.sapienter.jbilling.server.process.db.BillingProcessConfigurationDTO;
@@ -68,6 +69,8 @@ public class BillingProcessConfigurationWS implements Serializable, WSSecured {
     private String proratingType;
     private int autoPayment = 0;
     private Integer retryCount;
+    private Integer skipEmails;
+    private String skipEmailsDays;
     
     public BillingProcessConfigurationWS() {
     }
@@ -97,6 +100,8 @@ public class BillingProcessConfigurationWS implements Serializable, WSSecured {
 		if(ws.getAutoPayment()==1){
 			this.retryCount = ws.getRetryCount();
 		 }
+		this.skipEmails = ws.getSkipEmails();
+		this.skipEmailsDays = ws.getSkipEmailsDays();
 	}
 
     public BillingProcessConfigurationWS(BillingProcessConfigurationDTO dto) {
@@ -120,6 +125,8 @@ public class BillingProcessConfigurationWS implements Serializable, WSSecured {
         this.proratingType = null != dto.getProratingType() ? dto.getProratingType().getOptionText() : Constants.BLANK_STRING;
         this.autoPayment = dto.getAutoPayment();
         this.retryCount = dto.getRetryCount();
+        this.skipEmails = dto.getSkipEmails();
+        this.skipEmailsDays = dto.getSkipEmailsDays();
     }
 
 	@ApiModelProperty(value = "Unique identifier of the billing process configuration")
@@ -334,6 +341,8 @@ public class BillingProcessConfigurationWS implements Serializable, WSSecured {
                + ", proratingType=" + proratingType
                + ", autoPayment=" + autoPayment
                + ", retryCount=" + retryCount
+               + ", skipEmails=" + skipEmails
+               + ", skipEmailsDays=" + skipEmailsDays
                + '}';
     }
 
@@ -366,5 +375,28 @@ public class BillingProcessConfigurationWS implements Serializable, WSSecured {
 	public void setRetryCount(Integer retryCount) {
 		this.retryCount = retryCount;
 	}
+	
+	@ApiModelProperty(value = "Skip emails sending in bill run")
+    public Integer getSkipEmails() {
+        return skipEmails;
+    }
 
+    public void setSkipEmails(Integer skipEmails) {
+        this.skipEmails = skipEmails;
+    }
+    
+    @ApiModelProperty(value = "Skip emails days values")
+    public String getSkipEmailsDays() {
+        return skipEmailsDays;
+    }
+
+    public void setSkipEmailsDays(String skipEmailsDays) {
+        this.skipEmailsDays = skipEmailsDays;
+    }
+    
+    @AssertTrue(message="Skip emails Days can not be empty")
+    private boolean isValidateskipEmails() {
+        return !(this.skipEmails.equals(1) && (this.skipEmailsDays == null || this.skipEmailsDays.equals("")));
+    }
+	
 }

@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.resources
 
 import com.sapienter.jbilling.common.ErrorDetails
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.order.OrderChangeTypeWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -44,8 +43,8 @@ class OrderChangeTypeResource {
         OrderChangeTypeWS[] orderChangeTypes;
         try {
             orderChangeTypes = webServicesSession.getOrderChangeTypesForCompany();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return (orderChangeTypes == null || orderChangeTypes.length == 0) ?
                 Response.ok().build() :
@@ -70,8 +69,8 @@ class OrderChangeTypeResource {
         OrderChangeTypeWS orderChangeType;
         try {
             orderChangeType = webServicesSession.getOrderChangeTypeById(orderChangeTypeId);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return (orderChangeType != null) ?
                 Response.ok().entity(orderChangeType).build() :
@@ -94,8 +93,8 @@ class OrderChangeTypeResource {
             Integer orderChangeTypeId = webServicesSession.createUpdateOrderChangeType(orderChangeTypeWS);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(orderChangeTypeId)).build())
                     .entity(webServicesSession.getOrderChangeTypeById(orderChangeTypeId)).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -121,8 +120,8 @@ class OrderChangeTypeResource {
             }
             orderChangeTypeWS.setId(id);
             webServicesSession.createUpdateOrderChangeType(orderChangeTypeWS);
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(webServicesSession.getOrderChangeTypeById(id)).build();
     }
@@ -150,8 +149,8 @@ class OrderChangeTypeResource {
             }
             webServicesSession.deleteOrderChangeType(orderChangeTypeId);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 

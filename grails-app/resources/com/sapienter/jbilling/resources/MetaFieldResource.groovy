@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.metafields.MetaFieldWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -51,8 +50,8 @@ class MetaFieldResource {
         MetaFieldWS metaField;
         try {
             metaField = webServicesSession.getMetaField(id);
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(metaField).build();
     }
@@ -73,8 +72,8 @@ class MetaFieldResource {
             return (null == metaFields || 0 == metaFields.length) ?
                     Response.ok().build() :
                     Response.ok().entity(metaFields).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -95,8 +94,8 @@ class MetaFieldResource {
             Integer metaFieldId = webServicesSession.createMetaField(metaFieldWS)
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(metaFieldId)).build())
                     .entity(webServicesSession.getMetaField(metaFieldId)).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -122,8 +121,8 @@ class MetaFieldResource {
             metaFieldWS.setId(id);
             webServicesSession.updateMetaField(metaFieldWS);
             return Response.ok().entity(webServicesSession.getMetaField(id)).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -145,8 +144,8 @@ class MetaFieldResource {
             }
             webServicesSession.deleteMetaField(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

@@ -258,7 +258,9 @@ class ProductService implements Serializable {
 						 or {
 								 eq('id', params.int('filterBy'))
 								 ilike('identifier', "%${params.filterBy}%")
-						 	}
+                                 ilike('subscriberNumber', "%${params.filterBy}%")
+                                 ilike('imsi', "%${params.filterBy}%")
+                         }
 					 }
 					 if (null != params.statusId && !params.statusId.toString().isEmpty() && params.statusId.toString()!='0') {
 						 assetStatus {
@@ -451,6 +453,16 @@ class ProductService implements Serializable {
                     }
                 }
                 eq('deleted', params.deleted ? params.int('deleted') : 0)
+
+                if('on' == params.showReIssuable){
+                    isNull('subscriberNumber')
+                    assetStatus {
+                        eq('isAvailable', 1)
+                    }
+                }
+                if('on' == params.showSuspended){
+                    eq('suspended', true)
+                }
             }
         }
         setReservedFlag(assets)

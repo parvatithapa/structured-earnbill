@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface MediationProcessService {
     public static final String BEAN_NAME = "mediationProcessService";
     MediationProcess getMediationProcess(UUID id);
-    MediationProcess saveMediationProcess(Integer entityId, Integer configurationId);
+    MediationProcess saveMediationProcess(Integer entityId, Integer configurationId, String fileName);
     MediationProcess updateMediationProcess(MediationProcess mediationProcess);
     MediationProcess updateMediationProcessCounters(UUID mediationProcessId);
     void deleteMediationProcess(UUID mediationProcessId);

@@ -15,6 +15,7 @@
  */
 package com.sapienter.jbilling.server.user.db;
 
+import com.sapienter.jbilling.server.adennet.AdennetConstants;
 import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
 
@@ -50,6 +51,7 @@ public class UserStatusDAS extends AbstractDAS<UserStatusDTO> {
 
         Disjunction disjunction = Restrictions.disjunction();
         disjunction.add(Restrictions.idEq(UserDTOEx.STATUS_ACTIVE));
+        disjunction.add(Restrictions.idEq(AdennetConstants.USER_STATUS_DEACTIVATED));
         disjunction.add(Restrictions.eq("aes.company.id", entityId));
 
         crit.add(disjunction);

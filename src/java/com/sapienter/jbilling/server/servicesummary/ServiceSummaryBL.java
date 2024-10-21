@@ -32,6 +32,7 @@ public class ServiceSummaryBL {
 
     private ServiceSummaryDAS serviceSummaryDas = null;
     private ServiceSummaryDTO serviceSummaryDto = null;
+    private PrepaidServiceSummaryBL prepaidServiceSummaryBL = null;
 
     public ServiceSummaryBL(Integer serviceSummaryId) {
         init();
@@ -49,6 +50,7 @@ public class ServiceSummaryBL {
     private void init() {
         serviceSummaryDas = new ServiceSummaryDAS();
         serviceSummaryDto = new ServiceSummaryDTO();
+        prepaidServiceSummaryBL = new PrepaidServiceSummaryBL();
     }
 
     public ServiceSummaryDTO getServiceSummaryDTO() {
@@ -67,6 +69,7 @@ public class ServiceSummaryBL {
      * @param invoiceId
      */
     public void deleteByInvoice(Integer invoiceId) {
+        prepaidServiceSummaryBL.deleteAllByInvoiceId(invoiceId);
         serviceSummaryDas.deleteByInvoice(invoiceId);
     }
 
@@ -76,6 +79,7 @@ public class ServiceSummaryBL {
      * @param billingProcessId
      */
     public void deleteByBillingProcess(Integer billingProcessId) {
+        prepaidServiceSummaryBL.deleteAllByBillingProcessId(billingProcessId);
         serviceSummaryDas.deleteByBillingProcessId(billingProcessId);
     }
 

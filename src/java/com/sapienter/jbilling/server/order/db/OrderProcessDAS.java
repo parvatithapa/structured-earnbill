@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.transform.Transformers;
 
@@ -121,5 +122,20 @@ public class OrderProcessDAS extends AbstractDAS<OrderProcessDTO> {
 				.add(Restrictions.isNotNull("periodEnd"));
 	return criteria.list();
     }
-    
+
+    /**
+     * Returns List of OrderProcessWS from InvoiceId
+     * @param InvoiceId
+     * @return
+     */
+    public OrderProcessDTO getOrderProcessByOrderId(Integer orderId) {
+        Criteria criteria = getSession().createCriteria(OrderProcessDTO.class)
+                    .createAlias("purchaseOrder", "order")
+                    .add(Restrictions.eq("order.id",orderId))
+                    .add(Restrictions.eq("isReview", 0))
+                    .add(Restrictions.isNotNull("periodEnd"))
+                    .addOrder(Order.desc("periodEnd"))
+                    .setMaxResults(1);
+        return (OrderProcessDTO) criteria.uniqueResult();
+    }
 }

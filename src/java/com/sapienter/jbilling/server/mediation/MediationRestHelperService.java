@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,10 @@ public class MediationRestHelperService {
             .forEach(record -> {
                 logger.info("Pricing fields: {}", record.getPricingFields());
                 JbillingMediationRecordRestWS mediationRecord = new JbillingMediationRecordRestWS(record);
+                Map<String,String> taxFields = new HashMap<>();
+                taxFields.put("ratedPriceWithTax", record.getRatedPriceWithTax() != null ? record.getRatedPriceWithTax().toPlainString() : "");
+                taxFields.put("taxAmount", record.getTaxAmount() != null ? record.getTaxAmount().toPlainString() : "");
+                mediationRecord.setAdditionalFields(taxFields);
                 if (StringUtils.isNotEmpty(record.getPricingFields())) {
                     mediationRecord.setPricingFields(createPricingFieldMap(record.getPricingFields()));
                 }

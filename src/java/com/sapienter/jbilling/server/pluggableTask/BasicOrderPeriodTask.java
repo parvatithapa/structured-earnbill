@@ -255,7 +255,7 @@ public class BasicOrderPeriodTask extends PluggableTask implements OrderPeriodTa
         }
 
         if (endOfPeriod == null) {
-            throw new OrderPeriodCalcException("Error calculating for order " + order.getId());
+            throw new OrderPeriodCalcException("Error calculating endOfPeriod for order " + order.getId());
         } else if (order.getActiveUntil() != null && endOfPeriod.after(order.getActiveUntil())) {
             // make sure this date is not beyond the expiration date
             cal.setTime(order.getActiveUntil());

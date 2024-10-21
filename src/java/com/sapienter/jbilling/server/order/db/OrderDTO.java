@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -62,8 +62,9 @@ import com.sapienter.jbilling.server.discount.db.DiscountLineDTO;
 import com.sapienter.jbilling.server.invoice.InvoiceBL;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.item.PricingField;
-import com.sapienter.jbilling.server.item.db.ItemDTO;
+import com.sapienter.jbilling.server.item.db.AssetAssignmentDTO;
 import com.sapienter.jbilling.server.item.db.AssetDTO;
+import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.item.db.PlanDTO;
 import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
@@ -338,6 +339,11 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
     @Transient
     public boolean isFinished() {
         return OrderStatusFlag.FINISHED.equals(this.getOrderStatus().getOrderStatusFlag());
+    }
+
+    @Transient
+    public boolean isActive() {
+        return OrderStatusFlag.INVOICE.equals(this.getOrderStatus().getOrderStatusFlag());
     }
 
     @ManyToOne(fetch=FetchType.LAZY)
@@ -718,6 +724,11 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
     @Transient
     public boolean isPostPaid() {
         return getBillingTypeId().compareTo(Constants.ORDER_BILLING_POST_PAID) == 0;
+    }
+    
+    @Transient
+    public boolean isPrePaid() {
+        return getBillingTypeId().compareTo(Constants.ORDER_BILLING_PRE_PAID) == 0;
     }
 
     @Transient
@@ -1287,7 +1298,6 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
     @Transient
     public boolean hasPlanWithFreeUsagePool() {
         return getLines().stream()
-                .filter(line -> null!= line.getItem())
                 .filter(line -> line.getItem().isPlan() && line.getDeleted() == 0)
                 .flatMap(line -> line.getItem().getPlans().stream())
                 .anyMatch(plan -> !plan.getUsagePools().isEmpty());
@@ -1317,7 +1327,7 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
     }
 
     @Transient
-    public PlanDTO getPlantWithUsagePool() {
+    public PlanDTO getPlanWithUsagePool() {
         return getLines().stream()
                 .filter(line -> line.getItem().isPlan() && line.getDeleted() == 0)
                 .flatMap(line -> line.getItem().getPlans().stream())
@@ -1379,6 +1389,20 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
             result = result.add(orderLine.getQuantity());
         }
         return result;
+    }
+
+    @Transient
+    public PlanDTO getPlanFromOrder() {
+        for(OrderLineDTO orderLine : getLines()) {
+        	// JBSPC-804 -Put a check for Deleted Order to fetch Plans from current order & not from Deleted Orders.This is to handle Plan Swap scenario.
+            if(orderLine.getDeleted() == 0 && orderLine.hasItem()) {
+                ItemDTO item = orderLine.getItem();
+                if(item.hasPlans()) {
+                    return item.firstPlan();
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1456,17 +1480,6 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
     }
 
     @Transient
-    public boolean isPlanOrder() {
-        if(CollectionUtils.isEmpty(getLines())) {
-            return false;
-        }
-        return getLines().stream()
-                .map(OrderLineDTO::getItem)
-                .filter(Objects::nonNull)
-                .anyMatch(ItemDTO::hasPlans);
-    }
-
-    @Transient
     public List<String> getAssetIdentifiers() {
         List<String> assets = new ArrayList<>();
         for(OrderLineDTO line : this.lines) {
@@ -1497,4 +1510,30 @@ public class OrderDTO extends CustomizedEntity implements Serializable, Exportab
         return assets;
     }
 
+    @Transient
+    public boolean isCreditOrder() {
+        Optional<BigDecimal> optTotalAmount = getLines().stream()
+                       .map(OrderLineDTO :: getAmount)
+                       .reduce((amount1, amount2)-> amount1.add(amount2));
+        return optTotalAmount.isPresent() ? optTotalAmount.get().compareTo(BigDecimal.ZERO) < 0 : false;
+    }
+
+    @Transient
+    public List<AssetAssignmentDTO> getAssetAssignments() {
+        List<AssetAssignmentDTO> assetAssignments = new ArrayList<>();
+        for(OrderLineDTO line : this.lines) {
+            assetAssignments.addAll(line.getAssetAssignments());
+        }
+        return assetAssignments;
+    }
+
+    @Transient
+    public boolean isPlanOrder() {
+        for(OrderLineDTO line : this.lines) {
+            if(null != line.getItem() && line.getItem().isPlan()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

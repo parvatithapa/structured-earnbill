@@ -66,7 +66,7 @@ import static org.testng.AssertJUnit.assertTrue;
 import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.AssertJUnit.fail;
 
-@Test(groups = { "integration", "provisioning" }, testName = "ProvisioningTest", priority = 3)
+@Test(groups = { "integration", "provisioning" }, testName = "ProvisioningTest")
 public class ProvisioningTest {
 
     private static final Logger logger = LoggerFactory.getLogger(ProvisioningTest.class);
@@ -219,7 +219,7 @@ public class ProvisioningTest {
 
             OrderWS retOrder = api.getOrder(orderId);
             ProvisioningCommandWS[] commands = retOrder.getProvisioningCommands();
-
+            
             assertNotNull("Commands should not be null", commands);
             assertEquals("There is no provisioning command generated for the order", 3, commands.length);
 
@@ -278,10 +278,10 @@ public class ProvisioningTest {
             Arrays.sort(commands, new Comparator<ProvisioningCommandWS>() {
     			@Override
     			public int compare(ProvisioningCommandWS c1, ProvisioningCommandWS c2) {
-    				return c1.getExecutionOrder().compareTo(c2.getExecutionOrder());
+    				return c1.getExecutionOrder().compareTo(c2.getExecutionOrder()); 
     			}
     		});
-
+            
             ProvisioningCommandWS command = commands[0];
             assertNotNull("Command does not exist", command);
 
@@ -321,7 +321,7 @@ public class ProvisioningTest {
 
         try {
             OrderWS order = createOrder(3);
-
+            
             logger.debug("Creating order ...");
             orderId = api.createOrder(order, OrderChangeBL.buildFromOrder(order, ORDER_CHANGE_STATUS_APPLY_ID));
             assertNotNull("The order was not created", orderId);
@@ -339,10 +339,10 @@ public class ProvisioningTest {
             Arrays.sort(commands, new Comparator<ProvisioningCommandWS>() {
     			@Override
     			public int compare(ProvisioningCommandWS c1, ProvisioningCommandWS c2) {
-    				return c1.getExecutionOrder().compareTo(c2.getExecutionOrder());
+    				return c1.getExecutionOrder().compareTo(c2.getExecutionOrder()); 
     			}
     		});
-
+            
             ProvisioningCommandWS command = commands[0];
             assertNotNull("Command does not exist", command);
 
@@ -437,7 +437,7 @@ public class ProvisioningTest {
                 public int compare(ProvisioningRequestWS o1, ProvisioningRequestWS o2) {
                     return o1.getId().compareTo(o2.getId());
                 }
-            });
+            });        
 		assertNotNull("Requests should not be null", requests);
         assertEquals("There should be 2 provisioning requests generated per command", 2, requests.length);
 
@@ -588,10 +588,10 @@ public class ProvisioningTest {
         Arrays.sort(commands, new Comparator<ProvisioningCommandWS>() {
 			@Override
 			public int compare(ProvisioningCommandWS c1, ProvisioningCommandWS c2) {
-				return Integer.valueOf(c1.getId()).compareTo(Integer.valueOf(c2.getId()));
+				return Integer.valueOf(c1.getId()).compareTo(Integer.valueOf(c2.getId())); 
 			}
 		});
-
+        
         command = commands[1];
 
         assertNotNull("Command does not exist", command);
@@ -676,10 +676,10 @@ public class ProvisioningTest {
         Arrays.sort(commands, new Comparator<ProvisioningCommandWS>() {
 			@Override
 			public int compare(ProvisioningCommandWS c1, ProvisioningCommandWS c2) {
-				return Integer.valueOf(c1.getId()).compareTo(Integer.valueOf(c2.getId()));
+				return Integer.valueOf(c1.getId()).compareTo(Integer.valueOf(c2.getId())); 
 			}
 		});
-
+        
         ProvisioningCommandWS command = commands[1];
 
         assertNotNull("Command does not exist", command);
@@ -717,8 +717,8 @@ public class ProvisioningTest {
     @Test
     public void testActivateOrderProvisioning() throws Exception
     {
-
-
+        
+        
         OrderWS newOrder = getOrderWS();
 
         logger.debug("Creating order {}", newOrder);
@@ -771,8 +771,8 @@ public class ProvisioningTest {
     @Test
     public void testSuspendOrderProvisioning() throws Exception
     {
-
-
+        
+        
         OrderWS newOrder = getOrderWS();
 
         logger.debug("Creating order {}", newOrder);
@@ -797,7 +797,7 @@ public class ProvisioningTest {
         // setting order status to SUSPENDED
         logger.debug("Suspending order {}", orderId_1);
         orderWS.setOrderStatusWS(api.findOrderStatusById(3));
-
+        
         api.updateOrder(orderWS, OrderChangeBL.buildFromOrder(newOrder, ORDER_CHANGE_STATUS_APPLY_ID));
         pause(2000);
 
@@ -810,7 +810,7 @@ public class ProvisioningTest {
 
         Map<String, ProvisioningCommandWS> commandMap = Arrays.asList(commands).stream()
                 .collect(Collectors.toMap(ProvisioningCommandWS::getName, Function.identity()));
-
+        
         command = commandMap.get("deactivate_user");
         assertNotNull("Command with name deactivate_user does not exist", command);
 
@@ -876,7 +876,7 @@ public class ProvisioningTest {
         // setting status to FINISHED
         logger.debug("Finishing order ... " + newOrder);
         orderWS.setOrderStatusWS(api.findOrderStatusById(2));
-
+        
         api.updateOrder(orderWS, OrderChangeBL.buildFromOrder(newOrder, ORDER_CHANGE_STATUS_APPLY_ID));
         pause(2000);
         orderWS = api.getOrder(orderId_1);
@@ -892,7 +892,7 @@ public class ProvisioningTest {
 				return c1.getCreateDate().compareTo(c2.getCreateDate());
 			}
 		});
-
+        
         command = commands[1];
         assertNotNull("Command does not exist", command);
 
@@ -932,11 +932,11 @@ public class ProvisioningTest {
     @Test
     public void testReActivateOrderProvisioning() throws Exception
     {
-
+        
     	 /*
          * Create
          */
-
+        
         OrderWS newOrder = getOrderWS();
 
         logger.debug("Creating order {}", newOrder);
@@ -990,7 +990,7 @@ public class ProvisioningTest {
 				return c1.getCreateDate().compareTo(c2.getCreateDate());
 			}
 		});
-
+        
         command = commands[2];
         assertNotNull("Command does not exist", command);
 
@@ -1030,17 +1030,17 @@ public class ProvisioningTest {
     @Test
     public void testDeleteOrderProvisioning() throws Exception
     {
-
+        
     	 /*
          * Create
          */
-
+        
         OrderWS newOrder = getOrderWS();
 
         logger.debug("Creating order {}", newOrder);
         Integer orderId_1 = api.createOrder(newOrder, OrderChangeBL.buildFromOrder(newOrder, ORDER_CHANGE_STATUS_APPLY_ID));
         logger.debug("Created order {}", orderId_1);
-
+        
         // wait for the provisioning to be processed
         pause(2000);
 
@@ -1265,7 +1265,7 @@ public class ProvisioningTest {
         logger.debug("Creating order {}", newOrder);
         orderId_1 = api.createOrder(newOrder, OrderChangeBL.buildFromOrder(newOrder, newStatusId));
         logger.debug("Created Order ID {}", orderId_1);
-
+        
         // wait for the provisioning to be processed
         pause(2000);
 
@@ -1280,7 +1280,7 @@ public class ProvisioningTest {
         orderChangeWS.setUserAssignedStatusId(processingStatusId);
 
         api.createUpdateOrder(orderWS, new OrderChangeWS[]{orderChangeWS});
-
+        
         int MAX_RETRIES = 20;
         int numRetries = 0;
         while (numRetries < MAX_RETRIES) {
@@ -1482,7 +1482,7 @@ public class ProvisioningTest {
 
     private OrderWS createOrder(int itemQuantity) {
         // create the order
-
+        
         OrderWS order = new OrderWS();
         order.setUserId(USER_ID);
         order.setBillingTypeId(Constants.ORDER_BILLING_PRE_PAID);

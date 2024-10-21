@@ -3,7 +3,7 @@ package com.sapienter.jbilling.server.task;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.fail;
-import static com.sapienter.jbilling.test.framework.helpers.ApiBuilderHelper.*;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DateFormat;
@@ -93,8 +93,8 @@ public class GenerateCancellationInvoiceTaskTest {
             envCreator.itemBuilder(api).item().withCode(PRODUCT_CODE_2).global(true).withType(envCreator.idForCode(CATEGORY_CODE))
                 .withFlatPrice("10.00").build();
 			envCreator.accountTypeBuilder(api).withName(ACCOUNT_TYPE_CODE).build().getId();
-
-			// configuring plugin
+			
+			// configuring plugin 
 			envCreator.pluginBuilder(api)
 					  .withCode(PLUGIN_CODE)
 					  .withTypeId(api.getPluginTypeWSByClassName(GENERATE_CANCELLATION_INVOICE_TASK_CLASS_NAME).getId())
@@ -149,10 +149,10 @@ public class GenerateCancellationInvoiceTaskTest {
 			assertEquals("Order's active until date should be equal to cancellation date: ",
 					TestConstants.DATE_FORMAT.format(crWS.getCancellationDate()),
 					TestConstants.DATE_FORMAT.format(orderWS[0].getActiveUntil()));
-
+			
 			logger.debug("Running Cancellation Task....");
 			api.triggerScheduledTask(env.idForCode(PLUGIN_CODE), new Date());
-			sleep(1000);
+			sleep(3000);
 			UserWS user = api.getUserWS(userId);
 			 assertEquals("User's status sahould be: ",
 						USER_CANCELLATION_STATUS,user.getStatus());
@@ -228,9 +228,9 @@ public class GenerateCancellationInvoiceTaskTest {
 				assertEquals("Order's active until date should be equal to cancellation date: ",
 						TestConstants.DATE_FORMAT.format(crWS.getCancellationDate()),
 						TestConstants.DATE_FORMAT.format(orderWS.getActiveUntil()));
-			});
-
-
+			});	                        	
+			
+			
 			logger.debug("Running Cancellation Task....");
 			api.triggerScheduledTask(env.idForCode(PLUGIN_CODE), new Date());
 			sleep(1000);
@@ -245,7 +245,7 @@ public class GenerateCancellationInvoiceTaskTest {
 			  });
 		});
 	}
-
+	
 	@Test(priority=3)
 	public void test003GenerateCancellationInvoiceOfOneTimeOrder(){
 
@@ -287,20 +287,20 @@ public class GenerateCancellationInvoiceTaskTest {
 				api.createCancellationRequest(crWS);
 				fail("Exception Expected");
 			} catch(SessionInternalError error) {
-
+				
 			}
-
+			
 
 			logger.debug("Running Cancellation Task....");
 			api.triggerScheduledTask(env.idForCode(PLUGIN_CODE), new Date());
 			sleep(1000);
-
+			
 			UserWS user = api.getUserWS(userId);
 			InvoiceWS invoice = api.getLatestInvoice(userId);
-
+			
 			assertEquals("Invoice Should not be generated : ",
 					null,invoice);
-
+			
 			 assertEquals("User's status should be: ",
 						UserDTOEx.STATUS_ACTIVE,user.getStatusId());
 		});
@@ -351,7 +351,7 @@ public class GenerateCancellationInvoiceTaskTest {
 			assertEquals("Order's active until date should be equal to cancellation date: ",
 					TestConstants.DATE_FORMAT.format(crWS.getCancellationDate()),
 					TestConstants.DATE_FORMAT.format(orderWS[0].getActiveUntil()));
-
+			
 			logger.debug("Running Cancellation Task....");
 			api.triggerScheduledTask(env.idForCode(PLUGIN_CODE), new Date());
 			sleep(1000);
@@ -469,7 +469,7 @@ public class GenerateCancellationInvoiceTaskTest {
 		CustomerBuilder customerBuilder = envBuilder.customerBuilder(api)
 				.withUsername(code).withAccountTypeId(accountTypeId)
 				.withMainSubscription(new MainSubscriptionWS(environmentHelper.getOrderPeriodMonth(api), getDay(nid)));
-
+		
 		Calendar nextInvoiceDate = Calendar.getInstance();
 		nextInvoiceDate.setTime(nid);
 		nextInvoiceDate.add(Calendar.MONTH, 1);
@@ -493,6 +493,12 @@ public class GenerateCancellationInvoiceTaskTest {
         invoiceBillingProcessLinkingTask.setParameters(parameters);
         return api.createPlugin(invoiceBillingProcessLinkingTask);
     }
+	private static Date addDays(Date inputDate, int days) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(inputDate);
+		cal.add(Calendar.DATE, days);
+		return cal.getTime();
+	}
 
 	private static Integer getDay(Date inputDate) {
 		Calendar cal = Calendar.getInstance();
@@ -517,6 +523,17 @@ public class GenerateCancellationInvoiceTaskTest {
         }
     }
 
+    private CancellationRequestWS constructCancellationRequestWS(Date cancellationDate, Integer customerId,
+            String reasonText) {
+        CancellationRequestWS cancellationRequestWS = new CancellationRequestWS();
+        cancellationRequestWS.setCancellationDate(cancellationDate);
+        cancellationRequestWS.setCreateTimestamp(new Date());
+        cancellationRequestWS.setCustomerId(customerId);
+        cancellationRequestWS.setReasonText(reasonText);
+        cancellationRequestWS.setStatus(CancellationRequestStatus.APPLIED);
+        return cancellationRequestWS;
+    }
+	
 	private void sleep(long time) {
 		try {
 			Thread.sleep(time);
@@ -524,6 +541,6 @@ public class GenerateCancellationInvoiceTaskTest {
 
 		}
 	}
-
-
+	
+	
 }

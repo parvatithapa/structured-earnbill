@@ -85,7 +85,7 @@ import java.io.Serializable;
                         "WHERE it.id = :item_id " +
                         "AND at.deleted=0 AND at.isOrderFinished=1 ")
 })
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.NONE)
 public class AssetStatusDTO extends AbstractDescription implements Auditable {
 
     private int id;

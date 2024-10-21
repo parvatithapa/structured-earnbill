@@ -3,11 +3,8 @@ package com.sapienter.jbilling.test.framework.helpers;
 import com.sapienter.jbilling.server.metafields.*;
 import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.metafields.validation.ValidationRuleWS;
-import com.sapienter.jbilling.server.user.CancellationRequestWS;
-import com.sapienter.jbilling.server.user.db.CancellationRequestStatus;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -99,20 +96,5 @@ public final class ApiBuilderHelper {
         return DataType.STRING;
     }
 
-    public static CancellationRequestWS constructCancellationRequestWS(Date cancellationDate, Integer customerId, String reasonText) {
-        CancellationRequestWS cancellationRequestWS = new CancellationRequestWS();
-        cancellationRequestWS.setCancellationDate(cancellationDate);
-        cancellationRequestWS.setCreateTimestamp(new Date());
-        cancellationRequestWS.setCustomerId(customerId);
-        cancellationRequestWS.setReasonText(reasonText);
-        cancellationRequestWS.setStatus(CancellationRequestStatus.APPLIED);
-        return cancellationRequestWS;
-    }
 
-    public static Date addDays(Date inputDate, int days) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(inputDate);
-        cal.add(Calendar.DATE, days);
-        return cal.getTime();
-    }
 }

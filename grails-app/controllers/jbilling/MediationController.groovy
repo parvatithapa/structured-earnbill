@@ -16,7 +16,14 @@
 
 package jbilling
 
-import java.util.List;
+import grails.converters.JSON
+import grails.plugin.springsecurity.annotation.Secured
+
+import org.apache.commons.lang.NotImplementedException
+import org.apache.commons.lang.StringUtils
+import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 
 import com.sapienter.jbilling.client.ViewUtils
 import com.sapienter.jbilling.client.util.Constants
@@ -26,17 +33,17 @@ import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.filter.JbillingFilterConverter
 import com.sapienter.jbilling.server.invoice.InvoiceBL
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO
-import com.sapienter.jbilling.server.mediation.converter.MediationJobs;
-import com.sapienter.jbilling.server.mediation.converter.common.MediationJob;
-import com.sapienter.jbilling.server.mediation.converter.db.JbillingMediationRecordDao;
-import com.sapienter.jbilling.server.mediation.db.MediationConfiguration;
 import com.sapienter.jbilling.server.invoiceTemplate.report.InvoiceTemplateBL
-import com.sapienter.jbilling.server.mediation.IMediationSessionBean;
+import com.sapienter.jbilling.server.mediation.IMediationSessionBean
 import com.sapienter.jbilling.server.mediation.JbillingMediationErrorRecord
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord
 import com.sapienter.jbilling.server.mediation.MediationConfigurationWS
 import com.sapienter.jbilling.server.mediation.MediationProcess
-import com.sapienter.jbilling.server.mediation.MediationProcessCDRCountInfo;
+import com.sapienter.jbilling.server.mediation.MediationProcessCDRCountInfo
+import com.sapienter.jbilling.server.mediation.converter.MediationJobs
+import com.sapienter.jbilling.server.mediation.converter.common.MediationJob
+import com.sapienter.jbilling.server.mediation.converter.db.JbillingMediationRecordDao
+import com.sapienter.jbilling.server.mediation.db.MediationConfiguration
 import com.sapienter.jbilling.server.order.db.OrderDTO
 import com.sapienter.jbilling.server.process.ProcessStatusWS
 import com.sapienter.jbilling.server.security.Validator
@@ -48,15 +55,6 @@ import com.sapienter.jbilling.server.util.PreferenceBL
 import com.sapienter.jbilling.server.util.SecurityValidator
 import com.sapienter.jbilling.server.util.csv.CsvExporter
 import com.sapienter.jbilling.server.util.csv.Exporter
-
-import org.apache.commons.lang.NotImplementedException
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.DateTimeFormatter
-
-import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
 
 /**
  * MediationController
@@ -72,14 +70,14 @@ class MediationController {
 
     // Matches the columns in the JQView grid with the corresponding field
     static final viewColumnsToFields =
-            ['processId': 'id',
-             'startDate': 'startDate',
-             'endDate': 'endDate',
-             'orders': 'recordsProcessed']
+    ['processId': 'id',
+        'startDate': 'startDate',
+        'endDate': 'endDate',
+        'orders': 'recordsProcessed']
 
 
     IWebServicesSessionBean webServicesSession
-	IMediationSessionBean mediationSession
+    IMediationSessionBean mediationSession
     ViewUtils viewUtils
 
     def recentItemService
@@ -124,12 +122,12 @@ class MediationController {
         if (usingJQGrid){
             if (params.applyFilter || params.partial) {
                 render template: 'processesTemplate', model: [filters: filters,
-                                                              isMediationProcessRunning: isMediationProcessRunning,
-                                                              hasNonGlobalConfig: hasNonGlobalConfig]
+                    isMediationProcessRunning: isMediationProcessRunning,
+                    hasNonGlobalConfig: hasNonGlobalConfig]
             } else {
                 render view: "list", model: [filters: filters,
-                                             isMediationProcessRunning: isMediationProcessRunning,
-                                             hasNonGlobalConfig: hasNonGlobalConfig]
+                    isMediationProcessRunning: isMediationProcessRunning,
+                    hasNonGlobalConfig: hasNonGlobalConfig]
             }
 
             return
@@ -145,12 +143,12 @@ class MediationController {
 
         if (params.applyFilter || params.partial) {
             render template: 'processesTemplate', model: [processes: processes, filters: filters,
-                                                          isMediationProcessRunning: isMediationProcessRunning,
-                                                          hasNonGlobalConfig: hasNonGlobalConfig, size: size]
+                isMediationProcessRunning: isMediationProcessRunning,
+                hasNonGlobalConfig: hasNonGlobalConfig, size: size]
         } else {
             render view: "list", model: [processes: processes, filters: filters,
-                                         isMediationProcessRunning: isMediationProcessRunning,
-                                         hasNonGlobalConfig: hasNonGlobalConfig, size: size]
+                isMediationProcessRunning: isMediationProcessRunning,
+                hasNonGlobalConfig: hasNonGlobalConfig, size: size]
         }
     }
 
@@ -189,7 +187,7 @@ class MediationController {
     }
 
     def getFilteredProcesses (filters, params) {
-		params.max = (params?.max?.toInteger()) ?: pagination.max
+        params.max = (params?.max?.toInteger()) ?: pagination.max
         params.page = (params?.page?.toInteger()) ? ((params.page > 0) ? (params.page - 1): params.page): 0
         params.sort = params.sort ? params.sort : "startDate"
         params.order = params.order ? params.order : "desc"
@@ -221,23 +219,23 @@ class MediationController {
             List<MediationProcessCDRCountInfo> cdrCountInfosNB = mediationProcessService.getCdrCountForMediationProcessAndStatus(processId,JbillingMediationRecordDao.STATUS.NOT_BILLABLE.toString());
             if (params.template) {
                 render template: params.template, model: [
-                        selected: process, canBeUndone: canBeUndone,
-                        invoicesCreatedCount: 0,//TODO MODULARIZATION, THIS WAS RETRIEVED BY THE MEDIATION SYSTEM
-                        ordersCreatedCount: process.getOrderIds().length,
-                        cdrCountInfos: cdrCountInfos,
-                        cdrCountInfosNB: cdrCountInfosNB]
+                    selected: process, canBeUndone: canBeUndone,
+                    invoicesCreatedCount: 0,//TODO MODULARIZATION, THIS WAS RETRIEVED BY THE MEDIATION SYSTEM
+                    ordersCreatedCount: process.orderAffectedCount,
+                    cdrCountInfos: cdrCountInfos,
+                    cdrCountInfosNB: cdrCountInfosNB]
             } else {
                 def filters = filterService.getFilters(FilterType.MEDIATIONPROCESS, params)
                 def processes = mediationProcessService.findLatestMediationProcess(entityId, 0, 100) //TODO MODULARIZATION HERE THE FILTERING WAS NOT WORKING IN THE RIGHT WAY
                 def size = mediationProcessService.countMediationProcessByFilters(entityId, new ArrayList<>())
 
                 render view: 'list', model: [
-                        selected: process, canBeUndone: canBeUndone,
-                        processes: processes, filters: filters, size: size,
-                        invoicesCreatedCount: 0,//TODO MODULARIZATION, THIS WAS RETRIEVED BY THE MEDIATION SYSTEM
-                        ordersCreatedCount: process.getOrderIds().length,
-                        cdrCountInfos: cdrCountInfos,
-                        cdrCountInfosNB: cdrCountInfosNB]
+                    selected: process, canBeUndone: canBeUndone,
+                    processes: processes, filters: filters, size: size,
+                    invoicesCreatedCount: 0,//TODO MODULARIZATION, THIS WAS RETRIEVED BY THE MEDIATION SYSTEM
+                    ordersCreatedCount: process.orderAffectedCount,
+                    cdrCountInfos: cdrCountInfos,
+                    cdrCountInfosNB: cdrCountInfosNB]
             }
         }
     }
@@ -277,7 +275,7 @@ class MediationController {
                 com.sapienter.jbilling.server.filter.Filter.betweenDates("eventDate", startDate, endDate),
                 com.sapienter.jbilling.server.filter.Filter.enumFilter("status", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, defaultStatus),
                 com.sapienter.jbilling.server.filter.Filter.string("cdrType", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, selectedCallType.equals("") ? null :selectedCallType)
-        );
+                );
         def records = mediationService.findMediationRecordsByFilters(offset, CDR_PAGE_SIZE, filters)
 
         String callTypeStr = params.get('allCallTypes')
@@ -293,12 +291,12 @@ class MediationController {
         if (records) {
             record = records?.get(0)
         } else {
-                flash.info = message(code: 'event.mediation.records.not.available.for.cdr')
-                flash.args = [params.id, params.status, params.selectedCallType]
-            }
+            flash.info = message(code: 'event.mediation.records.not.available.for.cdr')
+            flash.args = [params.id, params.status, params.selectedCallType]
+        }
         render view: 'events', model: [records: records, record: record, currency: currency, selectionEntityId: entityId, processId: processId,
-                                       offset: offset, next: (size > offset + records.size), size: size, allCallTypes: allCallTypes, selectedCallType: selectedCallType]
-	}
+            offset: offset, next: (size > offset + records.size), size: size, allCallTypes: allCallTypes, selectedCallType: selectedCallType]
+    }
 
     def showMediationErrors () {
         def processId = uuid(params.get('id'))
@@ -320,7 +318,7 @@ class MediationController {
         filters.addAll(Arrays.asList(
                 com.sapienter.jbilling.server.filter.Filter.integer("jBillingCompanyId", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, entityId),
                 com.sapienter.jbilling.server.filter.Filter.uuid("processId", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, processId),
-        ));
+                ));
 
         def mediationErrorRecords
         def record
@@ -355,26 +353,26 @@ class MediationController {
             companies.add(0, currentCompany)
         }
         render view: 'errors', model: [            records : mediationErrorRecords,
-                                       pricingFieldsHeader : pricingFieldsHeader,
-                                                    record : record,
-                                                    offset : params.offset?:0,
-                                                 companies : companies,
-                                                  selected : entityId,
-                                                    offset : offset,
-                                                      next : (size > offset + mediationErrorRecords.size),
-                                                      size : size]
+            pricingFieldsHeader : pricingFieldsHeader,
+            record : record,
+            offset : params.offset?:0,
+            companies : companies,
+            selected : entityId,
+            offset : offset,
+            next : (size > offset + mediationErrorRecords.size),
+            size : size]
     }
 
     def mediationRecordsCsv (){
         def processId = uuid(params.get('id'))
         def orderId = params.get('orderId');
-		def selectedCallType = params.selectedCallType
-		def filters = new ArrayList<>();
+        def selectedCallType = params.selectedCallType
+        def filters = new ArrayList<>();
         filters.addAll(Arrays.asList(
-			com.sapienter.jbilling.server.filter.Filter.enumFilter("status", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, JbillingMediationRecordDao.STATUS.valueOf(params.get('status'))),
-			com.sapienter.jbilling.server.filter.Filter.uuid("processId", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, processId),
-			com.sapienter.jbilling.server.filter.Filter.string("cdrType", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, selectedCallType.equals("") ? null :selectedCallType)
-		));
+                com.sapienter.jbilling.server.filter.Filter.enumFilter("status", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, JbillingMediationRecordDao.STATUS.valueOf(params.get('status'))),
+                com.sapienter.jbilling.server.filter.Filter.uuid("processId", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, processId),
+                com.sapienter.jbilling.server.filter.Filter.string("cdrType", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, selectedCallType.equals("") ? null :selectedCallType)
+                ));
 
         if(StringUtils.isNotBlank(orderId)) {
             filters.add(com.sapienter.jbilling.server.filter.Filter.string("orderId", com.sapienter.jbilling.server.filter.FilterConstraint.EQ, orderId));
@@ -385,7 +383,7 @@ class MediationController {
         if (records.size() > CsvExporter.MAX_RESULTS) {
             flash.error = message(code: 'error.export.exceeds.maximum')
             flash.args = [CsvExporter.MAX_RESULTS]
-                redirect action: 'list', id: params.id
+            redirect action: 'list', id: params.id
 
         } else {
             DownloadHelper.setResponseHeader(response, "mediation_records.csv")
@@ -396,16 +394,16 @@ class MediationController {
 
     def mediationErrorsCsv (){
         def processId = uuid(params.get('id'))
-		List<JbillingMediationErrorRecord> mediationErrorRecords = new ArrayList<>()
-		if(params.get('isDuplicate').equals("true")) {
-			mediationErrorRecords.addAll mediationService.getMediationDuplicatesRecordsForProcess(processId);
-		} else {
-			mediationErrorRecords.addAll mediationService.getMediationErrorRecordsForProcess(processId);
-		}
+        List<JbillingMediationErrorRecord> mediationErrorRecords = new ArrayList<>()
+        if(params.get('isDuplicate').equals("true")) {
+            mediationErrorRecords.addAll mediationService.getMediationDuplicatesRecordsForProcess(processId);
+        } else {
+            mediationErrorRecords.addAll mediationService.getMediationErrorRecordsForProcess(processId);
+        }
         if (mediationErrorRecords.size() > CsvExporter.MAX_RESULTS) {
             flash.error = message(code: 'error.export.exceeds.maximum')
             flash.args = [CsvExporter.MAX_RESULTS]
-                redirect action: 'list', id: params.id
+            redirect action: 'list', id: params.id
 
         } else {
             DownloadHelper.setResponseHeader(response, "mediation_errors.csv")
@@ -418,8 +416,8 @@ class MediationController {
         def invoiceId = params.get('id')
         def invoice, records, record, processId
         params.status=null
-		def entityId = params.int('entityId') ?: session['company_id']
-		Set<String> allCallTypes
+        def entityId = params.int('entityId') ?: session['company_id']
+        Set<String> allCallTypes
         try {
             invoice = InvoiceDTO.get(invoiceId)
             securityValidator.validateUserAndCompany(InvoiceBL.getWS(invoice), Validator.Type.VIEW)
@@ -452,7 +450,7 @@ class MediationController {
         def startDate= params.event_start_date ? TimezoneHelper.currentDateForTimezone(session['company_timezone']).parse(message(code: 'date.format'), params.event_start_date) : null
         def endDate= params.event_end_date ? TimezoneHelper.currentDateForTimezone(session['company_timezone']).parse(message(code: 'date.format'), params.event_end_date) : null
 
-		Set<String> allCallTypes;
+        Set<String> allCallTypes;
         def processId= null;
         try {
             order = OrderDTO.get(orderId)
@@ -469,7 +467,7 @@ class MediationController {
             def filters = Arrays.asList(
                     com.sapienter.jbilling.server.filter.Filter.integer("orderId",  com.sapienter.jbilling.server.filter.FilterConstraint.EQ, order.id),
                     com.sapienter.jbilling.server.filter.Filter.betweenDates("eventDate", startDate, endDate)//,
-            );
+                    );
 
             records = mediationService.findMediationRecordsByFilters(offset, CDR_PAGE_SIZE, filters)
             if(params.int('size')){
@@ -480,11 +478,11 @@ class MediationController {
 
             log.debug ("Events found ${records.size}")
             String callTypeStr = params.get('allCallTypes')
-			if (records) {
-            	record = records?.get(0)
+            if (records) {
+                record = records?.get(0)
                 processId = record.getProcessId()
                 allCallTypes = getAllCdrTypes(processId, callTypeStr)
-			} else {
+            } else {
                 flash.info = message(code: 'event.mediation.records.not.available')
                 flash.args = [orderId, params.status]
             }
@@ -493,27 +491,27 @@ class MediationController {
             flash.args = [params.id]
         }
         render view: 'events', model: [order: order, records: records, event_start_date: startDate, event_end_date: endDate, CDR_PAGE_SIZE: CDR_PAGE_SIZE,
-                                       record: record, orderEvents: true, processId: processId, offset: offset, next: (size > offset + records.size), size: size,
-                                       allCallTypes: allCallTypes, selectionEntityId: entityId]
+            record: record, orderEvents: true, processId: processId, offset: offset, next: (size > offset + records.size), size: size,
+            allCallTypes: allCallTypes, selectionEntityId: entityId]
     }
 
     def orderRecordsCsv = {
         //TODO MODULARIZATION: FIX THIS
         throw new NotImplementedException();
-//        def orderId = params.int('id')
-//        def records = mediationSession.getMediationRecordLinesForOrder(orderId)
-//
-//        params.max = CsvExporter.MAX_RESULTS
-//
-//        if (records.size() > CsvExporter.MAX_RESULTS) {
-//            flash.error = message(code: 'error.export.exceeds.maximum')
-//            flash.args = [CsvExporter.MAX_RESULTS]
-//            redirect action: 'list', id: params.id
-//        } else {
-//            DownloadHelper.setResponseHeader(response, "mediation_records.csv")
-//            Exporter<MediationRecordLineDTO> exporter = CsvExporter.createExporter(MediationRecordLineDTO.class);
-//            render text: exporter.export(records), contentType: "text/csv"
-//        }
+        //        def orderId = params.int('id')
+        //        def records = mediationSession.getMediationRecordLinesForOrder(orderId)
+        //
+        //        params.max = CsvExporter.MAX_RESULTS
+        //
+        //        if (records.size() > CsvExporter.MAX_RESULTS) {
+        //            flash.error = message(code: 'error.export.exceeds.maximum')
+        //            flash.args = [CsvExporter.MAX_RESULTS]
+        //            redirect action: 'list', id: params.id
+        //        } else {
+        //            DownloadHelper.setResponseHeader(response, "mediation_records.csv")
+        //            Exporter<MediationRecordLineDTO> exporter = CsvExporter.createExporter(MediationRecordLineDTO.class);
+        //            render text: exporter.export(records), contentType: "text/csv"
+        //        }
     }
 
     def csv (){
@@ -565,28 +563,28 @@ class MediationController {
         redirect action: 'list'
     }
 
-	/**
-	 * COPIED from MediationRecordLineDTO
-	 * @param entityId
-	 * @param orderId
-	 * @param orderLineId
-	 * @param userId
-	 * @param key
-	 * @return
-	 */
-	private getHBaseKey(OrderDTO order, JbillingMediationRecord record) {
-		StringBuilder keyBuilder = new StringBuilder();
-		keyBuilder.append(order?.baseUserByUserId?.company?.id).append("-");
-		if (order?.baseUserByUserId?.id) {
-			keyBuilder.append("usr-").append(order.baseUserByUserId.id).append("-");
+    /**
+     * COPIED from MediationRecordLineDTO
+     * @param entityId
+     * @param orderId
+     * @param orderLineId
+     * @param userId
+     * @param key
+     * @return
+     */
+    private getHBaseKey(OrderDTO order, JbillingMediationRecord record) {
+        StringBuilder keyBuilder = new StringBuilder();
+        keyBuilder.append(order?.baseUserByUserId?.company?.id).append("-");
+        if (order?.baseUserByUserId?.id) {
+            keyBuilder.append("usr-").append(order.baseUserByUserId.id).append("-");
 
-			if (null != order && null != record) {
-				keyBuilder.append("ord-").append(order.id).append("-");
-				keyBuilder.append("orl-").append(record.orderLineId).append("-");
-			}
-		}
-		return keyBuilder.toString();
-	}
+            if (null != order && null != record) {
+                keyBuilder.append("ord-").append(order.id).append("-");
+                keyBuilder.append("orl-").append(record.orderLineId).append("-");
+            }
+        }
+        return keyBuilder.toString();
+    }
 
     def recycleProcessCDRs() {
         try {
@@ -628,34 +626,34 @@ class MediationController {
         def latestProcessStatus = webServicesSession.getMediationProcessStatus()
 
         return latestProcessStatus?.getMediationProcessId()?.compareTo(mediationProcess.id) == 0 &&
-               !latestProcessStatus?.getState()?.equals(ProcessStatusWS.State.RUNNING) &&
-               mediationProcess.entityId == session['company_id']
+                !latestProcessStatus?.getState()?.equals(ProcessStatusWS.State.RUNNING) &&
+                mediationProcess.entityId == session['company_id']
     }
 
-	private Set<String> getAllCdrTypes(UUID processId, String callTypeStr) {
-		Set<String> allCallTypes = new HashSet()
-		// add a blank call type for ALL call types
-		allCallTypes.add("");
+    private Set<String> getAllCdrTypes(UUID processId, String callTypeStr) {
+        Set<String> allCallTypes = new HashSet()
+        // add a blank call type for ALL call types
+        allCallTypes.add("");
 
-		if(null != callTypeStr && !callTypeStr.trim().isEmpty()) {
-			String[] callTypeArr = StringUtils.substring(callTypeStr, 1, callTypeStr.length()-1).split(",\\s")
-			for (String callType : callTypeArr){
-				if(!StringUtils.isEmpty(callType)) allCallTypes.add(callType)
-			}
-		} else {
-			MediationProcess process = webServicesSession.getMediationProcess(processId);
-			def configId = process.configurationId;
-			MediationConfiguration mediationConfig = mediationSession.getMediationConfiguration(configId);
-			if(null!=mediationConfig){
-				def mediationJobLauncher = mediationConfig.getMediationJobLauncher();
-				MediationJob mediationJob = MediationJobs.getJobForName(mediationJobLauncher);
-				def cdrTypes = mediationJob.getCdrTypes();
-				for(String cdrType : cdrTypes){
-					if(!StringUtils.isEmpty(cdrType))allCallTypes.add(cdrType)
-				}
-			}
-		}
-		return allCallTypes;
-	}
+        if(null != callTypeStr && !callTypeStr.trim().isEmpty()) {
+            String[] callTypeArr = StringUtils.substring(callTypeStr, 1, callTypeStr.length()-1).split(",\\s")
+            for (String callType : callTypeArr){
+                if(!StringUtils.isEmpty(callType)) allCallTypes.add(callType)
+            }
+        } else {
+            MediationProcess process = webServicesSession.getMediationProcess(processId);
+            def configId = process.configurationId;
+            MediationConfiguration mediationConfig = mediationSession.getMediationConfiguration(configId);
+            if(null!=mediationConfig){
+                def mediationJobLauncher = mediationConfig.getMediationJobLauncher();
+                MediationJob mediationJob = MediationJobs.getJobForName(mediationJobLauncher);
+                def cdrTypes = mediationJob.getCdrTypes();
+                for(String cdrType : cdrTypes){
+                    if(!StringUtils.isEmpty(cdrType))allCallTypes.add(cdrType)
+                }
+            }
+        }
+        return allCallTypes;
+    }
 
 }

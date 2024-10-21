@@ -33,6 +33,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Context
 import javax.ws.rs.Consumes
+import javax.ws.rs.DefaultValue;
 
 
 /**
@@ -62,8 +63,8 @@ class InvoiceResource {
         InvoiceWS invoice;
         try {
             invoice = webServicesSession.getInvoiceWS(id);
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
         return null != invoice ?
                 Response.ok().entity(invoice).build() :
@@ -88,8 +89,8 @@ class InvoiceResource {
             }
             webServicesSession.deleteInvoice(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception);
         }
     }
 
@@ -125,6 +126,31 @@ class InvoiceResource {
         }
     }
 
+    @POST
+    @Path("/createInvoiceFromOrder")
+    @ApiOperation(value = "create invoice.")
+    @ApiResponses(value = [
+        @ApiResponse(code = 200, message = "Invoice created.", response = Integer.class),
+        @ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class),
+        @ApiResponse(code = 500, message = "The call resulted with internal error."),
+        @ApiResponse(code = 404, message = "There is no applicable periode to generate invoice")
+    ])
+    public Response creatInvoiceFromOrder(
+            @ApiParam(name = "orderId", value = "create invoice against Order",required = true)
+            @QueryParam("orderId") Integer orderId,
+            @ApiParam(name = "inoviceId")
+            @QueryParam("inoviceId") Integer inoviceId
+    ) {
+        try {
+            Integer invoiceId = webServicesSession.createInvoiceFromOrder(orderId,inoviceId);
+            if (null == invoiceId)
+                return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.ok().entity(invoiceId).build();
+        } catch (Exception e) {
+            return RestErrorHandler.mapErrorToHttpResponse(e);
+        }
+    }
+
     @GET
     @Path("/paperinvoicepdf/{invoiceId}")
     @ApiOperation(value = "Generates and returns the paper invoice PDF for the given invoiceId.")
@@ -138,45 +164,32 @@ class InvoiceResource {
         @PathParam("invoiceId") Integer invoiceId) {
         try {
             return invoiceResourceHelperService.generatePdfFileForInvoice(invoiceId)
-        } catch (Exception error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error)
+        } catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception)
         }
     }
-
-	@POST
-	@Path("/createEInvoice/{invoiceId}")
-	@ApiOperation(value = "create Einvoice for the given invoiceId.")
+		
+		
+	@GET
+	@Path("/invoices/{startdate}/{enddate}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Gets the invoices by the date range.")
 	@ApiResponses(value = [
-			@ApiResponse(code = 200, message = "EInvoie generated successfully for the given invoiceId."),
-			@ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class),
-			@ApiResponse(code = 404, message = "Invoice ID not found."),
-			@ApiResponse(code = 500, message = "createEInvoice failed.")
+			@ApiResponse(code = 200, message = "Invoices with the provided period found.", response = InvoiceWS[].class),			
+			@ApiResponse(code = 204, message = "Invoice with the provided period not found."),
+			@ApiResponse(code = 500, message = "Fetching the invoice failed."),
+			@ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class)
 	])
-	Response createEInvoice(
-		@ApiParam(name = "invoiceId", value = "Invoice id.", required = true)
-		@PathParam("invoiceId") Integer invoiceId) {
-		try {
-			return Response.ok().entity(invoiceResourceHelperService.createEInvoice(invoiceId)).build()
-		} catch(Exception exception) {
-			return RestErrorHandler.mapErrorToHttpResponse(exception)
-		}
-	}
-
-	@POST
-	@Path("/eInvoiceDetails/{invoiceId}")
-	@ApiOperation(value = "fetch eInvocie details for given invoiceId.")
-	@ApiResponses(value = [
-		@ApiResponse(code = 200, message = "fetch eInvocie details for given invoiceId."),
-		@ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class),
-		@ApiResponse(code = 404, message = "Invoice ID not found."),
-		@ApiResponse(code = 500, message = "createEInvoice failed.")
-	])
-	Response getEInvoiceResponse(@ApiParam(name = "invoiceId", value = "Invoice id.", required = true)
-			@PathParam("invoiceId") Integer invoiceId) {
-		try {
-			return Response.ok().entity(invoiceResourceHelperService.findEInvoiceDetailsByInvoiceId(invoiceId)).build()
-		} catch(Exception exception) {
-			return RestErrorHandler.mapErrorToHttpResponse(exception)
+	Response getInvoicesByDateRange(
+		@ApiParam(name = "startdate",value = "The start date to fetch Invoices, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("startdate") String startdate,
+		@ApiParam(name = "enddate",value = "The end date to fetch Invoices, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("enddate") String enddate,
+		@ApiParam(name = "limit", value = "Limit") @DefaultValue("50") @QueryParam("limit") Integer limit,
+        @ApiParam(name = "offset", value = "Offset") @DefaultValue("0") @QueryParam("offset") Integer offset) {
+			
+		try {			
+			return invoiceResourceHelperService.getInvoicesByDateRange(startdate, enddate, offset, limit)
+		} catch (Exception exception) {
+            return RestErrorHandler.mapErrorToHttpResponse(exception)
 		}
 	}
 }

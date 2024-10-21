@@ -22,7 +22,6 @@ import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldGroup;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldValueDAS;
 import com.sapienter.jbilling.server.payment.ErrorWS;
 import com.sapienter.jbilling.server.payment.PaymentDTOEx;
 import com.sapienter.jbilling.server.payment.SecurePaymentWS;
@@ -59,6 +58,7 @@ public class StripeHelper {
 
 	private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 	public static final String KEY_METADATA_REF_PAYMENT_ID = "BILLINGHUB_REF_PAYMENT_ID";
+	public static final String KEY_METADATA_PROCESSED = "BILLINGHUB_PROCESSED";
 	private static final String OBSCURED_NUMBER_FORMAT = "************"; // + last four digits	
 	public static final String ERROR_STRIPE_METAFIELD_MISSING_CUSTOMER_ID = "Metafield value for stripeCustomerId is missing.";
 	public static final String ERROR_BILLING_INFORMATION_NOT_FOUND = "Please verify contact details.";
@@ -211,7 +211,7 @@ public class StripeHelper {
 				entityId = payment.getInstrument().getPaymentMethodType().getEntity().getId();
 			}else if(userDTO != null && userDTO.getCompany() != null ){
 				entityId = userDTO.getCompany().getId();
-			}			
+			}
 		}
 		
 		try {
@@ -223,31 +223,24 @@ public class StripeHelper {
     		Map<String, String> metaFieldMapByMetaFieldType = metaFieldDAS.getCustomerAITMetaFieldValueMapByMetaFieldType(customerId
     											, metaFieldContactGroup.getId()
     											, TimezoneHelper.companyCurrentDate(entityId));
-    		payer = new Payer();
     		
-    		payer.setId(userId);
-    		payer.setFirstName(metaFieldMapByMetaFieldType
-    				.get(MetaFieldType.FIRST_NAME.toString()));
-    		payer.setLastName(metaFieldMapByMetaFieldType
-    				.get(MetaFieldType.LAST_NAME.toString()));
-    		payer.setStreet(metaFieldMapByMetaFieldType.get(MetaFieldType.ADDRESS1
-    				.toString()));
-    		payer.setStreet2(metaFieldMapByMetaFieldType.get(MetaFieldType.ADDRESS2
-    				.toString()));
-    		payer.setCity(metaFieldMapByMetaFieldType.get(MetaFieldType.CITY
-    				.toString()));
-    		payer.setState(metaFieldMapByMetaFieldType
-    				.get(MetaFieldType.STATE_PROVINCE.toString()));
-    		payer.setCountryCode(metaFieldMapByMetaFieldType
-    				.get(MetaFieldType.COUNTRY_CODE.toString()));
-    		payer.setZip(metaFieldMapByMetaFieldType.get(MetaFieldType.POSTAL_CODE
-    				.toString()));
-    		payer.setEmail(metaFieldMapByMetaFieldType
-    				.get(MetaFieldType.BILLING_EMAIL.toString()));
+    		payer = Payer.builder()
+    					.id(userId)
+			    		.firstName(metaFieldMapByMetaFieldType.get(MetaFieldType.FIRST_NAME.toString()))
+			    		.lastName(metaFieldMapByMetaFieldType.get(MetaFieldType.LAST_NAME.toString()))
+			    		.street(metaFieldMapByMetaFieldType.get(MetaFieldType.ADDRESS1.toString()))
+			    		.street2(metaFieldMapByMetaFieldType.get(MetaFieldType.ADDRESS2.toString()))
+			    		.city(metaFieldMapByMetaFieldType.get(MetaFieldType.CITY.toString()))
+			    		.state(metaFieldMapByMetaFieldType.get(MetaFieldType.STATE_PROVINCE.toString()))
+			    		.countryCode(metaFieldMapByMetaFieldType.get(MetaFieldType.COUNTRY_CODE.toString()))
+			    		.zip(metaFieldMapByMetaFieldType.get(MetaFieldType.POSTAL_CODE.toString()))
+			    		.email(metaFieldMapByMetaFieldType.get(MetaFieldType.BILLING_EMAIL.toString()))
+    				.build();
+    		
+    		
     		
     		if(isObjectEmpty(payer.getEmail())){
-    			payer.setEmail(metaFieldMapByMetaFieldType
-        				.get(MetaFieldType.EMAIL.toString()));
+    			payer.setEmail(metaFieldMapByMetaFieldType.get(MetaFieldType.EMAIL.toString()));
     		}
     		
     		if (payer.getFirstName() == null) {
@@ -279,8 +272,17 @@ public class StripeHelper {
 	 * @throws StripeException 
 	 */
 	public static SecurePaymentWS converToSecurePaymentWS(Integer userId, StripeResult stripeResult, Exception exception) {
-		SecurePaymentWS securePaymentWS = new SecurePaymentWS();
-		securePaymentWS.setUserId(userId);
+		// To be Deleted
+		//SecurePaymentWS securePaymentWS = new SecurePaymentWS();
+		
+		SecurePaymentWS securePaymentWS = SecurePaymentWS
+    			.builder()
+	    			.userId(userId)
+	    			.billingHubRefId(0)
+	    			.nextAction(null)
+	    			.status(null)
+	    			.error(null)
+    			.build();
 		
 		if(!StripeHelper.isObjectEmpty(stripeResult)){
 			securePaymentWS.setStatus(stripeResult.getStatus());

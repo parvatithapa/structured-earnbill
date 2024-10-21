@@ -62,7 +62,7 @@
 	    	<br/>
     		
 	        <g:each var="discountLine" in="${order.discountLines}" status="counter">
-				<div style="float: left;">
+				<div id="custom-div">
 					<div class="tab-column">
 					<g:applyLayout name="form/select">
 						<content tag="label.for">discountableItem.${discountLineIndex}.lineLevelDetails</content>
@@ -103,7 +103,7 @@
 	        </g:each>
 	       
 			<g:if test="${isNew}">
-				<div style="float: left;">
+				<div id="custom-div">
 				<!-- one empty row -->
 				<div class="tab-column">
 					<g:applyLayout name="form/select">

@@ -39,7 +39,7 @@
                     </tr>
                     <tr>
                         <td><g:message code="log.user"/></td>
-                        <td class="value">
+                        <td class="value" data-cy="doneBy">
                             <g:if test="${selected.baseUser != null}">
                             ${selected.baseUser.id} ${selected.baseUser.userName}
                             </g:if>
@@ -80,6 +80,16 @@
                                      ${selected.foreignId}
                                 </g:remoteLink>
                             </g:elseif>
+                            <g:elseif test="${selected.jbillingTable.name == 'asset'}">
+                                <g:remoteLink controller="product" action="showAsset" params="['template': 'showAsset']" id="${selected.foreignId}" before="register(this);" onSuccess="render(data, next);">
+                                     ${selected.foreignId}
+                                </g:remoteLink>
+                            </g:elseif>
+                            <g:elseif test="${selected.jbillingTable.name == 'customer'}">
+                                <g:remoteLink controller="customer" action="show" params="['template': 'show']" id="${selected.foreignId}" before="register(this);" onSuccess="render(data, next);">
+                                     ${selected.foreignId}
+                                </g:remoteLink>
+                            </g:elseif>
                             <g:else>
                                 ${selected.foreignId}
                             </g:else>
@@ -87,7 +97,9 @@
                     </tr>
                     <tr>
                         <td><g:message code="log.date"/></td>
-                        <td class="value"><g:formatDate date="${selected.createDatetime}" formatName="date.timeSecs.format"/></td>
+                        <td class="value">
+                            <g:formatDate date="${selected.createDatetime}" formatName="date.time.24Hr.format" timeZone="${session['company_timezone']}"/>
+                        </td>
                     </tr>
                     <tr>
                         <td><g:message code="log.level"/></td>
@@ -99,11 +111,11 @@
                     </tr>
                     <tr>
                         <td><g:message code="log.message"/></td>
-                        <td class="value">${selected.eventLogMessage.getDescription(session['language_id'])}</td>
+                        <td class="value" data-cy="description">${selected.eventLogMessage.getDescription(session['language_id'])}</td>
                     </tr>
                     <tr>
                         <td><g:message code="log.old_fields"/></td>
-                        <td class="value">${selected.oldNum} ${selected.oldStr} ${selected.oldDate}</td>
+                        <td class="value" data-cy="additionalData">${selected.oldNum} ${selected.oldStr} ${selected.oldDate}</td>
                     </tr>
                     <tr>
                         <td><g:message code="log.affected_user"/></td>

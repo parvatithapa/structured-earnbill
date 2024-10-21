@@ -24,6 +24,8 @@ import org.testng.annotations.Test;
 
 import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.PlanItemWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
@@ -43,7 +45,7 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String SEVOICE_RATE_CARD_HEADER = "id,name,surcharge,initial_increment,subsequent_increment,charge,tariff_code,route_id";
+    private static final String SEVOICE_RATE_CARD_HEADER = "id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,tariff_code,route_id";
     private static final String SEVOICE_RATE_CARD_NAME   = "se_voice_rate_card";
     private static final String OPERATOR_ASSISTED_CALL   = "se-voice-call";
     private static final String SEVOICE_PLAN_ITEM        = "se-voice-plan-subscription-item";
@@ -75,8 +77,8 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
             routeRateCardWS.setRatingUnitId(spcRatingUnitId);
             routeRateCardWS.setEntityId(api.getCallerCompanyId());
             List<String> rateRecords =
-                    Arrays.asList("1,se-voice-call,0.35,60,60,2.25,AUS:MOB,AUSTRALIA - MOBILE",
-                            "2,se-voice-call,0.45,60,60,1.15,AUS:REG,AUSTRALIA - REGIONAL - BUNBURY");
+                    Arrays.asList("1,se-voice-call,0.35,60,60,2.25,0,0,0,0,AUS:MOB,AUSTRALIA - MOBILE",
+                            "2,se-voice-call,0.45,60,60,1.15,0,0,0,0,AUS:REG,AUSTRALIA - REGIONAL - BUNBURY");
 
             String sevoiceRouteRateCardFilePath = createFileWithData(SEVOICE_RATE_CARD_NAME, ".csv", SEVOICE_RATE_CARD_HEADER, rateRecords);
             logger.debug("SE Voice Route Rate card file path {}", sevoiceRouteRateCardFilePath);
@@ -121,6 +123,12 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
                     envBuilder.idForCode(SEVOICE_PLAN_ITEM), Collections.emptyList() , sevoiceOperatorAssistedCallPlanItem);
 
             setPlanLevelMetaField(planId, SEVOICE_RATE_CARD_NAME);
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
 
         }).test((testEnv, testEnvBuilder) -> {
             assertNotNull("SE Voice Product Creation Failed", testEnvBuilder.idForCode(OPERATOR_ASSISTED_CALL));
@@ -148,7 +156,8 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
                 users.add(user01.getId());
 
                 ItemDTOEx assetEnabledProduct = api.getItem(NUMBER_ASSET_PRODUCT_ID, null, null);
-                Integer assetId = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], NUMBER_ASSET_PRODUCT_ID, ASSET01_NUMBER);
+                Integer assetId = buildAndPersistAsset(envBuilder, assetEnabledProduct.getTypes()[0], NUMBER_ASSET_PRODUCT_ID, ASSET01_NUMBER,
+                        "asset-01"+ System.currentTimeMillis());
                 assertNotNull("Creation of Asset Number 01 is failed", assetId);
                 logger.debug("Asset is created {} for number {}", assetId, ASSET01_NUMBER);
                 assets.add(assetId);
@@ -193,11 +202,10 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
                 OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(USER_01));
                 assertNotNull("Mediation Should Create Order", order);
                 assertEquals("Invalid mediated order line,", 1, order.getOrderLines().length);
-
                 JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
                 assertEquals("Invalid original quantity", new BigDecimal("322.00"),
                         viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
-
+                validatePricingFields(viewEvents);
                 OrderLineWS callLine = getLineByItemId(order, testEnvBuilder.idForCode(OPERATOR_ASSISTED_CALL));
                 assertNotNull("SE Voice usage item not found", callLine);
                 assertEquals("Invalid item line quantity,", new BigDecimal("6.00"),
@@ -257,7 +265,8 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
             }).validate((testEnv, testEnvBuilder) -> {
                 //Creating subscription order with asset
                 ItemDTOEx assetEnabledProduct = api.getItem(NUMBER_ASSET_PRODUCT_ID, null, null);
-                Integer assetId = buildAndPersistAsset(testEnvBuilder, assetEnabledProduct.getTypes()[0], NUMBER_ASSET_PRODUCT_ID, ASSET02_NUMBER);
+                Integer assetId = buildAndPersistAsset(testEnvBuilder, assetEnabledProduct.getTypes()[0], NUMBER_ASSET_PRODUCT_ID, ASSET02_NUMBER,
+                        "asset-02"+ System.currentTimeMillis());
                 assertNotNull("Creation of Asset Number 02 is failed", assetId);
                 logger.debug("Asset is created {} for number {}", assetId, ASSET02_NUMBER);
                 assets.add(assetId);
@@ -322,6 +331,9 @@ public class ServiceElementsVoiceMediationTest extends BaseMediationTest {
     @AfterClass
     public void tearDown() {
         JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         super.tearDown();
         if(null!= planRatingEnumId) {
             try {

@@ -29,9 +29,6 @@ public class PlanBuilder extends AbstractBuilder {
     private List<Integer> usagePoolsIds = new ArrayList<>();
     private List<MetaFieldValueWS> metaFieldValues = new ArrayList<>();
     private boolean freeTrial;
-    private Integer numberOfFreeCalls;
-    private Integer freeTrialPeriodValue;
-    private String freeTrialPeriodUnit;
 
 
     private PlanBuilder(JbillingAPI api, TestEnvironment testEnvironment, String code) {
@@ -60,21 +57,6 @@ public class PlanBuilder extends AbstractBuilder {
 
     public PlanBuilder withFreeTrial(boolean freeTrial){
         this.freeTrial = freeTrial;
-        return this;
-    }
-
-    public PlanBuilder withNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
-        return this;
-    }
-
-    public PlanBuilder withFreeTrialPeriodUnit(String freeTrialPeriodUnit) {
-        this.freeTrialPeriodUnit = freeTrialPeriodUnit;
-        return this;
-    }
-
-    public PlanBuilder withFreeTrialPeriodValue(Integer freeTrialPeriodValue) {
-        this.freeTrialPeriodValue = freeTrialPeriodValue;
         return this;
     }
 
@@ -118,9 +100,6 @@ public class PlanBuilder extends AbstractBuilder {
         plan.setPlanItems(planItems);
         plan.setUsagePoolIds(usagePoolsIds.toArray(new Integer[usagePoolsIds.size()]));
         plan.setFreeTrial(freeTrial);
-        plan.setFreeTrialPeriodUnit(freeTrialPeriodUnit);
-        plan.setFreeTrialPeriodValue(freeTrialPeriodValue);
-//        plan.setNumberOfFreeCalls(numberOfFreeCalls);
         Integer planId = api.createPlan(plan);
 
         testEnvironment.add(code, planId, description, api, TestEntityType.PLAN);

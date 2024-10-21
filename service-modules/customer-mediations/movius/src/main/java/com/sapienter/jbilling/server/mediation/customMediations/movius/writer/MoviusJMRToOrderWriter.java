@@ -14,7 +14,6 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.converter.db.DaoConverter;
 import com.sapienter.jbilling.server.mediation.converter.db.JMErrorRepository;
@@ -26,7 +25,6 @@ import com.sapienter.jbilling.server.order.OrderService;
 public class MoviusJMRToOrderWriter implements ItemWriter<Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(MoviusJMRToOrderWriter.class);
-    private static final String PROCESSED_WITH_NO_PRICE_ERROR = "[PROCESSED-WITH-NO-PRICE-ERROR]";
 
     @Autowired
     private JMRRepository jmrRepository;
@@ -92,11 +90,7 @@ public class MoviusJMRToOrderWriter implements ItemWriter<Integer> {
 
     private void moveJMRToErrorRecord(JbillingMediationRecord jmr, String errorMessage) {
         logger.error("Exception occurred while processing JMR for CDR key [{} : {}]", jmr.getRecordKey(), errorMessage);
-        if (CommonConstants.PRICE_NOT_FOUND_IN_RATE_CARD.equals(errorMessage)) {
-            jmErrorRepository.save(DaoConverter.getMediationErrorRecordDao(PROCESSED_WITH_NO_PRICE_ERROR, jmr));
-        } else {
-            jmErrorRepository.save(DaoConverter.getMediationErrorRecordDao(jmr));
-        }
+        jmErrorRepository.save(DaoConverter.getMediationErrorRecordDao(jmr));
         jmrRepository.delete(DaoConverter.getMediationRecordDao(jmr));
     }
 }

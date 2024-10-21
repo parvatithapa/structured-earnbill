@@ -18,13 +18,16 @@ package com.sapienter.jbilling.server.util.api;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import javax.jws.WebService;
 
-import com.cashfree.model.UpiAdvanceResponseSchema;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDTO;
-import com.sapienter.jbilling.paymentUrl.domain.response.PaymentResponse;
+import com.sapienter.jbilling.resources.CancelOrderInfo;
 import com.sapienter.jbilling.resources.CustomerMetaFieldValueWS;
 import com.sapienter.jbilling.resources.OrderMetaFieldValueWS;
 import com.sapienter.jbilling.server.apiUserDetail.ApiUserDetailWS;
@@ -85,12 +88,10 @@ import com.sapienter.jbilling.server.payment.PaymentMethodTypeWS;
 import com.sapienter.jbilling.server.payment.PaymentTransferWS;
 import com.sapienter.jbilling.server.payment.PaymentWS;
 import com.sapienter.jbilling.server.payment.SecurePaymentWS;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.DataTableQueryWS;
-import com.sapienter.jbilling.server.pricing.RateCardWS;
 import com.sapienter.jbilling.server.pricing.RatingUnitWS;
 import com.sapienter.jbilling.server.pricing.RouteRecordWS;
 import com.sapienter.jbilling.server.process.AgeingWS;
@@ -667,13 +668,18 @@ public interface JbillingAPI {
     public void updateRouteRecord(RouteRecordWS record, Integer routeId) ;
     public void deleteRouteRecord(Integer routeId, Integer recordId) ;
     public SearchResultString searchDataTable(Integer routeId, SearchCriteria criteria);
-
+    public SearchResultString searchRouteRateCard(Integer routeRateCardId, SearchCriteria criteria);
     public Set<String> searchDataTableWithFilter(Integer routeId, String filters, String searchName);
     public String getRouteTable(Integer routeId) ;
     public Integer createDataTableQuery(DataTableQueryWS queryWS) ;
     public DataTableQueryWS getDataTableQuery(int id) ;
     public void deleteDataTableQuery(int id) ;
     public DataTableQueryWS[] findDataTableQueriesForTable(int routeId) ;
+    public Integer createRouteRateCardRecord(RouteRateCardWS routeRateCardRecord, Integer routeRateCardId)  ;
+    public void updateRouteRateCardRecord(RouteRateCardWS record, Integer routeRateCardId)  ;
+    public void deleteRateCardRecord(Integer routeRateCardId, Integer recordId)  ;
+    public Integer createRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath);
+    public void updateRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath);
 
     /*
      Rating Unit
@@ -743,8 +749,8 @@ public interface JbillingAPI {
     public boolean deleteEnumeration(Integer enumerationId) ;
 
     /*Copy Company*/
-    public UserWS copyCompanyInSaas(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
-            boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail, String systemAdminLoginName);
+    public UserWS copyCompany(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
+            boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail);
     public void processMigrationPayment(PaymentWS paymentWS) ;
     public void applyPaymentsToInvoices(Integer userId) ;
 
@@ -806,6 +812,7 @@ public interface JbillingAPI {
     /*
      * Credit Note
      */
+    public Integer createAdhocCreditNote(CreditNoteWS creditNoteWS);
     public CreditNoteWS[] getAllCreditNotes(Integer entityId);
     public CreditNoteWS getCreditNote(Integer creditNoteId);
     public void updateCreditNote(CreditNoteWS creditNoteWs);
@@ -901,21 +908,22 @@ public interface JbillingAPI {
     public UserWS updateCustomerContactInfo(ContactInformationWS contactInformation);
     public SecurePaymentWS addPaymentInstrument(PaymentInformationWS instrument);
     public void updateCustomerMetaFields(Integer userId, MetaFieldValueWS[] customerMetaFieldValues);
-    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId, int offset, int limit);
+    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId);
     public OrderWS[] getUsersAllSubscriptions(Integer userId);
-    public PaymentWS[] findPaymentsForUser(Integer userId, int offset, int limit);
-    void updatePassword(Integer userId, String currentPassword, String newPassword);
-    void resetPasswordByUserName(String userName);
-
-    //Rate Card
-    public Integer createRateCard(RateCardWS rateCardWs, File rateCardFile);
-    public void updateRateCard(RateCardWS rateCardWs, File rateCardFile);
-    public void deleteRateCard(Integer rateCardId);
-    public Integer[] createCustomInvoice(File csvFile);
-    public String generateGstR1JSONFileReport(String startDate, String endDate) throws Exception;
-
-    public PaymentUrlLogDTO createPaymentUrl(Map<String, Object> map);
-    public Optional<Object> executePaymentTask(Integer paymentLogUrlLogId, String payerVPA,
-                                               String action) throws PluggableTaskException;
+    public void updatePassword(Integer userId, String currentPassword, String newPassword);
+    public void resetPasswordByUserName(String userName);
+    Integer[] getPagedBillingProcessGeneratedInvoices(Integer processId, Integer limit, Integer offset);
+    public void createMigrationUsers(UserWS[] users);
+    public void createMigrationOrders(OrderWS[] orders);
+    public void createMigrationProductOrders(OrderWS[] orders);
+    public void removeAssetFromActiveOrder(String assetIdentifier);
+    public String getCustomerInvoiceDesign(Integer userId);
+    public void updateCustomerInvoiceDesign(Integer userId, String invoiceDesign);
+    public Integer createDataTableRecord(RouteRecordWS routeRecord, String dataTableName);
+	public Integer updateDataTableRecord(RouteRecordWS routeRecord, String dataTableName);
+	public Integer deleteDataTableRecord(Integer recordId, String dataTableName);
+    public void triggerCustomerUsagePoolEvaluation(Integer entityId, Date runDate);
+    public void cancelServiceOrder(CancelOrderInfo cancelOrderInfo);
+    boolean updateImage(Integer userId, String identificationType, String number, String imageFileName);
 }
 

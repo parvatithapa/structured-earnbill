@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.util.EnumerationWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -38,8 +37,8 @@ class EnumerationResource {
         try {
             List<EnumerationWS> enumerations = webServicesSession.getAllEnumerations(limit, offset);
             return Response.ok().entity(enumerations).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -59,8 +58,8 @@ class EnumerationResource {
             return enumerationWS != null ?
                     Response.ok().entity(enumerationWS).build() :
                     Response.status(Response.Status.NOT_FOUND).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -78,8 +77,8 @@ class EnumerationResource {
             Integer enumerationId = webServicesSession.createUpdateEnumeration(enumerationWS);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(enumerationId)).build())
                     .entity(webServicesSession.getEnumeration(enumerationId)).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -102,8 +101,8 @@ class EnumerationResource {
             enumerationWS.setId(id);
             webServicesSession.createUpdateEnumeration(enumerationWS);
             return Response.ok().entity(webServicesSession.getEnumeration(id)).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -124,8 +123,8 @@ class EnumerationResource {
             }
             webServicesSession.deleteEnumeration(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

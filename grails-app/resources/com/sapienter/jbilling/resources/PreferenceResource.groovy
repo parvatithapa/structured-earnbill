@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.server.util.PreferenceWS
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -46,8 +45,8 @@ class PreferenceResource {
         PreferenceWS preferenceWS;
         try {
             preferenceWS = webServicesSession.getPreference(typeId);
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.ok().entity(preferenceWS).build();
     }
@@ -73,8 +72,8 @@ class PreferenceResource {
             preferenceWS.getPreferenceType().setId(typeId);
             webServicesSession.updatePreference(preferenceWS);
             return Response.ok().entity(webServicesSession.getPreference(typeId)).build();
-        } catch (SessionInternalError error) {
-            return RestErrorHandler.mapErrorToHttpResponse(error);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

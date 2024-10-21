@@ -121,17 +121,17 @@
                 </textElement>
                 <text><![CDATA[Churn Report]]></text>
             </staticText>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="516" y="21" width="75" height="20" uuid="f74b14f9-5668-44e3-b04f-40fdf30e42cb"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="516" y="41" width="75" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+            <textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
                 <reportElement x="516" y="1" width="76" height="20" uuid="3f73cd6b-8862-46f5-912e-a0e1f61642ca"/>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression class="java.util.Date"><![CDATA[com.sapienter.jbilling.server.timezone.TimezoneHelper.companyCurrentDate($P{entity_id})]]></textFieldExpression>
@@ -256,7 +256,7 @@
                 </textElement>
                 <textFieldExpression><![CDATA[$F{province}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy">
+            <textField pattern="MMM dd, YYYY">
                 <reportElement x="532" y="0" width="62" height="20" uuid="df286895-fe63-4e74-a368-b7c9d13092d9"/>
                 <textElement verticalAlignment="Middle">
                     <font size="8"/>
@@ -286,7 +286,7 @@
                 </textElement>
                 <textFieldExpression><![CDATA[$F{product}]]></textFieldExpression>
             </textField>
-            <textField pattern="MMM dd, yyyy">
+            <textField pattern="MMM dd, YYYY">
                 <reportElement x="466" y="0" width="62" height="20" uuid="704fc9ea-e7e0-43bc-876a-de9d3c744fc2"/>
                 <textElement verticalAlignment="Middle">
                     <font size="8"/>

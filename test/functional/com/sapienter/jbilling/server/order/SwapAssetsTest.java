@@ -114,7 +114,7 @@ public class SwapAssetsTest {
             logger.debug("asset 2 {} created", asset);
             Integer orderId = testEnvBuilder.idForCode(ORDER_01);
             OrderWS order = api.getOrder(orderId);
-            api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset2, null)});
+            api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset2)});
             Assert.assertTrue(asset + " not found on order "+ orderId, isAssetFoundOnOrder(order, asset));
         });
     }
@@ -159,7 +159,7 @@ public class SwapAssetsTest {
             JbillingAPI api = testEnv.getPrancingPonyApi();
             Integer orderId = testEnvBuilder.idForCode(ORDER_02);
             try {
-                api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset2, null) });
+                api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset2) });
                 Assert.fail("Asset Swap should fail, since invalid asset " + asset2 + " was passed to api.");
             } catch(SessionInternalError error) {
                 logger.error("asset swap failed for invalid asset {}", asset2, error);
@@ -207,7 +207,7 @@ public class SwapAssetsTest {
             JbillingAPI api = testEnv.getPrancingPonyApi();
             Integer orderId = testEnvBuilder.idForCode(ORDER_03);
             try {
-                api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset1, null) });
+                api.swapAssets(orderId, new SwapAssetWS[] { new SwapAssetWS(asset1, asset1) });
                 Assert.fail(String.format("Asset Swap should fail, since euqal assets [%s,%s] was passed to api.", asset1, asset2));
             } catch(SessionInternalError error) {
                 logger.error("asset swap failed for euqal assets[{},{}]", asset1, asset2, error);

@@ -63,12 +63,8 @@
 
                 <table cellpadding="0" cellspacing="0" class="dataTable">
                     <tr>
-                        <td>Core jBilling Edition:</td>
+                        <td>jBilling Edition:</td>
                         <td class="value"><g:meta name="app.version"/></td>
-                    </tr>
-                    <tr>
-                        <td>EarnBill SaaS Version:</td>
-                        <td class="value"><g:meta name="app.tag"/></td>
                     </tr>
                     <tr>
                         <td>jBilling Mediation Version:</td>

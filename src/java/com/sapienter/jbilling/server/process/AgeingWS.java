@@ -19,7 +19,6 @@ package com.sapienter.jbilling.server.process;
 import java.io.Serializable;
 import javax.validation.constraints.NotNull;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sapienter.jbilling.server.security.WSSecured;
 import com.sapienter.jbilling.server.util.api.validation.UpdateValidationGroup;
@@ -33,7 +32,6 @@ import org.hibernate.validator.constraints.NotEmpty;
  * @author Vikas Bodani
  */
 @ApiModel(value = "AgeingWS", description = "Ageing model")
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class AgeingWS implements WSSecured, Serializable {
 	
 	@NotNull(message="validation.error.notnull", groups = {UpdateValidationGroup.class})
@@ -123,6 +121,7 @@ public class AgeingWS implements WSSecured, Serializable {
 	}
 
     @Override
+    @JsonIgnore
 	public Integer getOwningEntityId() {
         return getEntityId();
     }
@@ -132,6 +131,7 @@ public class AgeingWS implements WSSecured, Serializable {
      * @return null
      */
     @Override
+    @JsonIgnore
     public Integer getOwningUserId() {
         return null;
     }

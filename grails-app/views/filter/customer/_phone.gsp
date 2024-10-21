@@ -31,9 +31,10 @@
                 <div class="input-bg">
                     <g:textField  name = "filters.${filter.name}.stringValue"
                                  value = "${filter.stringValue}"
-                                 class = "{validate:{ maxlength: 50 }} ${filter.value ? 'autoFill' : ''}"/>
+                                 class = "{validate:{ maxlength: 50 }} ${filter.value ? 'autoFill' : ''}"
+                                 data-cy="subscriberNumber"/>
                 </div>
-                <label for="filters.${filter.name}.stringValue"><g:message code="filters.as.identifier.label"/></label>               
+                <label for="filters.${filter.name}.stringValue"><g:message code="filters.as.subscriberNumber.label"/></label>
             </div>
         </fieldset>
     </div>

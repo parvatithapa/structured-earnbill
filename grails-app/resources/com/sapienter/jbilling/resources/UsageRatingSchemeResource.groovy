@@ -1,6 +1,5 @@
 package com.sapienter.jbilling.resources
 
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.usageratingscheme.UsageRatingSchemeWS
 import com.sapienter.jbilling.server.util.WebServicesSessionSpringBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -45,8 +44,8 @@ class UsageRatingSchemeResource {
             webServicesSession.createUsageRatingScheme(ws)
             return Response.status(Response.Status.CREATED).build()
 
-        } catch(SessionInternalError e) {
-            return RestErrorHandler.mapErrorToHttpResponse(e)
+        } catch(Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -67,7 +66,7 @@ class UsageRatingSchemeResource {
             return null != usageRatingScheme ? Response.ok().entity(usageRatingScheme).build() :
                     Response.status(Response.Status.NOT_FOUND).build()
         } catch (Exception e){
-            return RestErrorHandler.mapErrorToHttpResponse(e)
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -83,8 +82,8 @@ class UsageRatingSchemeResource {
     Response deleteUsageRatingScheme(@PathParam("usageRatingSchemeId") Integer usageRatingSchemeId) {
         try {
             webServicesSession.deleteUsageRatingScheme(usageRatingSchemeId)
-        } catch (SessionInternalError e){
-            return RestErrorHandler.mapErrorToHttpResponse(e)
+        } catch (Exception exp){
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
         return Response.status(Response.Status.OK).build()
     }
@@ -101,8 +100,8 @@ class UsageRatingSchemeResource {
     Response getAllUsageRatingScheme() {
         try {
             return Response.ok().entity(webServicesSession.findAllUsageRatingSchemes()).build()
-        } catch (SessionInternalError e){
-            return RestErrorHandler.mapErrorToHttpResponse(e)
+        } catch (Exception exp){
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -119,8 +118,8 @@ class UsageRatingSchemeResource {
     Response getAllUsageRatingSchemeTypes() {
         try {
             return Response.ok().entity(webServicesSession.findAllRatingSchemeTypeValues()).build()
-        } catch (SessionInternalError e){
-            return RestErrorHandler.mapErrorToHttpResponse(e)
+        } catch (Exception exp){
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 }

@@ -67,7 +67,7 @@ ORDER BY ol.item_id;]]>
 				</textElement>
 				<text><![CDATA[Active VoIP Customers Report]]></text>
 			</staticText>
-			<textField pattern="MMM dd, yyyy" isBlankWhenNull="true">
+			<textField pattern="MMM dd, YYYY" isBlankWhenNull="true">
 				<reportElement x="901" y="35" width="166" height="20" uuid="a48c8789-4bec-4efd-8ce9-3b9f5d83bbb0"/>
 				<textElement textAlignment="Center">
 					<font size="13"/>

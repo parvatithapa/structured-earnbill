@@ -25,8 +25,8 @@ import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
  * actions for overdue users
  */
 public interface PaymentTask {
-    
-    
+
+
     /**
      * Creation of a payment
      * @param paymentInfo This can be an extension of PaymentDTO, with the
@@ -57,7 +57,7 @@ public interface PaymentTask {
      */
     boolean preAuth(PaymentDTOEx paymentInfo) 
             throws PluggableTaskException;
-    
+
     /**
      * This will confirm a previously authorized charge, so it is 'captured'.
      * If this method is not called in a pre-auth, the charge will be dropped.
@@ -73,5 +73,15 @@ public interface PaymentTask {
     boolean confirmPreAuth(PaymentAuthorizationDTO auth, 
             PaymentDTOEx paymentInfo) 
             throws PluggableTaskException;
-    
+
+    /**
+     * Default implementation if the task is valid, if implementation for this method is not provided 
+     * in the implementation class then this default method will be called and it will always return true
+     * @param userId
+     * @return
+     */
+    default boolean isValidTask(Integer userId) {
+        return true;
+    }
+
 }

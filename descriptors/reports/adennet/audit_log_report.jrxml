@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="audit_log_report" language="groovy" pageWidth="860" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="820" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="be6db7be-7f28-4fda-9db4-2450cdd5f95b">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="start_date" class="java.util.Date"/>
+    <parameter name="end_date" class="java.util.Date"/>
+    <parameter name="report_start_date" class="java.sql.Timestamp"/>
+    <parameter name="subscriber_number" class="java.lang.String"/>
+    <parameter name="user_name" class="java.lang.String"/>
+    <parameter name="field_name" class="java.util.List">
+        <defaultValueExpression><![CDATA[]]></defaultValueExpression>
+    </parameter>
+    <parameter name="user_id" class="java.lang.String">
+        <defaultValueExpression><![CDATA[]]></defaultValueExpression>
+    </parameter>
+    <queryString>
+        <![CDATA[SELECT * from
+(
+	SELECT
+	  CASE WHEN el.user_id IS NULL
+	       THEN (SELECT user_name from base_user where  id = el.affected_user_id)
+	       ELSE
+		   ( SELECT
+		      user_name
+		    FROM
+		      base_user
+		    WHERE
+		      id = el.user_id)
+	  END AS updated_by,
+          COALESCE(el.subscriber_number, 'NA') AS subscriber_number,
+	  el.create_datetime AS create_datetime,
+	  el.old_str AS description,
+	  (select field_name from route_60_audit_log_field where message_id::INT=el.message_id) as field_name,
+	  el.affected_user_id as user_id
+	FROM
+	  event_log el
+	WHERE
+	  el.old_str IS NOT NULL
+	AND el.message_id IN (select message_id::INT from route_60_audit_log_field where $X{IN, field_name, field_name})
+
+	AND CASE WHEN $P{start_date} > $P{report_start_date}
+	         THEN create_datetime at time zone 'utc' at time zone 'Asia/Aden' >= $P{start_date}
+	         ELSE create_datetime at time zone 'utc' at time zone 'Asia/Aden' >= $P{report_start_date}
+	    END
+	AND create_datetime at time zone 'utc' at time zone 'Asia/Aden' <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+) as das
+WHERE CASE WHEN $P{subscriber_number} = ''
+         THEN true
+    ELSE das.subscriber_number=$P{subscriber_number}
+    END
+AND CASE WHEN $P{user_name} = ''
+         THEN true
+    ELSE das.updated_by=$P{user_name}
+    END
+AND CASE WHEN $P{user_id} = ''
+         THEN true
+    ELSE das.user_id=$P{user_id}:: INT
+    END
+ORDER BY das.create_datetime;]]>
+    </queryString>
+    <field name="updated_by" class="java.lang.String"/>
+    <field name="subscriber_number" class="java.lang.String"/>
+    <field name="create_datetime" class="java.sql.Timestamp"/>
+    <field name="description" class="java.lang.String"/>
+    <field name="field_name" class="java.lang.String"/>
+    <field name="user_id" class="java.lang.Integer"/>
+    <title>
+        <band height="115" splitType="Stretch">
+            <staticText>
+                <reportElement x="0" y="87" width="40" height="28" uuid="a24b63f0-2435-4302-9ec6-6b1449387a73"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[#]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="126" y="87" width="61" height="28" uuid="0ebc510f-b895-4621-a181-39b0dec5a9b8"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <text><![CDATA[User Id]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="699" y="87" width="120" height="28" uuid="b0b8d008-dd57-4bfb-b2c6-57c621cab0a6"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <text><![CDATA[Updated By]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="277" y="87" width="340" height="28" uuid="55fa525a-dacb-4c3b-8fa2-46fe6b95e8eb"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <text><![CDATA[Description]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="617" y="87" width="82" height="28" uuid="3694885b-75f5-4438-b76a-66dd15ba169a"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <text><![CDATA[Updated Date]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="187" y="87" width="90" height="28" uuid="c8a3e98f-52fb-413f-afc7-13c49fee87c8"/>
+                <textElement textAlignment="Left">
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <text><![CDATA[Field]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="0" width="617" height="34" forecolor="#441A3D" uuid="397bd01c-2de1-4765-a116-a5c6f145eac4"/>
+                <textElement>
+                    <font size="18" isBold="true" isStrikeThrough="false"/>
+                </textElement>
+                <text><![CDATA[Audit Log Report]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="617" y="34" width="82" height="20" uuid="f302cae1-f177-4990-b007-c29db9c69f1d"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <text><![CDATA[Start Date    :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="617" y="54" width="82" height="20" uuid="dd08e4d3-f24d-4f71-9312-2324c8a50f1e"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <text><![CDATA[End Date      :]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="699" y="54" width="120" height="20" uuid="6a89b5a5-5240-4674-be68-befb1fc682f4"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[new SimpleDateFormat("dd/MM/yyyy").format($P{end_date})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="699" y="34" width="120" height="20" uuid="3c2c92ff-505b-436f-a356-351e42b83051"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[new SimpleDateFormat("dd/MM/yyyy").format($P{start_date})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="617" y="0" width="82" height="34" uuid="0a327235-a426-40a0-be6b-5c1449d6c4c8"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <text><![CDATA[Report Date :]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="699" y="0" width="120" height="34" uuid="fd1b0dfe-34fa-4c10-b299-8aa2ab92174f"/>
+                <textElement>
+                    <font isBold="true"/>
+                    <paragraph leftIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{REPORT_FORMAT_FACTORY}.createDateFormat("dd/MM/yyyy HH:mm",$P{REPORT_LOCALE}, java.util.TimeZone.getTimeZone("Asia/Aden")).format(new java.util.Date())]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="0" y="34" width="617" height="20" forecolor="#441A3D" uuid="5823be27-2157-43a5-ae99-c6406750d9c1"/>
+                <textElement>
+                    <font size="18" isBold="true"/>
+                </textElement>
+                <text><![CDATA[]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="54" width="617" height="20" forecolor="#441A3D" uuid="6ee3a6fc-3511-483e-a1d6-28e4a72fd25b"/>
+                <textElement>
+                    <font size="18" isBold="true"/>
+                </textElement>
+                <text><![CDATA[]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="74" width="820" height="13" uuid="6be9654e-8dc5-4697-89fa-261cb648fa0f"/>
+                <text><![CDATA[]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="40" y="87" width="86" height="28" uuid="cb58fe1f-a704-4c93-bc4f-33cfdbe6b0be"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                    <paragraph leftIndent="3"/>
+                </textElement>
+                <text><![CDATA[Subscriber Number]]></text>
+            </staticText>
+        </band>
+    </title>
+    <detail>
+        <band height="43" splitType="Stretch">
+            <textField>
+                <reportElement x="126" y="0" width="61" height="43" uuid="f3f8172a-5802-48c9-be3b-75547ed35f62"/>
+                <textElement>
+                    <font size="12"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="277" y="0" width="340" height="43" uuid="d3e7b688-1373-4524-acce-9cf44d384697"/>
+                <textElement>
+                    <font fontName="Arial" size="12"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="699" y="0" width="120" height="43" uuid="7eb66cb9-fddc-4577-8f55-f6fe6e964d34"/>
+                <textElement>
+                    <font size="12"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{updated_by}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="617" y="0" width="82" height="43" uuid="9f3a2173-1335-476b-b002-3ca702ec1cf7"/>
+                <textElement>
+                    <font size="12"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{REPORT_FORMAT_FACTORY}.createDateFormat("dd/MM/yyyy HH:mm",$P{REPORT_LOCALE}, java.util.TimeZone.getTimeZone("Asia/Aden")).format($F{create_datetime})]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="0" width="40" height="43" uuid="ab43ac59-ab36-4d19-9dbc-9e23f8a8b3bf"/>
+                <textElement>
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="187" y="0" width="90" height="43" uuid="38f03f34-669a-4413-afc2-a71ee4a80191"/>
+                <textElement>
+                    <font size="12"/>
+                    <paragraph leftIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{field_name}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="40" y="0" width="86" height="43" uuid="9b41ff15-4d3e-463e-b524-ba6258196a56"/>
+                <textElement>
+                    <font size="12"/>
+                    <paragraph leftIndent="3"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{subscriber_number}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="20">
+            <textField>
+                <reportElement x="699" y="0" width="120" height="20" uuid="57b58641-30f3-4443-97bf-74f44c14bbe9"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true"/>
+                    <paragraph leftIndent="2" rightIndent="2"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Page: "+$V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="0" y="0" width="699" height="20" uuid="dea090fc-632f-4bf3-929f-7bd22515275d"/>
+                <text><![CDATA[]]></text>
+            </staticText>
+        </band>
+    </pageFooter>
+</jasperReport>

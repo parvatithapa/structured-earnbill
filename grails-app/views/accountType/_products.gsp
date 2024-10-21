@@ -105,7 +105,7 @@
                   </div>
               </div>
               <jB:isPaginationAvailable total="${products.totalCount ?: 0}">
-                <div class="row">
+                <div class="row-center">
                     <jB:remotePaginate action="filterProducts"
                                      params="${sortableParams(params: [partial: true, accountTypeId: accountType?.id ?: params.accountTypeId, max: params.max, typeId: params.typeId ?: "", filterBy: params.filterBy ?: ""])}"
                                      total="${products.totalCount ?: 0}"

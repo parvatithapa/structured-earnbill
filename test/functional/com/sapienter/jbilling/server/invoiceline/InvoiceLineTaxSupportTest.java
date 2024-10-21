@@ -373,14 +373,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -466,14 +466,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -559,14 +559,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -636,14 +636,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -741,14 +741,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -824,14 +824,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });
@@ -917,14 +917,14 @@ public class InvoiceLineTaxSupportTest extends AbstractTestNGSpringContextTests 
                                     });
                                 }
 
-                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmount());
+                                BigDecimal expectedGrossAmount = invoiceLine.getAmountAsDecimal().subtract(invoiceLine.getTaxAmountAsDecimal());
 
-                                assertEquals(invoiceLine.getTaxRate().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxRateAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), getExpectedTaxRate(taxScheme[0], todaysDate).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Tax rate is wrong");
-                                assertEquals(invoiceLine.getTaxAmount(), getTaxAmount(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()), "Wrong tax amount!");
-                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmount(), invoiceLine.getTaxRate()).setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getTaxAmountAsDecimal(), getTaxAmount(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()), "Wrong tax amount!");
+                                assertEquals(invoiceLine.getAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), calculateAmountWithTax(invoiceLine.getGrossAmountAsDecimal(), invoiceLine.getTaxRateAsDecimal()).setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Amount is wrong with the invoice line.");
-                                assertEquals(invoiceLine.getGrossAmount().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
+                                assertEquals(invoiceLine.getGrossAmountAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP), expectedGrossAmount.setScale(2, BigDecimal.ROUND_HALF_UP),
                                         "Wrong gross amount!");
                             });
                         });

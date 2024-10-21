@@ -15,6 +15,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
+import com.sapienter.jbilling.server.item.db.ItemDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -42,6 +43,7 @@ public class CreditNoteLineDTO {
 	private InvoiceLineDTO creationInvoiceLine;
 	private CreditNoteDTO creditNoteDTO;
 	private int deleted;
+	private ItemDTO item;
 
 	@Id @GeneratedValue(strategy=GenerationType.TABLE, generator="credit_note_line_GEN")
 	@Column(name="id", unique=true, nullable=false)
@@ -97,6 +99,16 @@ public class CreditNoteLineDTO {
 
 	public void setDeleted(int deleted) {
 		this.deleted = deleted;
+	}
+
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "item_id")
+	public ItemDTO getItem() {
+		return item;
+	}
+
+	public void setItem(ItemDTO item) {
+		this.item = item;
 	}
 
 }

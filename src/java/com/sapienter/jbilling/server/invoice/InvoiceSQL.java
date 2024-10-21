@@ -134,14 +134,6 @@ public interface InvoiceSQL {
         "   and co.user_id = bu.id " +
         " order by i.id";
 
-    // Last invoice id for a user
-    static final String lastIdbyUser =
-    "SELECT MAX(i.id) " +
-    "FROM invoice i " +
-    "WHERE i.user_id = ? " +
-    "AND i.deleted = 0 " +
-    "AND i.is_review = 0 ";
-
     // Last invoice id for a user that contains a line item w/ particular type id
     static final String lastIdbyUserAndItemType =
     "select max(i.id) " +

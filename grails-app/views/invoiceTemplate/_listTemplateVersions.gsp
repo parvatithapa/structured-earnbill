@@ -92,7 +92,7 @@ is strictly forbidden.
             <div class="results">
                 <g:render template="/layouts/includes/pagerShowResults" model="[steps: [10, 20, 50], action: 'listVersions', update: 'column1',id: selectedTemplate?.id]"/>
             </div>
-            <div class="row">
+            <div class="row-center">
                 <jB:remotePaginate  controller="invoiceTemplate" action="listVersions" id="${selectedTemplate?.id}" total="${versionsTotalCount}" onSuccess="closePanel(\'#column2\');" update="column1"/>
             </div>
         </div>

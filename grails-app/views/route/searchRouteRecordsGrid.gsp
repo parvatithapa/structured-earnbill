@@ -196,21 +196,21 @@
                 <g:hiddenField name="nestedColumns[${depth}]" value="${nestedColumns[depth]}"/>
             </g:each>
 
-            <table style="margin: 3px 0 0 10px">
+            <table>
                 <tbody><tr>
-                    <td class="col2" style="padding-left: 7px">
+                    <td class="col2">
                         <g:message code="dataTable.query.name"/>
                     </td>
-                    <td class="col2" style="padding-left: 7px">
+                    <td class="col2">
                         <g:textField id="save-query-name" name="name"/>
                     </td>
                 </tr>
                 <sec:ifAllGranted roles="DATA_TABLES_170">
                     <tr>
-                        <td class="col2" style="padding-left: 7px">
+                        <td class="col2">
                             <g:message code="dataTable.query.global"/>
                         </td>
-                        <td class="col2" style="padding-left: 7px">
+                        <td class="col2">
                             <g:checkBox name="global"/>
                         </td>
                     </tr>

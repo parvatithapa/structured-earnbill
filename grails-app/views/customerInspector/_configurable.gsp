@@ -80,11 +80,18 @@
         text-align: left;
         padding-right: 0;
     }
+    html[dir="rtl"] .dist-tombstone-table-data {
+        text-align: right;
+        padding-left: 0;
+    }
     .dist-table-element {
         width: 430px;
     }
     .dist-table-element td {
         text-align: left;
+    }
+    html[dir="rtl"] .dist-table-element td {
+        text-align: right;
     }
     td.dist-dataTable{
         vertical-align: top;
@@ -92,6 +99,9 @@
         text-align: left;
         padding-left: 6px;
         padding-right: 6px;
+    }
+    html[dir="rtl"] td.dist-dataTable {
+        text-align: right;
     }
     .link-element {
         display: inline-block;
@@ -114,9 +124,17 @@
         float: left;
         text-align: left;
     }
+    html[dir="rtl"] .dist-table-header .title {
+        float: right;
+        text-align: right;
+    }
     .dist-table-header .comment {
         float: right;
         text-align: right;
+    }
+    html[dir="rtl"] .dist-table-header .comment {
+        float: left;
+        text-align: left;
     }
     .dist-link {
         color: #009abf !important;
@@ -305,8 +323,8 @@
                         </div>
                     </g:if>
                     <g:elseif test="${column?.field instanceof StaticField && column?.field?.header}">
-                        <div class="box-cards-title">
-                            <span style="${column?.field?.style}">${column?.field.getValue(user?.id)}</span>
+                        <div class="box-cards-title" data-cy="customerInformation">
+                            <span style="${column?.field?.style}"><g:message code="${column?.field?.getValue(user?.id)}"/></span>
                         </div>
                     </g:elseif>
                     <g:elseif test="${column?.field instanceof SpecificField && !column?.field.getType().equals(SpecificField.SpecificType.TEXT)}">
@@ -343,14 +361,15 @@
                                 <tr>
                                     <td class="${isDistributel ? 'dist-tombstone-table-data' : ''}">
                                         <g:set var="fieldValue" value="${column?.field.getValue(user?.id)}"/>
+
                                         <g:if test="${column?.field instanceof StaticField}">
                                             <g:if test="${column?.field?.label}">
-                                                <label><span style="${column?.field?.style}">${column.field.label}:</span></label>
+                                                <label><span style="${column?.field?.style}"><g:message code="${column.field.label ?: column.field.name}"/>:</span></label>
                                             </g:if>
                                         </g:if>
                                         <g:else>
                                             <g:if test="${column?.field?.label || column?.field?.name}">
-                                                <label><span>${column.field.label ?: column.field.name}:</span></label>
+                                                <label><span><g:message code="${column.field.label ?: column.field.name}"/>:</span></label>
                                             </g:if>
                                         </g:else>
                                     </td>
@@ -372,6 +391,14 @@
                                                 </g:if>
                                                 <g:elseif test="${fieldValue instanceof java.util.Date}">
                                                     <g:formatDate date="${fieldValue}" formatName="date.pretty.format"/>
+                                                </g:elseif>
+                                                <g:elseif test="${column.field.label == 'label.adennet.iccid'}">
+                                                    <g:if test="${!user?.deleted}">
+                                                        ${displayer.getDisplayName(user)}
+                                                    </g:if>
+                                                    <g:else>
+                                                        ${fieldValue}
+                                                    </g:else>
                                                 </g:elseif>
                                                 <g:else>${fieldValue}</g:else>
                                             </span>

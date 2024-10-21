@@ -16,8 +16,8 @@
 
 package com.sapienter.jbilling.server.pricing;
 
-import au.com.bytecode.opencsv.CSVReader;
-
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.list.ResultList;
 import com.sapienter.jbilling.server.pricing.PricingBeanMessage.Action;
@@ -157,6 +157,8 @@ public class RateCardBL extends ResultList {
                 } catch (SQLException e) {
                     dropRates();
                     throw new SessionInternalError("Exception saving rates to database", e, new String[]{"RateCardWS,rates,cannot.save.rates.db.error"});
+                } catch (CsvValidationException e) {
+                    throw new SessionInternalError("Could not load rating table", e, new String[]{"RateCardWS,rates,cannot.read.file"});
                 }
 
                 if (!isCopyRateCard) {
@@ -332,7 +334,7 @@ public class RateCardBL extends ResultList {
      * @param ratesFile file handle of the CSV on disk containing the rates.
      * @throws IOException if file does not exist or is not readable
      */
-    public void saveRates(File ratesFile) throws IOException, SQLException {
+    public void saveRates(File ratesFile) throws IOException, SQLException, CsvValidationException {
 
         CSVReader reader = new CSVReader(new FileReader(ratesFile));
         String[] line = reader.readNext();

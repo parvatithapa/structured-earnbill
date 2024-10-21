@@ -98,7 +98,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="mediationRatingSchemeConfig" action="${action ?: 'list'}"
                              params="${sortableParams(params: [partial: true])}"
                              total="${size ?: 0}" update="column1"/>

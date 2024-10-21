@@ -46,20 +46,17 @@ public class PlanWS implements WSSecured, Serializable {
     private Integer id;
     private Integer itemId; // plan subscription item
     private Integer periodId; // plan item period
-    @Size(min = 0, max = 255, message = "validation.error.size,1,255")
+    @Size (min=0,max=255, message="validation.error.size,1,255")
     private String description;
     private int editable = 0;
     private List<PlanItemWS> planItems = new ArrayList<PlanItemWS>();
     private Integer[] usagePoolIds;
 
     private boolean freeTrial;
-    private Integer freeTrialPeriodValue;
-    private String freeTrialPeriodUnit;
-    // Disabled numberOfFreeCalls feature
-//    private Integer numberOfFreeCalls;
+
     @Valid
     private MetaFieldValueWS[] metaFields;
-    private SortedMap<Integer, MetaFieldValueWS[]> metaFieldsMap = new TreeMap<Integer, MetaFieldValueWS[]>();
+    private SortedMap <Integer, MetaFieldValueWS[]> metaFieldsMap = new TreeMap<Integer, MetaFieldValueWS[]>();
 
     public PlanWS() {
     }
@@ -119,17 +116,7 @@ public class PlanWS implements WSSecured, Serializable {
         this.freeTrial = freeTrial;
     }
 
-    // disabled number of free calls feature
-    /*@ApiModelProperty(value = "free calls limit for under spedified duration")
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
-    }*/
-
-    @JsonIgnore
+	@JsonIgnore
     public int getEditable() {
         return editable;
     }
@@ -141,7 +128,7 @@ public class PlanWS implements WSSecured, Serializable {
     }
 
     @ApiModelProperty(value = "List of plan items included in the plan")
-    public List<PlanItemWS> getPlanItems() {
+   	public List<PlanItemWS> getPlanItems() {
         return planItems;
     }
 
@@ -155,48 +142,30 @@ public class PlanWS implements WSSecured, Serializable {
 
     @ApiModelProperty(value = "Defined meta fields for the plan")
     public MetaFieldValueWS[] getMetaFields() {
-        return metaFields;
+    	return metaFields;
     }
 
-    public void setMetaFields(MetaFieldValueWS[] metaFields) {
-        this.metaFields = metaFields;
+	public void setMetaFields(MetaFieldValueWS[] metaFields) {
+    	this.metaFields = metaFields;
     }
 
     @XmlJavaTypeAdapter(CxfSMapIntMetafieldsAdapter.class)
     @ApiModelProperty(value = "Meta field values sorted map")
-    public SortedMap<Integer, MetaFieldValueWS[]> getMetaFieldsMap() {
-        return metaFieldsMap;
-    }
-
-    public void setMetaFieldsMap(SortedMap<Integer, MetaFieldValueWS[]> metaFieldsMap) {
-        this.metaFieldsMap = metaFieldsMap;
-    }
+    public SortedMap <Integer, MetaFieldValueWS[]> getMetaFieldsMap() {
+		return metaFieldsMap;
+	}
+	
+	public void setMetaFieldsMap(SortedMap <Integer, MetaFieldValueWS[]> metaFieldsMap) {
+		this.metaFieldsMap = metaFieldsMap;
+	}
 
     @ApiModelProperty(value = "Array of usage pool ids")
-    public Integer[] getUsagePoolIds() {
+	public Integer[] getUsagePoolIds() {
         return this.usagePoolIds;
     }
 
     public void setUsagePoolIds(Integer[] usagePoolIds) {
         this.usagePoolIds = usagePoolIds;
-    }
-
-    @ApiModelProperty(value = "Free trial period in terms of Days and Billing Cycle ")
-    public Integer getFreeTrialPeriodValue() {
-        return freeTrialPeriodValue;
-    }
-
-    public void setFreeTrialPeriodValue(Integer freeTrialPeriodValue) {
-        this.freeTrialPeriodValue = freeTrialPeriodValue;
-    }
-
-    @ApiModelProperty(value = "Free trial period unit (Days, Months, Years, Billing Cycle)")
-    public String getFreeTrialPeriodUnit() {
-        return freeTrialPeriodUnit;
-    }
-
-    public void setFreeTrialPeriodUnit(String freeTrialPeriodUnit) {
-        this.freeTrialPeriodUnit = freeTrialPeriodUnit;
     }
 
     @Override
@@ -211,27 +180,24 @@ public class PlanWS implements WSSecured, Serializable {
         return null;
     }
 
-    @Override
+	@Override
     public String toString() {
-        String strFUPIds = "";
-        if (null != usagePoolIds && usagePoolIds.length > 0) {
-            for (Integer fupId : usagePoolIds) {
-                strFUPIds += fupId + ":";
-            }
-        }
+		String strFUPIds = "";
+		if (null != usagePoolIds && usagePoolIds.length > 0) {
+			for (Integer fupId : usagePoolIds) {
+				strFUPIds += fupId + ":";
+			}
+		}
         return "PlanWS{"
-            + "id=" + id
-            + ", itemId=" + itemId
-            + ", periodId=" + periodId
-            + ", description='" + description + '\''
-            + ", editable=" + editable
-            + ", planItems=" + planItems
-            + ", usagePoolIds=" + strFUPIds
-            + ", freeTrial=" + freeTrial
-            + ", freeTrialPeriodValue=" + freeTrialPeriodValue
-            + ", freeTrialPeriodUnit=" + freeTrialPeriodUnit
-//            + ", numberOfFreeCalls=" + numberOfFreeCalls
-            + '}';
+               + "id=" + id
+               + ", itemId=" + itemId
+               + ", periodId=" + periodId
+               + ", description='" + description + '\''
+                + ", editable=" + editable
+               + ", planItems=" + planItems
+               + ", usagePoolIds=" + strFUPIds
+               + ", freeTrial=" + freeTrial
+               + '}';
     }
 
     @Override
@@ -241,39 +207,36 @@ public class PlanWS implements WSSecured, Serializable {
 
         PlanWS planWS = (PlanWS) o;
         return editable == planWS.editable &&
-            nullSafeEquals(id, planWS.id) &&
-            nullSafeEquals(itemId, planWS.itemId) &&
-            nullSafeEquals(periodId, planWS.periodId) &&
-            nullSafeEquals(description, planWS.description) &&
-            nullSafeEquals(freeTrial, planWS.freeTrial) &&
-            nullSafeEquals(freeTrialPeriodValue, planWS.freeTrialPeriodValue) &&
-            nullSafeEquals(freeTrialPeriodUnit, planWS.freeTrialPeriodUnit) &&
-//            nullSafeEquals(numberOfFreeCalls, planWS.numberOfFreeCalls) &&
-            nullSafeEquals(CollectionUtil.nullSafeSort(planItems, PlanItemWS.defaultComparator()), CollectionUtil.nullSafeSort(planWS.planItems, PlanItemWS.defaultComparator())) &&
-            nullSafeEquals(CollectionUtil.nullSafeSort(usagePoolIds), CollectionUtil.nullSafeSort(planWS.usagePoolIds)) &&
-            nullSafeEquals(CollectionUtil.nullSafeSort(metaFields, MetaFieldValueWS.defaultComparator()), CollectionUtil.nullSafeSort(planWS.metaFields, MetaFieldValueWS.defaultComparator())) &&
-            metaFieldsMapEquals(metaFieldsMap, planWS.metaFieldsMap);
+                nullSafeEquals(id, planWS.id) &&
+                nullSafeEquals(itemId, planWS.itemId) &&
+                nullSafeEquals(periodId, planWS.periodId) &&
+                nullSafeEquals(description, planWS.description) &&
+                nullSafeEquals(freeTrial, planWS.freeTrial) &&
+                nullSafeEquals(CollectionUtil.nullSafeSort(planItems, PlanItemWS.defaultComparator()), CollectionUtil.nullSafeSort(planWS.planItems, PlanItemWS.defaultComparator())) &&
+                nullSafeEquals(CollectionUtil.nullSafeSort(usagePoolIds), CollectionUtil.nullSafeSort(planWS.usagePoolIds)) &&
+                nullSafeEquals(CollectionUtil.nullSafeSort(metaFields, MetaFieldValueWS.defaultComparator()), CollectionUtil.nullSafeSort(planWS.metaFields, MetaFieldValueWS.defaultComparator())) &&
+                metaFieldsMapEquals(metaFieldsMap, planWS.metaFieldsMap);
     }
 
-    private boolean metaFieldsMapEquals(SortedMap<Integer, MetaFieldValueWS[]> actual, SortedMap<Integer, MetaFieldValueWS[]> expected) {
+    private boolean metaFieldsMapEquals(SortedMap<Integer, MetaFieldValueWS[]> actual, SortedMap<Integer, MetaFieldValueWS[]> expected){
 
-        if (actual == expected) {
+        if (actual == expected){
             return true;
         }
         if (actual == null || expected == null) {
             return false;
         }
-        if (actual.size() != expected.size()) {
+        if (actual.size() != expected.size()){
             return false;
         }
 
         Set<Integer> actualKeySet = actual.keySet();
         Set<Integer> expectedKeySet = expected.keySet();
-        if (!nullSafeEquals(actualKeySet, expectedKeySet)) {
+        if (!nullSafeEquals(actualKeySet, expectedKeySet)){
             return false;
         }
-        for (Integer key : actualKeySet) {
-            if (!nullSafeEquals(actual.get(key), expected.get(key))) {
+        for (Integer key : actualKeySet){
+            if (!nullSafeEquals(actual.get(key), expected.get(key))){
                 return false;
             }
         }
@@ -289,9 +252,6 @@ public class PlanWS implements WSSecured, Serializable {
         result = 31 * result + nullSafeHashCode(description);
         result = 31 * result + editable;
         result = 31 * result + nullSafeHashCode(freeTrial);
-        result = 31 * result + nullSafeHashCode(freeTrialPeriodValue);
-        result = 31 * result + nullSafeHashCode(freeTrialPeriodUnit);
-//        result = 31 * result + nullSafeHashCode(numberOfFreeCalls);
         result = 31 * result + nullSafeHashCode(planItems);
         result = 31 * result + nullSafeHashCode(usagePoolIds);
         result = 31 * result + nullSafeHashCode(metaFields);

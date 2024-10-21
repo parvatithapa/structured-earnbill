@@ -32,7 +32,7 @@ import com.sapienter.jbilling.test.framework.builders.CustomerBuilder;
  * @author Pranay Raherkar
  * @since 11/06/2018
  */
-@Test(groups = { "integration" }, testName = "UnlinkPaymentAndCreditNoteTest", priority = 20)
+@Test(groups = { "integration" }, testName = "UnlinkPaymentAndCreditNoteTest")
 public class UnlinkPaymentAndCreditNoteTest {
     private static final Logger logger = LoggerFactory.getLogger(AgeingStopActivationOnPaymentTest.class);
 
@@ -49,7 +49,7 @@ public class UnlinkPaymentAndCreditNoteTest {
     private static final String CUSTOMER_CODE2 = "TestCustomer2";
     public final static int ONE_TIME_ORDER_PERIOD = 1;
     public static final int ORDER_CHANGE_STATUS_APPLY_ID = 3;
-    private static final String Order_CODE = "monthlyOrder";
+    private static final String Order_CODE = "monthlyOrder"; 
 
     private Integer CATEGORY_ID;
 
@@ -192,7 +192,7 @@ public class UnlinkPaymentAndCreditNoteTest {
                 assertNotNull("invoiceIdsOfUser should not be null",invoice);
                 //invoice status should be in unpaid status
                 assertEquals("Paid", invoice.getStatusDescr());
-
+                
                 Calendar invoiceDate = Calendar.getInstance();
                 invoiceDate.set(Calendar.YEAR, 2016);
                 invoiceDate.set(Calendar.MONTH, 2);

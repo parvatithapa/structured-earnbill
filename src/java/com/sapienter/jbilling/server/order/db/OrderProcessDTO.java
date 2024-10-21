@@ -59,6 +59,7 @@ public class OrderProcessDTO  implements java.io.Serializable, Auditable {
      private int isReview;
      private Integer origin;
      private Integer versionNum;
+     private Date lastPeriodStartDate;
 
 
     public OrderProcessDTO() {
@@ -165,6 +166,15 @@ public class OrderProcessDTO  implements java.io.Serializable, Auditable {
 
     public void setOrigin(Integer origin) {
         this.origin = origin;
+    }
+
+    @Column(name="last_period_start_date", length=13)
+    public Date getLastPeriodStartDate() {
+        return this.lastPeriodStartDate;
+    }
+
+    public void setLastPeriodStartDate(Date lastPeriodStartDate) {
+        this.lastPeriodStartDate = lastPeriodStartDate;
     }
 
     @Version

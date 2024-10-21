@@ -52,7 +52,7 @@
 <div class="pager-box">
 
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate  action="ediFileRecordList" total="${ediFileRecords?.totalCount ?: 0}" update="ediFileRecords" params="[partial:true, id:ediFile?.id]"/>
     </div>
 </div>

@@ -16,7 +16,7 @@
                   model="[ait: ait, aitVal: ait.id, values: customerEnrollment?.metaFields]"/>
 
         <div class="btn-box order-btn-box form-columns" style="width: 20%">
-        <div style="width: 45%; display: inline-block; float: left">
+        <div id="custom-div" style="width: 45%; display: inline-block">
             <g:if test="${i > 0}">
                 <a href="javascript:void(0)" class="submit previous prev-btn">
                     <span><g:message code="wizard.previous"/></span>
@@ -25,7 +25,7 @@
 
         </div>
 
-        <div style="width: 45%;display: inline; float: right">
+        <div id="custom-div2" style="width: 45%;display: inline">
             <a href="javascript:void(0)" class="submit next next-btn">
                     <span><g:message code="wizard.next"/></span>
                 </a>
@@ -44,13 +44,13 @@
     </div>
 
     <div class="btn-box order-btn-box form-columns" style="width: 20%">
-        <div style="width: 45%; display: inline-block; float: left">
+        <div id="custom-div" style="width: 45%; display: inline-block">
             <a href="javascript:void(0)" class="submit previous prev-btn">
                 <span><g:message code="wizard.previous"/></span>
             </a>
         </div>
 
-        <div style="width: 45%;display: inline; float: right">
+        <div id="custom-div2" style="width: 45%;display: inline">
             <a href="javascript:void(0)" class="submit next next-btn">
                 <span><g:message code="wizard.next"/></span>
             </a>
@@ -64,13 +64,13 @@
     </div>
 
     <div class="btn-box order-btn-box form-columns" style="width: 20%">
-        <div style="width: 45%; display: inline-block; float: left">
+        <div id="custom-div" style="width: 45%; display: inline-block">
             <a href="javascript:void(0)" class="submit previous prev-btn">
                 <span><g:message code="wizard.previous"/></span>
             </a>
         </div>
 
-        <div style="width: 45%;display: inline; float: right">
+        <div id="custom-div2" style="width: 45%;display: inline">
             <a href="javascript:void(0)" class="submit next next-btn">
                 <span><g:message code="wizard.next"/></span>
             </a>

@@ -11,9 +11,11 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>com.sapienter.jbilling</groupId>
   <artifactId>metered-usage-service-impl</artifactId>
   <version>1.0.0</version>
+  <properties>
+    <resiliencej.version>1.7.0</resiliencej.version>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -65,22 +67,22 @@
     <dependency>
       <groupId>io.vavr</groupId>
       <artifactId>vavr-match</artifactId>
-      <version>0.9.1</version>
+      <version>0.10.4</version>
     </dependency>
     <dependency>
       <groupId>io.vavr</groupId>
       <artifactId>vavr</artifactId>
-      <version>0.9.1</version>
+      <version>0.10.4</version>
     </dependency>
     <dependency>
       <groupId>io.github.resilience4j</groupId>
       <artifactId>resilience4j-core</artifactId>
-      <version>0.11.0</version>
+      <version>${resiliencej.version}</version>
     </dependency>
     <dependency>
       <groupId>io.github.resilience4j</groupId>
       <artifactId>resilience4j-retry</artifactId>
-      <version>0.11.0</version>
+      <version>${resiliencej.version}</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -375,13 +377,14 @@
       </exclusions>
     </dependency>
 
-    <!-- Test Dependecies -->
+    <!-- Test Dependencies -->
 
     <!-- test scope -->
     <dependency>
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
       <version>${hsqldb.version}</version>
+      <classifier>jdk8</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

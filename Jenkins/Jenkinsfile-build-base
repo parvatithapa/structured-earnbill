@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = "${params.BRANCH_NAME}"
+
+        DOCKER_REG_HOST="http://192.168.1.119:8082"
+
+        CRED_DOCKER_REG= credentials('docker-registry')
+        DOCKER_REG_USERNAME= "$CRED_DOCKER_REG_USR"
+        DOCKER_REG_PASSWORD= "$CRED_DOCKER_REG_PSW"
+
+        GRAILS_HOME = '/root/.sdkman/candidates/grails/2.4.3'
+        JAVA_HOME = '/root/.sdkman/candidates/java/current'
+
+    }
+
+    stages {
+        stage('Verify Branch Name') {
+            steps {
+                script {
+                    if (BRANCH_NAME.isEmpty()) {
+                        error('Branch name is a required parameter')
+                    }
+                }
+            }
+        }
+        stage('git-clone') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch: "${BRANCH_NAME}", credentialsId: 'pat-github-adennet', url: 'https://github.com/billinghub/billinghub-adennet-edition.git'
+                sh "ls -ltr && pwd"
+            }
+        }
+        stage('Get commit details') {
+            steps {
+                script {
+                    env.LAST_COMMIT = sh(returnStdout:true, script:"git rev-parse --short HEAD").trim()
+                    echo "Last Commit : ${env.LAST_COMMIT}"
+                    env.COMMIT_OWNER = sh(returnStdout:true, script:"git log -n 1 --no-merges  --pretty=format:'%an'").trim()
+                    echo "Commit Owner : ${env.COMMIT_OWNER}"
+                    env.IMAGE_TAG = "192.168.1.119:8082/billinghub-jbilling-base-image:1.0.0-${env.LAST_COMMIT}"
+
+                }
+            }
+        }
+        stage('build-docker-image') {
+            steps {
+                sh "docker build -t ${env.IMAGE_TAG} -f ./Dockerfile-build-base ."
+            }
+        }
+        stage('push-docker-image-sarathi-reg') {
+            steps {
+                echo "This build will be pushed on the sarathi's private docker registry."
+                sh "docker login ${DOCKER_REG_HOST} -u ${DOCKER_REG_USERNAME} -p ${DOCKER_REG_PASSWORD}"
+                sh "docker push ${env.IMAGE_TAG}"
+            }
+        }
+    }
+    post {
+        success {
+            slackSend color: '#36a64f', message: "Job : billinghub-jbilling base-build\nStatus : *SUCCESS*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nImage Tag : ${env.IMAGE_TAG}\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report"
+        }
+        failure {
+            slackSend color: '#ff0000', message: "Job : billinghub-jbilling base-build\nStatus : *FAILURE*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nImage Tag : ${env.IMAGE_TAG}\nBuild Report :${env.BUILD_URL}CI-Build-HTML-Report"
+        }
+    }
+}

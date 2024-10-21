@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="direct_debits_report" language="groovy" pageWidth="2550" pageHeight="752" whenNoDataType="AllSectionsNoDetail" columnWidth="2550" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="274b963f-896d-46db-84e5-44adf3315d43">
+	<property name="ireport.zoom" value="1.128947860107556"/>
+	<property name="ireport.x" value="1268"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="instrument_type" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT bu.id AS user_id,
+						(SELECT mfv.string_value
+						   FROM customer cu
+					 INNER JOIN customer_meta_field_map cmfm ON cmfm.customer_id = cu.id AND bu.id = cu.user_id
+					 INNER JOIN meta_field_value mfv ON mfv.id = cmfm.meta_field_value_id
+					 INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id AND name = 'crmAccountNumber') AS crm_account_number,
+					 	(SELECT CONCAT(getTimeLineInfo('Title','Customer Details','TITLE',bu.id), ' ',
+					 				   getTimeLineInfo('First Name','Customer Details','FIRST_NAME',bu.id), ' ',
+					 				   getTimeLineInfo('Last Name','Customer Details','LAST_NAME',bu.id))) AS customer_name,
+						(SELECT mfv.string_value
+						   FROM meta_field_value mfv
+					 INNER JOIN customer_meta_field_map cfm ON mfv.id = cfm.meta_field_value_id
+					 INNER JOIN customer cu ON cu.id = cfm.customer_id
+					 INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+						  WHERE mfn.name = 'Origin' AND cu.user_id = bu.id) AS customer_origin,
+						(SELECT STRING_AGG(po.id::text, ', ')
+						   FROM purchase_order po
+						  WHERE po.status_id = 700 AND po.user_id = bu.id) AS active_orders,
+						pi.id AS payment_instrument_id,
+						(SELECT method_name
+								FROM payment_method_type pmt
+							   WHERE pmt.id = pi.payment_method_id),
+					   (CASE
+						WHEN (SELECT method_name
+								FROM payment_method_type pmt
+							   WHERE pmt.id = pi.payment_method_id) = 'Westpac Credit Cards'
+						THEN 'Credit Card'
+						ELSE 'Bank Debit'
+						END) AS dd_type,
+						getTimeLineInfo('First Name','Customer Details','FIRST_NAME',bu.id) AS first_name,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.number') AS Card_Number,
+						(CASE
+						WHEN TRIM(getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.expiry.date')) != ''
+						THEN (to_date(getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.expiry.date'),'MM/YYYY'))
+						END) AS card_expiry_date,
+						(CASE
+						WHEN TRIM(getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.expiry.date')) != ''
+						THEN (to_char(to_date(getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.expiry.date'),'MM/YYYY'),'MM/YYYY'))
+						END) AS expiry_date,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.type') AS card_type,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'cc.cardholder.name') AS cardholder_name,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'Bank Name') AS bank_name,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'Account Number') AS bank_account_number,
+						getNextPaymentInstrumentMetaFieldValue(pi.id,'BSB') AS routing_number,
+						pi.create_datetime AS date_added,
+						pi.update_datetime AS date_changed,
+						getTimeLineInfo('Title','Customer Details','TITLE',bu.id) AS salutation,
+						(SELECT MAX(payment_date) FROM payment
+INNER JOIN payment_instrument_info pii ON pii.payment_id = payment.id AND payment.user_id = bu.id AND deleted=0
+INNER JOIN payment_information ON payment_information.id = pii.instrument_id AND payment_information.payment_method_id = pmt.id) AS date_last_charged,
+						getTimeLineInfo('Last Name','Customer Details','LAST_NAME',bu.id) AS last_name,
+						getTimeLineInfo('Street Number','Billing Address','STREET_NUMBER',bu.id) AS street_number,
+						getTimeLineInfo('Street Name','Billing Address','STREET_NAME',bu.id) AS street_name ,
+					                 getTimeLineInfo('Street Type','Billing Address','STREET_TYPE',bu.id) AS street_type,
+						getTimeLineInfo('City','Billing Address','CITY',bu.id) AS suburb,
+						getTimeLineInfo('State','Billing Address','STATE_PROVINCE',bu.id) AS state,
+						getTimeLineInfo('Post Code','Billing Address','POSTAL_CODE',bu.id) AS post_code,
+						(SELECT (SELECT COALESCE(SUM(i.balance),0) - COALESCE(SUM(c.balance), 0)                                                                                                                                         FROM invoice i LEFT JOIN credit_note c ON c.creation_invoice_id = i.id                                                                                                                                  WHERE i.user_id = bu.id AND i.deleted = 0 ) -
+                                                                                                                           (SELECT COALESCE(SUM(p.balance),0)
+                                                                                                                              FROM payment p
+                                                                                                                            WHERE p.user_id = bu.id
+                                                                                                                                 AND p.deleted=0)) AS account_balance,
+						getTimeLineInfo('Email Address','Customer Details','EMAIL',bu.id) AS email,
+						getTimeLineInfo('Contact Number','Customer Details','PHONE_NUMBER',bu.id) AS mobile
+						   FROM base_user bu
+					 INNER JOIN payment_information pi ON pi.user_id = bu.id
+					 INNER JOIN payment_method_type pmt ON pmt.id = pi.payment_method_id AND (SELECT (CASE $P{instrument_type}
+					 																				  WHEN 'Credit Cards' THEN pmt.method_name = 'Westpac Credit Cards'
+																									  WHEN 'Bank Debits' THEN pmt.method_name = 'Bank Debit'
+																									  ELSE pmt.method_name IN ('Westpac Credit Cards','Bank Debit')
+																									  END))
+						  WHERE bu.id IN (SELECT id 			  			 		                                                                                    FROM base_user
+						  	          WHERE deleted = 0)
+					               ORDER BY card_expiry_date,
+					 			card_type;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="crm_account_number" class="java.lang.String"/>
+	<field name="customer_name" class="java.lang.String"/>
+	<field name="customer_origin" class="java.lang.String"/>
+	<field name="active_orders" class="java.lang.String"/>
+	<field name="payment_instrument_id" class="java.lang.Integer"/>
+	<field name="method_name" class="java.lang.String"/>
+	<field name="dd_type" class="java.lang.String"/>
+	<field name="first_name" class="java.lang.String"/>
+	<field name="card_number" class="java.lang.String"/>
+	<field name="card_expiry_date" class="java.sql.Date"/>
+	<field name="expiry_date" class="java.lang.String"/>
+	<field name="card_type" class="java.lang.String"/>
+	<field name="cardholder_name" class="java.lang.String"/>
+	<field name="bank_name" class="java.lang.String"/>
+	<field name="bank_account_number" class="java.lang.String"/>
+	<field name="routing_number" class="java.lang.String"/>
+	<field name="date_added" class="java.sql.Timestamp"/>
+	<field name="date_changed" class="java.sql.Timestamp"/>
+	<field name="salutation" class="java.lang.String"/>
+	<field name="date_last_charged" class="java.sql.Date"/>
+	<field name="last_name" class="java.lang.String"/>
+	<field name="street_number" class="java.lang.String"/>
+	<field name="street_name" class="java.lang.String"/>
+	<field name="street_type" class="java.lang.String"/>
+	<field name="suburb" class="java.lang.String"/>
+	<field name="state" class="java.lang.String"/>
+	<field name="post_code" class="java.lang.String"/>
+	<field name="account_balance" class="java.math.BigDecimal"/>
+	<field name="email" class="java.lang.String"/>
+	<field name="mobile" class="java.lang.String"/>
+	<group name="currency_symbol" footerPosition="ForceAtBottom">
+		<groupExpression><![CDATA[]]></groupExpression>
+		<groupFooter>
+			<band height="16">
+				<line>
+					<reportElement x="0" y="0" width="2545" height="1" uuid="a28ac52c-754a-4d75-9bc2-6aa8c28a1a3a"/>
+					<graphicElement>
+						<pen lineWidth="2.0"/>
+					</graphicElement>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="71" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="435" height="20" uuid="dc7faf57-30cd-48f6-8256-624fd5cf19ac"/>
+				<textElement verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Direct Debit Instruments Report]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2345" y="0" width="90" height="20" uuid="ee620154-1088-4cbf-bd93-042d86b6c633"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<text><![CDATA[Report Date :]]></text>
+			</staticText>
+			<textField pattern="MMM dd, yyyy">
+				<reportElement x="2435" y="0" width="95" height="20" uuid="92826d0c-85a5-4669-ab5d-286abb67896f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20">
+			<printWhenExpression><![CDATA[Boolean.valueOf($V{PAGE_NUMBER} > 1)]]></printWhenExpression>
+			<staticText>
+				<reportElement x="0" y="0" width="165" height="20" uuid="8b2974fb-a583-401c-ad4e-602405f76739"/>
+				<textElement>
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="47">
+			<line>
+				<reportElement x="-1" y="34" width="2546" height="1" uuid="660096f0-983d-4df7-9c9a-aa95391d6f48"/>
+				<graphicElement>
+					<pen lineWidth="2.0"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="0" y="0" width="70" height="33" uuid="ff2422d4-fb3b-4ee1-a431-783d2def8ba4"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="70" y="0" width="95" height="33" uuid="d67c600f-26d2-413b-b445-220dd66b927d"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Wookie Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="265" y="0" width="60" height="33" uuid="2b3b7aa1-cb64-4a60-9635-fb81b6856a08"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Origin]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1671" y="0" width="80" height="33" uuid="c226c4a5-5516-4af8-a499-5f19424e99ac"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Last Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1759" y="0" width="161" height="33" uuid="d7a71e5c-5e36-49cf-bd38-176835b6960d"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Address]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="325" y="0" width="100" height="33" uuid="faa67cf6-3081-4cc8-aad2-853d2083ced9"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Active Order On Account]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="425" y="0" width="80" height="33" uuid="9b7e572e-4bb6-49e0-8299-cc1e7f59e09e"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Payment Instrument ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="505" y="0" width="103" height="33" uuid="81e21b49-9f06-4e26-94ec-01b09e96ed31"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[DD Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="608" y="0" width="151" height="33" uuid="9487cbf9-7a35-4534-b732-9b2daeb3f1ad"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Card Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="165" y="0" width="100" height="33" uuid="08f4a0ff-6023-439e-9395-f7037a35f0a6"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Customer Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="829" y="0" width="70" height="33" uuid="a8c83595-dbbb-4eb1-9be0-d02bdbcfb7c7"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Card Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="899" y="0" width="99" height="33" uuid="bd7d37ba-572a-4f32-a1a1-2c6f42c9ae4c"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Card Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1590" y="0" width="81" height="33" uuid="8fb2e554-1d25-482b-a14d-3b4641f256fa"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[First Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1301" y="0" width="70" height="33" uuid="b9fdbabd-99b8-4de1-8702-cba6578c27c2"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Added]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="1371" y="0" width="70" height="33" uuid="b42fa451-6781-49b6-9686-6f00a436ac1e"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Changed]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1515" y="0" width="61" height="33" uuid="cb4b9e8c-141f-43c3-b092-9ea9750da9ae"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Salutation]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1933" y="0" width="90" height="33" uuid="76a900f9-2236-436a-96df-75a4093fb3fd"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Suburb]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="1009" y="0" width="91" height="33" uuid="fae4fb40-175e-4f29-a083-929c42e99d47"/>
+				<textElement verticalAlignment="Top">
+					<font isBold="true" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Bank Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2023" y="0" width="70" height="33" uuid="fcbd5cbb-550c-4299-9b18-97ba957083b9"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[State]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2153" y="0" width="60" height="33" uuid="cfea80da-6100-4241-9a9b-b7e180c421fe"/>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Account Balance]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2213" y="0" width="222" height="33" uuid="7182c751-8385-45a5-8364-faf613e92f33"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+					<paragraph firstLineIndent="5" spacingBefore="5"/>
+				</textElement>
+				<text><![CDATA[Email]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2436" y="0" width="94" height="33" uuid="bb996a5b-22ae-4dc9-aa1a-41c4e03ed60b"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Mobile]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1441" y="0" width="74" height="33" uuid="4eeefa15-fd25-4823-9f26-00d993dd668c"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date Last Charged]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2093" y="0" width="60" height="33" uuid="87b70687-7dbb-4b08-8183-33db4acf204c"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Post Code]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="759" y="0" width="70" height="33" isRemoveLineWhenBlank="true" uuid="c9a29395-d6bf-4332-b208-f5af93706e8f"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit Card Expiry]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="1100" y="0" width="131" height="33" uuid="e6182cd9-f783-44dd-90d4-163bf8618973"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Bank Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement stretchType="RelativeToTallestObject" x="1231" y="0" width="70" height="33" uuid="fc25ef5f-737f-4692-bac5-64c2a80765e0"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[ BSB Number]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="70" height="20" uuid="a615fca4-043f-4942-9a19-b597a14c8835"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="70" y="0" width="95" height="20" uuid="ebdc0a71-9123-4e4a-85f9-2812a5901c54"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{crm_account_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="165" y="0" width="100" height="20" uuid="2a17e96b-6fcf-4509-9923-6b02b71a4b77"/>
+				<textFieldExpression><![CDATA[$F{customer_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="265" y="0" width="60" height="20" uuid="66d42841-d4e7-4883-883d-f006b7507221"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{customer_origin}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1671" y="0" width="80" height="20" uuid="4e95f7ae-64fa-4a4c-b302-6efd7f7fb21c"/>
+				<textFieldExpression><![CDATA[$F{last_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="325" y="0" width="100" height="20" uuid="c690a73f-0625-4155-a942-947f2a03fd3e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{active_orders}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement x="425" y="0" width="80" height="20" uuid="1439b921-8145-46e8-bd91-ce66868c9ac7"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{payment_instrument_id}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="759" y="0" width="70" height="20" uuid="0c65ab31-9b63-4132-8067-8fe0263accac"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{expiry_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1590" y="0" width="81" height="20" uuid="3b27f73c-e129-4f4e-8144-3cb01636ff42"/>
+				<textFieldExpression><![CDATA[$F{first_name}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1511" y="0" width="65" height="20" uuid="5d764613-d5c7-4a11-a19e-a917fa708c01"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{salutation}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="829" y="0" width="70" height="20" uuid="6af7a33e-a06d-4d0d-97a4-433003649e0f"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{card_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="899" y="0" width="99" height="20" uuid="b4c1948d-dae2-4533-ba5d-8c0a845f8adc"/>
+				<textFieldExpression><![CDATA[$F{cardholder_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="1933" y="0" width="90" height="20" uuid="2b067752-8a5f-4e86-8f42-03a7b5489aa3"/>
+				<textFieldExpression><![CDATA[$F{suburb}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="1301" y="0" width="70" height="20" uuid="7375e914-02c9-4fc4-b51f-5dbcf8587b3e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date_added}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="1371" y="0" width="70" height="20" uuid="3c67a429-5f1e-42e0-8484-997b79414cbc"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date_changed}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="505" y="0" width="103" height="20" uuid="1b457ee7-f8a4-4c2b-8f82-3115713ad5ce"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{dd_type}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="608" y="0" width="151" height="20" uuid="ff7543a7-7215-4ac6-952a-8d8b7d288731"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{card_number}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2213" y="0" width="222" height="20" uuid="f8b9a6bc-e9e1-4100-8d91-f3371cf59dd2"/>
+				<textElement textAlignment="Center">
+					<paragraph firstLineIndent="5" spacingBefore="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{email}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2435" y="0" width="95" height="20" uuid="4b554ea7-419c-4b23-9a3a-1b3d063af0d0"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{mobile}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="yyyy-MM-dd" isBlankWhenNull="true">
+				<reportElement stretchType="RelativeToBandHeight" x="1441" y="0" width="70" height="20" uuid="80e08e84-10f7-48c3-81a5-38bc3abe6bda"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date_last_charged}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="1009" y="0" width="91" height="20" uuid="b3af63a1-c575-439b-b54e-a9b6a38ef50a"/>
+				<textFieldExpression><![CDATA[$F{bank_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2023" y="0" width="70" height="20" uuid="5fc0c600-ba85-42d2-8b1e-e97c21485e4e"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{state}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2093" y="0" width="60" height="20" uuid="a29c8dad-20ce-41e4-848a-6fc5b28225f9"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{post_code}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="2153" y="0" width="60" height="20" uuid="6fcee09e-0120-4127-b4f8-375b1c7a073e"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{account_balance}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1100" y="0" width="131" height="20" uuid="83abcfff-9c1c-44f6-99ce-e76e4f295055"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{bank_account_number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1231" y="0" width="70" height="20" uuid="ad24621e-c942-47ea-a22a-867429b47497"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{routing_number}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1759" y="0" width="161" height="20" uuid="e5aecd27-0630-4ae2-9740-4fb32f8a25b5"/>
+				<textFieldExpression><![CDATA[((null != $F{street_name} && $F{street_name}.trim() != "" )
+    || (null != $F{street_type} && $F{street_type}.trim() != "") ?
+    ((null != $F{street_number} && $F{street_number}.trim() != "" ) ?
+$F{street_number} + " " : "") :
+ ((null != $F{street_number} && $F{street_number}.trim() != "" ) ?
+$F{street_number}  : "") )+
+((null != $F{street_type} && $F{street_type}.trim() != "") ?
+((null != $F{street_name} && $F{street_name}.trim() != "" ) ?
+$F{street_name} + " " : "") : ((null != $F{street_name} && $F{street_name}.trim() != "" ) ?
+$F{street_name}  : "")  )+
+((null != $F{street_type} && $F{street_type}.trim() != "") ?
+$F{street_type}  : "")]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="23">
+			<textField>
+				<reportElement x="2435" y="0" width="95" height="20" uuid="854ca842-96fb-407a-8c71-1573d979bd98"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<paragraph rightIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

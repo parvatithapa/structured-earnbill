@@ -85,6 +85,10 @@ public class WSSecurityEntityMapper {
 
     private static WSSecured fromPlanItemWS(PlanItemWS ws) {
         ItemDTO item = new ItemBL(ws.getItemId()).getEntity();
-        return item != null ? new MappedSecuredWS(item.getEntities().iterator().next().getId(), null) : null; // entity id of priced item
+        
+		if(item!= null && item.getEntities().size() == 1){
+			return new MappedSecuredWS(item.getEntities().iterator().next().getId(), null); // entity id of plan item
+		}
+		return null;
     }
 }

@@ -30,8 +30,7 @@ import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.order.OrderLineWS
 import com.sapienter.jbilling.server.order.OrderWS
 import com.sapienter.jbilling.server.sql.api.*;
-import com.sapienter.jbilling.server.sql.api.db.*;
-import com.sapienter.jbilling.server.user.UserCodeWS;
+import com.sapienter.jbilling.server.sql.api.db.*
 import com.sapienter.jbilling.server.user.ValidatePurchaseWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.server.util.api.JbillingAPI
@@ -125,6 +124,10 @@ class jBillingSalesforceService implements JbillingAPI {
 
     public QueryParameterWS[] getParametersByQueryCode(String queryCode) {
 	return webServicesSession.getParametersByQueryCode(queryCode);
+    }
+
+    Integer[] getPagedBillingProcessGeneratedInvoices(Integer processId, Integer limit, Integer offset){
+        return webServicesSession.getPagedBillingProcessGeneratedInvoices(processId,limit,offset)
     }
 }
 

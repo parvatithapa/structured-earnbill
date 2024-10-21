@@ -59,7 +59,7 @@ import com.sapienter.jbilling.server.user.db.UserDTO;
                         " from AssetReservationDTO r where r.asset.id = :assetId " +
                         " and r.endDate>current_timestamp ")
 })
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.NONE)
 public class AssetReservationDTO implements Serializable {
 
     private int id;

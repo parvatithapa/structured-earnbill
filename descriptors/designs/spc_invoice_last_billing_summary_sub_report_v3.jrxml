@@ -12,6 +12,8 @@
 	<parameter name="BASE_DIR" class="java.lang.String"/>
 	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
 	<parameter name="invoice_user_id" class="java.lang.Integer"/>
+	<parameter name="credit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="debit_products_category_id" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT payment_received,
 (
@@ -167,9 +169,11 @@ COALESCE(
                                                         INNER JOIN jbilling_table jt
                                                         ON         jt.id = int_des.table_id
                                                         WHERE      int_des.content = 'Adjustment'
-                                                        AND        jt.name = 'order_line_type' )
-                             AND             il.amount < 0
+                                                        AND        jt.name = 'order_line_type'
+                                                        AND        it.id = $P{credit_products_category_id} )
+
                              UNION ALL
+
                              SELECT     il.amount
                              FROM       credit_note cn
                              INNER JOIN invoice i
@@ -199,7 +203,82 @@ COALESCE(
 					       AND    i.id != $P{invoice_id})
                                         -- Exclude carried lines
                              AND        il.type_id != 3
-                             AND        il.amount < 0 ) s ) AS credit,
+                             AND        il.item_id IN
+                                     (
+                                                SELECT     i.id
+                                                FROM       item i
+                                                INNER JOIN item_type_map itm
+                                                ON         itm.item_id = i.id
+                                                INNER JOIN item_type it
+                                                ON         it.id = itm.type_id
+                                                INNER JOIN order_line_type olt
+                                                ON         olt.id = it.order_line_type_id
+                                                INNER JOIN international_description int_des
+                                                ON         int_des.foreign_id = olt.id
+                                                INNER JOIN jbilling_table jt
+                                                ON         jt.id = int_des.table_id
+                                                WHERE      int_des.content = 'Adjustment'
+                                                AND        jt.name = 'order_line_type'
+                                                AND        it.id = $P{credit_products_category_id} )
+                             UNION ALL
+
+                             SELECT     (-1 * SUM(cnl.amount)) AS amount
+                             FROM       credit_note_line cnl
+                             INNER JOIN credit_note cn
+                             ON         cn.id = cnl.credit_note_id
+                             WHERE      cn.deleted = 0
+                             AND        cn.creation_invoice_id IS NULL
+                             AND        cn.credit_type = 'USER_GENERATED'
+                             AND        cn.subscription_order_id IS NULL
+                             AND        (TRIM(cn.service_id) = '' OR cn.service_id IS NULL)
+                             AND        cn.user_id = $P{invoice_user_id}
+                             AND
+                             CASE
+                                                   WHEN
+                                 (
+                                        SELECT inv_sum.last_invoice_id
+                                        FROM   invoice_summary inv_sum
+                                        WHERE  inv_sum.creation_invoice_id = $P{invoice_id} ) IS NOT NULL THEN
+                                 (
+                                        SELECT cn.create_datetime >
+                                               (
+                                                          SELECT     i.create_timestamp
+                                                          FROM       invoice i
+                                                          INNER JOIN invoice_summary inv_sum
+                                                          ON         inv_sum.last_invoice_id = i.id
+                                                          WHERE      inv_sum.creation_invoice_id = $P{invoice_id}) )
+                             ELSE true
+                             END
+                             AND        cn.create_datetime <=
+                             (
+                             SELECT create_timestamp
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+
+                             UNION ALL
+
+                             SELECT -1 * SUM(cnl.amount)
+                             FROM credit_note cn
+                             INNER JOIN credit_note_line cnl
+                             ON cnl.credit_note_id = cn.id
+                             INNER JOIN service_summary ss
+                             ON ss.credit_note_id = cn.id
+                             WHERE ss.invoice_id = $P{invoice_id}
+                             AND cn.credit_type = 'USER_GENERATED'
+                             AND cn.user_id = $P{invoice_user_id}
+                             AND cn.deleted = 0
+                             AND cn.creation_invoice_id IS NULL
+                             -- CN with no service id, order id taken care in above query
+                             AND cn.id NOT IN (
+		                     SELECT cn_inner.id
+		                     FROM credit_note cn_inner
+		                     WHERE cn_inner.user_id = $P{invoice_user_id}
+		                     AND cn_inner.creation_invoice_id IS NULL
+		                     AND cn_inner.credit_type = 'USER_GENERATED'
+		                     AND cn_inner.subscription_order_id IS NULL
+		                     AND (TRIM(cn.service_id) = '' OR cn.service_id IS NULL)
+		                     )
+                             ) s ) AS credit,
 (
       SELECT COALESCE(sum(s.amount),0)
       FROM   (
@@ -231,8 +310,8 @@ COALESCE(
                                                                                           SELECT CREATE_DATETIME::DATE
                                                                                           FROM   invoice
                                                                                           WHERE  id = $P{invoice_id})
-                                                                        AND        i.balance > 0
-                                                                        AND        i.total > 0
+                                                                        AND        i.balance >= 0
+                                                                        AND        i.total >= 0
                                                                         AND        il.item_id IN
                                                                                    (
                                                                                               SELECT     i.id
@@ -267,9 +346,11 @@ COALESCE(
                                                         ON         jt.id = int_des.table_id
                                                         WHERE      int_des.content = 'Adjustment'
                                                         AND        jt.name = 'order_line_type'
-                                                        AND        int_des.language_id = 1 )
-                             AND             il.amount >= 0
+                                                        AND        int_des.language_id = 1
+                                                        AND        it.id = $P{debit_products_category_id} )
+
                              UNION ALL
+
                              SELECT     il.amount
                              FROM       credit_note cn
                              INNER JOIN invoice i
@@ -299,24 +380,51 @@ COALESCE(
 					       AND    i.id != $P{invoice_id})
                                         -- Exclude carried lines
                              AND        il.type_id != 3
-                             AND        il.amount >= 0 ) s ) AS debit,
+                             AND        il.item_id IN
+                                     (
+                                                SELECT     i.id
+                                                FROM       item i
+                                                INNER JOIN item_type_map itm
+                                                ON         itm.item_id = i.id
+                                                INNER JOIN item_type it
+                                                ON         it.id = itm.type_id
+                                                INNER JOIN order_line_type olt
+                                                ON         olt.id = it.order_line_type_id
+                                                INNER JOIN international_description int_des
+                                                ON         int_des.foreign_id = olt.id
+                                                INNER JOIN jbilling_table jt
+                                                ON         jt.id = int_des.table_id
+                                                WHERE      int_des.content = 'Adjustment'
+                                                AND        jt.name = 'order_line_type'
+                                                AND        int_des.language_id = 1
+                                                AND        it.id = $P{debit_products_category_id} )) s ) AS debit,
 COALESCE((
 SELECT total_due
 FROM   invoice_summary
 WHERE  creation_invoice_id =
-       (
-              SELECT MAX(id)
-              FROM   invoice
-              WHERE  user_id = $P{invoice_user_id}
-              AND    id < $P{invoice_id}
-              AND    id NOT IN
-                     (
-                            SELECT id
-                            FROM   invoice
-                            WHERE  user_id = $P{invoice_user_id}
-                            AND    id IN
-                                   (
-                                          SELECT unnest(adjustmentinvoices($P{invoice_user_id}))) ) ) ),0) AS amount_of_last_statement
+       ( CASE WHEN (select value from preference where type_id = 103 and foreign_id = (select entity_id from base_user where id = $P{invoice_user_id})) = '0' THEN
+              (SELECT MAX(id)
+                 FROM invoice
+                WHERE user_id = $P{invoice_user_id}
+                  AND id < $P{invoice_id}
+                  AND id NOT IN
+                     ( SELECT id
+                         FROM invoice
+                        WHERE user_id = $P{invoice_user_id}
+                          AND id IN (SELECT unnest(adjustmentinvoices($P{invoice_user_id})))
+                     )
+              )
+         ELSE (SELECT max(i.id)
+                 FROM invoice i
+                WHERE i.user_id = $P{invoice_user_id}
+                  AND i.is_review = 0
+                  AND i.deleted = 0
+                  AND i.billing_process_id is not null
+                  AND i.id < $P{invoice_id}
+               )
+          END
+       ) ),0) AS amount_of_last_statement,
+inv_sum.total_due
 FROM   invoice_summary inv_sum
 WHERE  creation_invoice_id = $P{invoice_id};]]>
 	</queryString>
@@ -329,10 +437,11 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 	<field name="account_charges_amount" class="java.math.BigDecimal"/>
 	<field name="credit" class="java.math.BigDecimal"/>
 	<field name="debit" class="java.math.BigDecimal"/>
+	<field name="total_due" class="java.math.BigDecimal"/>
 	<title>
 		<band height="237" splitType="Stretch">
 			<staticText>
-				<reportElement x="40" y="2" width="135" height="15" uuid="66ab05c1-5263-4a61-93e1-ec3ca9c49401"/>
+				<reportElement x="59" y="2" width="135" height="15" uuid="66ab05c1-5263-4a61-93e1-ec3ca9c49401"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
@@ -353,14 +462,14 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{payment_received}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="40" y="18" width="135" height="15" uuid="ca12820a-5c1a-46d5-82d5-b402690f28df"/>
+				<reportElement x="59" y="18" width="135" height="15" uuid="ca12820a-5c1a-46d5-82d5-b402690f28df"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<text><![CDATA[Received]]></text>
 			</staticText>
 			<staticText>
-				<reportElement positionType="Float" x="40" y="117" width="58" height="15" forecolor="#D6036C" uuid="af151852-90e7-49b5-af72-5d28d15a4b12"/>
+				<reportElement positionType="Float" x="59" y="117" width="58" height="15" forecolor="#D6036C" uuid="af151852-90e7-49b5-af72-5d28d15a4b12"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
@@ -374,7 +483,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<textFieldExpression><![CDATA[$P{currency_symbol}+''+ $F{account_charges_amount}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement positionType="Float" x="40" y="142" width="135" height="15" uuid="847dae2b-98d9-42bf-8d9c-aeed2c5c29f3"/>
+				<reportElement positionType="Float" x="59" y="142" width="135" height="15" uuid="847dae2b-98d9-42bf-8d9c-aeed2c5c29f3"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
@@ -394,7 +503,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Total New Charge (inc. GST)]]></text>
+				<text><![CDATA[Total New Charges (inc. GST)]]></text>
 			</staticText>
 			<textField isBlankWhenNull="true">
 				<reportElement positionType="Float" x="193" y="204" width="100" height="15" uuid="3a60e8bb-49e0-4c48-84f0-be1aa7f8aabb"/>
@@ -418,7 +527,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<textFieldExpression><![CDATA[$P{currency_symbol}+''+$F{gst_in_charges}.setScale(2, BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<subreport>
-				<reportElement positionType="Float" x="40" y="157" width="253" height="21" isRemoveLineWhenBlank="true" uuid="6f4bb365-e480-45f8-8f48-0fbf50df5ec9"/>
+				<reportElement positionType="Float" x="59" y="157" width="232" height="21" isRemoveLineWhenBlank="true" uuid="6f4bb365-e480-45f8-8f48-0fbf50df5ec9"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -438,17 +547,18 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_last_billing_summary_sub_report2_v3.jasper"]]></subreportExpression>
 			</subreport>
 			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
-				<reportElement x="40" y="34" width="135" height="15" isRemoveLineWhenBlank="true" uuid="548208d5-5137-4446-9c75-ef487f8f203e">
-					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) != 0]]></printWhenExpression>
-				</reportElement>
+				<reportElement x="59" y="34" width="135" height="15" isRemoveLineWhenBlank="true" uuid="548208d5-5137-4446-9c75-ef487f8f203e"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) > 0 ? "Overdue Balance" : "Carried Forward"]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{total_due} > 0 && $F{total_due} > $F{total_new_charge}.setScale(2, BigDecimal.ROUND_HALF_UP) ?
+"Overdue Balance" :
+($F{amount_of_last_statement}.add($F{payment_received}) != 0 ? "Carried Balance" : "")]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="40" y="50" width="253" height="15" isRemoveLineWhenBlank="true" uuid="efe0607e-ad40-419c-86a1-41fde3f1045e">
-					<printWhenExpression><![CDATA[$F{amount_of_last_statement}.add($F{payment_received}) > 0]]></printWhenExpression>
+				<reportElement x="59" y="50" width="234" height="15" isRemoveLineWhenBlank="true" uuid="efe0607e-ad40-419c-86a1-41fde3f1045e">
+					<printWhenExpression><![CDATA[$F{total_due} > 0 && $F{total_due}.setScale(2, BigDecimal.ROUND_HALF_UP) > $F{total_new_charge}.setScale(2, BigDecimal.ROUND_HALF_UP) ?
+!($F{total_due}.setScale(2, BigDecimal.ROUND_HALF_UP).add($F{credit}.setScale(2, BigDecimal.ROUND_HALF_UP)) <= 0) : false]]></printWhenExpression>
 				</reportElement>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true" isItalic="true"/>
@@ -456,7 +566,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<text><![CDATA[Please pay the overdue balance immediately]]></text>
 			</staticText>
 			<subreport>
-				<reportElement x="39" y="90" width="253" height="5" isRemoveLineWhenBlank="true" uuid="ed5d7146-f65f-4c0b-94cc-6c442748773f">
+				<reportElement x="59" y="90" width="232" height="5" isRemoveLineWhenBlank="true" uuid="ed5d7146-f65f-4c0b-94cc-6c442748773f">
 					<printWhenExpression><![CDATA[$F{credit} != 0]]></printWhenExpression>
 				</reportElement>
 				<subreportParameter name="currency_symbol">
@@ -469,7 +579,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_last_billing_summary_sub_report_adjustments_credit_v3.jasper"]]></subreportExpression>
 			</subreport>
 			<staticText>
-				<reportElement positionType="Float" x="40" y="75" width="58" height="13" isRemoveLineWhenBlank="true" forecolor="#D6036C" uuid="e7c66374-7fa2-4d40-90a6-8a595b52c4ea">
+				<reportElement positionType="Float" x="59" y="75" width="58" height="13" isRemoveLineWhenBlank="true" forecolor="#D6036C" uuid="e7c66374-7fa2-4d40-90a6-8a595b52c4ea">
 					<printWhenExpression><![CDATA[$F{credit} != 0 || $F{debit} != 0]]></printWhenExpression>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
@@ -478,7 +588,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<text><![CDATA[Adjustments]]></text>
 			</staticText>
 			<subreport>
-				<reportElement positionType="Float" x="39" y="96" width="253" height="5" isRemoveLineWhenBlank="true" uuid="dd3c16a9-e38d-4c99-9e04-d346493a63bd">
+				<reportElement positionType="Float" x="59" y="96" width="232" height="5" isRemoveLineWhenBlank="true" uuid="dd3c16a9-e38d-4c99-9e04-d346493a63bd">
 					<printWhenExpression><![CDATA[$F{debit} != 0]]></printWhenExpression>
 				</reportElement>
 				<subreportParameter name="currency_symbol">
@@ -491,7 +601,7 @@ WHERE  creation_invoice_id = $P{invoice_id};]]>
 				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_last_billing_summary_sub_report_adjustments_debit_v3.jasper"]]></subreportExpression>
 			</subreport>
 			<staticText>
-				<reportElement positionType="Float" x="40" y="102" width="58" height="13" isRemoveLineWhenBlank="true" forecolor="#D6036C" uuid="63b51092-03c9-42c0-bc77-3e3b237f7b1c">
+				<reportElement positionType="Float" x="59" y="102" width="58" height="13" isRemoveLineWhenBlank="true" forecolor="#D6036C" uuid="63b51092-03c9-42c0-bc77-3e3b237f7b1c">
 					<printWhenExpression><![CDATA[$F{credit} != 0 || $F{debit} != 0]]></printWhenExpression>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">

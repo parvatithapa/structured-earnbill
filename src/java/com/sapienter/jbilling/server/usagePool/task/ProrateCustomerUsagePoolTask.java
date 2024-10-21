@@ -244,7 +244,8 @@ public class ProrateCustomerUsagePoolTask extends PluggableTask implements IInte
 																													  plan,
 																													  order.getActiveUntil(),
 																													  order.getCreateDate(),
-																													  order);
+																													  order,
+																													  customer.getNextInvoiceDate());
 
 						Date endDate = customerUsagePoolBL.getCycleEndDateForPeriod(customerUsagePool.getUsagePool().getCyclePeriodUnit(),
 																					customerUsagePool.getUsagePool().getCyclePeriodValue(),

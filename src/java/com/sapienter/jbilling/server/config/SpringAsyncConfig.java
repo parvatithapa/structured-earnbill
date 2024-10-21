@@ -7,8 +7,10 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -17,12 +19,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableAsync
 public class SpringAsyncConfig implements AsyncConfigurer {
 
+    @Autowired
+    private Environment environment;
+
     @Override
     @Bean(name = "asyncTaskExecutor")
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setMaxPoolSize(10);
-        executor.setCorePoolSize(4);
+        executor.setCorePoolSize(environment.getProperty("async.task.executor.core.pool.size", Integer.class, 4));
+        executor.setMaxPoolSize(environment.getProperty("async.task.executor.max.pool.size", Integer.class, 10));
         executor.setThreadNamePrefix("Async-Worker-Thread-");
         executor.initialize();
         executor.afterPropertiesSet();

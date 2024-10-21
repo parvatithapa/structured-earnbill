@@ -374,4 +374,14 @@ public class PlanDAS extends AbstractDAS<PlanDTO> {
         List<Integer> result = query.list();
         return CollectionUtils.isNotEmpty(result) ? result.get(0) : null;
     }
+
+    public PlanDTO findByPlanNumber(String planNumber, Integer entityId) {
+        Criteria criteria = getSession().createCriteria(PlanDTO.class)
+                .createAlias("item", "item")
+                .createAlias("item.entities", "entities")
+                .add(Restrictions.eq("entities.id", entityId))
+                .add(Restrictions.eq("item.deleted", 0))
+                .add(Restrictions.eq("item.internalNumber", planNumber));
+        return (criteria.uniqueResult() == null ? null : (PlanDTO) criteria.uniqueResult());
+    }
 }

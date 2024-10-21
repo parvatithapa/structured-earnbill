@@ -29,6 +29,7 @@ import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.creditnote.CreditNoteWS;
 import com.sapienter.jbilling.server.entity.InvoiceLineDTO;
+import com.sapienter.jbilling.server.integration.common.utility.DateUtility;
 import com.sapienter.jbilling.server.invoiceSummary.InvoiceSummaryScenarioBuilder;
 import com.sapienter.jbilling.server.item.ItemDTOEx;
 import com.sapienter.jbilling.server.item.ItemTypeWS;
@@ -40,6 +41,9 @@ import com.sapienter.jbilling.server.order.OrderChangeWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderPeriodWS;
 import com.sapienter.jbilling.server.order.OrderWS;
+import com.sapienter.jbilling.server.pluggableTask.FullCreativeCustomInvoiceFieldsTokenTask;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
+import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.PricingTestHelper;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
@@ -52,6 +56,8 @@ import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.user.UserWS;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
+import com.sapienter.jbilling.server.util.PreferenceWS;
+import com.sapienter.jbilling.server.util.Util;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.server.util.api.JbillingAPIFactory;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
@@ -70,12 +76,16 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -110,6 +120,8 @@ public class WSTest {
     private static final int MONTHLY_ORDER_PERIOD = 2;
     private EnvironmentHelper envHelper;
     private TestBuilder testBuilder;
+    private Map<String, String> parameters = new HashMap<>();
+    private Integer processingOrder = 888888;
 
     private static void sortInvoiceLines(InvoiceWS invoice) {
         Arrays.sort(invoice.getInvoiceLines(),
@@ -138,6 +150,9 @@ public class WSTest {
 
           //Create usage products
             buildAndPersistFlatProduct(envBuilder, api, SUBSCRIPTION_PROD_02, false, envBuilder.idForCode(TEST_CATEGORY), "0", true);
+            setITGInvoiceNotification(api, "0");
+            deleteFullCreativeCustomInvoiceFieldsTokenPlugin(api);
+
         }).test((testEnv, testEnvBuilder) -> {
             assertNotNull("Account Creation Failed", testEnvBuilder.idForCode(TEST_ACCOUNT));
             assertNotNull("Category Creation Failed", testEnvBuilder.idForCode(TEST_CATEGORY));
@@ -145,6 +160,49 @@ public class WSTest {
             assertNotNull("Product Creation Failed", testEnvBuilder.idForCode(SUBSCRIPTION_PROD_02));
         });
 	}
+
+	  @AfterClass
+    public void cleanup() {
+        setITGInvoiceNotification(api, "1");
+        configureFullCreativeCustomInvoiceFieldsTokenPlugin();
+    }
+
+    private void deleteFullCreativeCustomInvoiceFieldsTokenPlugin(JbillingAPI api) {
+        PluggableTaskWS[] pluginsWS = api.getPluginsWS(1, FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+        if(ArrayUtils.isNotEmpty(pluginsWS) && pluginsWS.length >= 1) {
+            PluggableTaskWS fullCreativeCustomInvoiceFieldsTokenTask = pluginsWS[0];
+            parameters = fullCreativeCustomInvoiceFieldsTokenTask.getParameters();
+            processingOrder = fullCreativeCustomInvoiceFieldsTokenTask.getProcessingOrder();
+            api.deletePlugin(fullCreativeCustomInvoiceFieldsTokenTask.getId());
+        }
+    }
+
+    private void setITGInvoiceNotification(JbillingAPI api, String value) {
+        PreferenceWS preference = api.getPreference(Constants.PREFERENCE_ITG_INVOICE_NOTIFICATION);
+        preference.setValue(value);
+        api.updatePreference(preference);
+    }
+
+    private void configureFullCreativeCustomInvoiceFieldsTokenPlugin() {
+        PluggableTaskWS[] pluginsWS = api.getPluginsWS(1, FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+        if(ArrayUtils.isEmpty(pluginsWS)) {
+            PluggableTaskWS fullCreativeCustomInvoiceFieldsTokenTask = new PluggableTaskWS();
+            fullCreativeCustomInvoiceFieldsTokenTask.setProcessingOrder(processingOrder);
+            PluggableTaskTypeWS fullCreativeCustomInvoiceFieldsTokenTaskType = api.getPluginTypeWSByClassName(FullCreativeCustomInvoiceFieldsTokenTask.class.getName());
+            fullCreativeCustomInvoiceFieldsTokenTask.setTypeId(fullCreativeCustomInvoiceFieldsTokenTaskType.getId());
+            Hashtable<String, String> newParams = new Hashtable<>();
+            String date = Util.formatDate(new Date(), "yyyyMMdd");
+            if(parameters.isEmpty()) {
+                newParams.put("new_invoice_cut_over_date", date);
+            } else {
+                for (Map.Entry<String, String> e : parameters.entrySet()) {
+                    newParams.put(e.getKey(), StringUtils.isNotBlank(e.getValue()) ? e.getValue() : date);
+                }
+            }
+            fullCreativeCustomInvoiceFieldsTokenTask.setParameters(newParams);
+            api.createPlugin(fullCreativeCustomInvoiceFieldsTokenTask);
+        }
+    }
 
     @Test(enabled = false)
     public void test001Get() {
@@ -1016,6 +1074,7 @@ public class WSTest {
         invoiceLineDTO.setPrice("4500");
         invoiceLineDTO.setQuantity("1");
         invoiceLineDTO.setSourceUserId(userId);
+        invoiceLineDTO.setTypeId(3);
 
         invoiceWS.setInvoiceLines(new InvoiceLineDTO[] {invoiceLineDTO});
 
@@ -1086,9 +1145,8 @@ public class WSTest {
         line.setDescription("Order line");
         line.setItemId(item.getId());
         line.setQuantity(1);
-        String itemPrice = item.getDefaultPrices().get(CommonConstants.EPOCH_DATE).getAttributes().get("1");
-        line.setPrice(itemPrice);
-        line.setAmount(itemPrice);
+        line.setPrice(item.getPrice());
+        line.setAmount(item.getPrice());
         line.setUseItem(true);
 
         order.setOrderLines(new OrderLineWS[] { line });
@@ -1169,9 +1227,8 @@ public class WSTest {
         line.setDescription("Order line");
         line.setItemId(item.getId());
         line.setQuantity(1);
-        String itemPrice = item.getDefaultPrices().get(CommonConstants.EPOCH_DATE).getAttributes().get("1");
-        line.setPrice(itemPrice);
-        line.setAmount(itemPrice);
+        line.setPrice(item.getPrice());
+        line.setAmount(item.getPrice());
         line.setUseItem(true);
 
         order.setOrderLines(new OrderLineWS[] { line });
@@ -1381,6 +1438,7 @@ public class WSTest {
 		invoiceLineDTO.setPrice("20");
 		invoiceLineDTO.setQuantity("1");
 		invoiceLineDTO.setSourceUserId(userId);
+		invoiceLineDTO.setTypeId(3);
 
 		invoice.setInvoiceLines(new InvoiceLineDTO[]{invoiceLineDTO});
 		return invoice;

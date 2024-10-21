@@ -1,3 +1,3 @@
-id,name,surcharge,initial_increment,subsequent_increment,charge,tariff_code,route_id
-1,13/1300 Call,0.39,60,60,1,NBN:1300,JUR:65
-2,13/1300 Call,0.59,60,60,1,NBN:F2M,10506
+id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,tariff_code,route_id
+1,13/1300 Call,0.39,60,60,1,0,0,0,0,NBN:1300,JUR:65
+2,13/1300 Call,0.59,60,60,1,0,0,0,0,NBN:F2M,10506

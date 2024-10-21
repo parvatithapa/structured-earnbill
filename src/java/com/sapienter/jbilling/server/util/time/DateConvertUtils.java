@@ -16,10 +16,16 @@
 
 package com.sapienter.jbilling.server.util.time;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class DateConvertUtils {
 
@@ -51,5 +57,24 @@ public class DateConvertUtils {
 
     public static java.util.Date getNow() {
         return asUtilDate(LocalDate.now());
+    }
+
+    public static ZonedDateTime getZonedDateTime(String dateInString, String dateFormat,
+            String homeTimeZoneId, String targetTimeZoneId) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(dateFormat).withZone(ZoneId.of(homeTimeZoneId));
+        ZonedDateTime parse = ZonedDateTime.parse(dateInString, fmt);
+        return parse.withZoneSameInstant(ZoneId.of(targetTimeZoneId));
+    }
+
+    public static ZonedDateTime getZonedDateTime(Date date, String homeTimeZoneId, String targetTimeZoneId) {
+        ZonedDateTime zdt = ZonedDateTime.ofInstant(date.toInstant(), ZoneId.of(homeTimeZoneId));
+        return zdt.withZoneSameInstant(ZoneId.of(targetTimeZoneId));
+    }
+
+    public static Date getUtilDateWithZoneInfo(ZonedDateTime zdt, String toZone, String dateFormat) throws ParseException {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
+        DateFormat format = new SimpleDateFormat(dateFormat);
+        ZonedDateTime utcZDT = zdt.withZoneSameInstant(ZoneId.of(toZone));
+        return format.parse(formatter.format(utcZDT));
     }
 }

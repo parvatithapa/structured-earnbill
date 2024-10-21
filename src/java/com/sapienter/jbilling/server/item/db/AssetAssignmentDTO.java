@@ -38,7 +38,7 @@ import java.util.Date;
 		pkColumnValue = "asset_assignment",
 		allocationSize = 1
 )
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.NONE)
 public class AssetAssignmentDTO implements Serializable{
 
 	private int id;

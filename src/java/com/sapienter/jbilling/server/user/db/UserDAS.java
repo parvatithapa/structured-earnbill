@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -49,7 +48,6 @@ import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
-import org.hibernate.NonUniqueResultException;
 
 public class UserDAS extends AbstractDAS<UserDTO> {
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(UserDAS.class));
@@ -181,6 +179,18 @@ public class UserDAS extends AbstractDAS<UserDTO> {
             + "                                                                             AND account_info_type_id = mfg.id)) "
             + "                       ORDER BY mfn.name) "
             + "  ORDER BY mfn.name";
+
+    private static final String UPDATE_USER_NAME_AND_STATUS_BY_ID = "UPDATE base_user bu " +
+                                                                    "SET user_name = :newUserName, status_id = :statusId " +
+                                                                    "WHERE bu.id = :userId " +
+                                                                    "AND bu.user_name = :userName";
+
+    private static final String DELETE_USER_PERMISSION = " DELETE FROM permission_user pmu " +
+                                                         " WHERE pmu.user_id = :userId " ;
+
+    private static final String FIND_NAME_BY_ID = "SELECT user_name FROM base_user WHERE id=:userId";
+    private static final String FIND_CURRENCY_BY_ID = "SELECT currency_id FROM base_user WHERE id=:userId";
+
 	public List<Integer> findChildList(Integer userId) {
 		Query query = getSession().createQuery(FIND_CHILD_LIST_SQL);
 		query.setParameter("parentId", userId);
@@ -850,8 +860,8 @@ public class UserDAS extends AbstractDAS<UserDTO> {
         return (UserDTO) criteria.uniqueResult();
     }
 
-    public void evict(UserDTO user) {
-        getSession().evict(user);
+    public void refresh(UserDTO user) {
+        getSession().refresh(user);
     }
 
     @Deprecated
@@ -897,32 +907,47 @@ public class UserDAS extends AbstractDAS<UserDTO> {
         return sqlQuery.scroll(ScrollMode.FORWARD_ONLY);
     }
 
-    public List<Integer> getUserIdByCustomerDetails(String customerName, String customerPhonNumber, String customerPostalCode ) {
+    public Integer getUserIdByCustomerDetails(String customerName, String customerPhonNumber, String customerPostalCode ) {
         SQLQuery query = getSession().createSQLQuery(FIND_USER_ID_BY_CONTACT_DETAILS);
         query.setParameter("postalCode", customerPostalCode);
         query.setParameter("customerName", customerName);
         query.setParameter("phoneNumber", customerPhonNumber);
-        return(List<Integer>) query.list();
+        return (Integer) query.uniqueResult();
     }
 
-    public Integer findByUserNameThroughoutSystem(String userName) {
-        if( userName.isEmpty() ) {
-            return null;
-        }
-        Integer entityId = null;
-        try {
-            Criteria searchCriteria = getSession().createCriteria(UserDTO.class)
-                    .add(Restrictions.eq("userName", userName))
-                    .add(Restrictions.eq("deleted", 0))
-                    .setProjection(Projections.property("company.id"));
-             entityId =(Integer) searchCriteria.uniqueResult();
-        }catch(NonUniqueResultException e){
-            LOG.error("Error : "+e);
-            throw new SessionInternalError(new String[]{"Contact your system administrator for assistance"});
+    public List<UserDTO> getAllUsers(Integer entityId) {
+        Criteria criteria = getSession().createCriteria(UserDTO.class)
+            .add(Restrictions.eq("company.id", entityId))
+            .createAlias("roles", "r")
+            .add(Restrictions.ne("r.roleTypeId", CommonConstants.TYPE_CUSTOMER))
+            .addOrder(Order.asc("userName"));
+        return criteria.list();
+    }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return entityId;
+    public void updateUserNameAndStatusById(Integer userId, String userName, Integer statusId){
+        Query query = getSession().createSQLQuery(UPDATE_USER_NAME_AND_STATUS_BY_ID);
+        query.setParameter("newUserName", String.format("Refunded(%s) %s", userId, userName));
+        query.setParameter("statusId", statusId);
+        query.setParameter("userId", userId);
+        query.setParameter("userName", userName);
+        query.executeUpdate();
+    }
+
+    public void removeUserPermission(Integer userId){
+            Query query = getSession().createSQLQuery(DELETE_USER_PERMISSION);
+            query.setParameter("userId", userId);
+            query.executeUpdate();
+    }
+
+    public String getUserNameById(Integer userId) {
+        SQLQuery query  = getSession().createSQLQuery(FIND_NAME_BY_ID);
+        query.setParameter("userId", userId);
+        return (String) query.uniqueResult();
+    }
+
+    public Integer getCurrencyByUserId(Integer userId) {
+        SQLQuery query  = getSession().createSQLQuery(FIND_CURRENCY_BY_ID);
+        query.setParameter("userId", userId);
+        return (Integer) query.uniqueResult();
     }
 }

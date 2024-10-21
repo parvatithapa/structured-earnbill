@@ -15,19 +15,15 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
-import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.sapienter.jbilling.server.mediation.MediationMRIMService;
 import com.sapienter.jbilling.server.mediation.converter.common.processor.MediationStepType;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.IMediationStep;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.JMRMediationCdrResolver;
@@ -81,19 +77,16 @@ public class SapphireMediationConfiguration {
     }
 
     @Bean
-    public JMRMediationCdrResolver cdrResolver(SapphireMediationHelperService service,
-            @Qualifier("dataSource") DataSource dataSource,
-            @Qualifier("jBillingJdbcTemplate") JdbcTemplate jdbcTemplate,
-            @Qualifier("mediationMRIMServiceImpl") MediationMRIMService  mrimService) {
+    public JMRMediationCdrResolver cdrResolver(SapphireMediationHelperService service) {
         JMRMediationCdrResolver cdrResolver = new JMRMediationCdrResolver();
         cdrResolver.clearSteps();
         Map<MediationStepType, IMediationStep<MediationStepResult>> steps = new LinkedHashMap<>();
         steps.put(USER_ID_AND_CURRENCY, new UserResolutionStep());
-        steps.put(EVENT_DATE, new EventDateResolutionStep(SapphireMediationConstants.DATE_FORMAT, service));
-        steps.put(QUANTITY, new QuantityResolutionStep(mrimService));
+        steps.put(EVENT_DATE, new EventDateResolutionStep(SapphireMediationConstants.DATE_FORMAT));
+        steps.put(QUANTITY, new QuantityResolutionStep());
         steps.put(ITEM_RESOLUTION, new ProductResolutionStep(service));
         steps.put(DESCRIPTION, new DescriptionResolutionStep());
-        steps.put(PRICING, new JMRPricingResolutionStep(service, dataSource, jdbcTemplate));
+        steps.put(PRICING, new JMRPricingResolutionStep(service));
         cdrResolver.setSteps(steps);
         return cdrResolver;
     }

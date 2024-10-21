@@ -92,7 +92,7 @@
 
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="customerEnrollment" action="list" total="${customerEnrollments?.totalCount ?: 0}" update="column1" params="[partial:true]"/>
     </div>
 </div>

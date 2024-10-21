@@ -23,6 +23,9 @@
             width: 50%;
             float: left;
         }
+        html[dir="rtl"] .column{
+            float: right;
+        }
         </style>
     </head>
 
@@ -63,7 +66,7 @@
                                     </g:isNotRoot>
                                 </div>
 
-                                <div class="form-columns" style="padding-left: 38%">
+                                <div id="price-box-sub-div" class="form-columns">
                                     <div class="row">
                                         <g:radio class="rb" id="report.status.processed" name="searchStatus" value="processed" checked="${FileConstants.REPORT_SEARCH_STATUS_PROCESSED.equals(searchStatus)}"/>
                                         <label class="rb" for="report.status.processed"><g:message code="report.search.status.processed"/></label>
@@ -134,7 +137,7 @@
                             </div>
                         </div>
 
-                        <div class="form-columns" style="padding-left: 350px">
+                        <div id="report-filters-submit" class="form-columns">
                             <g:submitButton name="filter" class="submit">Filter</g:submitButton>
                         </div>
                     </div>

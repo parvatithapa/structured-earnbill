@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import com.sapienter.jbilling.common.ErrorDetails;
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.invoice.InvoiceWS
 import com.sapienter.jbilling.server.payment.PaymentWS;
 import com.sapienter.jbilling.server.process.AgeingWS;
@@ -63,8 +62,8 @@ class LegacyResource {
             Integer invoiceId = webServicesSession.saveLegacyInvoice(invoice);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(invoiceId)).build())
             .entity(webServicesSession.getInvoiceWS(invoiceId)).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 
@@ -86,8 +85,8 @@ class LegacyResource {
                     Integer paymentId = webServicesSession.saveLegacyPayment(payment);
                     return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(paymentId)).build())
                     .entity(webServicesSession.getPayment(paymentId)).build();
-                } catch (SessionInternalError sie) {
-                    return RestErrorHandler.mapErrorToHttpResponse(sie);
+                } catch (Exception exp) {
+                    return RestErrorHandler.mapErrorToHttpResponse(exp);
                 }
             }
 

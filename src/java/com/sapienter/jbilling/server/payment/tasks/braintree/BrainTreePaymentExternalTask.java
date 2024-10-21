@@ -7,7 +7,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -68,9 +67,7 @@ public class BrainTreePaymentExternalTask extends PaymentTaskWithTimeout impleme
 
     public static final ParameterDescription FC_WEB_SERVICE_URL =
             new ParameterDescription("FC Web Service URL", true, ParameterDescription.Type.STR);
-
-    private static final String AUTHORIZATION_ID_FOR_CAPTURE_PAYMENT = "Authorization Id";
-
+        
 
     public String getBusinessId() throws PluggableTaskException {
         return ensureGetParameter(BUSINESS_ID.getName());
@@ -204,7 +201,6 @@ public class BrainTreePaymentExternalTask extends PaymentTaskWithTimeout impleme
         
         paymentAuthDTO.setCardCode(brainTreeResult.getCardNumber());
         paymentAuthDTO.setCode2(brainTreeResult.getCardType());
-        paymentAuthDTO.setCode3(brainTreeResult.getPaymentType());
 
         String errorCode = brainTreeResult.getErrorCode();
         String errorShortMsg=brainTreeResult.getErrorMessage();
@@ -419,14 +415,7 @@ public class BrainTreePaymentExternalTask extends PaymentTaskWithTimeout impleme
             return doRefund(payment).shouldCallOtherProcessors();
         }
 
-        String authorizationId = getAuthorizationIdForCapturePayment(payment);
-        if(StringUtils.isNotBlank(authorizationId)) {
-            PaymentAuthorizationDTO auth = new PaymentAuthorizationDTO();
-            auth.setTransactionId(authorizationId);
-            return doCapture(payment, auth).shouldCallOtherProcessors();
-        }
-
-        if(isCreditCardStored(payment)) {
+    	if(isCreditCardStored(payment)) {
             return doPaymentWithStoredCreditCard(payment, paymentAction)
                     .shouldCallOtherProcessors();
         }
@@ -434,13 +423,6 @@ public class BrainTreePaymentExternalTask extends PaymentTaskWithTimeout impleme
         return doPaymentWithoutStoredCreditCard(payment, paymentAction)
                 .shouldCallOtherProcessors();
         
-    }
-
-    private String getAuthorizationIdForCapturePayment(PaymentDTOEx payment) {
-        Optional<MetaFieldValue> authMetaField = payment.getMetaFields().stream()
-                .filter(mfv -> mfv.getField().getName().equalsIgnoreCase(AUTHORIZATION_ID_FOR_CAPTURE_PAYMENT))
-                .findAny();
-        return authMetaField.isPresent() ? (String) authMetaField.get().getValue() : null;
     }
 
     /*

@@ -76,7 +76,7 @@ public class WSTest extends ApiTestCase {
 				existing.getAccountTypes().size(), 1);
 
 		PaymentMethodTypeWS[] paymentMethodTypes = api.getAllPaymentMethodTypes();
-		Assert.assertEquals("Count of payment : 17 ",Arrays.asList(paymentMethodTypes).size(), 17);
+		Assert.assertEquals("Count of payment : 18 ",Arrays.asList(paymentMethodTypes).size(), 18);
 		//cleanup
 		boolean deleteAccountType = api.deleteAccountType(newAccountTypeId);
 		Assert.assertEquals(deleteAccountType, true);

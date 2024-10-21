@@ -16,6 +16,7 @@
 package com.sapienter.jbilling.server.item.db;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,8 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.SortComparator;
 import org.hibernate.annotations.SortNatural;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.sapienter.jbilling.common.CommonConstants;
@@ -416,11 +419,13 @@ public class ItemDTO extends AbstractDescription implements MetaContent, Exporta
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     @Transient
     public PriceModelDTO getPrice(Date today, Integer entityId) {
         EntityItemPrice global = null;
         EntityItemPrice specific = null;
-
+        long startTime = System.currentTimeMillis();
         for (EntityItemPrice itemPrice : getDefaultPrices()) {
             if (itemPrice.getEntity() == null || entityId == null) {
                 global = itemPrice;
@@ -430,14 +435,23 @@ public class ItemDTO extends AbstractDescription implements MetaContent, Exporta
                 }
             }
         }
-
+        logger.debug("getPrice for loop took {} in miliseconds", (System.currentTimeMillis() - startTime));
         if (specific != null) {
-            return PriceModelBL.getPriceForDate(specific.getPrices(), today);
+            startTime = System.currentTimeMillis();
+            PriceModelDTO specificPriceModelDTO = PriceModelBL.getPriceForDate(specific.getPrices(), today);
+            logger.debug("getPrice specificPriceModelDTO took {} in miliseconds", (System.currentTimeMillis() - startTime));
+            return specificPriceModelDTO;
         } else if (global != null) {
-            return PriceModelBL.getPriceForDate(global.getPrices(), today);
+            startTime = System.currentTimeMillis();
+            PriceModelDTO globalPriceModelDTO = PriceModelBL.getPriceForDate(global.getPrices(), today);
+            logger.debug("getPrice globalPriceModelDTO took {} in miliseconds", (System.currentTimeMillis() - startTime));
+            return globalPriceModelDTO;
         } else {
-            return PriceModelBL.getDTO(new PriceModelWS(PriceModelStrategy.ZERO.name(), BigDecimal.ZERO,
+            startTime = System.currentTimeMillis();
+            PriceModelDTO zeroPriceModelDTO = PriceModelBL.getDTO(new PriceModelWS(PriceModelStrategy.ZERO.name(), BigDecimal.ZERO,
                     getCurrencyId() != null ? getCurrencyId() : getEntity().getCurrencyId()));
+            logger.debug("getPrice zeroPriceModelDTO took {} in miliseconds", (System.currentTimeMillis() - startTime));
+            return zeroPriceModelDTO;
         }
     }
 
@@ -1199,14 +1213,6 @@ public class ItemDTO extends AbstractDescription implements MetaContent, Exporta
         }
         PriceModelStrategy type = priceModel.getType();
         return EXCULDED_AMOUNT_CALCULATION_STRATEGY_LIST.contains(type);
-    }
-
-    @Transient
-    public PlanDTO getPlan() {
-        if(hasPlans()) {
-            return plans.iterator().next();
-        }
-        return null;
     }
 
     @Transient

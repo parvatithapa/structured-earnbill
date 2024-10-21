@@ -15,10 +15,16 @@
  */
 package com.sapienter.jbilling.server.notification.db;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.sapienter.jbilling.common.CollectionUtil;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.hibernate.Criteria;
+import org.hibernate.Query;
 import org.hibernate.criterion.Restrictions;
 
 import com.sapienter.jbilling.server.user.db.CompanyDAS;
@@ -26,6 +32,7 @@ import com.sapienter.jbilling.server.user.db.CompanyDTO;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
 import com.sapienter.jbilling.server.util.db.LanguageDAS;
 import com.sapienter.jbilling.server.util.db.LanguageDTO;
+import org.hibernate.transform.AliasToEntityMapResultTransformer;
 
 /**
  * 
@@ -108,4 +115,22 @@ public class NotificationMessageDAS extends AbstractDAS<NotificationMessageDTO> 
 
     }
 
+    public String getNotificationAlertMessage(String tableName, String planNo,String trigger) {
+        String sql = "SELECT * FROM " + tableName + " WHERE jb_planno=:planno";
+        Query query = getSession().createSQLQuery(sql);
+        query.setParameter("planno", planNo);
+        query.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
+        Map<String, Object> aliasToValueMap = (Map<String, Object>) query.uniqueResult();
+
+        if (MapUtils.isEmpty(aliasToValueMap))
+            return null;
+        String percentage = "";
+        for (Map.Entry<String, Object> map : aliasToValueMap.entrySet()) {
+            if (map.getValue().equals(trigger)) {
+                percentage = map.getKey();
+            }
+        }
+        percentage = percentage.replaceAll("[^0-9]", "");
+        return (String) aliasToValueMap.get("sms_message" + percentage);
+    }
 }

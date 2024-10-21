@@ -25,8 +25,7 @@ public class MediationResultValidationStep implements IMediationStepValidation {
                 validate(result, result.getEventDate(), "JB-EVENT-DATE-NOT-RESOLVED") &&
                 validate(result, result.getItemId(), "ERR-ITEM-NOT-FOUND") &&
                 validate(result, result.getQuantity(), "ERR-QUANTITY") &&
-                validate(result, result.getDescription(), "ERR-DESCRIPTION-NOT-FOUND") &&
-                !result.hasError();
+                validate(result, result.getDescription(), "ERR-DESCRIPTION-NOT-FOUND");
     }
 
     private boolean validate(MediationStepResult result, Object value, String errorMessage) {

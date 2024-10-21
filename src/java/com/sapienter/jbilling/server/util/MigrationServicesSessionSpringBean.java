@@ -175,7 +175,7 @@ public class MigrationServicesSessionSpringBean implements IMigrationServicesSes
     public UUID createMediationProcessForMigration(Integer mediationCfgId) {
         MediationProcessService processService = Context.getBean(MediationProcessService.BEAN_NAME);
         MediationConfiguration mediationConfiguration = new MediationConfigurationDAS().find(mediationCfgId);
-        return processService.saveMediationProcess(mediationConfiguration.getEntityId(), mediationCfgId).getId();
+        return processService.saveMediationProcess(mediationConfiguration.getEntityId(), mediationCfgId, null).getId();
     }
 
     @Override

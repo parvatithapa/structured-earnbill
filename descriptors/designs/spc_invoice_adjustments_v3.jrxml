@@ -6,10 +6,11 @@
 	<parameter name="invoice_id" class="java.lang.Integer"/>
 	<parameter name="currency_symbol" class="java.lang.String"/>
 	<parameter name="user_id" class="java.lang.Integer"/>
+	<parameter name="credit_products_category_id" class="java.lang.Integer"/>
+	<parameter name="debit_products_category_id" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT s.* FROM (
-SELECT
-TO_CHAR((
+SELECT          TO_CHAR((
 SELECT active_since
 FROM purchase_order
 WHERE id = il.order_id
@@ -17,52 +18,69 @@ WHERE id = il.order_id
 il.description,
 il.tax_amount,
 il.amount
-FROM invoice_line il
-WHERE
-(
-il.invoice_id = $P{invoice_id}
-OR
-il.invoice_id IN
-(
-	SELECT i.id
-	FROM invoice i
-	INNER JOIN invoice_line il ON il.invoice_id = i.id
-	WHERE i.deleted = 0
-	AND i.user_id = (SELECT user_id FROM invoice WHERE id = $P{invoice_id})
-	AND i.create_datetime::DATE >
-	(SELECT create_datetime - interval '1 month' FROM invoice WHERE id = $P{invoice_id})
-	AND i.create_datetime::DATE <= (SELECT create_datetime::DATE FROM invoice WHERE id = $P{invoice_id})
-	AND i.balance > 0
-	AND i.total > 0
-	AND il.item_id IN
-	(
-	 SELECT i.id
-	 FROM item i
-	 INNER JOIN item_type_map itm ON itm.item_id = i.id
-	 INNER JOIN item_type it ON it.id = itm.type_id
-	 INNER JOIN order_line_type olt ON olt.id = it.order_line_type_id
-	 INNER JOIN international_description int_des ON int_des.foreign_id = olt.id
-	 INNER JOIN jbilling_table jt ON jt.id = int_des.table_id
-	 WHERE int_des.content = 'Adjustment'
-	 AND jt.name = 'order_line_type'
-	 AND int_des.language_id = 1
-	)
-)
-)
-AND il.deleted = 0
-AND il.item_id IN
-(
- SELECT i.id
- FROM item i
- INNER JOIN item_type_map itm ON itm.item_id = i.id
- INNER JOIN item_type it ON it.id = itm.type_id
- INNER JOIN order_line_type olt ON olt.id = it.order_line_type_id
- INNER JOIN international_description int_des ON int_des.foreign_id = olt.id
- INNER JOIN jbilling_table jt ON jt.id = int_des.table_id
- WHERE int_des.content = 'Adjustment'
- AND jt.name = 'order_line_type'
- AND int_des.language_id = 1
-)
+FROM            invoice_line il
+LEFT OUTER JOIN rollup_codes rc
+ON              rc.item_type_description = il.description
+WHERE           (
+                             il.invoice_id = $P{invoice_id}
+             OR              il.invoice_id IN
+                             (
+                                        SELECT     i.id
+                                        FROM       invoice i
+                                        INNER JOIN invoice_line il
+                                        ON         il.invoice_id = i.id
+                                        WHERE      i.deleted = 0
+                                        AND        i.user_id =
+                                                   (
+                                                          SELECT user_id
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.CREATE_DATETIME::DATE >
+                                                   (
+                                                          SELECT create_datetime - INTERVAL '1 month'
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.CREATE_DATETIME::DATE <=
+                                                   (
+                                                          SELECT CREATE_DATETIME::DATE
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.balance > 0
+                                        AND        i.total > 0
+                                        AND        il.item_id IN
+                                                   (
+                                                              SELECT     i.id
+                                                              FROM       item i
+                                                              INNER JOIN item_type_map itm
+                                                              ON         itm.item_id = i.id
+                                                              INNER JOIN item_type it
+                                                              ON         it.id = itm.type_id
+                                                              INNER JOIN order_line_type olt
+                                                              ON         olt.id = it.order_line_type_id
+                                                              INNER JOIN international_description int_des
+                                                              ON         int_des.foreign_id = olt.id
+                                                              INNER JOIN jbilling_table jt
+                                                              ON         jt.id = int_des.table_id
+                                                              WHERE      int_des.content = 'Adjustment'
+                                                              AND        jt.name = 'order_line_type' ) ) )
+AND             il.deleted = 0
+AND             il.item_id IN
+             (
+                        SELECT     i.id
+                        FROM       item i
+                        INNER JOIN item_type_map itm
+                        ON         itm.item_id = i.id
+                        INNER JOIN item_type it
+                        ON         it.id = itm.type_id
+                        INNER JOIN order_line_type olt
+                        ON         olt.id = it.order_line_type_id
+                        INNER JOIN international_description int_des
+                        ON         int_des.foreign_id = olt.id
+                        INNER JOIN jbilling_table jt
+                        ON         jt.id = int_des.table_id
+                        WHERE      int_des.content = 'Adjustment'
+                        AND        jt.name = 'order_line_type'
+                        AND        it.id = $P{credit_products_category_id})
 
 UNION ALL
 
@@ -75,22 +93,225 @@ WHERE id = il.order_id
 il.description,
 il.tax_amount,
 il.amount
-FROM credit_note cn
-INNER JOIN invoice i ON i.id = cn.creation_invoice_id
-INNER JOIN invoice_line il ON il.invoice_id = i.id
-WHERE cn.creation_invoice_id IN
+FROM       credit_note cn
+INNER JOIN invoice i
+ON         i.id = cn.creation_invoice_id
+INNER JOIN invoice_line il
+ON         il.invoice_id = i.id
+WHERE      cn.creation_invoice_id IN
+        (
+               SELECT i.id
+               FROM   invoice i
+               WHERE  i.deleted = 0
+               AND    i.user_id =
+                      (
+                             SELECT user_id
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+               AND    i.CREATE_DATETIME::DATE >
+                      (
+                             SELECT create_datetime - INTERVAL '1 month'
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+               AND    i.CREATE_DATETIME::DATE <=
+                      (
+                             SELECT CREATE_DATETIME::DATE
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+	       AND    i.id != $P{invoice_id})
+        -- Exclude carried lines
+AND        il.type_id != 3
+AND        il.item_id IN
 (
-	SELECT i.id
-	FROM invoice i
-	WHERE i.deleted = 0
-	AND i.user_id = (SELECT user_id FROM invoice WHERE id = $P{invoice_id})
-	AND i.create_datetime::DATE >
-	(SELECT create_datetime - interval '1 month' FROM invoice WHERE id = $P{invoice_id})
-	AND i.create_datetime::DATE <= (SELECT create_datetime::DATE FROM invoice WHERE id = $P{invoice_id})
-	AND i.id != $P{invoice_id}
-)
--- Exclude carried lines
-AND il.type_id != 3
+        SELECT     i.id
+        FROM       item i
+        INNER JOIN item_type_map itm
+        ON         itm.item_id = i.id
+        INNER JOIN item_type it
+        ON         it.id = itm.type_id
+        INNER JOIN order_line_type olt
+        ON         olt.id = it.order_line_type_id
+        INNER JOIN international_description int_des
+        ON         int_des.foreign_id = olt.id
+        INNER JOIN jbilling_table jt
+        ON         jt.id = int_des.table_id
+        WHERE      int_des.content = 'Adjustment'
+        AND        jt.name = 'order_line_type'
+        AND        it.id = $P{credit_products_category_id} )
+
+UNION ALL
+
+SELECT TO_CHAR(cn.create_datetime,'DD/MM/YYYY') AS invoice_date,
+                cnl.description,
+                0 AS tax_amount,
+                (-1 * cnl.amount) AS amount
+FROM credit_note_line cnl
+INNER JOIN credit_note cn
+ON cn.id = cnl.credit_note_id
+WHERE cn.deleted = 0
+AND cn.creation_invoice_id IS NULL
+AND cn.credit_type = 'USER_GENERATED'
+AND cn.subscription_order_id IS NULL
+AND (TRIM(cn.service_id) = '' OR cn.service_id IS NULL)
+AND cn.user_id = $P{user_id}
+AND CASE WHEN
+	(
+		SELECT inv_sum.last_invoice_id
+		     FROM   invoice_summary inv_sum
+		     WHERE  inv_sum.creation_invoice_id = $P{invoice_id}
+	) IS NOT NULL
+	THEN
+	(
+	SELECT cn.create_datetime >
+	      (
+		     SELECT i.create_timestamp
+		     FROM   invoice i
+		     INNER JOIN invoice_summary inv_sum
+		     ON inv_sum.last_invoice_id = i.id
+		     WHERE  inv_sum.creation_invoice_id = $P{invoice_id})
+	)
+	ELSE
+	true
+	END
+AND cn.create_datetime <=
+      (
+             SELECT create_timestamp
+             FROM   invoice
+             WHERE  id = $P{invoice_id})
+
+UNION ALL
+
+SELECT          TO_CHAR((
+SELECT active_since
+FROM purchase_order
+WHERE id = il.order_id
+),'DD/MM/YYYY') AS invoice_date,
+il.description,
+il.tax_amount,
+il.amount
+FROM            invoice_line il
+LEFT OUTER JOIN rollup_codes rc
+ON              rc.item_type_description = il.description
+WHERE           (
+                             il.invoice_id = $P{invoice_id}
+             OR              il.invoice_id IN
+                             (
+                                        SELECT     i.id
+                                        FROM       invoice i
+                                        INNER JOIN invoice_line il
+                                        ON         il.invoice_id = i.id
+                                        WHERE      i.deleted = 0
+                                        AND        i.user_id =
+                                                   (
+                                                          SELECT user_id
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.CREATE_DATETIME::DATE >
+                                                   (
+                                                          SELECT create_datetime - INTERVAL '1 month'
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.CREATE_DATETIME::DATE <=
+                                                   (
+                                                          SELECT CREATE_DATETIME::DATE
+                                                          FROM   invoice
+                                                          WHERE  id = $P{invoice_id})
+                                        AND        i.balance >= 0
+                                        AND        i.total >= 0
+                                        AND        il.item_id IN
+                                                   (
+                                                              SELECT     i.id
+                                                              FROM       item i
+                                                              INNER JOIN item_type_map itm
+                                                              ON         itm.item_id = i.id
+                                                              INNER JOIN item_type it
+                                                              ON         it.id = itm.type_id
+                                                              INNER JOIN order_line_type olt
+                                                              ON         olt.id = it.order_line_type_id
+                                                              INNER JOIN international_description int_des
+                                                              ON         int_des.foreign_id = olt.id
+                                                              INNER JOIN jbilling_table jt
+                                                              ON         jt.id = int_des.table_id
+                                                              WHERE      int_des.content = 'Adjustment'
+                                                              AND        jt.name = 'order_line_type'
+                                                              AND        int_des.language_id = 1 ) ) )
+AND             il.deleted = 0
+AND             il.item_id IN
+             (
+                        SELECT     i.id
+                        FROM       item i
+                        INNER JOIN item_type_map itm
+                        ON         itm.item_id = i.id
+                        INNER JOIN item_type it
+                        ON         it.id = itm.type_id
+                        INNER JOIN order_line_type olt
+                        ON         olt.id = it.order_line_type_id
+                        INNER JOIN international_description int_des
+                        ON         int_des.foreign_id = olt.id
+                        INNER JOIN jbilling_table jt
+                        ON         jt.id = int_des.table_id
+                        WHERE      int_des.content = 'Adjustment'
+                        AND        jt.name = 'order_line_type'
+                        AND        int_des.language_id = 1
+                        AND        it.id = $P{debit_products_category_id})
+
+UNION ALL
+
+SELECT
+TO_CHAR((
+SELECT active_since
+FROM purchase_order
+WHERE id = il.order_id
+),'DD/MM/YYYY') AS invoice_date,
+il.description,
+il.tax_amount,
+il.amount
+FROM       credit_note cn
+INNER JOIN invoice i
+ON         i.id = cn.creation_invoice_id
+INNER JOIN invoice_line il
+ON         il.invoice_id = i.id
+WHERE      cn.creation_invoice_id IN
+        (
+               SELECT i.id
+               FROM   invoice i
+               WHERE  i.deleted = 0
+               AND    i.user_id =
+                      (
+                             SELECT user_id
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+               AND    i.CREATE_DATETIME::DATE >
+                      (
+                             SELECT create_datetime - INTERVAL '1 month'
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+               AND    i.CREATE_DATETIME::DATE <=
+                      (
+                             SELECT CREATE_DATETIME::DATE
+                             FROM   invoice
+                             WHERE  id = $P{invoice_id})
+	       AND    i.id != $P{invoice_id})
+        -- Exclude carried lines
+AND        il.type_id != 3
+AND        il.item_id IN
+(
+        SELECT     i.id
+        FROM       item i
+        INNER JOIN item_type_map itm
+        ON         itm.item_id = i.id
+        INNER JOIN item_type it
+        ON         it.id = itm.type_id
+        INNER JOIN order_line_type olt
+        ON         olt.id = it.order_line_type_id
+        INNER JOIN international_description int_des
+        ON         int_des.foreign_id = olt.id
+        INNER JOIN jbilling_table jt
+        ON         jt.id = int_des.table_id
+        WHERE      int_des.content = 'Adjustment'
+        AND        jt.name = 'order_line_type'
+        AND        int_des.language_id = 1
+        AND        it.id = $P{debit_products_category_id} )
 ) s
 ORDER BY CASE WHEN s.amount < 0 THEN 'CR' ELSE 'DR' END, to_date(s.invoice_date,'DD/MM/YYYY'), s.description ASC;]]>
 	</queryString>
@@ -110,7 +331,7 @@ ORDER BY CASE WHEN s.amount < 0 THEN 'CR' ELSE 'DR' END, to_date(s.invoice_date,
 	<title>
 		<band height="22" splitType="Stretch">
 			<staticText>
-				<reportElement x="2" y="4" width="100" height="15" forecolor="#D6036C" uuid="7ecfb9cf-6353-417d-bf24-8931f3dd211b"/>
+				<reportElement x="19" y="4" width="100" height="15" forecolor="#D6036C" uuid="7ecfb9cf-6353-417d-bf24-8931f3dd211b"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
@@ -121,14 +342,14 @@ ORDER BY CASE WHEN s.amount < 0 THEN 'CR' ELSE 'DR' END, to_date(s.invoice_date,
 	<columnHeader>
 		<band height="22" splitType="Stretch">
 			<staticText>
-				<reportElement x="2" y="0" width="106" height="20" uuid="1ddf6c42-5127-403c-991f-2f6715c17d97"/>
+				<reportElement x="19" y="0" width="106" height="20" uuid="1ddf6c42-5127-403c-991f-2f6715c17d97"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
 				<text><![CDATA[Date]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="109" y="0" width="260" height="20" uuid="83486e0d-4526-4693-8d77-3fba9ffddc63"/>
+				<reportElement x="126" y="0" width="243" height="20" uuid="83486e0d-4526-4693-8d77-3fba9ffddc63"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
@@ -142,7 +363,7 @@ ORDER BY CASE WHEN s.amount < 0 THEN 'CR' ELSE 'DR' END, to_date(s.invoice_date,
 				<text><![CDATA[Amount]]></text>
 			</staticText>
 			<line>
-				<reportElement x="2" y="21" width="548" height="1" uuid="824ed0d4-b5ee-4696-b05b-3989e965dadd"/>
+				<reportElement x="19" y="21" width="531" height="1" uuid="824ed0d4-b5ee-4696-b05b-3989e965dadd"/>
 				<graphicElement>
 					<pen lineWidth="0.5" lineColor="#FFCCCC"/>
 				</graphicElement>
@@ -150,23 +371,23 @@ ORDER BY CASE WHEN s.amount < 0 THEN 'CR' ELSE 'DR' END, to_date(s.invoice_date,
 		</band>
 	</columnHeader>
 	<detail>
-		<band height="22" splitType="Stretch">
+		<band height="16" splitType="Stretch">
 			<textField>
-				<reportElement x="2" y="0" width="106" height="20" uuid="2926200f-765c-4947-a6ab-cec4847fbb08"/>
+				<reportElement x="19" y="0" width="106" height="15" uuid="2926200f-765c-4947-a6ab-cec4847fbb08"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{invoice_date}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="109" y="0" width="260" height="20" uuid="d0702f70-329a-4d7c-84d0-749113624fc7"/>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="126" y="0" width="243" height="15" uuid="d0702f70-329a-4d7c-84d0-749113624fc7"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="370" y="0" width="181" height="20" uuid="b9e0009c-b96c-4927-ad79-b88ba30ed569"/>
+				<reportElement x="370" y="0" width="181" height="15" uuid="b9e0009c-b96c-4927-ad79-b88ba30ed569"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Calibri"/>
 				</textElement>

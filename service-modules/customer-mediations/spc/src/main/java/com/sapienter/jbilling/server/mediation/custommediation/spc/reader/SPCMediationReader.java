@@ -1,10 +1,5 @@
 package com.sapienter.jbilling.server.mediation.custommediation.spc.reader;
 
-import com.sapienter.jbilling.server.mediation.CallDataRecord;
-import com.sapienter.jbilling.server.mediation.converter.MediationServiceImplementation;
-import com.sapienter.jbilling.server.mediation.custommediation.spc.MediationServiceType;
-import com.sapienter.jbilling.server.mediation.custommediation.spc.InvalidCDRFileNameFormatException;
-
 import java.lang.invoke.MethodHandles;
 
 import org.slf4j.Logger;
@@ -14,10 +9,14 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.core.io.FileSystemResource;
 
+import com.sapienter.jbilling.server.mediation.CallDataRecord;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.InvalidCDRFileNameFormatException;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.MediationServiceType;
+
 /**
  * @author Neelabh
  * @since Dec 18, 2018
-  */
+ */
 public class SPCMediationReader extends FlatFileItemReader<CallDataRecord> {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -25,7 +24,7 @@ public class SPCMediationReader extends FlatFileItemReader<CallDataRecord> {
     @BeforeStep
     public void setMediationResourceToRead(StepExecution stepExecution) {
         try {
-            String fileToReadPath = stepExecution.getJobParameters().getString(MediationServiceImplementation.PARAMETER_MEDIATION_FILE_PATH_KEY);
+            String fileToReadPath = stepExecution.getExecutionContext().getString("fileToRead");
             logger.debug("Reading File From {} ", fileToReadPath);
             boolean isFileValid = false;
             for(MediationServiceType serviceType : MediationServiceType.values()) {
@@ -43,5 +42,5 @@ public class SPCMediationReader extends FlatFileItemReader<CallDataRecord> {
             logger.error(e.getMessage(), e);
         }
     }
-    
+
 }

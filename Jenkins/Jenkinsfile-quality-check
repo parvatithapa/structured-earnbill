@@ -1,0 +1,96 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = "${params.BRANCH_NAME}"
+        GRAILS_HOME = '/root/.sdkman/candidates/grails/2.4.3'
+        JAVA_8 = 'openjdk-8u412-b08'
+        JAVA_21 = 'openjdk-21.0.3'
+    }
+
+    tools {
+        // Install the Maven version configured as "MAVEN-3.6.3" and add it to the path.
+        maven "MAVEN-3.6.3"
+        jdk "${JAVA_8}"
+    }
+
+    stages {
+        stage('Verify Branch Name') {
+            steps {
+                script {
+                    if (BRANCH_NAME.isEmpty()) {
+                        error('Branch name is a required parameter')
+                    }
+                }
+            }
+        }
+        stage('git-clone') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch: "${BRANCH_NAME}", credentialsId: 'pat-github-adennet', url: 'https://github.com/billinghub/billinghub-adennet-edition.git'
+                sh "ls -ltr && pwd"
+            }
+        }
+        stage('Get commit details') {
+            steps {
+                script {
+                    env.LAST_COMMIT = sh(returnStdout:true, script:"git rev-parse --short HEAD").trim()
+                    echo "Last Commit : ${env.LAST_COMMIT}"
+                    env.COMMIT_OWNER = sh(returnStdout:true, script:"git log -n 1 --no-merges  --pretty=format:'%an'").trim()
+                    echo "Commit Owner : ${env.COMMIT_OWNER}"
+                }
+            }
+        }
+        stage('build-service-module') {
+            steps {
+                dir('service-modules') {
+                    sh "mvn clean install"
+                }
+            }
+        }
+        stage('cleanAndcompile') {
+            steps {
+                sh "${GRAILS_HOME}/bin/grails clean && ${GRAILS_HOME}/bin/grails prod compile"
+            }
+        }
+        stage('package') {
+            steps {
+                sh "${GRAILS_HOME}/bin/grails prod war"
+            }
+        }
+        stage('SonarQube Analysis') {
+            tools {
+                jdk "${JAVA_21}"
+            }
+            steps {
+                script {
+                    def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    withSonarQubeEnv('SonarQube') {
+                        // Get report URL
+                        getReportURL("${env.SONAR_HOST_URL}")
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            slackSend color: '#36a64f', message: "Job : billinghub-jbilling quality check\nStatus : *SUCCESS*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nBuild Report: ${env.BUILD_URL}CI-Build-HTML-Report\nSonar Report: ${env.SONAR_REPORT_URL}"
+        }
+        failure {
+            slackSend color: '#ff0000', message: "Job : billinghub-jbilling quality check\nStatus : *FAILURE*\nBranch Name : ${BRANCH_NAME}\nLast Commit : ${env.LAST_COMMIT}\nCommit Owner : ${env.COMMIT_OWNER}\nBuild Report :${env.BUILD_URL}CI-Build-HTML-Report"
+        }
+    }
+}
+
+def getReportURL(String host){
+    def properties = readFile('sonar-project.properties')
+    def matcher = properties =~ /sonar.projectKey=(.*)/
+
+    if (matcher.find()) {
+        env.SONAR_REPORT_URL = host + "/dashboard?id=" + matcher.group(1)
+    } else {
+        env.SONAR_REPORT_URL = host
+    }
+}

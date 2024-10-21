@@ -1,23 +1,21 @@
-ARG JBILLING_BASE_IMAGE=override-by-runtime-build-arg-parameter
+FROM tomcat:9.0.95-jre8-temurin-jammy
 
-FROM $JBILLING_BASE_IMAGE
+LABEL MAINTAINER="amartya.sinha@sarathisoftech.com"
 
-MAINTAINER nilesh.vibhute@sarathisoftech.com
+RUN echo '#!/bin/sh' > /usr/local/tomcat/bin/setenv.sh && echo 'export UMASK=022' >> /usr/local/tomcat/bin/setenv.sh && chmod +x /usr/local/tomcat/bin/setenv.sh
 
-WORKDIR /opt/tomcat
-RUN mkdir -p /home/billinghub/jbilling-home
+RUN set -eux; apt-get update; apt-get install -y --no-install-recommends libfreetype-dev fonts-dejavu fonts-hosny-amiri; rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/local/tomcat
 
 RUN rm -rf ./webapps/ROOT
-ADD target/jbilling.war ./webapps/
+ADD target/jbilling.war ./webapps/app.war
 
-RUN unzip -qq ./webapps/jbilling.war -d ./webapps/ROOT
-RUN rm -rf ./webapps/jbilling.war
-ADD resources /home/billinghub/jbilling-home/resources
+RUN mkdir -p /home/earnbill
 
-WORKDIR /home/billinghub
-
-#ENV JBILLING_HOME="/home/billinghub/jbilling-home"
+WORKDIR /home/earnbill
+ADD resources /home/earnbill/resources
 
 EXPOSE 8080
 
-CMD /opt/tomcat/bin/catalina.sh run
+CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]

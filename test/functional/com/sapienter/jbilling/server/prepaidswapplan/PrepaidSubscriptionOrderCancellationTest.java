@@ -56,14 +56,14 @@ import com.sapienter.jbilling.test.framework.builders.UsagePoolBuilder;
 @Test(groups = { "prepaid-swapPlan" }, testName = "PrepaidSubscriptionOrderCancellationTest")
 public class PrepaidSubscriptionOrderCancellationTest {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    private static final String USER_01 = "Test-User-One";
+    private static final String USER_01 = "Test-User-One" + System.currentTimeMillis();
     private static final String ORDER_01 = "subscriptionOrder_01";
-    private static final String USER_02 = "Test-User-Two";
+    private static final String USER_02 = "Test-User-Two" + System.currentTimeMillis();
     private static final String ORDER_02 = "subscriptionOrder_02";
-    private static final String USER_03 = "Test-User-Three";
+    private static final String USER_03 = "Test-User-Three" + System.currentTimeMillis();
     private static final String ORDER_03 = "subscriptionOrder_03";
     private static final String USER_04 = "Test-User-Four";
-    private static final String ORDER_04 = "subscriptionOrder_04";
+    private static final String ORDER_04 = "subscriptionOrder_04" + System.currentTimeMillis();
     private static final String SUBSCRIPTION_PROD_01 = "testPlanSubscriptionItemForSOC_01";
     private static final String USAGE_POOL_01 = "UP with 100 Quantity for cancellation"+System.currentTimeMillis();
     private static final String PLAN_01 = "100 free minute Plan For SOC";
@@ -239,12 +239,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     assertEquals(oneTimeOrder.getOrderLines()[0].getAmountAsDecimal().setScale(Constants.BIGDECIMAL_SCALE_STR,BigDecimal.ROUND_HALF_UP), new BigDecimal("57.86"));
                 });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_01), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_01), 10, 0))
-                .forEach(order -> api.deleteOrder(order.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_01));
+            cleanUp(USER_01);
         }
     }
 
@@ -319,12 +314,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     user.setNextInvoiceDate(cycleEnddate.getTime());
                     api.updateUser(user);
                     //Run customerUsagePoolEvaluationTask to evaluate CUP's
-                    api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
-                    try {
-                        Thread.sleep(30000);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    }
+                    api.triggerCustomerUsagePoolEvaluation(1 , cycleEnddate.getTime());
 
                     user = api.getUserWS(envBuilder.idForCode(USER_02));
                     fups = api.getCustomerUsagePoolsByCustomerId(user.getCustomerId());
@@ -360,12 +350,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     assertEquals(oneTimeOrder.getOrderLines()[0].getAmountAsDecimal().setScale(Constants.BIGDECIMAL_SCALE_STR,BigDecimal.ROUND_HALF_UP), new BigDecimal("278.23"));
                 });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_02), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_02), 10, 0))
-                .forEach(order -> api.deleteOrder(order.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_02));
+            cleanUp(USER_02);
         }
     }
 
@@ -439,12 +424,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     user.setNextInvoiceDate(cycleEnddate.getTime());
                     api.updateUser(user);
                     //Run customerUsagePoolEvaluationTask to evaluate CUP's
-                    api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
-                    try {
-                        Thread.sleep(30000);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    }
+                    api.triggerCustomerUsagePoolEvaluation(1 , cycleEnddate.getTime());
 
                     user = api.getUserWS(envBuilder.idForCode(USER_03));
                     fups = api.getCustomerUsagePoolsByCustomerId(user.getCustomerId());
@@ -478,12 +458,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     assertEquals(oneTimeOrder.getOrderLines()[0].getAmountAsDecimal().setScale(Constants.BIGDECIMAL_SCALE_STR,BigDecimal.ROUND_HALF_UP), ONE_TIME_ORDERS_AMOUNT);
                 });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_03), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_03), 10, 0))
-                .forEach(order -> api.deleteOrder(order.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_03));
+            cleanUp(USER_03);
         }
     }
 
@@ -573,12 +548,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                     user.setNextInvoiceDate(cycleEnddate.getTime());
                     api.updateUser(user);
                     //Run customerUsagePoolEvaluationTask to evaluate CUP's
-                    api.triggerScheduledTask(customerUsagePoolEvalutionPluginId , new Date());
-                    try {
-                        Thread.sleep(30000);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    }
+                    api.triggerCustomerUsagePoolEvaluation(1 , cycleEnddate.getTime());
 
                     user = api.getUserWS(envBuilder.idForCode(USER_04));
                     fups = api.getCustomerUsagePoolsByCustomerId(user.getCustomerId());
@@ -602,13 +572,17 @@ public class PrepaidSubscriptionOrderCancellationTest {
 
                 });
         } finally {
-            final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
-            Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(USER_04), 10, 0))
-                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
-            Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(USER_04), 10, 0))
-                .forEach(order -> api.deleteOrder(order.getId()));
-            api.deleteUser(testBuilder.getTestEnvironment().idForCode(USER_04));
+            cleanUp(USER_04);
         }
+    }
+
+    private void cleanUp(String user) {
+        final JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
+        Arrays.stream(api.getUserInvoicesPage(testBuilder.getTestEnvironment().idForCode(user), 10, 0))
+                .forEach(invoice -> api.deleteInvoice(invoice.getId()));
+        Arrays.stream(api.getUserOrdersPage(testBuilder.getTestEnvironment().idForCode(user), 10, 0))
+                .forEach(order -> api.deleteOrder(order.getId()));
+        api.deleteUser(testBuilder.getTestEnvironment().idForCode(user));
     }
 
     private TestBuilder getTestEnvironment() {
@@ -616,7 +590,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
             this.envHelper = EnvironmentHelper.getInstance(testEnvCreator.getPrancingPonyApi()));
     }
 
-    public Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
+    private Integer buildAndPersistAccountType(TestEnvironmentBuilder envBuilder, JbillingAPI api, String name, Integer ...paymentMethodTypeId) {
         AccountTypeWS accountTypeWS = envBuilder.accountTypeBuilder(api)
                  .withName(name)
                  .withPaymentMethodTypeIds(paymentMethodTypeId)
@@ -624,7 +598,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
         return accountTypeWS.getId();
     }
 
-    public Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
+    private Integer buildAndPersistCustomer(TestEnvironmentBuilder envBuilder, JbillingAPI api, String username,
             Integer accountTypeId, Date nextInvoiceDate, Integer periodId, Integer nextInvoiceDay) {
 
         UserWS userWS = envBuilder.customerBuilder(api)
@@ -639,7 +613,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
         return userWS.getId();
     }
 
-    public Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
+    private Integer buildAndPersistOrder(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, Integer userId,
             Date activeSince, Date activeUntil, Integer orderPeriodId, int billingTypeId,
             boolean prorate, Map<Integer, BigDecimal> productQuantityMap) {
 
@@ -663,7 +637,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
         return orderBuilder.build();
     }
 
-    public Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
+    private Integer buildAndPersistCategory(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code, boolean global, ItemBuilder.CategoryType categoryType) {
         return envBuilder.itemBuilder(api)
                  .itemType()
                  .withCode(code)
@@ -672,7 +646,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                  .build();
     }
 
-    public Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
+    private Integer buildAndPersistFlatProduct(TestEnvironmentBuilder envBuilder, JbillingAPI api, String code,
         boolean global, Integer categoryId, String flatPrice, boolean allowDecimal) {
         return envBuilder.itemBuilder(api)
                  .item()
@@ -716,7 +690,7 @@ public class PrepaidSubscriptionOrderCancellationTest {
                 .build().getId();
     }
 
-    public static Integer createOneTimeOrder(JbillingAPI api,Integer userId, Date activeSinceDate, String inboundProductQuantity){
+    private static Integer createOneTimeOrder(JbillingAPI api,Integer userId, Date activeSinceDate, String inboundProductQuantity){
 
         logger.debug("Creating One time usage order...");
         OrderWS oTOrder = new OrderWS();
@@ -725,7 +699,6 @@ public class PrepaidSubscriptionOrderCancellationTest {
         oTOrder.setBillingTypeId(Constants.ORDER_BILLING_POST_PAID);
         oTOrder.setPeriod(1); // Onetime
         oTOrder.setCurrencyId(1);
-        oTOrder.setIsMediated(true);
 
         OrderLineWS oTline1 = new OrderLineWS();
         oTline1.setItemId(TestConstants.INBOUND_USAGE_PRODUCT_ID);

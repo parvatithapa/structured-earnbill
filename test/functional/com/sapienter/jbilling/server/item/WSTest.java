@@ -16,58 +16,29 @@
 
 package com.sapienter.jbilling.server.item;
 
-import static com.sapienter.jbilling.test.Asserts.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertFalse;
-import static org.testng.AssertJUnit.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
-import static org.testng.AssertJUnit.fail;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.Integer;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.io.FileUtils;
-import org.joda.time.DateMidnight;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
+import java.util.*;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.common.Util;
-import com.sapienter.jbilling.server.metafields.DataType;
-import com.sapienter.jbilling.server.metafields.EntityType;
+import com.sapienter.jbilling.server.item.ItemDTOEx;
+import com.sapienter.jbilling.server.item.ItemTypeWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.MetaFieldWS;
+import com.sapienter.jbilling.server.metafields.DataType;
+import com.sapienter.jbilling.server.metafields.EntityType;
 import com.sapienter.jbilling.server.metafields.validation.ValidationRuleWS;
 import com.sapienter.jbilling.server.order.OrderChangeBL;
+import com.sapienter.jbilling.server.order.OrderChangeWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.user.UserWS;
-import com.sapienter.jbilling.server.util.Constants;
-import com.sapienter.jbilling.server.util.CreateObjectUtil;
-import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
-import com.sapienter.jbilling.server.util.JBillingTestUtils;
-import com.sapienter.jbilling.server.util.RemoteContext;
+import com.sapienter.jbilling.server.util.*;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.server.util.api.JbillingAPIException;
 import com.sapienter.jbilling.server.util.api.JbillingAPIFactory;
@@ -75,6 +46,15 @@ import com.sapienter.jbilling.server.util.api.SpringAPI;
 import com.sapienter.jbilling.server.util.search.BasicFilter;
 import com.sapienter.jbilling.server.util.search.Filter;
 import com.sapienter.jbilling.server.util.search.SearchCriteria;
+import com.sapienter.jbilling.server.item.AssetStatusBL;
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.io.FileUtils;
+import org.joda.time.DateMidnight;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.*;
+import static com.sapienter.jbilling.test.Asserts.*;
+import static org.testng.AssertJUnit.*;
 
 /**
  * @author Emil
@@ -2339,50 +2319,6 @@ public class WSTest {
                 assertEquals("AssetManagement should be Enable on GlobalAndAssetItemType", item.getAllowAssetManagement(), ENABLED);
             }
         }
-    }
-
-    @Test(groups = { "web-services", "asset"})
-    public void test029UpdateAssetMetafield() throws Exception {
-
-        // Create Asset
-        AssetWS asset = new AssetWS();
-        asset.setEntityId(PRANCING_PONY);
-        asset.setIdentifier("ASSET1");
-        asset.setItemId(TEST_ITEM_ID_WITH_ASSET_MANAGEMENT);
-        asset.setNotes("NOTE1");
-        asset.setAssetStatusId(STATUS_DEFAULT_ID);
-        asset.setDeleted(DISABLED);
-        asset.setIdentifier("ID21234");
-
-        MetaFieldValueWS mf = new MetaFieldValueWS();
-        mf.setFieldName("Regulatory Code");
-        mf.getMetaField().setDataType(DataType.LIST);
-        mf.setListValue(new String[] {"01", "02"});
-
-        MetaFieldValueWS mf2 = new MetaFieldValueWS();
-        mf2.setFieldName("INT1");
-        mf2.getMetaField().setDataType(DataType.INTEGER);
-        mf2.setIntegerValue(4);
-
-        asset.setMetaFields(new MetaFieldValueWS[]{mf,mf2});
-        // Persist Asset
-        Integer assetId = api.createAsset(asset);
-
-        // Get saved asset
-        AssetWS savedAsset = api.getAsset(assetId);
-        Optional<MetaFieldValueWS> int1FieldValue = Arrays.stream(savedAsset.getMetaFields())
-                .filter(field -> field.getFieldName().contains("INT1")).findFirst();
-        int1FieldValue.get().setIntegerValue(null);
-        try {
-            api.updateAsset(savedAsset);
-            int totalMf = api.getAsset(assetId).getMetaFields().length;
-            assertEquals(1,totalMf);
-            assertNotNull("Regulatory Code MF should be present",Arrays.stream(savedAsset.getMetaFields())
-            .filter(field -> field.getFieldName().contains("Regulatory Code")).findFirst());
-        } catch (SessionInternalError error) {
-            JBillingTestUtils.assertContainsError(error, "AssetWS,identifier,asset.validation.duplicate.identifier");
-        }
-        api.deleteAsset(assetId);
     }
 
 

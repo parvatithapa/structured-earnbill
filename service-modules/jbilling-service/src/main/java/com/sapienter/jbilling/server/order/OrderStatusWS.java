@@ -76,10 +76,12 @@ public class OrderStatusWS implements WSSecured, Serializable {
 		this.orderStatusFlag = orderStatusFlag;
 	}
 
+    @JsonIgnore
 	public CompanyWS getEntity() {
 		return entity;
 	}
 
+    @JsonIgnore
 	public void setEntity(CompanyWS entity) {
 		this.entity = entity;
 	}
@@ -130,7 +132,7 @@ public class OrderStatusWS implements WSSecured, Serializable {
      */
     @JsonIgnore
     public Integer getOwningEntityId() {
-        return entity.getId();
+        return entity!=null ? entity.getId() : null;
     }
 
     @JsonIgnore

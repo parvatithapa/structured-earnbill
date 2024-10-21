@@ -30,9 +30,9 @@
 <%-- indexes of metafields we have filter data for --%>
 <g:set var="metaFieldIdxs" value="[]" />
 <g:set var="metaFieldIMaxIdx" value="${new Integer(0)}" />
-<g:set var="filtersUsed" value="${params.containsKey('_showDeleted')}" />
+<g:set var="filtersUsed" value="${params.containsKey('_showDeleted') || params.containsKey('_showReIssuable') || params.containsKey('_showSuspended')}" />
 <%-- parameters the page functionality must include in URLs --%>
-<g:set var="searchParams" value="${SortableCriteria.extractParameters(params, ['filterBy','statusId','showDeleted', Pattern.compile(/filterByMetaFieldId(\d+)/), Pattern.compile(/filterByMetaFieldValue(\d+)/)])}" />
+<g:set var="searchParams" value="${SortableCriteria.extractParameters(params, ['filterBy','statusId','showDeleted','showReIssuable','showSuspended', Pattern.compile(/filterByMetaFieldId(\d+)/), Pattern.compile(/filterByMetaFieldValue(\d+)/)])}" />
 
 <div class="heading"><strong><g:message code="assets.for.product"/></strong></div>
 <div class="box narrow">
@@ -54,13 +54,13 @@
 
 <div class="box-cards box-cards-no-margin ${filtersUsed ? "box-cards-open" : ""}">
     <div class="box-cards-title ${filtersUsed ? "active" : ""}">
-        <a class="btn-open" href="#"><span><g:message
+        <a class="btn-open" href="#" data-cy="filterOpen"><span><g:message
                 code="asset.heading.filter"/></span></a>
     </div>
 
     <div class="box-card-hold narrow">
         <div class="form-columns asset-list-filters">
-            <g:form name="asset-filter-form" id="${params.id}" action="assets">
+            <g:form name="asset-filter-form" id="${product.id}" action="assets">
                 <g:applyLayout name="form/input">
                     <content tag="label"><g:message code="filters.title"/></content>
                     <content tag="label.for">filterBy</content>
@@ -86,6 +86,18 @@
                     <content tag="label"><g:message code="filters.deleted.title"/></content>
                     <content tag="label.for">showDeleted</content>
                     <g:checkBox name="showDeleted" class="field default" checked="${'on' == params.showDeleted}"/>
+                </g:applyLayout>
+
+                <g:applyLayout name="form/checkbox">
+                    <content tag="label"><g:message code="filters.reissuable.title"/></content>
+                    <content tag="label.for">showReIssuable</content>
+                    <g:checkBox name="showReIssuable" class="field default" checked="${'on' == params.showReIssuable}"/>
+                </g:applyLayout>
+
+                <g:applyLayout name="form/checkbox">
+                    <content tag="label"><g:message code="filters.suspended.title"/></content>
+                    <content tag="label.for">showSuspended</content>
+                    <g:checkBox name="showSuspended" class="field default" checked="${'on' == params.showSuspended}"/>
                 </g:applyLayout>
 
                 <g:if test="${metaFields.size() > 0}">
@@ -165,7 +177,7 @@
             </tr>
         </thead>
 
-        <tbody>
+        <tbody data-cy="assetListTable">
         <g:each in="${assets}" var="asset">
             <tr id="user-${asset.id}" class="${selected?.id == asset.id ? 'active' : ''} ${asset.isReserved()?'reserved':''}">
                 <td class="narrow ${asset.isReserved()?'reserved':''}">
@@ -280,6 +292,14 @@
             $('#asset-filter-form').submit();
         });
         $('#asset-filter-form :input[name=showDeleted]').change(function () {
+            $('#asset-filter-form').submit();
+        });
+
+        $('#asset-filter-form :input[name=showReIssuable]').change(function () {
+            $('#asset-filter-form').submit();
+        });
+
+        $('#asset-filter-form :input[name=showSuspended]').change(function () {
             $('#asset-filter-form').submit();
         });
 

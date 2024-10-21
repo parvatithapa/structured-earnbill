@@ -1,16 +1,17 @@
 package com.sapienter.jbilling.server.mediation.processor;
 
-import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
-import com.sapienter.jbilling.server.mediation.converter.db.DaoConverter;
-import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
+import com.sapienter.jbilling.server.mediation.converter.db.DaoConverter;
+import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
 
 /**
  * This will aggregate JMRs in hourly buckets. The aggregated JMR will contain the earliest event date
@@ -39,25 +40,27 @@ public class HourlyAggregator implements JmrProcessorAggregator{
             String bucketKey = value + dateTimeFormatter.print(jmr.getEventDate().getTime());
             JbillingMediationRecord aggregate = bucketsByDate.get(bucketKey);
             if(aggregate == null) {
-                aggregate = new JbillingMediationRecord(
-                    jmr.getStatus(),
-                    jmr.getType(),
-                    jmr.getjBillingCompanyId(),
-                    jmr.getMediationCfgId(),
-                    jmr.getRecordKey() + 'A',
-                    jmr.getUserId(),
-                    jmr.getEventDate(),
-                    jmr.getQuantity(),
-                    jmr.getDescription(),
-                    jmr.getCurrencyId(),
-                    jmr.getItemId(),
-                    null, null, jmr.getPricingFields(),
-                    null, null,
-                    jmr.getProcessId(),
-                    jmr.getSource(),
-                    jmr.getDestination(),
-                    jmr.getCdrType(),
-                    jmr.getOriginalQuantity());
+                aggregate = new JbillingMediationRecord(jmr.getId(),
+                        jmr.getStatus(),
+                        jmr.getType(),
+                        jmr.getjBillingCompanyId(),
+                        jmr.getMediationCfgId(),
+                        jmr.getRecordKey() + 'A',
+                        jmr.getUserId(),
+                        jmr.getEventDate(),
+                        jmr.getQuantity(),
+                        jmr.getDescription(),
+                        jmr.getCurrencyId(),
+                        jmr.getItemId(),
+                        null, null, jmr.getPricingFields(),
+                        null, null,
+                        jmr.getProcessId(),
+                        jmr.getSource(),
+                        jmr.getDestination(),
+                        jmr.getCdrType(),
+                        jmr.getOriginalQuantity(),
+                        jmr.getRatedPriceWithTax(),
+                        jmr.getTaxAmount());
 
                 bucketsByDate.put(bucketKey, aggregate);
             } else {

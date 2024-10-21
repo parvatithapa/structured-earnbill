@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Date;
 
 /**
  * Created by marcolin on 29/10/15.
@@ -166,12 +167,12 @@ public class MockMediationService implements MediationService {
     }
     
     @Override
-    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file) {
+    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file, String fileName) {
     	return null;
     }
     
     @Override
-    public UUID triggerRecycleCdrAsync(Integer entityId, Integer mediationCfgId, String jobName, UUID processId) {
+    public UUID triggerRecycleCdrAsync(Integer entityId, Integer mediationCfgId, String jobName, UUID processId, String fileName) {
     	return null;
     }
     
@@ -196,8 +197,23 @@ public class MockMediationService implements MediationService {
     }
 
     @Override
-    public List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId, int offset, int limit) {
+    public List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId) {
         return null;
     }
+    
+    @Override
+    public List<String> getPricingFields(Integer order_id, Integer order_line_id){
+    	return null;
+    }
 
+    @Override
+    public List<JbillingMediationRecord> getMediationRecordsByCallIdentifierDateRange(String identifier, Integer offset, Integer limit, Date startDate, Date endDate) {
+        return null;
+    };
+    
+    @Override
+    public List<JbillingMediationRecord> getUnBilledMediationEventsByCallIdentifier(String identifier) {
+        return null;
+    };
+    
 }

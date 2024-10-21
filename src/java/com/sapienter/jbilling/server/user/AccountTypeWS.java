@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.security.WSSecured;
-import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.timezone.ConvertToTimezone;
 import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
 import com.wordnik.swagger.annotations.ApiModel;
@@ -64,7 +63,8 @@ public class AccountTypeWS implements Serializable, WSSecured {
     private Integer[] paymentMethodTypeIds = new Integer[]{};
     
     private Integer[] preferedInformationTypeIds = null;
-    
+
+
 	public AccountTypeWS() {
 
     }

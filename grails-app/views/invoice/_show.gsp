@@ -132,12 +132,6 @@
                             <g:formatNumber number="${selected?.carriedBalance ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}"/>
                         </td>
                     </tr>
-                    <g:if test="${irn}">
-						<tr>
-	                      <td><g:message code="IRN"/></td>
-	                      <td style="font-size: smaller;" class="value">${irn}</td></tr>
-	                    <tr>
-                    </g:if>
                     <tr>
                         <td><g:message code="invoice.label.payment.attempts"/></td>
                         <td class="value">${selected.paymentAttempts}</td></tr>
@@ -247,7 +241,6 @@
                     <th class="first"><g:message code="label.gui.description"/></th>
                     <th><g:message code="label.gui.quantity"/></th>
                     <th><g:message code="label.gui.price"/></th>
-                    <th><g:message code="label.gui.tax"/></th>
                     <th class="last"><g:message code="label.gui.amount"/></th>
                 </tr>
                 </thead>
@@ -282,9 +275,6 @@
                                     <g:formatNumber number="${line?.price ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}" maxFractionDigits="5"/>
                                 </g:if>
                             </g:else>
-                        </td>
-                        <td class="${line.id==0 ? 'hide' : ''} innerContent">
-                            <g:formatNumber number="${line?.taxAmount ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}" maxFractionDigits="2"/>
                         </td>
                         <td class="${line.id==0 ? 'hide' : ''} innerContent">
                             <g:formatNumber number="${line?.amount ?: BigDecimal.ZERO}" type="currency" currencySymbol="${currency?.symbol}" maxFractionDigits="2"/>
@@ -327,19 +317,6 @@
                     </a>
                 </sec:access>
             </g:if>
-        <!-- Generate E-invoice button -->
-            <sec:ifAllGranted roles="CUSTOMER_2120">
-                 <g:if test="${irn}">
-                    <button type="button" disabled="disabled" class="einvoiceGen">
-                        <g:message code="generate.e.invoice"/>
-                    </button>
-                 </g:if>
-                 <g:else>
-                    <a href="${createLink (action: 'generateEInvoice', id: selected.id)}" class="submit">
-                       <span><g:message code="generate.e.invoice"/></span>
-                    </a>
-                 </g:else>
-            </sec:ifAllGranted>
 
             <g:settingEnabled property="hbase.audit.logging">
                     <sec:access url="/invoice/history">
@@ -389,7 +366,7 @@
                         </sec:noAccess>
                     </td>
                     <td class="innerContent">
-                        <g:formatDate date="${creditNote.createDateTime}" formatName="date.pretty.format"/>
+                        <g:formatDate date="${creditNote.creditNoteDate}" formatName="date.pretty.format"/>
                     </td>
                     <td class="innerContent">
                         ${"C"}
@@ -461,7 +438,7 @@
                                 <g:formatNumber number="${new BigDecimal(paymentInvoice.amount ?: 0)}" type="currency" currencySymbol="${currency?.symbol}"/>
                             </td>
                             <td class="innerContent">
-                                ${paymentInvoice.payment.paymentMethod.getDescription(paymentInvoice.payment,session['language_id'])}
+                                ${paymentInvoice.payment.paymentMethod.getDescription(session['language_id'])}
                             </td>
                             <td class="innerContent">
                                 ${paymentInvoice.payment.paymentResult.getDescription(session['language_id'])}
@@ -504,7 +481,7 @@
                                 </sec:noAccess>
                             </td>
                             <td class="innerContent">
-                                <g:formatDate date="${creditNoteInvoice.creditNote.createDateTime}" formatName="date.pretty.format"/>
+                                <g:formatDate date="${creditNoteInvoice.creditNote.creditNoteDate}" formatName="date.pretty.format"/>
                             </td>
                             <td class="innerContent">
                                 ${"C"}
@@ -542,19 +519,7 @@
            <div class="sub-box"><p>${selected.customerNotes}</p></div>
         </div>
     </g:if>
-   <g:preferenceIsNullOrEquals preferenceId="${Constants.PREFERENCE_DISPLAY_PAYMENT_URL_LINK_NOTIFICATION}" value="1">
-        <div class="heading">
-            <strong><g:message code="payment.link.header"/></strong>
-        </div>
-        <div class="box" id="paymentUrlLogDiv">
-            <div class="sub-box">
-                <g:render template="/invoice/paymentUrlTemplate"
-                        model="[selected: selected,
-                                paymentUrlLogs: paymentUrlLogs,
-                                ]"/>
-            </div>
-        </div>
-    </g:preferenceIsNullOrEquals>
+
     <div class="btn-box">
         <g:if test="${!selected.creditNoteGenerated && !selected.creditNoteMap}">
         <sec:ifAllGranted roles="INVOICE_70">

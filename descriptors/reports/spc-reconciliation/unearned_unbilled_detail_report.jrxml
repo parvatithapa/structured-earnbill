@@ -39,23 +39,30 @@ item.active_until IS NOT NULL AND item.active_until < (order_process.period_end 
 THEN
 (
 item.active_until :: date - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date)
+
+WHEN((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date > (order_process.period_end :: date - 1)) 
+THEN 0
+
 ELSE ((order_process.period_end :: date - 1) - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) END) :: decimal AS unearned_days,
-		(CASE WHEN invoice.create_datetime > order_process.period_start
+		(CASE WHEN invoice.create_datetime > order_process.period_end
                       THEN
                      (CASE WHEN
 item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
 THEN
-0
-WHEN(
-item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
-)
-THEN
-(
- (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - item.active_until :: date +1
+(item.active_until :: date - order_process.period_end :: date) 
 WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
 THEN 0
+
+WHEN ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date < order_process.period_end :: date ) 
+THEN (order_process.period_end :: date  - (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date  + 1)
 ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (order_process.period_end :: date ) + 1 END):: decimal ELSE 0 END) AS unbilled_days,
-		(order_process.period_end :: date  - order_process.period_start :: date) :: decimal AS period_duration,
+		
+		(CASE WHEN (po.active_until is NOT NULL) 
+		THEN  ((order_process.period_end :: date - order_process.period_start :: date) ::decimal + 1) 
+		WHEN (order_process.period_end :: date  = order_process.period_start :: date)
+		THEN  ((order_process.period_end :: date - order_process.period_start :: date) ::decimal + 1)
+		ELSE  (order_process.period_end :: date  - order_process.period_start :: date) ::decimal END) AS period_duration ,
+
 		(CASE WHEN il.gross_amount = 0 THEN  il.amount ELSE  il.gross_amount END) AS sales_ex_tax,
 		(CASE WHEN il.gross_amount = 0 THEN (il.amount*0.1) ELSE il.tax_amount  END) AS GST,
 		(SELECT gl_description
@@ -111,8 +118,7 @@ ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1
                                  INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
                                          WHERE description LIKE 'Senior Plan -%')
                              ELSE NULL
-                             END ) AS senior_plan,
-                  0 AS cost_of_service
+                             END ) AS senior_plan 
          FROM invoice
     INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
 	          FROM invoice_line
@@ -156,19 +162,19 @@ UNION ALL
                 0 AS unearned_days,
 		(CASE WHEN
 item.active_until IS NOT NULL AND item.active_until :: date < (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date
-THEN
-0
-WHEN(
-item.active_until IS NOT NULL AND item.active_until < (order_process.period_end :: date -1)
-)
-THEN
-(
- (DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - item.active_until :: date +1
+THEN 
+(item.active_until :: date - invoice.create_datetime::date)
 WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
 THEN 0
-ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (order_process.period_end :: date ) + 1 END):: decimal AS unbilled_days,
 
-		((order_process.period_end :: date - order_process.period_start :: date))::decimal AS period_duration,
+ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH')::date) - (invoice.create_datetime::date) + 1 END):: decimal AS unbilled_days,
+		
+		(CASE WHEN (po.active_until is NOT NULL) 
+		THEN  ((order_process.period_end :: date - order_process.period_start :: date) ::decimal + 1) 
+		WHEN (order_process.period_end :: date  = order_process.period_start :: date)
+		THEN  ((order_process.period_end :: date - order_process.period_start :: date) ::decimal + 1)
+		ELSE  (order_process.period_end :: date  - order_process.period_start :: date) ::decimal END) AS period_duration ,
+		
 		(CASE WHEN il.gross_amount = 0 THEN  il.amount  ELSE il.gross_amount END) AS sales_ex_tax,
 		(CASE WHEN il.gross_amount = 0 THEN  (il.amount*0.1) ELSE il.tax_amount END) AS GST,
 		(SELECT gl_description
@@ -223,8 +229,7 @@ ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1
                                  INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
                                          WHERE description LIKE 'Senior Plan -%')
                              ELSE NULL
-                             END ) AS senior_plan,
-                  0 as cost_of_service
+                             END ) AS senior_plan 
          FROM invoice
     INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
 	          FROM invoice_line
@@ -256,9 +261,14 @@ UNION ALL
 (CASE
 WHEN (po.active_until <= ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date))
 THEN 0
-ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1 day')::date) - (op.period_end :: date ) + 1 END):: decimal AS unbilled_days,
 
-		((op.period_end :: date - op.period_start :: date))::decimal AS period_duration,
+ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH')::date) - (invoice.create_datetime::date) + 1 END):: decimal AS unbilled_days,
+		
+		(CASE WHEN (po.active_until is NOT NULL) 
+		THEN  ((op.period_end :: date - op.period_start :: date) ::decimal + 1) 
+		WHEN (op.period_end :: date  = op.period_start :: date)
+		THEN  ((op.period_end :: date - op.period_start :: date) ::decimal + 1)
+		ELSE  (op.period_end :: date  - op.period_start :: date) ::decimal END) AS period_duration ,
 
                table1.sales_ex_tax,
                0 AS GST,
@@ -267,8 +277,7 @@ ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1
                table1.costs_gl_description,
                table1.service_number_email,
 	       table1.asset_identifire,
-               table1.senior_plan,
-               table1.cost_of_service
+               table1.senior_plan 
        FROM
 	(SELECT
 		invoice.create_datetime AS invoice_date,
@@ -294,7 +303,10 @@ ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1
              INNER JOIN order_line ol ON in_po.id = ol.order_id
              INNER JOIN asset_assignment aa ON aa.order_line_id = ol.id
              INNER JOIN asset a ON a.id = aa.asset_id AND a.identifier = (SELECT call_identifier FROM order_line WHERE order_id = po.id AND call_identifier IS NOT NULL AND item_id = il.item_id limit 1)
-		  WHERE op.period_start <= po.active_since AND op.period_end > po.active_since ) AS op_id,
+		  	 AND CASE WHEN aa.end_datetime IS NULL THEN 
+		     (SELECT MAX(start_datetime) FROM asset_assignment WHERE end_datetime IS NULL AND asset_id = a.id) <=$P{start_date} ELSE 
+		     ($P{start_date}  BETWEEN aa.start_datetime AND aa.end_datetime) END
+		  WHERE op.period_start <= po.active_since AND op.period_end > po.active_since LIMIT 1) AS op_id,
 		il.gross_amount AS sales_ex_tax,
 (SELECT gl_description
                    FROM route_70_gl_description
@@ -348,8 +360,7 @@ ELSE ((DATE_TRUNC('MONTH',invoice.create_datetime::date) + INTERVAL '1 MONTH - 1
                                  INNER JOIN item_type_map itm ON it.id = itm.type_id AND item_id = il.item_id
                                          WHERE description LIKE 'Senior Plan -%')
                              ELSE NULL
-                             END ) AS senior_plan,
-                  (SELECT sum(rated_price) FROM jbilling_mediation_record WHERE order_id = il.order_id ) as cost_of_service
+                             END ) AS senior_plan 
          FROM invoice
     INNER JOIN (SELECT invoice_id,order_id,item_id, SUM(amount) AS amount,SUM(tax_amount) AS tax_amount,SUM(gross_amount) AS gross_amount
 	          FROM invoice_line
@@ -389,7 +400,7 @@ INNER JOIN invoice ON invoice.id = op.invoice_id
 	<field name="service_number_email" class="java.lang.String"/>
 	<field name="asset_identifire" class="java.lang.String"/>
 	<field name="senior_plan" class="java.lang.String"/>
-	<field name="cost_of_service" class="java.math.BigDecimal"/>
+	
 	<variable name="sum_of_unearned_days" class="java.lang.Integer" calculation="Sum">
 		<variableExpression><![CDATA[$F{unearned_days} > 0 ? $F{unearned_days} : 0]]></variableExpression>
 	</variable>
@@ -405,9 +416,7 @@ INNER JOIN invoice ON invoice.id = op.invoice_id
 	<variable name="sum_unbilled_ex_gst" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{sales_ex_tax} * (($F{unbilled_days} >0 ? $F{unbilled_days} : 0) /$F{period_duration})]]></variableExpression>
 	</variable>
-	<variable name="sum_cost_of_service" class="java.math.BigDecimal" calculation="Sum">
-		<variableExpression><![CDATA[$F{cost_of_service} != null ? $F{cost_of_service} :0]]></variableExpression>
-	</variable>
+	
 	<title>
 		<band height="91" splitType="Stretch">
 			<textField pattern="MMMMM dd, yyyy" isBlankWhenNull="true">
@@ -654,11 +663,7 @@ INNER JOIN invoice ON invoice.id = op.invoice_id
 				<reportElement x="304" y="0" width="201" height="20" uuid="46eac6aa-ae81-4d2d-a89e-67ca7022f14c"/>
 				<textFieldExpression><![CDATA[null != $F{service_number_email} ? $F{service_number_email} : $F{asset_identifire}]]></textFieldExpression>
 			</textField>
-			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
-				<reportElement x="2055" y="0" width="106" height="20" uuid="70ba55ac-be04-43da-be44-8c9c81f2d09a"/>
-				<textElement textAlignment="Right"/>
-				<textFieldExpression><![CDATA[$F{cost_of_service} != null ? $F{cost_of_service} :0]]></textFieldExpression>
-			</textField>
+			
 		</band>
 	</detail>
 	<pageFooter>
@@ -707,11 +712,7 @@ INNER JOIN invoice ON invoice.id = op.invoice_id
 				<textElement textAlignment="Right"/>
 				<textFieldExpression><![CDATA[$V{sum_unbilled_ex_gst}]]></textFieldExpression>
 			</textField>
-			<textField pattern="###0.0000;-###0.0000" isBlankWhenNull="true">
-				<reportElement x="2055" y="3" width="105" height="20" uuid="6c4586f8-1403-4c6d-a87a-df9e9493c4d1"/>
-				<textElement textAlignment="Right"/>
-				<textFieldExpression><![CDATA[$V{sum_cost_of_service}]]></textFieldExpression>
-			</textField>
+			
 			<textField>
 				<reportElement x="2055" y="36" width="105" height="20" uuid="c40e6b27-f45f-4ae8-b4c8-0d6e22d0e2ae"/>
 				<textElement textAlignment="Right"/>

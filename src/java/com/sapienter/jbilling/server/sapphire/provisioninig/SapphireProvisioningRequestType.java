@@ -23,8 +23,7 @@ enum SapphireProvisioningRequestType {
     RENEWAL_AE("RENEWAL-AE"),
     SUSPENSION("SUSPENSION"),
     DISCONNECTION("DISCONNECTION"),
-    SERVICE_TRANSFER("SERVICE-TRANSFER"),
-    NEW_SALE("NEW-SALE");
+    SERVICE_TRANSFER("SERVICE-TRANSFER");
 
     private String requestType;
 

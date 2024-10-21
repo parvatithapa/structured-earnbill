@@ -18,8 +18,6 @@ import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
 import com.sapienter.jbilling.server.item.db.ItemTypeDAS;
 import com.sapienter.jbilling.server.item.db.ItemTypeDTO;
-import com.sapienter.jbilling.server.item.db.PlanDTO;
-import com.sapienter.jbilling.server.item.db.PlanItemDTO;
 import com.sapienter.jbilling.server.metafields.MetaFieldHelper;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
@@ -58,8 +56,8 @@ public class SpaHappyFoxBL {
     private List<String> displayName = new ArrayList<>();
     private List<String> sipPassword = new ArrayList<>();
     private List<String> cPEPurchaseDate = new ArrayList<>();
-    private List<String> emailPortalUserID = new ArrayList<>();
-    private List<String> emailPortalPassword = new ArrayList<>();
+    private String emailPortalUserID;
+    private String emailPortalPassword;
     private Integer entityId;
     private Integer languageId;
 
@@ -70,7 +68,7 @@ public class SpaHappyFoxBL {
     private static final String SPACE = " ";
     private static final String HYPHEN = "-";
     private static final String COMMA = ", ";
-    private static final String ADDRESS_PATTERN = "%s%s%s%s%s";
+    private static final String ADDRESS_PATTERN = "%s%s%s%s%s%s";
 
     public SpaHappyFoxBL(SpaHappyFox spaHappyFox) {
         this.spaHappyFox =  spaHappyFox;
@@ -86,7 +84,18 @@ public class SpaHappyFoxBL {
     }
 
     public void getCustomerFields(UserWS user) {
-
+        entityId = user.getEntityId();
+        languageId = user.getLanguageId();
+        if("Email".equals(commonFields.getServiceType())){
+            MetaFieldValueWS customerFieldValue = getMetaField(user.getMetaFields(), SpaConstants.EMAIL_PORTAL_USERID);
+            if (null != customerFieldValue) {
+                emailPortalUserID = customerFieldValue.getStringValue();
+            }
+            customerFieldValue = getMetaField(user.getMetaFields(), SpaConstants.EMAIL_PORTAL_PASSWORD);
+            if (null != customerFieldValue) {
+                emailPortalPassword = customerFieldValue.getStringValue();
+            }
+        }
         AccountInformationTypeDTO contactInformationAIT = new AccountInformationTypeDAS().findByName(SpaConstants.CONTACT_INFORMATION_AIT, user.getEntityId(), user.getAccountTypeId());
         CustomerDTO customerDTO = new CustomerDAS().find(user.getCustomerId());
 
@@ -105,19 +114,7 @@ public class SpaHappyFoxBL {
     }
 
     public void getOtherFields(UserWS user) {
-        entityId = user.getEntityId();
-        languageId = user.getLanguageId();
 
-        if("Email".equals(commonFields.getServiceType())){
-            MetaFieldValueWS customerFieldValue = getMetaField(user.getMetaFields(), SpaConstants.EMAIL_PORTAL_USERID);
-            if (null != customerFieldValue) {
-                emailPortalUserID.add(customerFieldValue.getStringValue());
-            }
-            customerFieldValue = getMetaField(user.getMetaFields(), SpaConstants.EMAIL_PORTAL_PASSWORD);
-            if (null != customerFieldValue) {
-                emailPortalPassword.add(customerFieldValue.getStringValue());
-            }
-        }
         List<OrderDTO> orders= new OrderDAS().findRecurringOrdersByUserId(user.getId());
         if(null != orders){
             for (OrderDTO order : orders) {
@@ -142,9 +139,9 @@ public class SpaHappyFoxBL {
         }
     }
 
-    private void addPrivateFields(AssetDTO asset) {
+    private void addPrivateFields(AssetDTO asset ) {
 
-        if(isHardwareAssetOrLine(asset,null)){
+        if(isHardwareAsset(asset)){
             cPEmakeModel.add(String.valueOf(asset.getItem().getInternalNumber()));
             cPEPurchaseDate.add(getCPEPurchaseDate(asset));
         }
@@ -152,74 +149,72 @@ public class SpaHappyFoxBL {
         MetaFieldValue fieldValue = null;
         switch (commonFields.getServiceType()) {
         case DSL:
-            if(!isHardwareAssetOrLine(asset,null)){
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.DOMAIN_ID);
-                if (null != fieldValue) {
-                    ctiaca.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_PPPOE_USER);
-                if (null != fieldValue) {
-                    pPPoEuserName.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_PPPOE_PASSWORD);
-                if (null != fieldValue) {
-                    pPPoEPassword.add(String.valueOf(fieldValue.getValue()));
-                }
-            }else {
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
-                if (null != fieldValue) {
-                    cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
-                if (null != fieldValue) {
-                    cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
-                }
-                cPEstatus.add(asset.getAssetStatus().getDescription(languageId));
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.DOMAIN_ID);
+            if (null != fieldValue) {
+                ctiaca.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_PPPOE_USER);
+            if (null != fieldValue) {
+                pPPoEuserName.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_PPPOE_PASSWORD);
+            if (null != fieldValue) {
+                pPPoEPassword.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
+            if (null != fieldValue) {
+                cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
+            if (null != fieldValue) {
+                cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
             }
             break;
         case HOME_PHONE:
-            if(!isHardwareAssetOrLine(asset,null)){
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.PHONE_NUMBER);
-                if (null != fieldValue ) {
-                    servicePhoneNumber.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_CLIDNAME);
-                if (null != fieldValue) {
-                    displayName.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.SIPPASSWORD);
-                if (null != fieldValue) {
-                    sipPassword.add(String.valueOf(fieldValue.getValue()));
-                }
-            }else{
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
-                if (null != fieldValue) {
-                    cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
-                if (null != fieldValue) {
-                    cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
-                }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.DOMAIN_ID);
+            if (null != fieldValue) {
+                servicePhoneNumber.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
+            if (null != fieldValue) {
+                cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
+            if (null != fieldValue) {
+                cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.ASSET_STATE);
+            if (null != fieldValue && !isHardwareAsset(asset)) {
+                serviceStatus.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_CLIDNAME);
+            if (null != fieldValue) {
+                displayName.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.SIPPASSWORD);
+            if (null != fieldValue) {
+                sipPassword.add(String.valueOf(fieldValue.getValue()));
+            }
+            if(isHardwareAsset(asset)){
                 cPEstatus.add(asset.getAssetStatus().getDescription(languageId));
             }
-
             break;
         case CABLE_INTERNET:
-            if(!isHardwareAssetOrLine(asset,null)){
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.DOMAIN_ID);
-                if (null != fieldValue) {
-                    cyx.add(String.valueOf(fieldValue.getValue()));
-                }
-            }else {
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
-                if (null != fieldValue) {
-                    cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
-                }
-                fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
-                if (null != fieldValue) {
-                    cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
-                }
-                cPEstatus.add(asset.getAssetStatus().getDescription(languageId));
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.DOMAIN_ID);
+            if (null != fieldValue) {
+                cyx.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_MAC_ADRESS);
+            if (null != fieldValue) {
+                cPEMACaddress.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.MF_SERIAL_NUMBER);
+            if (null != fieldValue) {
+                cPEserialNumber.add(String.valueOf(fieldValue.getValue()));
+            }
+            fieldValue = MetaFieldHelper.getMetaField(asset,SpaConstants.ASSET_STATE);
+            if (null != fieldValue) {
+                cPEstatus.add(String.valueOf(fieldValue.getValue()));
             }
             break;
         default:
@@ -243,17 +238,12 @@ public class SpaHappyFoxBL {
 
     private void setRatePlan(OrderDTO order) {
         for (OrderLineDTO orderLineDTO : order.getLines()) {
-            if(null != orderLineDTO.getItem() && orderLineDTO.getItem().isPlan() && isLineInclude(orderLineDTO)
-                    && !isHardwareAssetOrLine(null, orderLineDTO)){
-                PlanDTO plan = orderLineDTO.getItem().getPlan();
-                List <PlanItemDTO> planItems = plan.getPlanItems().stream()
-                    .filter(pi -> pi.getBundle().getQuantity().compareTo(BigDecimal.ZERO) > 0
-                            && pi.getBundle().getPeriod().equals(plan.getPeriod())).collect(Collectors.toList());
-                if(null != getLineDescriptionForRatePlan(planItems,order)){
-                    ratePlan.add(getLineDescriptionForRatePlan(planItems,order));
-                }
+            if(null != orderLineDTO.getItem() && orderLineDTO.getItem().isPlan() && isLineInclude(orderLineDTO)){
+                ratePlan.add(orderLineDTO.getDescription());
                 serviceConnectionDate.add(formatter.format(order.getActiveSince()));
-                serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                if(!HOME_PHONE.equals(commonFields.getServiceType())){
+                    serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                }
                 return;
             }
         }
@@ -268,53 +258,32 @@ public class SpaHappyFoxBL {
                    .filter(this::isLineInclude)
                    .collect(Collectors.toList());
 
-               if(1 == orderLines.size() && !isHardwareAssetOrLine(null, orderLines.get(0))){
+               if(1 == orderLines.size()){
                    ratePlan.add(orderLines.get(0).getDescription());
                    serviceConnectionDate.add(formatter.format(order.getActiveSince()));
-                   serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                   if(!HOME_PHONE.equals(commonFields.getServiceType())){
+                       serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                   }
                }else{
                    if(CollectionUtils.isNotEmpty(orderLines)){
                        for (OrderLineDTO orderLineDTO : orderLines) {
-                           if(!CollectionUtils.isEmpty(orderLineDTO.getAssets()) && !isHardwareAssetOrLine(null, orderLineDTO)){
+                           if(!CollectionUtils.isEmpty(orderLineDTO.getAssets())){
                                ratePlan.add(orderLineDTO.getDescription());
                                serviceConnectionDate.add(formatter.format(order.getActiveSince()));
-                               serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                               if(!HOME_PHONE.equals(commonFields.getServiceType())){
+                                   serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                               }
                                return;
-                           } 
+                           }
                        }
-                       for (OrderLineDTO orderLineDTO : orderLines) {
-	                        if(!isHardwareAssetOrLine(null, orderLineDTO)){
-	                           ratePlan.add(orderLineDTO.getDescription());
-	                           serviceConnectionDate.add(formatter.format(order.getActiveSince()));
-	                           serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
-	                           return;
-	                       }
+                       ratePlan.add(orderLines.get(0).getDescription());
+                       serviceConnectionDate.add(formatter.format(order.getActiveSince()));
+                       if(!HOME_PHONE.equals(commonFields.getServiceType())){
+                           serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
                        }
                    }
                }
         }
-    }
-
-    private String getLineDescriptionForRatePlan(List<PlanItemDTO> planItems, OrderDTO order) {
-        List<OrderLineDTO> lines = new ArrayList<>();
-        for (PlanItemDTO planItemDTO : planItems) {
-            for (OrderLineDTO line : order.getLines()) {
-                if(planItemDTO.getItem().equals(line.getItem())){
-                    lines.add(line);
-                }
-            }
-        }
-        lines = lines.stream()
-                     .filter(line -> (line.getTypeId() != Constants.ORDER_LINE_TYPE_DISCOUNT
-                          && line.getTypeId() != Constants.ORDER_LINE_TYPE_PENALTY
-                          && line.getTypeId() != Constants.ORDER_LINE_TYPE_ADJUSTMENT
-                          && line.getTypeId() != Constants.ORDER_LINE_TYPE_TAX))
-                     .filter(line -> (0 >= BigDecimal.ZERO.compareTo(line.getAmount())))
-                     .collect(Collectors.toList());
-        if(!lines.isEmpty()){
-            return lines.get(0).getDescription();
-        }
-        return null;
     }
 
     private boolean setRatePlanForMigratedProduct(OrderDTO order) {
@@ -324,7 +293,9 @@ public class SpaHappyFoxBL {
                     && 0 >= BigDecimal.ZERO.compareTo(orderLineDTO.getAmount())){
                 ratePlan.add(orderLineDTO.getDescription());
                 serviceConnectionDate.add(formatter.format(order.getActiveSince()));
-                serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                if(!HOME_PHONE.equals(commonFields.getServiceType())){
+                    serviceStatus.add(new OrderStatusDAS().find(order.getStatusId()).getDescription(order.getUser().getLanguage().getId()));
+                }
                 return true;
             }
         }
@@ -333,8 +304,8 @@ public class SpaHappyFoxBL {
 
     public void setAllFields(){
         SpaPrivateNotes spaPrivateNotes = new SpaPrivateNotes();
-        spaPrivateNotes.setEmailPortalPassword(!emailPortalPassword.isEmpty() ? emailPortalPassword.toArray(new String[0]) : null);
-        spaPrivateNotes.setEmailPortalUserID(!emailPortalUserID.isEmpty() ? emailPortalUserID.toArray(new String[0]) : null);
+        spaPrivateNotes.setEmailPortalPassword(StringUtils.isNotBlank(emailPortalPassword) ? emailPortalPassword : null);
+        spaPrivateNotes.setEmailPortalUserID(StringUtils.isNotBlank(emailPortalUserID) ? emailPortalUserID : null);
         spaPrivateNotes.setServiceConnectionDate(!serviceConnectionDate.isEmpty() ? serviceConnectionDate.toArray(new String[0]) : null);
         spaPrivateNotes.setServiceStatus(!serviceStatus.isEmpty() ? serviceStatus.toArray(new String[0]) : null);
         spaPrivateNotes.setRatePlan(!ratePlan.isEmpty() ? ratePlan.toArray(new String[0]) : null);
@@ -354,7 +325,7 @@ public class SpaHappyFoxBL {
         spaHappyFox.setPrivateNotes(spaPrivateNotes);
     }
 
-    public List<Integer> findUser() {
+    public Integer findUser() {
         return new UserDAS().getUserIdByCustomerDetails(commonFields.getFullCustomerName(),
                 commonFields.getPhoneNumber().replaceAll("\\s", ""), commonFields.getServicePostalCode());
     }
@@ -412,14 +383,16 @@ public class SpaHappyFoxBL {
                     validateAndGetMetaField(streetNumberCAITMF,StringUtils.EMPTY,StringUtils.EMPTY),
                     validateAndGetMetaField(streetNameCAITMF,SPACE,StringUtils.EMPTY),
                     validateAndGetMetaField(streetTypeCAITMF,SPACE,StringUtils.EMPTY),
-                    validateAndGetMetaField(streetDirectionCAITMF, SPACE, StringUtils.EMPTY));
+                    validateAndGetMetaField(streetDirectionCAITMF, SPACE, StringUtils.EMPTY),
+                    validateAndGetMetaField(postalCodeCAITMF, SPACE, StringUtils.EMPTY));
         }else {
             serviceAddress = String.format(ADDRESS_PATTERN,
                     validateAndGetMetaField(streetAptSuiteCAITMF, StringUtils.EMPTY, HYPHEN),
                     validateAndGetMetaField(streetNumberCAITMF,StringUtils.EMPTY, StringUtils.EMPTY),
                     validateAndGetMetaField(streetTypeCAITMF,SPACE, StringUtils.EMPTY),
                     validateAndGetMetaField(streetNameCAITMF, SPACE, StringUtils.EMPTY ),
-                    validateAndGetMetaField(streetDirectionCAITMF,SPACE, StringUtils.EMPTY));
+                    validateAndGetMetaField(streetDirectionCAITMF,SPACE, StringUtils.EMPTY),
+                    validateAndGetMetaField(postalCodeCAITMF, SPACE, StringUtils.EMPTY));
         }
         commonFields.setServiceAddress(serviceAddress);
         commonFields.setCity(StringUtils.isEmpty(validateAndGetMetaField(cityCAITMF, StringUtils.EMPTY, StringUtils.EMPTY)) ? null
@@ -457,7 +430,7 @@ public class SpaHappyFoxBL {
         return null != assetAssignment ? formatter.format(assetAssignment.getStartDatetime()) : null;
     }
 
-    private boolean isHardwareAssetOrLine(AssetDTO asset,OrderLineDTO line){
+    private boolean isHardwareAsset(AssetDTO asset){
         ItemTypeDTO itemType = null;
         switch (commonFields.getServiceType()) {
         case DSL:
@@ -472,15 +445,10 @@ public class SpaHappyFoxBL {
         default:
             break;
         }
-        if(null != asset && null != itemType && null != asset.getItem()
-                && null != asset.getItem().getItemTypes()){
-            return asset.getItem().getItemTypes().contains(itemType);
-        }else if (null != line && null != itemType && line.getDeleted() == 0
-                && null != line.getItem() && null != line.getItem().getItemTypes()) {
-            return  line.getItem().getItemTypes().contains(itemType);
-        }else{
-            return false;
+        if(null != itemType && null != asset.getItem()){
+            return null != asset.getItem().getItemTypes() ? asset.getItem().getItemTypes().contains(itemType) : Boolean.FALSE;
         }
+        return false;
     }
 
     private boolean isMigratedProduct(ItemDTO item) {

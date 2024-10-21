@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -43,13 +44,16 @@ import com.sapienter.jbilling.server.payment.tasks.westpac.WestPacService;
 import com.sapienter.jbilling.server.pluggableTask.PaymentTaskWithTimeout;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
+import com.sapienter.jbilling.server.spc.SpcHelperService;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
+import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.contact.db.ContactDTO;
 import com.sapienter.jbilling.server.user.db.AccountInformationTypeDAS;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.user.db.UserDAS;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Constants;
+import com.sapienter.jbilling.server.util.Context;
 
 /**
  *
@@ -63,6 +67,8 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
     }
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String PAYMENT_PROCESSOR_NAME = "WestPac GateWay";
+    private static final String AGL_PAYMENT_PROCESSOR_ACH = "BANKACCOUNT-AGL";
+    private static final String AGL_PAYMENT_PROCESSOR_CC = "CREDITCARD-AGL";
     @SuppressWarnings("unused")
     private static final String PAYMENT_TYPE_PRE_AUTH = "preAuth";
     private static final String PAYMENT_TYPE_NORMAL = "payment";
@@ -72,7 +78,6 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
     /* Plugin parameters */
     private static final ParameterDescription PARAMETER_WEST_PAC_MERCHANT_ID =
             new ParameterDescription("Merchant Id", true, ParameterDescription.Type.STR, false);
-
 
     private static final ParameterDescription PARAMETER_REST_SECRET_KEY =
             new ParameterDescription("Secret Key", true, ParameterDescription.Type.STR, false);
@@ -86,6 +91,9 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
     private static final ParameterDescription PARAMETER_CONTACT_SECTION_NAME =
             new ParameterDescription("Customer Contact Section Name", false, ParameterDescription.Type.STR, false);
 
+    private static final ParameterDescription PARAMETER_INVOICE_DESIGN_NAME =
+            new ParameterDescription("Invoice Design Name", false, ParameterDescription.Type.STR, false);
+
     private static final ParameterDescription PARAMETER_BANK_ACCOUNT_ID =
             new ParameterDescription("Bank Account Id", true, ParameterDescription.Type.STR, false);
 
@@ -96,10 +104,15 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
         descriptions.add(PARAMETER_REST_URL);
         descriptions.add(PARAMETER_CONTACT_SECTION_NAME);
         descriptions.add(PARAMETER_BANK_ACCOUNT_ID);
+        descriptions.add(PARAMETER_INVOICE_DESIGN_NAME);
     }
 
     @Override
     public boolean process(PaymentDTOEx paymentInfo) throws PluggableTaskException {
+        if(!isValidTask(paymentInfo.getUserId())) {
+          //returning true when the task is not valid, since this is used for calling other processors
+            return true;
+        }
         if(isRefund(paymentInfo)) {
             return processRefund(paymentInfo).shouldCallOtherProcessors();
         } else if(isGateWayKeyStored(paymentInfo.getInstrument())) {
@@ -127,7 +140,35 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
     @Override
     public String storeCreditCard(ContactDTO contact, PaymentInformationDTO instrument) {
         logger.debug("creating credit card customer profile for user {}", instrument.getUser().getId());
-        return generateGateWaykey(instrument);
+        return isValidTask(instrument.getUser().getId()) ? generateGateWaykey(instrument) : null;
+    }
+
+    @Override
+    public boolean isValidTask(Integer userId) {
+        return isValidTask(UserBL.getUserEntity(userId));
+    }
+
+    private boolean isValidTask(UserDTO user) {
+        String invoiceDesignName = Objects.toString(parameters.get(PARAMETER_INVOICE_DESIGN_NAME.getName()), "");
+        String invoiceDesignFromCustomerObject = getInvoiceDesignFromUserObject(user);
+        String invoiceDesign = Objects.toString(fetchInvoiceDesign(user.getId(), invoiceDesignFromCustomerObject), "");
+        return Objects.equals(invoiceDesignName, invoiceDesign);
+    }
+
+    private String getInvoiceDesignFromUserObject(UserDTO user){
+        return Objects.isNull(user) ? null :
+            Objects.isNull(user.getCustomer()) ? null :
+                Objects.toString(user.getCustomer().getInvoiceDesign(),"");
+    }
+
+    /**
+     * This is helper method to fetch invoice design directly from DB
+     * This method uses the SPCHelperService class to fetch invoice design using JDBCTemplate
+     * @param userId User for which the invoice design is required
+     * @return invoiceDesign field value
+     */
+    private String fetchInvoiceDesign(Integer userId, String invoiceDesign) {
+        return Context.getBean(SpcHelperService.class).getCustomerInvoiceDesign(userId, invoiceDesign);
     }
 
     private static boolean isRefund(PaymentDTOEx payment) {
@@ -147,9 +188,10 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
             MultiValueMap<String, String> paymentParams = collectPaymentInfo(getGateWayKey(instrument),
                     payment, PAYMENT_TYPE_NORMAL, resolvepaymentMethodTypeFromInstrument(instrument));
             logger.debug("Payment params created {} for user {}", paymentParams, userId);
+            String processorName = resolveProcessorNameFromInstrument(instrument, userId);
             WestPacService gateWayService = getPaymentService();
             PaymentResponse paymentResponse = gateWayService.createPayment(paymentParams);
-            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse);
+            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse, processorName);
             storeResultInDB(paymentResponse.isPassed(), payment, paymentAuthorization);
             return new Result(paymentAuthorization, false);
         } catch(PluggableTaskException ex) {
@@ -162,6 +204,17 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
             logger.error("Error in processPaymentForStoredCreditCard ", ex);
             throw new PluggableTaskException("Error processPaymentForStoredCreditCard", ex);
         }
+    }
+
+    private String resolveProcessorNameFromInstrument(PaymentInformationDTO instrument, Integer userId) {
+        if(isAGL(userId, getInvoiceDesignFromUserObject(UserBL.getUserEntity(userId)))) {
+            if(isACH(instrument)) {
+                return AGL_PAYMENT_PROCESSOR_ACH;
+            } else if(isCreditCard(instrument)) {
+                return AGL_PAYMENT_PROCESSOR_CC;
+            }
+        }
+        return PAYMENT_PROCESSOR_NAME;
     }
 
     private PaymentMethodType resolvepaymentMethodTypeFromInstrument(PaymentInformationDTO instrument) {
@@ -195,8 +248,9 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
             MultiValueMap<String, String> paymentParams = collectPaymentInfo(gateWayKey, payment, PAYMENT_TYPE_NORMAL, PaymentMethodType.CREDIT_CARD);
             paymentParams.add("singleUseTokenId", token.getSingleUseTokenId());
             logger.debug("Payment params created {} for user {}", paymentParams, user.getId());
+            String processorName = resolveProcessorNameFromInstrument(instrument, user.getId());
             PaymentResponse paymentResponse = gateWayService.createPayment(paymentParams);
-            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse);
+            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse, processorName);
             storeResultInDB(paymentResponse.isPassed(), payment, paymentAuthorization);
             return new Result(paymentAuthorization, false);
         } catch(PluggableTaskException ex) {
@@ -259,9 +313,10 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
             Integer userId = payment.getUserId();
             MultiValueMap<String, String> paymentParams = collectPaymentInfo(null, payment, PAYMENT_TYPE_REFUND, PaymentMethodType.NONE);
             logger.debug("Payment params created {} for user {}", paymentParams, userId);
+            String processorName = resolveProcessorNameFromInstrument(payment.getInstrument(), userId);
             WestPacService gateWayService = getPaymentService();
             PaymentResponse paymentResponse = gateWayService.createPayment(paymentParams);
-            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse);
+            PaymentAuthorizationDTO paymentAuthorization = buildPaymentAuthorization(paymentResponse, processorName);
             storeResultInDB(paymentResponse.isPassed(), payment, paymentAuthorization);
             return new Result(paymentAuthorization, false);
         } catch(PluggableTaskException ex) {
@@ -307,7 +362,6 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
         String cardHolderName = cardValueMap.get(MetaFieldType.INITIAL.name());
         String expiryYear = null;
         String expiryMonth = null;
-
         if(StringUtils.isNotEmpty(expiryDateFieldValue) && expiryDateFieldValue.split("/").length == 2) {
             expiryMonth = expiryDateFieldValue.split("/")[0];
             expiryYear = expiryDateFieldValue.split("/")[1];
@@ -356,7 +410,7 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
             Map<Integer, String> accountAITSectionIdAndNameMap = accountInformationTypeDAS.getInformationTypeIdAndNameMapForAccountType(accountTypeId);
             Optional<Integer> sectionId = Optional.empty();
             for(Entry<Integer, String> aitSectionIdNameEntry : accountAITSectionIdAndNameMap.entrySet()) {
-                if(aitSectionIdNameEntry.getValue().equals(parameters.get(PARAMETER_CONTACT_SECTION_NAME.getName()))) {
+                if(aitSectionIdNameEntry.getValue().equals(sectionName.trim())) {
                     sectionId = Optional.of(aitSectionIdNameEntry.getKey());
                 }
             }
@@ -463,6 +517,10 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
         }
     }
 
+    private boolean isAGL(Integer userId, String invoiceDesign) {
+        return Context.getBean(SpcHelperService.class).isAGL(userId, invoiceDesign);
+    }
+
     @Override
     public char[] deleteCreditCard(ContactDTO contact, PaymentInformationDTO instrument) {
         return new char[0];
@@ -497,9 +555,9 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
      * @param paymentResponse
      * @return
      */
-    private PaymentAuthorizationDTO buildPaymentAuthorization(PaymentResponse paymentResponse) {
+    private PaymentAuthorizationDTO buildPaymentAuthorization(PaymentResponse paymentResponse, String processorName) {
         PaymentAuthorizationDTO paymentAuthDTO = new PaymentAuthorizationDTO();
-        paymentAuthDTO.setProcessor(PAYMENT_PROCESSOR_NAME);
+        paymentAuthDTO.setProcessor(processorName);
 
         String txID = StringUtils.isNotEmpty(paymentResponse.getTransactionId()) ? paymentResponse.getTransactionId() : "N/A"; // Transaction Id
         paymentAuthDTO.setTransactionId(txID);
@@ -576,7 +634,7 @@ public class PaymentWestPacTask extends PaymentTaskWithTimeout implements IExter
     @Override
     public String storeACH(ContactDTO contact, PaymentInformationDTO instrument, boolean updateKey) {
         logger.debug("creating bank account customer profile for user {}", instrument.getUser().getId());
-        return generateGateWaykey(instrument);
+        return isValidTask(instrument.getUser().getId()) ? generateGateWaykey(instrument) : null;
     }
 
     @Override

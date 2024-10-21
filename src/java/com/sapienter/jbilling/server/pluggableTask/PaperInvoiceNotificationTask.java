@@ -69,6 +69,7 @@ public class PaperInvoiceNotificationTask extends PluggableTask implements Notif
     public static final ParameterDescription PARAMETER_REMOVE_BLANK_PAGE =
             new ParameterDescription("remove_blank_page", false, ParameterDescription.Type.BOOLEAN);
 
+
     //initializer for pluggable params
     public PaperInvoiceNotificationTask() {
         descriptions.add(PARAMETER_DESIGN);

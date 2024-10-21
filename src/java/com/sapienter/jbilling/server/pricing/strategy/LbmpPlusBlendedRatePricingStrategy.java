@@ -1,31 +1,26 @@
 package com.sapienter.jbilling.server.pricing.strategy;
 
 
-import com.sapienter.jbilling.common.FormatLogger;
-import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.server.fileProcessing.FileConstants;
-import com.sapienter.jbilling.server.item.PricingField;
-import com.sapienter.jbilling.server.item.tasks.PricingResult;
-import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
-import com.sapienter.jbilling.server.order.Usage;
-import com.sapienter.jbilling.server.order.db.OrderDTO;
-import com.sapienter.jbilling.server.pricing.db.ChainPosition;
-import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
-import com.sapienter.jbilling.server.pricing.util.AttributeDefinition;
-import com.sapienter.jbilling.server.user.db.CustomerDTO;
-import com.sapienter.jbilling.server.util.Context;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
+import com.sapienter.jbilling.common.FormatLogger;
+import com.sapienter.jbilling.common.SessionInternalError;
+import com.sapienter.jbilling.server.item.PricingField;
+import com.sapienter.jbilling.server.item.tasks.PricingResult;
+import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
+import com.sapienter.jbilling.server.order.db.OrderDTO;
+import com.sapienter.jbilling.server.order.db.OrderLineDTO;
+import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
 
 /**
  * Created by neeraj on 14/6/16.
@@ -40,12 +35,13 @@ public class LbmpPlusBlendedRatePricingStrategy extends DayAheadPricingStrategy 
         super();
     }
 
-    BigDecimal calculateRate(OrderDTO pricingOrder, MetaFieldValue zoneMetaField, PricingResult result, BigDecimal quantity, List<PricingField> fields, PriceModelDTO planPrice, Date activeUntilDate){
+    @Override
+    BigDecimal calculateRate(OrderDTO pricingOrder, OrderLineDTO orderLine, MetaFieldValue zoneMetaField, PricingResult result, BigDecimal quantity, List<PricingField> fields, PriceModelDTO planPrice, Date activeUntilDate){
         //additional fields(effectiveDate,zone) for searching
         PricingField zonePricingField=new PricingField(zoneMetaField.getField().getName(), zoneMetaField.getValue().toString());
 
         //calculate FUP quantities
-        super.fupResult = calculateFreeUsageQty(pricingOrder, result, quantity);
+        super.fupResult = calculateFreeUsageQty(orderLine, result, quantity);
         quantity = fupResult.get(FupKey.NEW_QTY);
 
         DateTime activeSince = new DateTime(pricingOrder.getActiveSince());

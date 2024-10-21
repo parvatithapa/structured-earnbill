@@ -15,6 +15,10 @@
  */
 package com.sapienter.jbilling.server.spc;
 
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.ORDER_POST_PAID;
+import static com.sapienter.jbilling.server.adennet.AdennetConstants.ORDER_PRE_PAID;
+import static com.sapienter.jbilling.server.adennet.AdennetExternalConfigurationTask.ORDER_LEVEL_SUBSCRIBER_TYPE_MF_NAME;
+import static com.sapienter.jbilling.server.adennet.AdennetExternalConfigurationTask.ORDER_LEVEL_SUBSCRIPTION_ORDER_ID_MF_NAME;
 import static com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription.Type.STR;
 
 import java.lang.invoke.MethodHandles;
@@ -22,8 +26,9 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -39,30 +44,44 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.sapienter.jbilling.common.SessionInternalError;
+import com.sapienter.jbilling.server.adennet.config.ExternalConfig;
+import com.sapienter.jbilling.server.adennet.ws.ConsumptionUsageDetailsWS;
+import com.sapienter.jbilling.server.servicesummary.PrepaidServiceSummaryBL;
+import com.sapienter.jbilling.server.servicesummary.PrepaidServiceSummaryDTO;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.http.HttpStatus;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.sapienter.jbilling.common.CommonConstants;
+import com.sapienter.jbilling.server.creditnote.db.CreditNoteDAS;
+import com.sapienter.jbilling.server.creditnote.db.CreditNoteDTO;
+import com.sapienter.jbilling.server.creditnote.db.CreditType;
 import com.sapienter.jbilling.server.invoice.InvoiceBL;
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
 import com.sapienter.jbilling.server.invoice.db.InvoiceLineDTO;
+import com.sapienter.jbilling.server.invoiceSummary.InvoiceSummaryBL;
+import com.sapienter.jbilling.server.item.AssetAssignmentDAS;
 import com.sapienter.jbilling.server.item.PlanBL;
+import com.sapienter.jbilling.server.item.db.AssetAssignmentDTO;
 import com.sapienter.jbilling.server.item.db.AssetDAS;
 import com.sapienter.jbilling.server.item.db.AssetDTO;
 import com.sapienter.jbilling.server.item.db.ItemDAS;
 import com.sapienter.jbilling.server.item.db.ItemDTO;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.EntityType;
-import com.sapienter.jbilling.server.metafields.MetaFieldBL;
 import com.sapienter.jbilling.server.metafields.db.MetaField;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldValue;
 import com.sapienter.jbilling.server.order.OrderBL;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
+import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.order.db.OrderProcessDTO;
 import com.sapienter.jbilling.server.pluggableTask.PluggableTask;
 import com.sapienter.jbilling.server.pluggableTask.admin.ParameterDescription;
@@ -74,11 +93,14 @@ import com.sapienter.jbilling.server.servicesummary.ServiceSummaryBL;
 import com.sapienter.jbilling.server.servicesummary.ServiceSummaryDTO;
 import com.sapienter.jbilling.server.system.event.Event;
 import com.sapienter.jbilling.server.system.event.task.IInternalEventsTask;
-import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.user.db.UserDTO;
+import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Context;
+import com.sapienter.jbilling.server.util.PreferenceBL;
 import com.sapienter.jbilling.server.util.Context.Name;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 public class SpcServiceSummaryGenerationTask extends PluggableTask implements IInternalEventsTask {
 
@@ -86,11 +108,18 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
     private static final ParameterDescription PARAM_ORDER_LINE_SERVICE_IDENTIFIER_MF_NAME = new ParameterDescription("OrderLine level service identifier mf name", true, STR);
     private static final ParameterDescription PARAM_ASSET_SERVICE_IDENTIFIER_MF_NAME = new ParameterDescription("Asset level service identifier mf name", true, STR);
     private static final ParameterDescription PARAM_ZERO_PRICE_EXCULDED_CATEGORIES = new ParameterDescription("zero_price_exculded_categories", false, STR);
+    private static final ParameterDescription PARAM_SUBSCRIPTION_ORDER_ID_MF_NAME =
+            new ParameterDescription("Subscription order id meta field name", true, ParameterDescription.Type.STR);
+    private static final ParameterDescription PARAM_CREDIT_POOL_ITEMS = new ParameterDescription("credit_pool_items", false, STR);
+    private CreditNoteDAS creditNoteDAS = new CreditNoteDAS();
+    private InvoiceSummaryBL invoiceSummaryBL = new InvoiceSummaryBL();
 
     public SpcServiceSummaryGenerationTask() {
         descriptions.add(PARAM_ORDER_LINE_SERVICE_IDENTIFIER_MF_NAME);
         descriptions.add(PARAM_ASSET_SERVICE_IDENTIFIER_MF_NAME);
         descriptions.add(PARAM_ZERO_PRICE_EXCULDED_CATEGORIES);
+        descriptions.add(PARAM_SUBSCRIPTION_ORDER_ID_MF_NAME);
+        descriptions.add(PARAM_CREDIT_POOL_ITEMS);
     }
 
     @SuppressWarnings("unchecked")
@@ -141,23 +170,24 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
             categories.add(Integer.parseInt(category));
         }
         paramMap.put(excludedParamName, categories);
+        SpcHelperService spcHelperService = Context.getBean(SpcHelperService.class);
         String orderLineLevelMfParamName = PARAM_ORDER_LINE_SERVICE_IDENTIFIER_MF_NAME.getName();
         String orderLineLevelMfName = getMandatoryStringParameter(orderLineLevelMfParamName);
-        MetaField orderLineLevelMf = MetaFieldBL.getFieldByName(entityId, new EntityType[] { EntityType.ORDER_LINE }, orderLineLevelMfName);
-        if(null == orderLineLevelMf) {
-            logger.error("{} not present on order line level metafield for entity {}", orderLineLevelMfName, entityId);
-            throw new PluggableTaskException(orderLineLevelMfName + " not found on order line level for entity "+ entityId);
-        }
+        // validates order line service identifier meta field.
+        spcHelperService.validateAndGetMetaField(entityId, orderLineLevelMfName, EntityType.ORDER_LINE, DataType.STRING);
         paramMap.put(orderLineLevelMfParamName, orderLineLevelMfName);
 
         String assetServiceMfParamName = PARAM_ASSET_SERVICE_IDENTIFIER_MF_NAME.getName();
         String assetServiceMfName = getMandatoryStringParameter(assetServiceMfParamName);
-        MetaField assetMetaField = MetaFieldBL.getFieldByName(entityId, new EntityType[] { EntityType.ASSET }, assetServiceMfName);
-        if(null == assetMetaField) {
-            logger.error("{} not present on asset level metafield for entity {}", assetServiceMfName, entityId);
-            throw new PluggableTaskException(assetServiceMfName + " not found on asset level for entity "+ entityId);
-        }
+        // validates asset service id meta field.
+        spcHelperService.validateAndGetMetaField(entityId, assetServiceMfName, EntityType.ASSET, DataType.STRING);
         paramMap.put(assetServiceMfParamName, assetServiceMfName);
+
+        String subscriptionOrderIdMfParamName = PARAM_SUBSCRIPTION_ORDER_ID_MF_NAME.getName();
+        String subscriptionOrderIdMfName = getMandatoryStringParameter(subscriptionOrderIdMfParamName);
+        //validates subscription order id meta field.
+        spcHelperService.validateAndGetMetaField(entityId, subscriptionOrderIdMfName, EntityType.ORDER, DataType.INTEGER);
+        paramMap.put(subscriptionOrderIdMfParamName, subscriptionOrderIdMfName);
         return paramMap;
     }
 
@@ -239,14 +269,16 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
         logger.debug("Creating Service Summary for Invoice Id: {}", invoiceId);
         String assetServiceNumberMfName = (String) paramMap.get(PARAM_ASSET_SERVICE_IDENTIFIER_MF_NAME.getName());
         String orderLineServiceNumberMfName = (String) paramMap.get(PARAM_ORDER_LINE_SERVICE_IDENTIFIER_MF_NAME.getName());
-        List<PlanSummaryData> planSummaries = PlanSummaryData.generatePlanSummariesFromInvoiceLines(invoiceDTO.getInvoiceLines(), assetServiceNumberMfName,
-                orderLineServiceNumberMfName);
-        logger.debug("plan summeries {} section created for invoice {}", planSummaries, invoiceDTO.getId());
+        String subscriptionOrderIdMfName = (String) paramMap.get(PARAM_SUBSCRIPTION_ORDER_ID_MF_NAME.getName());
+        List<PlanSummaryData> planSummaries =
+                PlanSummaryData.generatePlanSummariesFromInvoiceLines(invoiceDTO, assetServiceNumberMfName,
+                orderLineServiceNumberMfName, subscriptionOrderIdMfName);
+        logger.debug("plan summary {} section created for invoice {}", planSummaries, invoiceDTO.getId());
         List<Integer> includedInvoiceLineIds = new ArrayList<>();
         ServiceSummaryBL serviceSummaryBL = new ServiceSummaryBL();
         UserDTO user = invoiceDTO.getBaseUser();
         ResourceBundle userResourceBundle = getResourceBundleForUser(user.getId());
-        // creating plan summary section.
+        // creating a plan summary section.
         for(PlanSummaryData planSummaryData : planSummaries) {
             logger.debug("creating service summary section for plan summary {}", planSummaryData);
             OrderProcessDTO planOrderProcessDTO = invoiceDTO.getOrderProcessForOrder(planSummaryData.getOrderId());
@@ -257,6 +289,10 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                 planEndDate.setTime(planOrderProcessDTO.getPeriodEnd());
                 planEndDate.add(Calendar.DAY_OF_MONTH, -1);
             }
+            OrderDTO orderDTO = new OrderBL(planSummaryData.getOrderId()).getEntity();
+            // check order by subscriber type
+            String prePaidMetaField = getSubscriberTypeMetaField(orderDTO);
+
             for(InvoiceLineDTO planInvoiceLine : planSummaryData.getPlanInvoiceLines()) {
                 ServiceSummaryDTO planServiceSummary = new ServiceSummaryDTO();
                 planServiceSummary.setServiceDescription("Plan Fee");
@@ -266,7 +302,12 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                 if (planSummaryData.getAssetCountOnPlan() == 1) {
                     planServiceSummary.setDisplayIdentifier(planSummaryData.getPlanAssetServiceNumbers().get(0));
                 } else {
-                    planServiceSummary.setDisplayIdentifier(planDescription);
+                    // get identifier from subscription order
+                    if (prePaidMetaField.equals(ORDER_PRE_PAID)) {
+                        planServiceSummary.setDisplayIdentifier(getSubscriptionIdentifierFromPlanOrder(orderDTO, planDescription));
+                    } else {
+                        planServiceSummary.setDisplayIdentifier(planDescription);
+                    }
                 }
                 planServiceSummary.setItemId(planInvoiceLine.getItem().getId());
                 planServiceSummary.setInvoiceLineId(planInvoiceLine.getId());
@@ -286,19 +327,32 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                 }
                 Integer planServiceSummaryId = serviceSummaryBL.create(planServiceSummary);
                 logger.debug("plan service summary created {}", planServiceSummaryId);
+                if (prePaidMetaField.equals(ORDER_PRE_PAID)){
+                    createPrepaidServiceSummary(planServiceSummaryId, orderDTO.getId());
+                }
             }
-            OrderDTO orderDTO = new OrderBL(planSummaryData.getOrderId()).getEntity();
-            if(orderDTO.getOrderPeriod().getPeriodUnit().isYearly()) {
+            if (orderDTO.getOrderPeriod().getPeriodUnit().isYearly() ||
+                    (prePaidMetaField.equals(ORDER_POST_PAID) && orderDTO.isFinished())) {
                 ServiceSummaryDTO planServiceSummary = new ServiceSummaryDTO();
-                planServiceSummary.setServiceDescription("Yearly Plan Fee");
+                if (orderDTO.getOrderPeriod().getPeriodUnit().isYearly()) {
+                	planServiceSummary.setServiceDescription("Yearly Plan Fee");
+                } else {
+                	planServiceSummary.setServiceDescription("Plan Fee");
+                }
                 planServiceSummary.setPlanId(planSummaryData.getPlanId());
                 ItemDTO item = new PlanBL(planSummaryData.getPlanId()).getEntity().getItem();
                 String planDescription = item.getDescription(user.getLanguageIdField());
                 planServiceSummary.setServiceId("0");
+                String assetIdentifier = getServiceIdForOrder(orderDTO,assetServiceNumberMfName);
                 if (planSummaryData.getAssetCountOnPlan() == 1) {
                     planServiceSummary.setDisplayIdentifier(planSummaryData.getPlanAssetServiceNumbers().get(0));
                 } else {
-                    planServiceSummary.setDisplayIdentifier(planDescription);
+                    // get identifier from subscription order
+                    if (prePaidMetaField.equals(ORDER_PRE_PAID)) {
+                        planServiceSummary.setDisplayIdentifier(getSubscriptionIdentifierFromPlanOrder(orderDTO, planDescription));
+                    } else {
+                        planServiceSummary.setDisplayIdentifier(null != assetIdentifier ? assetIdentifier : planDescription);
+                    }
                 }
                 planServiceSummary.setItemId(item.getId());
                 planServiceSummary.setInvoiceLineId(null);
@@ -310,14 +364,14 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                 planServiceSummary.setStartDate(null);
                 planServiceSummary.setEndDate(null);
                 Integer planServiceSummaryId = serviceSummaryBL.create(planServiceSummary);
-                logger.debug("yearly plan service summary created {}", planServiceSummaryId);
+                logger.debug("yearly or finished plan service summary created {}", planServiceSummaryId);
             }
             includedInvoiceLineIds.addAll(planSummaryData.getAllInvoiceLines());
             List<InvoiceLineDTO> mediatedLines = planSummaryData.getMediatedLines();
             Map<String, List<InvoiceLineDTO>> identifierInvoiceLinesMap = null;
             Map<String, Date> usagePeriod = getUsagePeriodFromOrderProcess(planOrderProcessDTO);
             logger.debug("usage period {} for plan order {} for plan {}", usagePeriod,
-                     planSummaryData.getOrderId(), planSummaryData.getPlanId());
+                    planSummaryData.getOrderId(), planSummaryData.getPlanId());
             if(CollectionUtils.isNotEmpty(mediatedLines)) {
                 identifierInvoiceLinesMap = createIdentiferMediatedInvoiceLinesMap(mediatedLines);
                 for(Entry<String, List<InvoiceLineDTO>> identifierInvoiceLinesEntry : identifierInvoiceLinesMap.entrySet()) {
@@ -326,13 +380,14 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                         mediatedServiceSummaryCount++;
                         ServiceSummaryDTO mediatedServiceSummary = new ServiceSummaryDTO();
                         if(planSummaryData.getAssetCountOnPlan() > 1 ||
-                            (orderDTO.getOrderPeriod().getPeriodUnit().isYearly() && null == planOrderProcessDTO)) {
+                                (orderDTO.getOrderPeriod().getPeriodUnit().isYearly() && null == planOrderProcessDTO)) {
                             String serviceId = getServiceIdForAssetIdentifier(mediatedLine.getCallIdentifier(), assetServiceNumberMfName);
                             mediatedServiceSummary.setServiceId(serviceId);
                             if(mediatedServiceSummaryCount == 0 ) {
                                 mediatedServiceSummary.setDisplayIdentifier(serviceId);
                             }
                         }
+                        mediatedServiceSummary.setDisplayIdentifier(mediatedLine.getCallIdentifier());
                         mediatedServiceSummary.setInvoiceId(invoiceId);
                         mediatedServiceSummary.setInvoiceLineId(mediatedLine.getId());
                         mediatedServiceSummary.setIsPlan(false);
@@ -344,7 +399,7 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                         } else {
                             mediatedServiceSummary.setServiceDescription(mediatedLine.getDescription());
                         }
-                        List<Date> minMaxEventDates = findMinMaxDateForMediatedInvoiceLine(usagePeriod.get(START_PERIOD), usagePeriod.get(END_PERIOD), mediatedLine);
+                        List<Date> minMaxEventDates = findMinMaxDateForMediatedInvoiceLine(mediatedLine);
                         logger.debug("min and max dates {} for asset identifier {} for period [{} to {}]", minMaxEventDates,
                                 mediatedLine.getCallIdentifier(), planStartDate, planEndDate.getTime());
 
@@ -380,8 +435,8 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                             }
                         }
                         if (shouldSkip || BigDecimal.ZERO.compareTo(getItemPriceOrZero(item, invoiceDTO.getCreateDatetime())) != 0) {
-                        	// If the price of the asset enabled product is non-zero, 
-                        	// then skip generating a zero price service summary
+                            // If the price of the asset enabled product is non-zero,
+                            // then skip generating a zero price service summary
                             continue;
                         }
                     }
@@ -404,6 +459,8 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
             }
 
             List<InvoiceLineDTO> nonMediatedLines = planSummaryData.getNonMediatedLines();
+            List<Integer> creditPoolItems = creditPoolItems();
+            Calendar endDate = Calendar.getInstance();
             if(CollectionUtils.isNotEmpty(nonMediatedLines)) {
                 for(InvoiceLineDTO nonMediatedLine : nonMediatedLines) {
                     logger.debug("generating non mediated summary for invoice line {}", nonMediatedLine.getId());
@@ -413,9 +470,17 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                     nonMediatedServiceSummary.setInvoiceLineId(nonMediatedLine.getId());
                     nonMediatedServiceSummary.setIsPlan(false);
                     nonMediatedServiceSummary.setPlanId(planSummaryData.getPlanId());
-                    nonMediatedServiceSummary.setServiceId("00");
+                    OrderDTO order = nonMediatedLine.getOrder();
+                    nonMediatedServiceSummary.setServiceId((order.isCreditOrder() && nonMediatedLine.getItem() == null) ? "00" : getServiceIdForNonMediatedLine(order));
+
                     if(planSummaryData.getPlanInvoiceLines().size() == 1) {
                         setNonMediatedLineDates(planStartDate, planEndDate.getTime(), nonMediatedLine, nonMediatedServiceSummary);
+                        if (null != nonMediatedLine.getItem() && creditPoolItems.contains(nonMediatedLine.getItem().getId())) {
+                            nonMediatedServiceSummary.setStartDate(usagePeriod.get("start"));
+                            endDate.setTime(usagePeriod.get("end"));
+                            endDate.add(Calendar.DAY_OF_MONTH, -1);
+                            nonMediatedServiceSummary.setEndDate(endDate.getTime());
+                        }
                     } else {
                         List<Date> dates = getStartDateAndEndDateFromLineDescription(userResourceBundle, planStartDate, planEndDate.getTime(),
                                 nonMediatedLine.getDescription());
@@ -425,9 +490,10 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                         nonMediatedServiceSummary.setItemId(nonMediatedLine.getItem().getId());
                         nonMediatedServiceSummary.setServiceDescription(nonMediatedLine.getItem().getDescription(user.getLanguageIdField()));
                     } else {
-                        nonMediatedServiceSummary.setServiceDescription(nonMediatedLine.getDescription());
+                        nonMediatedServiceSummary.setServiceDescription(nonMediatedLine.getOrder().isDiscountOrder() ? "Discount" : nonMediatedLine.getDescription());
                     }
                     nonMediatedServiceSummary.setSubscriptionOrderId(planSummaryData.getOrderId());
+                    nonMediatedServiceSummary.setDisplayIdentifier(getSubscriptionIdentifierFromPlanOrder(orderDTO, nonMediatedServiceSummary.getServiceDescription()));
                     Integer nonMediatedServiceSummaryId = serviceSummaryBL.create(nonMediatedServiceSummary);
                     logger.debug("non mediated service summary created {} for user {}", nonMediatedServiceSummaryId, user.getId());
                 }
@@ -485,6 +551,14 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
                 endDate = startDate;
             }
 
+            if( null!= invoiceOrder && invoiceOrder.getProrateFlagValue() &&
+                    null != invoiceOrder.getOrderPeriod() &&
+                    !Constants.ORDER_PERIOD_ONCE.equals(invoiceOrder.getOrderPeriod().getId())) {
+                List<Date> dates = getStartDateAndEndDateFromLineDescription(userResourceBundle, startDate, endDate, invoiceLine.getDescription());
+                startDate = dates.get(0);
+                endDate = dates.get(1);
+                logger.debug("account charge is a recurring prorated order hence fetching start date: {} and end date: {} from line description", dates.get(0), dates.get(1));
+            }
             accountChargesServiceSummary.setStartDate(startDate);
             accountChargesServiceSummary.setEndDate(endDate);
             if(invoiceLine.hasItem()) {
@@ -496,14 +570,89 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
             Integer accountChargesServiceSummaryId = serviceSummaryBL.create(accountChargesServiceSummary);
             logger.debug("account charges summary created {} for user {}", accountChargesServiceSummaryId, user.getId());
         }
+
+        // Populate service summary with credit note
+
+        InvoiceDTO lastInvoice = null;
+        if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+                CommonConstants.PREFERENCE_USE_ANNIVERSARY_INVOICE_FOR_OPENING_BALANCE_IN_INVOICE_SUMMARY) == 1) {
+            lastInvoice = invoiceSummaryBL.getLastAnniversaryInvoice(invoiceDTO.getUserId(), invoiceDTO.getId());
+        }
+        if (null == lastInvoice) {
+            lastInvoice = invoiceSummaryBL.getLastInvoice(invoiceDTO.getUserId(), invoiceDTO.getId());
+        }
+        Date lastInvoiceDate = null != lastInvoice ? lastInvoice.getCreateDatetime() : null;
+
+        List<CreditNoteDTO> creditNotes = null;
+
+        if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+        		CommonConstants.PREFERENCE_SWITCH_BETWEEN_PAYMENT_OR_CR_NOTE_DATE_AND_CREATION_DATE_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY) == 1) {
+        	creditNotes = creditNoteDAS.findCreditNotesBetweenLastAndCurrentInvoiceDates(user.getId(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.INVOICE_DATE, getEntityId());
+        } else if(PreferenceBL.getPreferenceValueAsInteger(invoiceDTO.getBaseUser().getEntity().getId(),
+        		CommonConstants.PREFERENCE_SWITCH_BETWEEN_PAYMENT_DATE_OR_CR_NOTE_DATE_AND_CREATE_TIMESTAMP_FOR_PAYMENT_RECEIVED_AND_TOTAL_ADJ_AMOUNT_IN_INVOICE_SUMMARY) == 1) {
+        	lastInvoiceDate = null != lastInvoice ? lastInvoice.getCreateTimestamp() : null;
+        	creditNotes = creditNoteDAS.findCreditNotesBetweenLastAndCurrentInvoiceDates(user.getId(), lastInvoiceDate, invoiceDTO.getCreateTimestamp(),
+        			CommonConstants.INVOICE_TIMESTAMP, getEntityId());
+        } else {
+        	creditNotes = creditNoteDAS.findCreditNotesBetweenLastAndCurrentInvoiceDates(user.getId(), lastInvoiceDate, invoiceDTO.getCreateDatetime(),
+        			CommonConstants.CREDIT_NOTE_DATE, getEntityId());
+        }
+
+        if (null != creditNotes) {
+            for (CreditNoteDTO creditNote : creditNotes) {
+                if (CreditType.USER_GENERATED.equals(creditNote.getCreditType()) &&
+                        null == creditNote.getCreationInvoice() &&
+                                0 == creditNote.getDeleted()) {
+                    OrderDTO subscriptionOrder = creditNote.getSubscriptionOrder();
+                    ServiceSummaryDTO serviceCreditNotesServiceSummary = new ServiceSummaryDTO();
+                    serviceCreditNotesServiceSummary.setCreditNoteId(creditNote.getId());
+                    serviceCreditNotesServiceSummary.setInvoiceId(invoiceId);
+                    serviceCreditNotesServiceSummary.setUserId(user.getId());
+                    serviceCreditNotesServiceSummary.setInvoiceLineId(null);
+                    serviceCreditNotesServiceSummary.setIsPlan(false);
+                    serviceCreditNotesServiceSummary.setSubscriptionOrderId(null != subscriptionOrder ? subscriptionOrder.getId() : null);
+                    if (null != subscriptionOrder ) {
+                        serviceCreditNotesServiceSummary.setPlanId(null != subscriptionOrder.getPlanFromOrder() ? subscriptionOrder.getPlanFromOrder().getId() : null);
+                    }
+                    serviceCreditNotesServiceSummary.setServiceId(StringUtils.isEmpty(creditNote.getServiceId()) ? "zzzzzzzzzz" : creditNote.getServiceId());
+                    serviceCreditNotesServiceSummary.setItemId(creditNote.getLines().iterator().next().getItem().getId());
+                    serviceCreditNotesServiceSummary.setDisplayIdentifier(StringUtils.isEmpty(creditNote.getServiceId()) ? Constants.BLANK_STRING : creditNote.getServiceId());
+                    serviceCreditNotesServiceSummary.setServiceDescription(
+                            !creditNote.getLines().iterator().next().getDescription().isEmpty() ?
+                                    creditNote.getLines().iterator().next().getDescription() : null);
+                    serviceCreditNotesServiceSummary.setStartDate(creditNote.getCreateDateTime());
+                    Integer serviceCreditNotesServiceSummaryId = serviceSummaryBL.create(serviceCreditNotesServiceSummary);
+                    logger.debug("Ad-hoc credit note charges created in the service summary {} for user {}", serviceCreditNotesServiceSummaryId, user.getId());
+                }
+            }
+        }
     }
-    
+
+    /***
+     * Skip setting 00 for voice call credit, mobile call credit and data boost charges
+     * @param order
+     * @return
+     */
+    private String getServiceIdForNonMediatedLine(OrderDTO order) {
+        if (null != order) {
+            for (OrderLineDTO line : order.getLines()) {
+                for (MetaFieldValue<String> mfv : line.getMetaFields()) {
+                    if (mfv.getFieldName().equalsIgnoreCase(SPCConstants.SERVICE_ID)) {
+                        return (StringUtils.isNotBlank(mfv.getValue()) ? mfv.getValue() : "00");
+                    }
+                }
+            }
+        }
+        return "00";
+    }
+
     private BigDecimal getItemPriceOrZero(ItemDTO item, Date invoiceDate) {
-    	PriceModelDTO priceModel = item.getPrice(invoiceDate);
-    	if (null != priceModel) {
-    		return priceModel.getRate();
-    	}
-    	return BigDecimal.ZERO;
+        PriceModelDTO priceModel = item.getPrice(invoiceDate);
+        if (null != priceModel) {
+            return priceModel.getRate();
+        }
+        return BigDecimal.ZERO;
     }
 
     private void setNonMediatedLineDates(Date startDate,
@@ -518,10 +667,10 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
             nonMediatedServiceSummary.setEndDate(endDate);
         }
     }
-    
+
     /**
      * Helper method to extract start and end dates from the invoice line description
-     * @param user
+     * @param userResourceBundle
      * @param planStartDate
      * @param planEndDate
      * @param invoiceLineDescription
@@ -532,7 +681,8 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
             String invoiceLineDescription) throws PluggableTaskException {
         List<String> datesStr = new LinkedList<>();
         List<Date> dates = new LinkedList<>();
-        Matcher dateMatcher = Pattern.compile(userResourceBundle.getString("format.date.Regex")).matcher(invoiceLineDescription);
+        Matcher dateMatcher = Pattern.compile(userResourceBundle.getString("format.date.Regex"))
+                .matcher(invoiceLineDescription);
         int count = 2;
         while (count-- !=0 && dateMatcher.find()) {
             String date = dateMatcher.group(0);
@@ -596,31 +746,19 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
         return assetsWithNoUsage;
     }
 
-    private static final String FIND_MIN_MAX_EVENT_DATE_SQL =
-            "SELECT MIN(jmr.event_date) AS start, MAX(jmr.event_date) AS end FROM jbilling_mediation_record jmr, order_line ol "
-                    + "WHERE jmr.order_line_id = ol.id AND ol.call_identifier = ? "
-                    + "AND jmr.user_id = ? AND jmr.item_id = ? AND event_date BETWEEN ? AND ?";
     private static final String FIND_MIN_MAX_EVENT_DATE_USING_ORDER_ID_SQL =
             "SELECT MIN(jmr.event_date) AS start, MAX(jmr.event_date) AS end FROM jbilling_mediation_record jmr, order_line ol "
                     + "WHERE jmr.order_line_id = ol.id AND ol.call_identifier = ? "
                     + "AND jmr.user_id = ? AND jmr.item_id = ? AND jmr.order_id = ?";
 
-    private List<Date> findMinMaxDateForMediatedInvoiceLine(Date start, Date end, InvoiceLineDTO mediatedLine) {
+    private List<Date> findMinMaxDateForMediatedInvoiceLine(InvoiceLineDTO mediatedLine) {
         JdbcTemplate jdbcTemplate = Context.getBean(Name.JDBC_TEMPLATE);
         String callIdentifier = mediatedLine.getCallIdentifier();
         List<Map<String, Object>> rows = null;
         Date endDate = null;
         Date startDate = null;
-        if(null == start && null == end) {
-            rows = jdbcTemplate.queryForList(FIND_MIN_MAX_EVENT_DATE_USING_ORDER_ID_SQL, callIdentifier,
-                    mediatedLine.getInvoice().getBaseUser().getId(), mediatedLine.getItem().getId(),mediatedLine.getOrder().getId());
-        } else {
-        	String companyLevelTimeZone = TimezoneHelper.getCompanyLevelTimeZone(getEntityId());
-            endDate = getComanyZonedDate(end, companyLevelTimeZone);
-            startDate = getComanyZonedDate(start, companyLevelTimeZone);
-            rows = jdbcTemplate.queryForList(FIND_MIN_MAX_EVENT_DATE_SQL, callIdentifier,
-                    mediatedLine.getInvoice().getBaseUser().getId(), mediatedLine.getItem().getId(),startDate, endDate);
-        }
+        rows = jdbcTemplate.queryForList(FIND_MIN_MAX_EVENT_DATE_USING_ORDER_ID_SQL, callIdentifier,
+                mediatedLine.getInvoice().getBaseUser().getId(), mediatedLine.getItem().getId(),mediatedLine.getOrder().getId());
         if(CollectionUtils.isEmpty(rows)) {
             logger.debug("no event date found for indentifier for identifier {}, so returned default start/end date", callIdentifier);
             return Arrays.asList(startDate, endDate);
@@ -631,9 +769,104 @@ public class SpcServiceSummaryGenerationTask extends PluggableTask implements II
         return Arrays.asList((Date)row.get(START_PERIOD), (Date)row.get(END_PERIOD));
     }
 
-    private Date getComanyZonedDate(Date date, String companyLevelTimeZone) {
-        return Date.from(Instant.ofEpochMilli(date.getTime())
-                .atZone(ZoneId.systemDefault()).toLocalDateTime()
-                .atZone(ZoneId.of(companyLevelTimeZone)).toInstant());
+    private List<Integer> creditPoolItems() throws PluggableTaskException  {
+        String creditPoolItemsParam = getParameter(PARAM_CREDIT_POOL_ITEMS.getName(), StringUtils.EMPTY);
+        List<Integer> creditPoolItems = new ArrayList<>();
+        if (StringUtils.isNotEmpty(creditPoolItemsParam)) {
+            for(String creditPoolItem : creditPoolItemsParam.split(",")) {
+                if(!NumberUtils.isNumber(creditPoolItem)) {
+                    logger.debug("invalid value {} passed to parameter {} for entity {}", creditPoolItemsParam, PARAM_CREDIT_POOL_ITEMS.getName(), getEntityId());
+                    throw new PluggableTaskException("invalid value " + creditPoolItemsParam + " passed to "+ PARAM_CREDIT_POOL_ITEMS.getName());
+                }
+                creditPoolItems.add(Integer.parseInt(creditPoolItem));
+            }
+        }
+        return creditPoolItems;
+    }
+
+    private String getServiceIdForOrder(OrderDTO order, String assetServiceNumberMfName) {
+        List<AssetAssignmentDTO> assignments = new AssetAssignmentDAS().getAssignmentsForOrder(order.getId());
+        String assetIdentifier = null;
+        if(null != assignments){
+            for(AssetAssignmentDTO assetAssignment:assignments){
+                MetaFieldValue<String> assetServiceNumber = assetAssignment.getAsset().getMetaField(assetServiceNumberMfName);
+                if(null!= assetServiceNumber && StringUtils.isNotEmpty(assetServiceNumber.getValue())) {
+                    assetIdentifier = assetServiceNumber.getValue();
+                } else {
+                    assetIdentifier = assetAssignment.getAsset().getIdentifier();
+                }
+            }
+        }
+        return assetIdentifier;
+    }
+
+    private static Date convertStringToDate(String stringDate) {
+        String substring = stringDate.substring(0,19);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse(substring, formatter);
+        return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private MetaField getMetaField(ParameterDescription param, DataType dataType) throws PluggableTaskException {
+        SpcHelperService spcHelperService = Context.getBean(SpcHelperService.class);
+        // Retrieve the meta field name from external config
+        String subscriberTypeMfName = new ExternalConfig().getValueFromExternalConfigParams(param, getEntityId());
+        return spcHelperService.validateAndGetMetaField(getEntityId(), subscriberTypeMfName, EntityType.ORDER, dataType);
+    }
+
+    private String getSubscriberTypeMetaField(OrderDTO orderDTO) throws PluggableTaskException {
+        MetaField metaField = getMetaField(ORDER_LEVEL_SUBSCRIBER_TYPE_MF_NAME, DataType.ENUMERATION);
+        return orderDTO.getMetaFields().stream().filter(meta -> meta.getField().getName().equalsIgnoreCase(metaField.getName())
+        ).findFirst().map(MetaFieldValue::getValue).orElse("NA").toString();
+    }
+
+    private String getSubscriptionIdentifierFromPlanOrder(OrderDTO orderDTO, String planDescription) throws PluggableTaskException {
+        MetaField metaField = getMetaField(ORDER_LEVEL_SUBSCRIPTION_ORDER_ID_MF_NAME, DataType.INTEGER);
+        Integer subscriptionOrderId = (Integer) orderDTO.getMetaFields().stream().filter(meta -> meta.getField().getName().equalsIgnoreCase(metaField.getName())
+        ).findFirst().map(MetaFieldValue::getValue).orElse(null);
+
+        if (subscriptionOrderId != null) {
+            try {
+                OrderDTO subscriptionOrderDTO = new OrderBL(subscriptionOrderId).getEntity();
+                for (OrderLineDTO lineDTO : subscriptionOrderDTO.getLines()) {
+                    AssetDTO assetDTO = lineDTO.getAssets().stream().findFirst().orElse(null);
+                    if (assetDTO != null) {
+                        return assetDTO.getIdentifier();
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Identifier is not found for subscription orderID = {} ", subscriptionOrderId, e);
+            }
+        }
+        return planDescription;
+    }
+
+    private void createPrepaidServiceSummary(Integer serviceSummaryId, Integer orderId) {
+        ConsumptionUsageDetailsWS prepaidUsageDetails;
+        PrepaidServiceSummaryDTO prepaidServiceSummaryDTO = new PrepaidServiceSummaryDTO();
+        PrepaidServiceSummaryBL prepaidServiceSummaryBL = new PrepaidServiceSummaryBL();
+        try {
+            // UMS data source
+            JdbcTemplate jdbcTemplate = new JdbcTemplate(Context.getBean(Context.Name.DATA_SOURCE_UMS));
+            String query = "SELECT plan_id, subscriber_number, plan_description, available_quantity, initial_quantity, start_date, end_date FROM consumption_usage_map WHERE order_id = ?";
+            // fetch usage map
+            prepaidUsageDetails = jdbcTemplate.queryForObject(query, new Integer[]{orderId}, new BeanPropertyRowMapper<>(ConsumptionUsageDetailsWS.class));
+
+            if (null != prepaidUsageDetails) {
+                BigDecimal availableQuantity = prepaidUsageDetails.getAvailableQuantity();
+                BigDecimal initialQuantity = prepaidUsageDetails.getInitialQuantity();
+                BigDecimal usedQuantity = initialQuantity.subtract(availableQuantity);
+
+                prepaidServiceSummaryDTO.setServiceSummaryId(serviceSummaryId);
+                prepaidServiceSummaryDTO.setDataQuantity(usedQuantity);
+                prepaidServiceSummaryDTO.setStartDate(convertStringToDate(prepaidUsageDetails.getStartDate()));
+                prepaidServiceSummaryDTO.setEndDate(convertStringToDate(prepaidUsageDetails.getEndDate()));
+                Integer prepaidServiceSummaryId = prepaidServiceSummaryBL.create(prepaidServiceSummaryDTO);
+                logger.info("prepaid service summary created {}", prepaidServiceSummaryId);
+            }
+
+        } catch (Exception exception) {
+            logger.error("Failed to fetch prepaid usage details for orderId={}, due to {}", orderId, exception.getLocalizedMessage());
+        }
     }
 }

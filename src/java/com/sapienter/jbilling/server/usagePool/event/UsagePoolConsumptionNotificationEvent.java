@@ -16,8 +16,6 @@
 
 package com.sapienter.jbilling.server.usagePool.event;
 
-import java.math.BigDecimal;
-
 import com.sapienter.jbilling.server.system.event.Event;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolConsumptionActionDTO;
 
@@ -34,13 +32,15 @@ public class UsagePoolConsumptionNotificationEvent implements Event {
 	private final Integer entityId;
 	private final Integer customerUsagePoolId;
 	private final UsagePoolConsumptionActionDTO action;
-	
-	public UsagePoolConsumptionNotificationEvent(Integer entityId, 
-										Integer customerUsagePoolId,
-                                        UsagePoolConsumptionActionDTO action) {
+	private final String currentDataBoost;
+
+	public UsagePoolConsumptionNotificationEvent(Integer entityId,
+												 Integer customerUsagePoolId,
+												 UsagePoolConsumptionActionDTO action, String currentDataBoost) {
 		this.entityId = entityId;
 		this.customerUsagePoolId = customerUsagePoolId;
 		this.action = action;
+		this.currentDataBoost = currentDataBoost;
 	}
 	
 	@Override
@@ -56,7 +56,11 @@ public class UsagePoolConsumptionNotificationEvent implements Event {
         return action;
     }
 
-    @Override
+	public String getCurrentDataBoost() {
+		return currentDataBoost;
+	}
+
+	@Override
 	public String getName() {
         return "UsagePoolConsumptionNotificationEvent - entity " + entityId;
     }
@@ -65,6 +69,7 @@ public class UsagePoolConsumptionNotificationEvent implements Event {
 	public String toString() {
 		return "UsagePoolConsumptionNotificationEvent [entityId=" + entityId
 				+ ", customerUsagePoolId=" + customerUsagePoolId
+				+ ", currentDataBoost=" + currentDataBoost
 				+ ", actionId=" + action.getId()+ "]";
 	}
 	

@@ -106,7 +106,8 @@ implements IInternalEventsTask {
 									entityId, 
 									customerUsagePoolDTO.getId(), 
 									customerUsagePoolDTO.getQuantity(), 
-									BigDecimal.ZERO);
+									BigDecimal.ZERO,
+									null);
 						
 						customerUsagePoolDTO.setQuantity(BigDecimal.ZERO);
 						
@@ -121,7 +122,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDTO.getId(), 
 										customerUsagePoolDTO.getQuantity(), 
-										newPoolQuantity);
+										newPoolQuantity,
+										null);
 						
 						customerUsagePoolDTO.setQuantity(newPoolQuantity);
 						
@@ -193,7 +195,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDTO.getId(), 
 										customerUsagePoolDTO.getQuantity(), 
-										BigDecimal.ZERO);
+										BigDecimal.ZERO,
+										null);
 						
 						customerUsagePoolDTO.setQuantity(BigDecimal.ZERO);
 						
@@ -208,7 +211,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDTO.getId(), 
 										customerUsagePoolDTO.getQuantity(), 
-										newPoolQuantity);
+										newPoolQuantity,
+										null);
 						
 						customerUsagePoolDTO.setQuantity(newPoolQuantity);
 						EventManager.process(consumptionEvent);
@@ -238,7 +242,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDTO.getId(), 
 										customerUsagePoolDTO.getQuantity(), 
-										BigDecimal.ZERO);
+										BigDecimal.ZERO,
+										null);
 						
 						customerUsagePoolDTO.setQuantity(BigDecimal.ZERO);
 						
@@ -253,7 +258,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDTO.getId(), 
 										customerUsagePoolDTO.getQuantity(), 
-										newPoolQuantity);
+										newPoolQuantity,
+										null);
 						
 						customerUsagePoolDTO.setQuantity(newPoolQuantity);
 						
@@ -295,7 +301,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDto.getId(), 
 										customerUsagePoolDto.getQuantity(), 
-										newPoolQuantity);
+										newPoolQuantity,
+										null);
 						
 						// customer usage pool quantity cannot be higher than the system defined usage pool quantity
 						// so set it to system defined usage pool quantity
@@ -310,7 +317,8 @@ implements IInternalEventsTask {
 										entityId, 
 										customerUsagePoolDto.getId(), 
 										customerUsagePoolDto.getQuantity(), 
-										customerPoolUpdateQuantity);
+										customerPoolUpdateQuantity,
+										null);
 						
 						customerUsagePoolDto.setQuantity(customerPoolUpdateQuantity);
 						

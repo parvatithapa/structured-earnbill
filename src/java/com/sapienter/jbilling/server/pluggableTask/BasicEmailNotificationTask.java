@@ -129,7 +129,6 @@ public class BasicEmailNotificationTask extends PluggableTask implements Notific
     private int port;
     private String username;
     private String password;
-    private String replyTo;
     private boolean doHTML;
     private boolean tls;
     private boolean sslAuth;
@@ -159,11 +158,6 @@ public class BasicEmailNotificationTask extends PluggableTask implements Notific
         password = parameters.get(PARAMETER_PASSWORD.getName());
         if (password == null || password.length() == 0) {
             password = Util.getSysProp("smtp_password");
-        }
-
-        replyTo = parameters.get(PARAMETER_REPLYTO.getName());
-        if (replyTo == null || replyTo.length() == 0) {
-            replyTo = Util.getSysProp("email_reply_to");
         }
 
         String strDoHTML = parameters.get(PARAMETER_HTML.getName());
@@ -293,58 +287,16 @@ public class BasicEmailNotificationTask extends PluggableTask implements Notific
                 // not a huge deal, but no way I can send anything
                 logger.info("User without email address {}",
                         user.getUserId());
-                return false;
+                throw new TaskException("No Email Address present on customer account.");
             } else {
                 msg.setTo(addresses.toArray(new InternetAddress[addresses.size()]));
             }
         } catch (Exception e) {
             logger.debug("Exception setting addresses ", e);
-            throw new TaskException("Setting addresses");
+            throw new TaskException("Email Sent failed - "+e.getMessage());
         }
 
-        // the from address
-        String from = parameters.get(PARAMETER_FROM.getName());
-        if (from == null || from.length() == 0) {
-            from = Util.getSysProp("email_from");
-        }
-
-        String fromName = parameters.get(PARAMETER_FROM_NAME.getName());
-        if (fromName == null || fromName.length() == 0) {
-            fromName = Util.getSysProp("email_from_name");
-        }
-        try {
-            if (fromName == null || fromName.length() == 0) {
-                msg.setFrom(new InternetAddress(from));
-            } else {
-                msg.setFrom(new InternetAddress(from, fromName));
-            }
-        } catch (Exception e1) {
-            throw new TaskException("Invalid from address:" + from +
-                    "." + e1.getMessage());
-        }
-        // the reply to
-        if (replyTo != null && replyTo.length() > 0) {
-            try {
-                msg.setReplyTo(replyTo);
-            } catch (Exception e5) {
-                logger.error(String.format("Exception when setting the replyTo address: %s", replyTo), e5);
-            }
-        }
-        // the bcc if specified
-        String bcc = parameters.get(PARAMETER_BCCTO.getName());
-        if (isBlank(bcc)){
-            bcc = Util.getSysProp("email_bcc_to");
-        }
-        if (isNotBlank(bcc)) {
-            try {
-                msg.setBcc(new InternetAddress(bcc, false));
-            } catch (AddressException e5) {
-                logger.warn("The bcc address {} is not valid. Sending without bcc {}",bcc, e5);
-            } catch (MessagingException e5) {
-                throw new TaskException("Exception setting bcc " +
-                        e5.getMessage());
-            }
-        }
+        setCustomEmailParameters(user, msg);
 
         // the subject and body
         try {
@@ -389,7 +341,7 @@ public class BasicEmailNotificationTask extends PluggableTask implements Notific
                     .map(Address::toString)
                     .collect(Collectors.joining(" "));
             logger.debug(
-                    "Sending email to {} bcc {} server={} port={} username={}",allEmails,bcc,server,port,username );
+                    "Sending email to {} bcc {} server={} port={} username={}",allEmails,parameters.get(PARAMETER_BCCTO.getName()),server,port,username );
             sender.send(mimeMsg);
             //if there was an attachment, remove the file
             if (message.getAttachmentFile() != null) {
@@ -487,5 +439,56 @@ public class BasicEmailNotificationTask extends PluggableTask implements Notific
             }
         }
         return true;
+    }
+
+    protected void setCustomEmailParameters(UserDTO user, MimeMessageHelper msg) throws TaskException {
+        // the from address
+        String from = parameters.get(PARAMETER_FROM.getName());
+        if (from == null || from.length() == 0) {
+            from = Util.getSysProp("email_from");
+        }
+
+        String fromName = parameters.get(PARAMETER_FROM_NAME.getName());
+        if (fromName == null || fromName.length() == 0) {
+            fromName = Util.getSysProp("email_from_name");
+        }
+        try {
+            if (fromName == null || fromName.length() == 0) {
+                msg.setFrom(new InternetAddress(from));
+            } else {
+                msg.setFrom(new InternetAddress(from, fromName));
+            }
+        } catch (Exception e1) {
+            throw new TaskException("Invalid from address:" + from +
+                    "." + e1.getMessage());
+        }
+        String replyTo = parameters.get(PARAMETER_REPLYTO.getName());
+        if (replyTo == null || replyTo.length() == 0) {
+            replyTo = Util.getSysProp("email_reply_to");
+        }
+        // the reply to
+        if (replyTo != null && replyTo.length() > 0) {
+            try {
+                msg.setReplyTo(replyTo);
+            } catch (Exception e5) {
+                logger.error(String.format("Exception when setting the replyTo address: %s", replyTo), e5);
+            }
+        }
+        // the bcc if specified
+        String bcc = parameters.get(PARAMETER_BCCTO.getName());
+        if (isBlank(bcc)){
+            bcc = Util.getSysProp("email_bcc_to");
+        }
+        
+        if (isNotBlank(bcc)) {
+            try {
+                msg.setBcc(new InternetAddress(bcc, false));
+            } catch (AddressException e5) {
+                logger.warn("The bcc address {} is not valid. Sending without bcc {}",bcc, e5);
+            } catch (MessagingException e5) {
+                throw new TaskException("Exception setting bcc " +
+                        e5.getMessage());
+            }
+        }
     }
 }

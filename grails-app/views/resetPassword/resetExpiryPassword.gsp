@@ -19,7 +19,6 @@
     <meta name="layout" content="public"/>
 
     <title><g:message code="login.page.title"/></title>
-    <script src="https://www.google.com/recaptcha/enterprise.js" async defer></script>
 
     <r:script disposition="head">
         var RecaptchaOptions = {

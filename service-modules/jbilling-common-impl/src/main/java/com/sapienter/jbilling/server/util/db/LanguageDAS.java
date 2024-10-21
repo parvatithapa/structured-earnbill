@@ -24,10 +24,20 @@ public class LanguageDAS extends AbstractDAS<LanguageDTO> {
         "  FROM LanguageDTO a " +
         " WHERE a.code = :code ";
 
+    private static final String getLanguageDescription =
+            "SELECT a.description FROM language a WHERE a.id = (SELECT b.language_id FROM base_user b WHERE b.id = :id) ";
+
     public LanguageDTO findByCode(String code) {
         Query query = getSession().createQuery(findByCodeSQL);
         query.setParameter("code", code);
         return (LanguageDTO) query.uniqueResult();
     }
+
+    public String getLanguageDescriptionByUserId(Integer userId){
+        Query query = getSession().createSQLQuery(getLanguageDescription);
+        query.setParameter("id", userId);
+        return (String) query.uniqueResult();
+    }
+
 
 }

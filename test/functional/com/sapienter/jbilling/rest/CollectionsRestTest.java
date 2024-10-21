@@ -3,7 +3,6 @@ package com.sapienter.jbilling.rest;
 import com.sapienter.jbilling.server.discount.DiscountWS;
 import com.sapienter.jbilling.server.process.AgeingWS;
 import com.sapienter.jbilling.server.process.ProcessStatusWS;
-import com.sapienter.jbilling.server.user.UserWS;
 import com.sapienter.jbilling.server.util.CreateObjectUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,32 +28,11 @@ public class CollectionsRestTest extends RestTestCase {
 
     private static final Integer ENTITY_ID = Integer.valueOf(1);
     private static final Logger logger = LoggerFactory.getLogger(CollectionsRestTest.class);
-    private RestOperationsHelper userRestHelper;
-    private static final String STATUS_URL = "/status/in/1/";
+
     @BeforeClass
     public void setup(){
         super.setup("collections");
-        userRestHelper = RestOperationsHelper.getInstance("users");
-        ResponseEntity<Integer[]> fetchedResponse = restTemplate.sendRequest(userRestHelper.getFullRestUrl() + STATUS_URL
-                + false, HttpMethod.GET, getOrDeleteHeaders, null, Integer[].class);
-        Integer[] users = fetchedResponse.getBody();
-        for(Integer userId : users) {
-            updateCustomerStatusToActive(userId);
-        }
     }
-
-    private void updateCustomerStatusToActive(Integer customerId){
-
-        UserWS user = restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId, HttpMethod.GET,
-                getOrDeleteHeaders, null, UserWS.class).getBody();
-        user.setStatusId(Integer.valueOf(1));
-        user.setStatus("Active");
-        user.setPassword(null);
-
-        restTemplate.sendRequest(userRestHelper.getFullRestUrl() + customerId,
-                HttpMethod.PUT, postOrPutHeaders, user, UserWS.class);
-    }
-
 
     @Test
     public void getAgeingConfiguration() {

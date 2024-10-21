@@ -84,7 +84,7 @@ public class MoviusMediationProcessTask extends AbstractCronTask {
 						if(cdrFile.renameTo(new File(doneDirPath + File.separator + cdrFile.getName() + FILE_RENAME_EXTENTION))) {
 							logger.debug("Moved {} file to Dir {}", cdrFile.getName(), doneDirPath);
 							mediationService.triggerMediationJobLauncherByConfiguration(configuration.getEntityId(),
-									configuration.getId(), configuration.getMediationJobLauncher(), tempCdrFile);
+									configuration.getId(), configuration.getMediationJobLauncher(), tempCdrFile, cdrFile.getName());
 							logger.debug("Uploading cdr file {} from configuration {} for entity {}", cdrFile.getName(), configuration.getId(), configuration.getEntityId());
 							break;
 						} else {

@@ -22,7 +22,7 @@
   @since  10-Feb-2014
 --%>
 
-<div style="width: 90%;margin-left: 8%;" align="center">
+<div id="custom-div3" align="center">
     <table style="width: 100%;">
         <tr>
             <td style="width: 70%;">

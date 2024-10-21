@@ -31,7 +31,7 @@ target(compileReports: "Compiles jasper report designs.") {
     mkdir(dir: tempDir)
     jrc(destdir: "${resourcesDir}/reports", tempdir: tempDir, keepjava: "true", xmlvalidation: "true") {
         src {
-            fileset(dir: "${descriptorsDir}/reports", includes: "**/*.jrxml")
+            fileset(dir: "${descriptorsDir}/reports", includes: "**/adennet/*.jrxml")
         }
     }
     delete(dir: tempDir)

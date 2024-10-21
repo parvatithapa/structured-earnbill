@@ -36,6 +36,10 @@
             font-size: 16px;
             padding-left:30px;
         }
+        html[dir="rtl"] h3 {
+            padding-right:30px;
+            padding-left: 0;
+        }
 
     .column .row{
         width: 400px;

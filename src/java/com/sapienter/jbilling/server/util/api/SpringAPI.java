@@ -24,12 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Optional;
 
-import com.cashfree.model.UpiAdvanceResponseSchema;
 import com.sapienter.jbilling.common.SessionInternalError;
-import com.sapienter.jbilling.paymentUrl.db.PaymentUrlLogDTO;
-import com.sapienter.jbilling.paymentUrl.domain.response.PaymentResponse;
+import com.sapienter.jbilling.resources.CancelOrderInfo;
 import com.sapienter.jbilling.resources.CustomerMetaFieldValueWS;
 import com.sapienter.jbilling.resources.OrderMetaFieldValueWS;
 import com.sapienter.jbilling.server.apiUserDetail.ApiUserDetailWS;
@@ -90,12 +87,10 @@ import com.sapienter.jbilling.server.payment.PaymentMethodTypeWS;
 import com.sapienter.jbilling.server.payment.PaymentTransferWS;
 import com.sapienter.jbilling.server.payment.PaymentWS;
 import com.sapienter.jbilling.server.payment.SecurePaymentWS;
-import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskException;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeCategoryWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskTypeWS;
 import com.sapienter.jbilling.server.pluggableTask.admin.PluggableTaskWS;
 import com.sapienter.jbilling.server.pricing.DataTableQueryWS;
-import com.sapienter.jbilling.server.pricing.RateCardWS;
 import com.sapienter.jbilling.server.pricing.RatingUnitWS;
 import com.sapienter.jbilling.server.pricing.RouteRecordWS;
 import com.sapienter.jbilling.server.process.AgeingWS;
@@ -1776,6 +1771,16 @@ public class SpringAPI implements JbillingAPI {
     }
 
     @Override
+    public Integer createRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath) {
+        return session.createRouteRateCardUsingFilePath(routeRateCardWS, routeRateCardFilePath);
+    }
+
+    @Override
+    public void updateRouteRateCardUsingFilePath(RouteRateCardWS routeRateCardWS, String routeRateCardFilePath) {
+        session.updateRouteRateCardUsingFilePath(routeRateCardWS, routeRateCardFilePath);
+    }
+
+    @Override
     public RouteRateCardWS getRouteRateCard(Integer routeRateCardId) {
         return session.getRouteRateCard(routeRateCardId);
     }
@@ -1806,6 +1811,11 @@ public class SpringAPI implements JbillingAPI {
     }
 
     @Override
+    public SearchResultString searchRouteRateCard(Integer routeId, SearchCriteria criteria) {
+        return session.searchRouteRateCard(routeId, criteria);
+    }
+
+    @Override
     public String getRouteTable(Integer routeId) {
         return session.getRouteTable(routeId);
     }
@@ -1829,7 +1839,18 @@ public class SpringAPI implements JbillingAPI {
     public DataTableQueryWS[] findDataTableQueriesForTable(int routeId) {
         return session.findDataTableQueriesForTable(routeId);
     }
-
+    @Override
+    public Integer createRouteRateCardRecord(RouteRateCardWS routeRateCardRecord, Integer routeRateCardId) {
+        return session.createRouteRateCardRecord(routeRateCardRecord, routeRateCardId);
+    }
+    @Override
+    public void updateRouteRateCardRecord(RouteRateCardWS record, Integer routeRateCardId) {
+        session.updateRouteRateCardRecord(record, routeRateCardId);
+    }
+    @Override
+    public void deleteRateCardRecord(Integer routeRateCardId, Integer recordId) {
+        session.deleteRateCardRecord(routeRateCardId, recordId);
+    }
     @Override
     public Integer createRatingUnit(RatingUnitWS ratingUnitWS) {
         return session.createRatingUnit(ratingUnitWS);
@@ -2009,9 +2030,9 @@ public class SpringAPI implements JbillingAPI {
     }
 
     @Override
-    public UserWS copyCompanyInSaas(String templateForChildCompany, Integer entityId, List<String> importEntities,
-            boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail, String systemAdminLoginName) {
-        return session.copyCompanyInSaas(templateForChildCompany, entityId,importEntities, isCompanyChild, copyProducts, copyPlans, adminEmail, systemAdminLoginName);
+    public UserWS copyCompany(String templateForChildCompany, Integer entityId, List<String> importEntities,
+            boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail) {
+        return session.copyCompany(templateForChildCompany, entityId,importEntities, isCompanyChild, copyProducts, copyPlans, adminEmail);
     }
 
     @Override
@@ -2213,6 +2234,11 @@ public class SpringAPI implements JbillingAPI {
     /*
      * Credit Note
      */
+
+    @Override
+    public Integer createAdhocCreditNote(CreditNoteWS creditNoteWS) {
+        return session.createAdhocCreditNote(creditNoteWS);
+    }
 
     @Override
     public CreditNoteWS[] getAllCreditNotes(Integer entityId) {
@@ -2513,12 +2539,10 @@ public class SpringAPI implements JbillingAPI {
     public void updatePassword(Integer userId, String currentPassword, String newPassword) {
         session.updatePassword(userId, currentPassword, newPassword);
     }
-
     @Override
     public void resetPasswordByUserName(String userName){
         session.resetPasswordByUserName(userName);
     }
-
     @Override
     public PaymentMethodTypeWS[] getAllPaymentMethodTypes() {
         return session.getAllPaymentMethodTypes();
@@ -2586,8 +2610,8 @@ public class SpringAPI implements JbillingAPI {
     }
 
     @Override
-    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId, int offset, int limit) {
-        return session.getUnBilledMediationEventsByUser(userId, offset, limit);
+    public JbillingMediationRecord[] getUnBilledMediationEventsByUser(Integer userId) {
+        return session.getUnBilledMediationEventsByUser(userId);
     }
 
     @Override
@@ -2601,41 +2625,67 @@ public class SpringAPI implements JbillingAPI {
     }
 
     @Override
-    public PaymentWS[] findPaymentsForUser(Integer userId, int offset, int limit) {
-        return session.findPaymentsForUser(userId, offset, limit);
+    public Integer[] getPagedBillingProcessGeneratedInvoices(Integer processId, Integer limit, Integer offset) {
+        return session.getPagedBillingProcessGeneratedInvoices(processId, limit, offset);
     }
 
     @Override
-    public Integer createRateCard(RateCardWS rateCardWS, File rateCardFile) {
-        return session.createRateCard(rateCardWS, rateCardFile);
+    public void createMigrationUsers(UserWS[] users){
+        session.createMigrationUsers(users);
+    }
+
+	@Override
+	public void createMigrationOrders(OrderWS[] orders) {
+		session.createMigrationOrders(orders);
+	}
+
+	@Override
+	public void createMigrationProductOrders(OrderWS[] orders) {
+		session.createMigrationProductOrders(orders);
+	}
+
+	@Override
+	public void removeAssetFromActiveOrder(String assetIdentifier) {
+	    session.removeAssetFromActiveOrder(assetIdentifier);
+	}
+
+    @Override
+    public String getCustomerInvoiceDesign(Integer userId) {
+        return session.getCustomerInvoiceDesign(userId);
     }
 
     @Override
-    public void updateRateCard(RateCardWS rateCardWS, File rateCardFile){
-        session.updateRateCard(rateCardWS, rateCardFile);
+    public void updateCustomerInvoiceDesign(Integer userId, String invoiceDesign) {
+        session.updateCustomerInvoiceDesign(userId, invoiceDesign);
+    }
+    @Override
+    public Integer createDataTableRecord(RouteRecordWS routeRecord, String dataTableName) {
+    	return session.createDataTableRecord(routeRecord, dataTableName);
+    }    
+    
+    @Override
+	public Integer updateDataTableRecord(RouteRecordWS routeRecord, String dataTableName) {
+    	return session.updateDataTableRecord(routeRecord, dataTableName);
+    }
+    
+    @Override
+	public Integer deleteDataTableRecord(Integer recordId, String dataTableName) {
+    	return session.deleteDataTableRecord(recordId, dataTableName);
     }
 
     @Override
-    public void deleteRateCard(Integer rateCardId) {
-        session.deleteRateCard(rateCardId);
-    }
-
-    public Integer[] createCustomInvoice(File csvFile){
-        return session.createCustomInvoice(csvFile);
+    public void cancelServiceOrder(CancelOrderInfo cancelOrderInfo) {
+        session.cancelServiceOrder(cancelOrderInfo);
     }
 
     @Override
-    public PaymentUrlLogDTO createPaymentUrl(Map<String, Object> map) {
-        return session.createPaymentUrl(map);
+    public void triggerCustomerUsagePoolEvaluation(Integer entityId, Date runDate) {
+        session.triggerCustomerUsagePoolEvaluation(entityId, runDate);
     }
 
     @Override
-    public String generateGstR1JSONFileReport(String startDate, String endDate) throws Exception{
-        return session.generateGstR1JSONFileReport(startDate, endDate);
+    public boolean updateImage(Integer userId, String identificationType, String number, String imageFileName){
+        return session.updateImage(userId, identificationType, number, imageFileName);
     }
 
-    public Optional<Object> executePaymentTask(Integer paymentLogUrlLogId, String payerVPA,
-                                               String action) throws PluggableTaskException {
-        return session.executePaymentTask(paymentLogUrlLogId, payerVPA, action);
-    }
 }

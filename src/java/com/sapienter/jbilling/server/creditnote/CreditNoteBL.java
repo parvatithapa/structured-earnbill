@@ -9,9 +9,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityNotFoundException;
 
+import com.sapienter.jbilling.server.item.db.AssetDAS;
+import com.sapienter.jbilling.server.item.db.AssetDTO;
+import com.sapienter.jbilling.server.item.db.ItemDAS;
+import com.sapienter.jbilling.server.item.db.ItemDTO;
+import com.sapienter.jbilling.server.order.db.OrderDAS;
+import com.sapienter.jbilling.server.order.db.OrderDTO;
+import com.sapienter.jbilling.server.process.IBillingProcessSessionBean;
+import com.sapienter.jbilling.server.process.db.BillingProcessConfigurationDTO;
+import com.sapienter.jbilling.server.util.Context;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +59,8 @@ public class CreditNoteBL {
     private CreditNoteDTO creditNoteDto = null;
     private InvoiceDAS invoiceDAS = null;
     private CreditNoteInvoiceMapDAS mapDas = null;
+    private UserDAS userDAS = null;
+    private OrderDAS orderDAS = null;
 
 
     public CreditNoteBL(Integer creditNoteId) {
@@ -60,7 +73,7 @@ public class CreditNoteBL {
     }
 
     public void set(Integer creditNoteId) {
-        creditNoteDto = creditNoteDas.find(creditNoteId);
+        creditNoteDto = creditNoteDas.findNow(creditNoteId);
     }
 
     private void init() {
@@ -68,6 +81,8 @@ public class CreditNoteBL {
         creditNoteDto = new CreditNoteDTO();
         invoiceDAS = new InvoiceDAS();
         mapDas = new CreditNoteInvoiceMapDAS();
+        userDAS = new UserDAS();
+        orderDAS = new OrderDAS();
     }
 
     public CreditNoteDTO getCreditNote() {
@@ -83,25 +98,36 @@ public class CreditNoteBL {
     }
 
     public CreditNoteWS getWS(CreditNoteDTO creditNoteDTO) {
-        if (creditNoteDTO != null) {
-            CreditNoteWS creditNoteWS = new CreditNoteWS();
-
-            creditNoteWS.setId(creditNoteDTO.getId());
-            creditNoteWS.setUserId(creditNoteDTO.getCreationInvoice().getBaseUser().getId());
-            creditNoteWS.setEntityId(creditNoteDTO.getEntityId());
-            creditNoteWS.setBalanceAsDecimal(creditNoteDTO.getBalance());
-            creditNoteWS.setAmountAsDecimal(creditNoteDTO.getAmount());
-            creditNoteWS.setCreationInvoiceId(creditNoteDTO.getCreationInvoice().getId());
-            creditNoteWS.setCreditNoteLineIds(creditNoteDTO.getLines().stream().map(CreditNoteLineDTO::getId).toArray(Integer[]::new));
-            creditNoteWS.setCreditNoteInvoiceMapIds(creditNoteDTO.getPaidInvoices().stream().map(CreditNoteInvoiceMapDTO::getId).toArray(Integer[]::new));
-            creditNoteWS.setDeleted(creditNoteDTO.getDeleted());
-            creditNoteWS.setType(creditNoteDTO.getCreditType().name());
-            creditNoteWS.setCreateDateTime(creditNoteDTO.getCreateDateTime());
-
-            return creditNoteWS;
+        if(null == creditNoteDTO) {
+            return null;
         }
+        return convertToWS(creditNoteDTO);
+    }
 
-        return null;
+    public static CreditNoteWS convertToWS(CreditNoteDTO creditNoteDTO) {
+        CreditNoteWS creditNoteWS = new CreditNoteWS();
+        creditNoteWS.setId(creditNoteDTO.getId());
+        creditNoteWS.setEntityId(creditNoteDTO.getEntityId());
+        creditNoteWS.setBalanceAsDecimal(creditNoteDTO.getBalance());
+        creditNoteWS.setAmountAsDecimal(creditNoteDTO.getAmount());
+        creditNoteWS.setCreationInvoiceId(null != creditNoteDTO.getCreationInvoice() ? creditNoteDTO.getCreationInvoice().getId() : null);
+        creditNoteWS.setCreditNoteLineIds(creditNoteDTO.getLines().stream().map(CreditNoteLineDTO::getId).toArray(Integer[]::new));
+        creditNoteWS.setCreditNoteInvoiceMapIds(creditNoteDTO.getPaidInvoices().stream().map(CreditNoteInvoiceMapDTO::getId).toArray(Integer[]::new));
+        creditNoteWS.setDeleted(creditNoteDTO.getDeleted());
+        creditNoteWS.setType(creditNoteDTO.getCreditType().name());
+        creditNoteWS.setCreateDateTime(creditNoteDTO.getCreateDateTime());
+        // Ad hoc credit note fields
+        creditNoteWS.setUserId(creditNoteDTO.getUser().getId());
+        creditNoteWS.setCreditNoteDate(creditNoteDTO.getCreditNoteDate());
+        OrderDTO subscriptionOrder = creditNoteDTO.getSubscriptionOrder();
+        creditNoteWS.setSubscriptionOrderId(null != subscriptionOrder ? subscriptionOrder.getId() : null);
+        creditNoteWS.setNotes(creditNoteDTO.getNotes());
+        creditNoteWS.setServiceId(creditNoteDTO.getServiceId());
+        creditNoteWS.setDescription(creditNoteDTO.getLines().stream().findFirst().get().getDescription());
+        ItemDTO item = creditNoteDTO.getLines().stream().findFirst().get().getItem();
+        creditNoteWS.setItemId(null != item ? item.getId() : null);
+
+        return creditNoteWS;
     }
 
     public CreditNoteDTO getDTO(CreditNoteWS creditNoteWS) {
@@ -128,6 +154,13 @@ public class CreditNoteBL {
             creditNote.setDeleted(creditNoteWS.getDeleted());
             creditNote.setCreditType(CreditType.valueOf(creditNoteWS.getType()));
             creditNote.setCreateDateTime(creditNoteWS.getCreateDateTime());
+
+            // Ad hoc credit note fields
+            creditNote.setUser(userDAS.find(creditNoteWS.getUserId()));
+            creditNote.setCreditNoteDate(creditNoteWS.getCreditNoteDate());
+            creditNote.setSubscriptionOrder(orderDAS.find(creditNoteWS.getSubscriptionOrderId()));
+            creditNote.setNotes(creditNoteWS.getNotes());
+            creditNote.setServiceId(creditNoteWS.getServiceId());
 
             return creditNote;
         }
@@ -159,9 +192,10 @@ public class CreditNoteBL {
                 .map(invoiceLine -> buildCreditLine(invoiceLine, creditNote))
                 .collect(Collectors.toSet()));
 
-        creditNote.setCreateDateTime(TimezoneHelper.serverCurrentDate());
+        creditNote.setCreateDateTime(invoiceDTO.getCreateDatetime());
+        creditNote.setCreditNoteDate(invoiceDTO.getCreateDatetime());
         invoiceDTO.setCreditNoteGenerated(creditNote);
-
+        creditNote.setUser(invoiceDTO.getBaseUser());
         creditNote.setId(save(creditNote).getId());
 
         invoiceDTO.setTotal(BigDecimal.ZERO);
@@ -178,8 +212,51 @@ public class CreditNoteBL {
         return creditNote.getId();
     }
 
-    public void delete(Integer creditNoteId) {
-        set(creditNoteId);
+    public Integer createAdHocCreditNote(CreditNoteWS creditNoteWS) {
+        UserDTO user = userDAS.find(creditNoteWS.getUserId());
+        ItemDTO item = new ItemDAS().find(creditNoteWS.getItemId());
+        OrderDTO order = orderDAS.findNow(creditNoteWS.getSubscriptionOrderId());
+
+        CreditNoteDTO creditNote = new CreditNoteDTO();
+        BigDecimal amount = new BigDecimal(creditNoteWS.getAmount());
+        creditNote.setAmount(amount);
+        creditNote.setBalance(amount);
+        creditNote.setCreditType(CreditType.USER_GENERATED);
+        creditNote.setDeleted(0);
+        creditNote.setEntityId(user.getEntity().getId());
+        creditNote.setCreateDateTime(creditNoteWS.getCreateDateTime());
+        creditNote.setCreditNoteDate(creditNoteWS.getCreditNoteDate());
+        creditNote.setUser(user);
+        creditNote.setCreationInvoice(null);
+        creditNote.setNotes(creditNoteWS.getNotes());
+        creditNote.setServiceId(creditNoteWS.getServiceId());
+        creditNote.setSubscriptionOrder(order);
+
+        // GENERATE CREDIT NOTE LINE
+        CreditNoteLineDTO creditNoteLine = CreditNoteLineDTO.builder()
+                .creationInvoiceLine(null)
+                .creditNoteDTO(creditNote)
+                .deleted(0)
+                .description(creditNoteWS.getDescription())
+                .amount(amount)
+                .item(item)
+                .build();
+        creditNote.setLines(Stream.of(creditNoteLine).collect(Collectors.toSet()));
+
+        creditNote = save(creditNote);
+
+        logger.debug("Ad Hoc Credit Note Generated: {}", creditNote);
+
+        IBillingProcessSessionBean processBean = Context.getBean(Context.Name.BILLING_PROCESS_SESSION);
+        BillingProcessConfigurationDTO configuration = processBean.getConfigurationDto(user.getEntity().getId());
+        if (configuration.isTrueAutoCreditNoteApplication()) {
+            applyCreditNote(creditNote.getId());
+        }
+
+        return creditNote.getId();
+    }
+
+    public void delete() {
         creditNoteDto.setDeleted(1);
         for (CreditNoteLineDTO creditNoteLineDTO : creditNoteDto.getLines()) {
             creditNoteLineDTO.setDeleted(1);
@@ -190,12 +267,14 @@ public class CreditNoteBL {
         // since credit note is deleted, give back its balance on negative invoice
         // This is now only one place where negative balance invoice takes shape again :(
         InvoiceDTO creationInvoice = creditNoteDto.getCreationInvoice();
-        BigDecimal negativeBalance = creditNoteDto.getBalance().multiply(new BigDecimal(-1));
-        creationInvoice.setTotal(negativeBalance);
-        creationInvoice.setBalance(negativeBalance);
+        if(null != creationInvoice) {
+            BigDecimal negativeBalance = creditNoteDto.getBalance().multiply(new BigDecimal(-1));
+            creationInvoice.setTotal(negativeBalance);
+            creationInvoice.setBalance(negativeBalance);
+            CreditNoteDeletedEvent event = new CreditNoteDeletedEvent(creditNoteDto.getEntityId(), creditNoteDto);
+            EventManager.process(event);
+        }
 
-        CreditNoteDeletedEvent event = new CreditNoteDeletedEvent(creditNoteDto.getEntityId(), creditNoteDto);
-        EventManager.process(event);
     }
 
     public CreditNoteDTO save(CreditNoteDTO creditNoteDTO) {
@@ -213,7 +292,7 @@ public class CreditNoteBL {
             return ;
         }
         // apply credit note to debit unpaid invoices
-        for (InvoiceDTO invoice : getDebitInvoicesWithBalanceOldestFirst(creditNote.getCreationInvoice().getBaseUser())) {
+        for (InvoiceDTO invoice : getDebitInvoicesWithBalanceOldestFirst(creditNote.getUser())) {
             if (invoice.hasBalance()) {
                 applyCreditNoteToInvoice(creditNote, invoice);
             }
@@ -275,7 +354,7 @@ public class CreditNoteBL {
         new CreditNoteInvoiceMapDAS().save(creditNoteInvoiceMap);
 
         // if the user is in the ageing process, she should be out
-        if (debitInvoice.isPaid() || !UserBL.isUserBalanceEnoughToAge(debitInvoice.getBaseUser(),null)) {
+        if (debitInvoice.isPaid() || !UserBL.isUserBalanceEnoughToAge(debitInvoice.getBaseUser())) {
             new AgeingBL().out(debitInvoice.getBaseUser(), debitInvoice.getId(), DateConvertUtils.getNow());
         }
 
@@ -349,13 +428,26 @@ public class CreditNoteBL {
         return result.toArray(new Integer[result.size()]);
     }
 
+    public CreditNoteWS getLastCreditNote(Integer userId) {
+        if (userId == null) {
+            return null;
+        }
+
+        Integer[] lastCreditNotesId = getLastCreditNotes(userId, 1);
+        if (lastCreditNotesId.length > 0) {
+            return new CreditNoteBL(lastCreditNotesId[0]).getCreditNoteWS();
+        }
+        return null;
+    }
+
     public BigDecimal getAvailableCreditNotesBalanceByUser(Integer userId) {
         CurrencyBL currencyBL = new CurrencyBL();
-        UserDTO user = new UserDAS().find(userId);
+        UserDTO user = userDAS.find(userId);
 
         return new CreditNoteDAS().findAvailableCreditNotesBalanceByUser(userId)
                 .stream()
-                .map(creditNote -> currencyBL.convert(creditNote.getCreationInvoice().getCurrency().getId(),
+                .map(creditNote -> currencyBL.convert(null != creditNote.getCreationInvoice() ?
+                                creditNote.getCreationInvoice().getCurrency().getId() : creditNote.getUser().getCurrencyId(),
                         user.getCurrency().getId(),
                         creditNote.getBalance(),
                         TimezoneHelper.serverCurrentDate(),
@@ -428,5 +520,29 @@ public class CreditNoteBL {
                 .map(this::getWS)
                 .toArray(CreditNoteWS[]::new);
     }
+
+    public Integer getSubscriptionOrderIdByServiceId(Date creditNoteDate, UserDTO user, String serviceId) {
+        if(StringUtils.isEmpty(serviceId)) {
+            return null;
+        }
+        OrderDTO order = null;
+        AssetDTO asset = null;
+        // fetch asset on the basis of service Id meta-field value
+        List<AssetDTO> assetDTOList = new AssetDAS().findAssetByMetaFieldValue(user.getEntity().getId(), "ServiceId", serviceId);
+        if(!assetDTOList.isEmpty()) {
+            asset = assetDTOList.get(0);
+        }
+        if (null == asset) {
+            // check asset existing with provide service Id as asset identifier
+            asset = new AssetDAS().getAssetByIdentifier(serviceId);
+        }
+        if (null != asset) {
+            order = orderDAS.findOrderByUserAssetIdentifierEffectiveDate(user.getId(), asset.getIdentifier(), creditNoteDate);
+        }
+        return null != order ? order.getId() : null;
+    }
+
+
+
 
 }

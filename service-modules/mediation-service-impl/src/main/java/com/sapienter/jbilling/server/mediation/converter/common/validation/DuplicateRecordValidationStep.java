@@ -1,10 +1,11 @@
 package com.sapienter.jbilling.server.mediation.converter.common.validation;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+
 import com.sapienter.jbilling.server.mediation.ICallDataRecord;
 import com.sapienter.jbilling.server.mediation.converter.common.steps.MediationStepResult;
 import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 
 /**
  * Created by coredevelopment on 25/02/16.
@@ -17,7 +18,6 @@ public class DuplicateRecordValidationStep implements com.sapienter.jbilling.ser
 
     @Override
     public boolean isValid(ICallDataRecord record, MediationStepResult result) {
-
         Integer recordKeyCount;
         try {
             recordKeyCount = jmrRepository.getRecordKeyCount(record.getKey());

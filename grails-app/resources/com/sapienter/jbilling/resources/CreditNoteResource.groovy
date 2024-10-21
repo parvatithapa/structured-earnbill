@@ -1,14 +1,22 @@
 package com.sapienter.jbilling.resources
 
-import javax.ws.rs.DefaultValue;
+import com.sapienter.jbilling.common.SessionInternalError
+import com.sapienter.jbilling.server.payment.PaymentWS
+
+import javax.ws.rs.Consumes
+import javax.ws.rs.DELETE
+import javax.ws.rs.DefaultValue
 import javax.ws.rs.GET
+import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.QueryParam
+import javax.ws.rs.core.Context
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
+import org.apache.commons.lang3.ArrayUtils
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.DateTimeFormatter
 
@@ -24,6 +32,9 @@ import com.sapienter.jbilling.server.creditnote.CreditNoteInvoiceMapWS
 import com.sapienter.jbilling.server.creditnote.CreditNoteWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
+import com.sapienter.jbilling.common.ErrorDetails
+
+import javax.ws.rs.core.UriInfo
 
 
 @Path("/api/credits")
@@ -80,9 +91,11 @@ class CreditNoteResource {
         required = true)
         @PathParam("creditNoteId") Integer creditNoteId) {
         try {
-            return Response.ok()
-                    .entity(webServicesSession.getCreditNote(creditNoteId))
-                    .build()
+            CreditNoteWS creditNote = webServicesSession.getCreditNote(creditNoteId);
+            if (null == creditNote || creditNote.deleted == 1){
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+            return Response.ok().entity(creditNote).build();
         } catch (Exception e){
             return RestErrorHandler.mapErrorToHttpResponse(e)
         }
@@ -98,9 +111,8 @@ class CreditNoteResource {
     ])
     Response getAllCreditNotes() {
         try {
-
-            Integer entityId = webServicesSession.getCallerCompanyId();
-            CreditNoteWS[]  creditNotes = webServicesSession.getAllCreditNotes(entityId);
+            Integer entityId = webServicesSession.getCallerCompanyId()
+            CreditNoteWS[] creditNotes = webServicesSession.getAllCreditNotes(entityId)
             return Response.ok()
                     .entity(creditNotes)
                     .build()
@@ -126,6 +138,74 @@ class CreditNoteResource {
             return Response.ok()
                     .entity(webServicesSession.getCreditNotesByUser(userId, offset, limit))
                     .build()
+        } catch (Exception e) {
+            return RestErrorHandler.mapErrorToHttpResponse(e)
+        }
+    }
+
+	@GET
+	@Path("/creditnotes/{startDate}/{endDate}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Gets the credit notes by the date range.")
+	@ApiResponses(value = [
+			@ApiResponse(code = 200, message = "Credit notes with the provided period found.", response = CreditNoteWS[].class),
+			@ApiResponse(code = 204, message = "Credit notes with the provided period not found."),
+			@ApiResponse(code = 500, message = "Fetching the credit notes failed."),
+			@ApiResponse(code = 400, message = "Invalid parameters supplied.", response = ErrorDetails.class)
+	])
+	Response getCreditNotesByDateRange(
+		@ApiParam(name = "startDate",value = "The start date to fetch Credit notes, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("startDate") String startDate,
+		@ApiParam(name = "endDate",value = "The end date to fetch Credit notes, Format: yyyy-MM-dd, Example: 2020-01-25", required = true) @PathParam("endDate") String endDate,
+		@ApiParam(name="limit", value = "Limit") @DefaultValue("50") @QueryParam("limit") Integer limit,
+		@ApiParam(name="offset", value = "Offset") @DefaultValue("0") @QueryParam("offset") Integer offset) {
+
+		try {
+			CreditNoteWS[] creditNote = webServicesSession.getCreditNotesByDateRange(startDate, endDate, offset, limit)
+			if(ArrayUtils.isEmpty(creditNote)) {
+				return Response.noContent().build()
+			}
+			return Response.ok()
+					.entity(creditNote)
+					.build()
+		} catch (Exception e) {
+			return RestErrorHandler.mapErrorToHttpResponse(e)
+		}
+	}
+
+    @DELETE
+    @Path("/{id}")
+    @ApiOperation(value = "Delete existing credit note")
+    @ApiResponses(value = [
+            @ApiResponse(code = 204, message = "Credit note with the supplied id deleted."),
+            @ApiResponse(code = 404, message = "Credit note with the supplied id does not exists."),
+            @ApiResponse(code = 409, message = "Credit note can not be deleted.", response = ErrorDetails.class),
+            @ApiResponse(code = 500, message = "The call resulted with internal error.")
+    ])
+    Response deleteAdHocCreditNote(@ApiParam(name = "id", value = "Credit Note Id.", required = true)
+                           @PathParam("id") Integer id) {
+        try {
+            webServicesSession.deleteCreditNote(id)
+            return Response.status(Response.Status.NO_CONTENT).build()
+        } catch (SessionInternalError sie) {
+            return RestErrorHandler.mapErrorToHttpResponse(sie)
+        }
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create Ad Hoc Credit Note.")
+    @ApiResponses(value = [
+            @ApiResponse(code = 201, message = "Credit Note created.", response = CreditNoteWS.class),
+            @ApiResponse(code = 400, message = "Invalid Credit Note supplied.", response = ErrorDetails.class),
+            @ApiResponse(code = 500, message = "The call resulted with internal error.")
+    ])
+    Response createAdHocCreditNote(@ApiParam(value = "Created Credit Note object.", required = true)
+                                           CreditNoteWS creditNoteWS,
+                                   @Context UriInfo uriInfo) {
+        try {
+            Integer creditNoteId = webServicesSession.createAdhocCreditNote(creditNoteWS)
+            return Response.created(uriInfo.getAbsolutePathBuilder().path(Integer.toString(creditNoteId)).build())
+                    .entity(webServicesSession.getCreditNote(creditNoteId)).build()
         } catch (Exception e) {
             return RestErrorHandler.mapErrorToHttpResponse(e)
         }

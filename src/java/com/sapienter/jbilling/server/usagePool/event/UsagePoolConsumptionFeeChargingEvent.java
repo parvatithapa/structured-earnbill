@@ -16,6 +16,8 @@
 
 package com.sapienter.jbilling.server.usagePool.event;
 
+import java.util.Date;
+
 import com.sapienter.jbilling.server.system.event.Event;
 import com.sapienter.jbilling.server.usagePool.db.UsagePoolConsumptionActionDTO;
 
@@ -30,18 +32,20 @@ import com.sapienter.jbilling.server.usagePool.db.UsagePoolConsumptionActionDTO;
 public class UsagePoolConsumptionFeeChargingEvent implements Event {
 	
 	private final Integer entityId;
-	private final Integer userId;
+	private final Integer customerUsagePoolId;
     private final UsagePoolConsumptionActionDTO action;
+    private final Date activeSince;
 
-
-    public UsagePoolConsumptionFeeChargingEvent(Integer entityId, Integer userId, UsagePoolConsumptionActionDTO action) {
+    public UsagePoolConsumptionFeeChargingEvent(Integer entityId, Integer customerUsagePoolId, UsagePoolConsumptionActionDTO action,
+            Date activeSince) {
 		this.entityId = entityId;
-		this.userId = userId;
+		this.customerUsagePoolId = customerUsagePoolId;
         this.action = action;
+        this.activeSince = activeSince;
 	}
 	
-	public Integer getUserId() {
-		return userId;
+    public Integer getCustomerUsagePoolId() {
+		return customerUsagePoolId;
 	}
 
 	@Override
@@ -53,6 +57,10 @@ public class UsagePoolConsumptionFeeChargingEvent implements Event {
         return action;
     }
 
+    public Date getActiveSince() {
+        return activeSince;
+    }
+
     @Override
 	public String getName() {
         return "UsagePoolConsumptionFeeChargingEvent - entity " + entityId;
@@ -61,7 +69,7 @@ public class UsagePoolConsumptionFeeChargingEvent implements Event {
 	@Override
 	public String toString() {
 		return "UsagePoolConsumptionFeeChargingEvent [entityId="
-				+ entityId + ", userId=" + userId + "]";
+				+ entityId + ", customerUsagePoolId=" + customerUsagePoolId + "]";
 	}
 
 }

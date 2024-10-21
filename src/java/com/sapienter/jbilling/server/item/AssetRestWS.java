@@ -9,6 +9,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sapienter.jbilling.server.provisioning.ProvisioningCommandWS;
 import com.sapienter.jbilling.server.timezone.ConvertToTimezone;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
@@ -39,14 +40,12 @@ public class AssetRestWS {
     @Size(min = 0, max = 1000, message = "validation.error.length.max,1000")
     private String notes;
     private Integer entityId;
+    private Integer[] containedAssetIds;
+    private ProvisioningCommandWS[] provisioningCommands;
     private boolean global = false;
     @Valid
     private Map<String, Object> metaFieldsMap;
     private AssetAssignmentWS[] assignments;
-    private Integer orderId;
-    private Integer categoryId;
-    @ConvertToTimezone
-    private Date startTime;
 
     @ApiModelProperty(value = "System unique identifier of this asset")
     public Integer getId() {
@@ -55,6 +54,15 @@ public class AssetRestWS {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    @ApiModelProperty(value = "In case the asset represents an asset group, this array contains the asset ids belonging to that group")
+    public Integer[] getContainedAssetIds() {
+        return containedAssetIds;
+    }
+
+    public void setContainedAssetIds(Integer[] containedAssetIds) {
+        this.containedAssetIds = containedAssetIds;
     }
 
     @ApiModelProperty(value = "Unique identifier of the order line to which an asset is added")
@@ -166,6 +174,15 @@ public class AssetRestWS {
         this.entityId = entityId;
     }
 
+    @ApiModelProperty(value = "An array of associated provisioning commands to the asset")
+    public ProvisioningCommandWS[] getProvisioningCommands() {
+        return provisioningCommands;
+    }
+
+    public void setProvisioningCommands(ProvisioningCommandWS[] provisioningCommands) {
+        this.provisioningCommands = provisioningCommands;
+    }
+
     public String getItemDescription() {
         return itemDescription;
     }
@@ -180,32 +197,6 @@ public class AssetRestWS {
 
     public void setProductCode(String productCode) {
         this.productCode = productCode;
-    }
-
-    @ApiModelProperty(value = "Order id")
-    public Integer getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(Integer orderId) {
-        this.orderId = orderId;
-    }
-
-    @ApiModelProperty(value = "Item Category id")
-    public Integer getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Integer categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public Date getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(Date startTime) {
-        this.startTime = startTime;
     }
 
     @Override
@@ -237,6 +228,10 @@ public class AssetRestWS {
         builder.append(notes);
         builder.append(", entityId=");
         builder.append(entityId);
+        builder.append(", containedAssetIds=");
+        builder.append(Arrays.toString(containedAssetIds));
+        builder.append(", provisioningCommands=");
+        builder.append(Arrays.toString(provisioningCommands));
         builder.append("]");
         return builder.toString();
     }

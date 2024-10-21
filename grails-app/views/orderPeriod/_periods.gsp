@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="orderPeriod" action="${action ?: 'list'}"
                              params="${sortableParams(params: [partial: true])}"
                              total="${periods?.totalCount ?: 0}" update="column1"/>

@@ -2817,36 +2817,12 @@ public class WSTest {
 		}
 	}
 
-    public static UserWS createUser(String value){
-
-		UserWS newUser = new UserWS();
-		newUser.setUserName("language-test" + new Date().getTime());
-		newUser.setLanguageId(new Integer(2)); // French
-		newUser.setMainRoleId(new Integer(5));
-		newUser.setAccountTypeId(Integer.valueOf(1));
-		newUser.setIsParent(new Boolean(true));
-		newUser.setStatusId(UserDTOEx.STATUS_ACTIVE);
-
-		MetaFieldValueWS metaField1 = new MetaFieldValueWS();
-		metaField1.setFieldName("contact.email");
-		metaField1.setValue(newUser.getUserName() + "@shire.com");
-		metaField1.setGroupId(1);
-
-		MetaFieldValueWS metaField2 = new MetaFieldValueWS();
-		metaField2.setFieldName("contact.country.code");
-		metaField2.setValue(value);
-		metaField2.setGroupId(1);
-		newUser.setMetaFields(new MetaFieldValueWS[] { metaField1,metaField2 });
-		return newUser;
-	}
-
-
     /**
      * JBFC-581 :
      * This test case is added to cover user creation with special characters
      */
     @Test
-	public void test032CreateUserWithAllowedSpecialCharacters() throws Exception {
+	public void test035CreateUserWithAllowedSpecialCharacters() throws Exception {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         UserWS validUser = null;
         UserWS invalidUser = null;
@@ -2893,11 +2869,12 @@ public class WSTest {
     }
 
     @Test
-    public void test032AddPaymentInstrumentLogMessageCorrect () {
+    public void test036AddPaymentInstrumentLogMessageCorrect() throws Exception {
+        UserWS user = null;
         try {
             JbillingAPI api = JbillingAPIFactory.getAPI();
             JBillingLogFileReader jbLog = new JBillingLogFileReader();
-            UserWS user = createUser(false, true, null, 1, true);
+            user = createUser(false, true, null, 1, true);
 
             String callerClass = "class=\"c.sapienter.jbilling.server.user.UserBL\"";
             String apiMethod = "api=\"updateUser\"";
@@ -2919,23 +2896,26 @@ public class WSTest {
             logger.debug("Log Message::::{}", msg);
 
             String fullLog = jbLog.readLogAsString();
-
            LoggingValidator.validateEnhancedLog(fullLog, LEVEL_INFO, callerClass, apiMethod, LogConstants.MODULE_USER,
-                   LogConstants.STATUS_SUCCESS, LogConstants.ACTION_UPDATE, msg);
+                   LogConstants.STATUS_SUCCESS, LogConstants.ACTION_CREATE, msg);
 
         } catch (IOException io) {
             fail("Exception thrown while trying to read Jbilling log file: " + io.getMessage());
         } catch (Exception e) {
             fail("There was an error: " + e.getMessage());
+        } finally {
+            // data clean up
+            if (user != null && user.getId() > 0) api.deleteUser(user.getId());
         }
     }
 
     @Test
-    public void test033RemovePaymentInstrumentLogMessageCorrect () {
+    public void test037RemovePaymentInstrumentLogMessageCorrect() throws Exception {
+        UserWS user = null;
         try {
             JbillingAPI api = JbillingAPIFactory.getAPI();
             JBillingLogFileReader jbLog = new JBillingLogFileReader();
-            UserWS user = createUser(false, true, null, 1, true);
+            user = createUser(false, true, null, 1, true);
 
             String callerClass = "class=\"c.s.j.s.u.WebServicesSessionSpringBean\"";
             String apiMethod = "api=\"removePaymentInstrument\"";
@@ -2965,10 +2945,14 @@ public class WSTest {
             fail("Exception thrown while trying to read Jbilling log file: " + io.getMessage());
         } catch (Exception e) {
             fail("There was error: " + e.getMessage());
+        } finally {
+            // data clean up
+            if (user != null && user.getId() > 0) api.deleteUser(user.getId());
         }
     }
 
-   	public void test035CreateUserWithAutoPaymentLimit() throws Exception {
+    @Test
+    public void test038CreateUserWithAutoPaymentLimit() throws Exception {
     	Calendar nextInvoiceDate = Calendar.getInstance();
     	nextInvoiceDate.set(Calendar.DAY_OF_MONTH, 1);
     	logger.debug("Invoice Date:::::::::{}", nextInvoiceDate.getTime());
@@ -3015,7 +2999,7 @@ public class WSTest {
    	 * @throws JbillingAPIException
    	 */
 	@Test
-	public void test036CreateUpdateUserWithCIMProfileValidation() throws IOException, JbillingAPIException {
+	public void test039CreateUpdateUserWithCIMProfileValidation() throws IOException, JbillingAPIException {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         JBillingLogFileReader jbLog = new JBillingLogFileReader();
 
@@ -3042,7 +3026,7 @@ public class WSTest {
    	 * @throws JbillingAPIException
    	 */
 	@Test
-	public void test037CreateUpdateUserWithCIMProfileValidation_negative() throws IOException, JbillingAPIException {
+	public void test040CreateUpdateUserWithCIMProfileValidation_negative() throws IOException, JbillingAPIException {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         JBillingLogFileReader jbLog = new JBillingLogFileReader();
 
@@ -3064,7 +3048,7 @@ public class WSTest {
     }
 
     @Test
-    public void test038CreateUpdateUserWithAccountTypeCustomizedWithContactWSMetaFields() throws IOException, JbillingAPIException {
+    public void test041CreateUpdateUserWithAccountTypeCustomizedWithContactWSMetaFields() throws IOException, JbillingAPIException {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         MetaFieldWS[] listMetaFields = new MetaFieldWS[12];
 
@@ -3233,7 +3217,7 @@ public class WSTest {
     }
 
     @Test
-    public void test039UserOwingBalanceWithMultipleFailedPayments() throws Exception {
+    public void test042UserOwingBalanceWithMultipleFailedPayments() throws Exception {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         UserWS testUser = null;
         try {
@@ -3292,7 +3276,7 @@ public class WSTest {
     }
 
     @Test
-    public void test040UserOwingBalanceWithEnteredPaymentAndMultipleRefundPayments() throws Exception {
+    public void test043UserOwingBalanceWithEnteredPaymentAndMultipleRefundPayments() throws Exception {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         UserWS testUser = null;
         try {
@@ -3372,7 +3356,7 @@ public class WSTest {
     }
 
     @Test
-    public void test041UserOwingBalanceWithSuccessfulPaymentAndMultipleRefundPayments() throws Exception {
+    public void test044UserOwingBalanceWithSuccessfulPaymentAndMultipleRefundPayments() throws Exception {
         JbillingAPI api = JbillingAPIFactory.getAPI();
         UserWS testUser = null;
         try {
@@ -3453,7 +3437,7 @@ public class WSTest {
     }
 
     @Test
-    public void test042updateContactInformationTest() throws JbillingAPIException, IOException{
+    public void test045updateContactInformationTest() throws JbillingAPIException, IOException{
         JbillingAPI api = JbillingAPIFactory.getAPI();
         UserWS testUser = null;
         try {
@@ -3523,6 +3507,29 @@ public class WSTest {
         }finally{
             api.deleteUser(testUser.getId());
         }
+    }
+
+    public static UserWS createUser(String value){
+
+        UserWS newUser = new UserWS();
+        newUser.setUserName("language-test" + new Date().getTime());
+        newUser.setLanguageId(new Integer(2)); // French
+        newUser.setMainRoleId(new Integer(5));
+        newUser.setAccountTypeId(Integer.valueOf(1));
+        newUser.setIsParent(new Boolean(true));
+        newUser.setStatusId(UserDTOEx.STATUS_ACTIVE);
+
+        MetaFieldValueWS metaField1 = new MetaFieldValueWS();
+        metaField1.setFieldName("contact.email");
+        metaField1.setValue(newUser.getUserName() + "@shire.com");
+        metaField1.setGroupId(1);
+
+        MetaFieldValueWS metaField2 = new MetaFieldValueWS();
+        metaField2.setFieldName("contact.country.code");
+        metaField2.setValue(value);
+        metaField2.setGroupId(1);
+        newUser.setMetaFields(new MetaFieldValueWS[] { metaField1,metaField2 });
+        return newUser;
     }
 
     private Date addSemiMonthlyPeriod (GregorianCalendar cal, Integer customerDayOfInvoice) {

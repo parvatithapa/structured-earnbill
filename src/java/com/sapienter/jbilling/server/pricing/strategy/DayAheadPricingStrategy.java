@@ -1,5 +1,18 @@
 package com.sapienter.jbilling.server.pricing.strategy;
 
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.ediTransaction.IEDITransactionBean;
@@ -15,14 +28,6 @@ import com.sapienter.jbilling.server.pricing.db.PriceModelDTO;
 import com.sapienter.jbilling.server.pricing.util.AttributeDefinition;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.util.Context;
-import org.apache.log4j.Logger;
-
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
 
 /**
  * Created by hitesh on 8/2/16.
@@ -40,13 +45,13 @@ public class DayAheadPricingStrategy extends RouteBasedRateCardPricingStrategy {
         setAttributeDefinitions(
                 new AttributeDefinition(ADDER_FEE, DECIMAL, true),
                 new AttributeDefinition(PARAM_ROUTE_RATE_CARD_ID, INTEGER, true)
-        );
+                );
 
         setChainPositions(
                 ChainPosition.START,
                 ChainPosition.MIDDLE,
                 ChainPosition.END
-        );
+                );
 
         setRequiresUsage(false);
         setVariableUsagePricing(false);
@@ -55,7 +60,7 @@ public class DayAheadPricingStrategy extends RouteBasedRateCardPricingStrategy {
 
     @Override
     public void applyTo(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields, PriceModelDTO planPrice,
-                        BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
+            BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
 
         if (pricingOrder == null || pricingOrder.getUser() == null) {
             LOG.debug("User not found.");
@@ -80,7 +85,7 @@ public class DayAheadPricingStrategy extends RouteBasedRateCardPricingStrategy {
         LOG.debug("activeUntilDate:  " + activeUntilDate);
 
         //additional fields(effectiveDate,zone) for searching
-        BigDecimal dayAheadRate = calculateRate(pricingOrder, zoneMetaField, result, quantity, fields, planPrice,activeUntilDate);
+        BigDecimal dayAheadRate = calculateRate(pricingOrder, orderLineDTO, zoneMetaField, result, quantity, fields, planPrice,activeUntilDate);
 
         //calculate unit price
         calculateUnitPrice(result, quantity, fupResult.get(FupKey.FREE_QTY), dayAheadRate);
@@ -111,7 +116,8 @@ public class DayAheadPricingStrategy extends RouteBasedRateCardPricingStrategy {
             return BigDecimal.ZERO;
         }
     }
-    BigDecimal calculateRate(OrderDTO pricingOrder, MetaFieldValue zoneMetaField, PricingResult result, BigDecimal quantity, List<PricingField> fields, PriceModelDTO planPrice, Date activeUntilDate){
+
+    BigDecimal calculateRate(OrderDTO pricingOrder, OrderLineDTO orderLine, MetaFieldValue zoneMetaField, PricingResult result, BigDecimal quantity, List<PricingField> fields, PriceModelDTO planPrice, Date activeUntilDate){
 
         ediTransactionBean = Context.getBean(Context.Name.EDI_TRANSACTION_SESSION);
         if(ediTransactionBean.hasPlanSendRateChangeDaily(pricingOrder.getUser())){
@@ -122,12 +128,12 @@ public class DayAheadPricingStrategy extends RouteBasedRateCardPricingStrategy {
             LOG.debug("activeUntilDate after add one day: " + activeUntilDate);
         }
 
-        List<PricingField> pricingFields = new ArrayList<PricingField>();
+        List<PricingField> pricingFields = new ArrayList<>();
         pricingFields.add(new PricingField(zoneMetaField.getField().getName(), zoneMetaField.getValue().toString()));
         pricingFields.add(new PricingField(EFFCTIVE_DATE, new SimpleDateFormat("MM/dd/yyyy").format(activeUntilDate)));
 
         //calculate FUP quantities
-        fupResult = calculateFreeUsageQty(pricingOrder, result, quantity);
+        fupResult = calculateFreeUsageQty(orderLine, result, quantity);
         quantity = fupResult.get(FupKey.NEW_QTY);
 
         //[Adjusted Rate] = [Day ahead rate] + [Adder fee]

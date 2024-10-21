@@ -113,6 +113,8 @@ public class PaymentInformationBL extends ResultList implements AutoCloseable, C
         ws.setProcessingOrder(dto.getProcessingOrder());
         ws.setPaymentMethodTypeId(dto.getPaymentMethodType().getId());
         ws.setPaymentMethodId(dto.getPaymentMethodId());
+        ws.setCreateDateTime(dto.getCreateDateTime());
+        ws.setUpdateDateTime(dto.getUpdateDateTime());
 
         List<MetaFieldValueWS> metaFields = new ArrayList<>(0);
         for (MetaFieldValue value : dto.getMetaFields()) {
@@ -424,6 +426,10 @@ public class PaymentInformationBL extends ResultList implements AutoCloseable, C
         return getStringMetaFieldByType(instrument, MetaFieldType.BPAY_REF) != null;
     }
 
+    public boolean isCentrePay(PaymentInformationDTO instrument) {
+        return instrument.getPaymentMethodType().getPaymentMethodTemplate().getTemplateName().equals(Constants.CENTRE_PAY);
+    }
+
     public boolean updateStringMetaField(PaymentInformationDTO instrument, String metaFieldValue, MetaFieldType metaFieldName) {
         MetaFieldValue value = getMetaField(instrument, metaFieldName);
         if (value != null) {
@@ -575,7 +581,10 @@ public class PaymentInformationBL extends ResultList implements AutoCloseable, C
                 return Constants.PAYMENT_METHOD_PAYPAL_ECO;
             } else if(isBpay(instrument)) {
                 return Constants.PAYMENT_METHOD_BPAY;
-            } else {
+            } else if(isCentrePay(instrument)) {
+                return Constants.PAYMENT_METHOD_CENTREPAY;
+            }
+            else {
                 return Constants.PAYMENT_METHOD_CUSTOM;
             }
         } else {

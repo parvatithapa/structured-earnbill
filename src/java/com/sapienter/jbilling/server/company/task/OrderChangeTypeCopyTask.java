@@ -60,9 +60,7 @@ public class OrderChangeTypeCopyTask extends AbstractCopyTask {
                 for (Integer itemTypeId : orderChangeTypeWS.getItemTypes()) {
                     ItemTypeDTO itemTypeDTO = itemTypeDAS.find(itemTypeId);
                     ItemTypeDTO copyItemTypeDTO = itemTypeDAS.findByDescription(targetEntityId, itemTypeDTO.getDescription());
-                    if (copyItemTypeDTO != null) {
-                        itemTypeIds.add(copyItemTypeDTO.getId());
-                    }
+                    itemTypeIds.add(copyItemTypeDTO.getId());
                 }
             }
             orderChangeTypeWS.setItemTypes(itemTypeIds);

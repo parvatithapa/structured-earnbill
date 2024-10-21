@@ -17,6 +17,8 @@
 package com.sapienter.jbilling.server.usagePool.event;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
 import com.sapienter.jbilling.server.system.event.Event;
 
 /**
@@ -33,13 +35,15 @@ public class CustomerUsagePoolConsumptionEvent implements Event {
 	private final Integer customerUsagePoolId;
 	private final BigDecimal oldQuantity;
 	private final BigDecimal newQuantity;
+	private final Date activeSince;
 	
 	public CustomerUsagePoolConsumptionEvent(Integer entityId, 
-			Integer customerUsagePoolId, BigDecimal oldQuantity, BigDecimal newQuantity) {
+			Integer customerUsagePoolId, BigDecimal oldQuantity, BigDecimal newQuantity, Date activeSince) {
 		this.entityId = entityId;
 		this.customerUsagePoolId = customerUsagePoolId;
 		this.oldQuantity = oldQuantity;
-		this.newQuantity = newQuantity;	
+		this.newQuantity = newQuantity;
+		this.activeSince = activeSince;
 	}
 	
 	@Override
@@ -58,6 +62,10 @@ public class CustomerUsagePoolConsumptionEvent implements Event {
 	public BigDecimal getNewQuantity() {
 		return newQuantity;
 	}
+
+    public Date getActiveSince() {
+        return activeSince;
+    }
 	
 	@Override
 	public String getName() {

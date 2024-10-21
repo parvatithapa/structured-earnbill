@@ -39,36 +39,35 @@ import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.audit.EventLogger;
 import com.sapienter.jbilling.server.util.db.CurrencyDAS;
 import com.sapienter.jbilling.server.util.db.LanguageDAS;
-import com.sapienter.jbilling.server.user.db.UserDAS;
 
 /**
  * @author Emil
  */
-public class EntityBL extends ResultList
+public class EntityBL extends ResultList 
         implements EntitySQL {
     private CompanyDAS das = null;
     private CompanyDTO entity = null;
     private EventLogger eLogger = null;
-
+    
     public EntityBL()  {
         init();
     }
-
+    
     public EntityBL(Integer id)  {
         init();
         entity = das.find(id);
     }
 
     /*
-    public EntityBL(String externalId)
+    public EntityBL(String externalId) 
             throws FinderException, NamingException {
         init();
         entity = entityHome.findByExternalId(externalId);
     }
     */
-
+    
     public static final CompanyWS getCompanyWS(CompanyDTO companyDto) {
-
+    	
     	CompanyWS ws = new CompanyWS();
         ws.setId(companyDto.getId());
         ws.setCurrencyId(companyDto.getCurrencyId());
@@ -78,7 +77,6 @@ public class EntityBL extends ResultList
         ws.setUiColor(companyDto.getUiColor());
         ws.setTimezone(companyDto.getTimezone());
         ws.setFailedEmailNotification(companyDto.getFailedEmailNotification());
-        ws.setNumberOfFreeCalls(companyDto.getNumberOfFreeCalls());
 
         ws.setMetaFields(MetaFieldBL.convertMetaFieldsToWS(ws.getId(), companyDto));
 
@@ -132,14 +130,14 @@ public class EntityBL extends ResultList
         for (Map.Entry<Integer, ArrayList<MetaFieldValueWS>> entry : companyInfoTypeFieldsMap.entrySet()) {
             citMetaFields.addAll(companyInfoTypeFieldsMap.get(entry.getKey()));
         }
-
+        
         MetaFieldValueWS[] citMetaFieldsArray = citMetaFields.toArray(new MetaFieldValueWS[citMetaFields.size()]);
         MetaFieldValueWS[] combined = new MetaFieldValueWS[ws.getMetaFields().length
                 + citMetaFieldsArray.length];
         System.arraycopy(ws.getMetaFields(), 0, combined, 0, ws.getMetaFields().length);
         System.arraycopy(citMetaFieldsArray, 0, combined, ws.getMetaFields().length, citMetaFieldsArray.length);
         ws.setMetaFields(combined);
-
+        
         ContactDTO contact = new EntityBL(new Integer(ws.getId())).getContact();
 
         if (contact != null) {
@@ -175,13 +173,12 @@ public class EntityBL extends ResultList
     }
 
 
-
+    
     public static final  CompanyDTO getDTO(CompanyWS ws){
         CompanyDTO dto = new CompanyDAS().find(new Integer(ws.getId()));
         dto.setCurrency(new CurrencyDAS().find(ws.getCurrencyId()));
         dto.setLanguage(new LanguageDAS().find(ws.getLanguageId()));
         dto.setDescription(ws.getDescription());
-        dto.setNumberOfFreeCalls(ws.getNumberOfFreeCalls());
         dto.setCustomerInformationDesign(ws.getCustomerInformationDesign());
         dto.setUiColor(ws.getUiColor());
         dto.setTimezone(ws.getTimezone());
@@ -197,13 +194,13 @@ public class EntityBL extends ResultList
         }
         return dto;
     }
-
-
+    
+    
     private void init() {
         das = new CompanyDAS();
         eLogger = EventLogger.getInstance();
     }
-
+    
     public CompanyDTO getEntity() {
         return entity;
     }
@@ -218,33 +215,33 @@ public class EntityBL extends ResultList
         contact.setEntity(entity.getId());
         return contact.getEntity();
     }
-
-    public Integer[] getAllIDs()
+    
+    public Integer[] getAllIDs() 
             throws SQLException, NamingException {
         List list = new ArrayList();
-
+        
         prepareStatement(EntitySQL.listAll);
         execute();
         conn.close();
-
+        
         while (cachedResults.next()) {
             list.add(new Integer(cachedResults.getInt(1)));
-        }
-
+        } 
+        
         Integer[] retValue = new Integer[list.size()];
         list.toArray(retValue);
         return retValue;
     }
-
-    public CachedRowSet getTables()
+    
+    public CachedRowSet getTables() 
             throws SQLException, NamingException {
         prepareStatement(EntitySQL.getTables);
         execute();
         conn.close();
-
+        
         return cachedResults;
     }
-
+    
     public Integer getRootUser(Integer entityId) {
         try {
         	RoleDTO rootRole = new RoleDAS().findByRoleTypeIdAndCompanyId(Constants.TYPE_ROOT, entityId);
@@ -254,13 +251,13 @@ public class EntityBL extends ResultList
 
             execute();
             conn.close();
-
+            
             cachedResults.next();
             return cachedResults.getInt(1);
         } catch (Exception e) {
             throw new SessionInternalError("Root user not found for entity " +
                     entityId, EntityBL.class, e);
-        }
+        } 
     }
 
     public void updateEntityAndContact(CompanyWS companyWS, Integer entityId, Integer userId) {
@@ -401,19 +398,5 @@ public class EntityBL extends ResultList
             }
         }
         return false;
-    }
-
-    /**
-     * This method is used to fetch the EntityId based on Domain Name
-     * @param domain name used to identify the Entity
-     * @return Integer entityId
-     */
-    public static Integer getEntityIdByDomainName(String domain) {
-        Integer entityId = new CompanyDAS().findEntityIdByDomainName(domain);
-        return entityId;
-    }
-
-    public static Integer getEntityIdByUserName(String userName) throws SessionInternalError {
-        return new UserDAS().findByUserNameThroughoutSystem(userName);
     }
 }

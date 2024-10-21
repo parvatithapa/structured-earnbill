@@ -65,7 +65,7 @@ import com.sapienter.jbilling.server.util.search.Filter.FilterConstraint;
 import com.sapienter.jbilling.server.TestConstants;
 
 
-@Test(groups = { "integration", "process" }, testName = "SuspendedUsersBillingProcessFilterTaskTest", priority = 15)
+@Test(groups = { "integration", "process" }, testName = "SuspendedUsersBillingProcessFilterTaskTest")
 public class SuspendedUsersBillingProcessFilterTaskTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(SuspendedUsersBillingProcessFilterTaskTest.class);
@@ -75,7 +75,7 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
 	private String BASIC_BILLING_PROCESS_FILTER_TASK;
 	private String SUSPENDED_USERS_BILLING_PROCESS_FILTER_TASK;
 	private Integer dailyPeriodId;
-
+	
     @BeforeClass
     protected void setUp() throws Exception {
     	api = JbillingAPIFactory.getAPI();
@@ -84,7 +84,7 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
     	ORDER_CHANGE_STATUS_APPLY_ID = 3;
     	dailyPeriodId = createDailyOrderPeriod(api, 1);
     }
-
+    
     private static Integer createDailyOrderPeriod(JbillingAPI api, int days) {
 		OrderPeriodWS daily = new OrderPeriodWS();
 		daily.setEntityId(api.getCallerCompanyId());
@@ -93,7 +93,7 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
 		daily.setDescriptions(Arrays.asList(new InternationalDescriptionWS(Constants.LANGUAGE_ENGLISH_ID, "Tets Daily Period:"+days)));
 		return api.createOrderPeriod(daily);
 	}
-
+    
 	@Test
     public void testWithBasicBillingProcessFilterTask() throws Exception {
 
@@ -101,48 +101,48 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
 		nextInvoiceDate.set(Calendar.YEAR, 2008);
 		nextInvoiceDate.set(Calendar.MONTH, 11);
 		nextInvoiceDate.set(Calendar.DAY_OF_MONTH, 2);
-
+		
 		List<AgeingWS> ageingList = Arrays.asList(api.getAgeingConfigurationWithCollectionType(api.getCallerLanguageId(), CollectionType.REGULAR));
 		assertNotNull("Agining Status Not Found For Entity -> "+api.getCallerCompanyId(), ageingList);
 		assertTrue("No Status Found .", null != ageingList && !ageingList.isEmpty());
-
+		
 		// Creating User
 		UserWS activeUser = createUserForStatus(nextInvoiceDate.getTime(), UserDTOEx.STATUS_ACTIVE);
 		logger.debug("Active User ::::::::: {}", activeUser.getId());
-
+		
 		Integer suspendedStatusId = ageingList.get(ageingList.size()-2).getStatusId();
 		UserWS suspendedUser = createUserForStatus(nextInvoiceDate.getTime(), suspendedStatusId);
-
+		
 		logger.debug("Suspended User ::::::::: {}", suspendedUser.getId());
-
+		
 		// Creating Order
 		Calendar orderActiveSinceDate = Calendar.getInstance();
 		orderActiveSinceDate.set(2008, 11, 1);
-
+		
 		Integer orderIdForActiveUser = createOrder(activeUser.getId(), orderActiveSinceDate.getTime());
-
+		
 		Integer orderIdForSuspendedUser = createOrder(suspendedUser.getId(), orderActiveSinceDate.getTime());
-
-
+		
+		
 		Calendar runDate = Calendar.getInstance();
 		runDate.set(2008, 11, 2);
-
+		
 		// Triggred Billing Process On 2nd of Dec 2008.
 		triggerBilling(runDate.getTime());
 		Thread.sleep(10000);
-
+		
 		InvoiceWS activeUserInvocie = api.getLatestInvoice(activeUser.getId());
 		assertNotNull("Active User did not pick by BasicBillingProcessFilterTask ", activeUserInvocie);
 		assertInvoiceForOrder(activeUserInvocie, orderIdForActiveUser);
-
+		
 		InvoiceWS suspendedUserInvocie = api.getLatestInvoice(suspendedUser.getId());
 		assertNull("Suspended User picked by BasicBillingProcessFilterTask ", suspendedUserInvocie);
-
+		
 	}
-
+	
 	@Test
 	public void testWithSuspendedUsersBillingProcessFilterTask() throws Exception {
-
+		
 		// Configuring SuspendedUsersBillingProcessFilterTask
 		logger.debug("Configuring SuspendedUsersBillingProcessFilterTask..............");
 		PluggableTaskTypeWS type = api.getPluginTypeWSByClassName(SUSPENDED_USERS_BILLING_PROCESS_FILTER_TASK);
@@ -152,63 +152,63 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
         plugIn.setProcessingOrder(1);
         plugIn.setTypeId(type.getId());
         suspendedUserBillingProcessFilterTaskPlugnInId = api.createPlugin(plugIn);
-
+		
 		Calendar nextInvoiceDate = Calendar.getInstance();
 		nextInvoiceDate.set(Calendar.YEAR, 2008);
 		nextInvoiceDate.set(Calendar.MONTH, 11);
 		nextInvoiceDate.set(Calendar.DAY_OF_MONTH, 3);
-
+		
 		List<AgeingWS> ageingList = Arrays.asList(api.getAgeingConfigurationWithCollectionType(api.getCallerLanguageId(), CollectionType.REGULAR));
 		assertNotNull("Agining Status Not Found For Entity -> "+api.getCallerCompanyId(), ageingList);
 		assertTrue("No Status Found .", null != ageingList && !ageingList.isEmpty());
-
+		
 		// Creating User
 		UserWS activeUser = createUserForStatus(nextInvoiceDate.getTime(), UserDTOEx.STATUS_ACTIVE);
 		logger.debug("Active User ::::::::: {}", activeUser.getId());
-
+		
 		Integer suspendedSecondLastStatusId = ageingList.get(ageingList.size()-2).getStatusId();
 		UserWS suspendedUserWithSecondLastStatus = createUserForStatus(nextInvoiceDate.getTime(), suspendedSecondLastStatusId);
-
+		
 		Integer suspendedLastStatusId = ageingList.get(ageingList.size()-1).getStatusId();
 		UserWS suspendedUserWithLastStatus = createUserForStatus(nextInvoiceDate.getTime(), suspendedLastStatusId);
-
+		
 		// Creating Order
 		Calendar orderActiveSinceDate = Calendar.getInstance();
 		orderActiveSinceDate.set(2008, 11, 2);
-
+		
 		Integer orderIdForActiveUser = createOrder(activeUser.getId(), orderActiveSinceDate.getTime());
-
+		
 		Integer orderIdForSecodLastSuspendedUser = createOrder(suspendedUserWithSecondLastStatus.getId(), orderActiveSinceDate.getTime());
-
+		
 		Integer orderIdForLastSuspendedUser = createOrder(suspendedUserWithLastStatus.getId(), orderActiveSinceDate.getTime());
-
-
+		
+		
 		Calendar runDate = Calendar.getInstance();
 		runDate.set(2008, 11, 3);
-
+		
 		// Triggred Billing Process On 3nd of Dec 2008.
 		triggerBilling(runDate.getTime());
 		Thread.sleep(10000);
-
+		
 		InvoiceWS activeUserInvocie = api.getLatestInvoice(activeUser.getId());
 		assertNotNull("Active User did not pick by SuspendedUsersBillingProcessFilterTask ", activeUserInvocie);
 		assertInvoiceForOrder(activeUserInvocie, orderIdForActiveUser);
-
+		
 		InvoiceWS suspendedUserWithSecondLastStatusInvocie = api.getLatestInvoice(suspendedUserWithSecondLastStatus.getId());
 		assertNotNull("Suspended User did not pick by SuspendedUsersBillingProcessFilterTask ", suspendedUserWithSecondLastStatusInvocie);
 		assertInvoiceForOrder(suspendedUserWithSecondLastStatusInvocie, orderIdForSecodLastSuspendedUser);
-
+		
 		InvoiceWS suspendedUserWithLastStatusInvocie = api.getLatestInvoice(suspendedUserWithLastStatus.getId());
 		assertNull("Suspended User With Last Aging Status picked by SuspendedUsersBillingProcessFilterTask ", suspendedUserWithLastStatusInvocie);
-
+		
 	}
-
+	
 	@AfterClass
 	protected void cleanUp() throws Exception {
 		logger.debug("Deleting  suspendedUserBillingProcessFilterTaskPlugnIn ..............");
 		api.deletePlugin(suspendedUserBillingProcessFilterTaskPlugnInId);
 	}
-
+	
 	private Integer createOrder(Integer userId, Date activeSinceDate) {
 		// create an order for $10,
 		OrderWS order = new OrderWS();
@@ -227,18 +227,18 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
 		line.setDescription("Order created by test-case");
 
 		order.setOrderLines(new OrderLineWS [] {line});
-
+		
 		OrderChangeWS orderChanges [] = OrderChangeBL.buildFromOrder(order, ORDER_CHANGE_STATUS_APPLY_ID);
-
+		
 		for(OrderChangeWS orderChange : orderChanges) {
 			orderChange.setStartDate(activeSinceDate);
 			orderChange.setApplicationDate(activeSinceDate);
 		}
-
+		
 		Integer orderId = api.createOrder(order, orderChanges);
 		return orderId;
 	}
-
+	
     private UserWS createUserForStatus(Date nextInvoiceDate, Integer statusId) throws Exception {
 		// Create - This passes the password validation routine.
     	logger.debug("nextInvoiceDate::::::: {}", nextInvoiceDate);
@@ -282,32 +282,32 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
 
 		newUser.setMetaFields(new MetaFieldValueWS[] { metaField1, metaField2,
 				metaField3, metaField4, metaField5 });
-
+		
 
 		MainSubscriptionWS billing = new MainSubscriptionWS();
 		billing.setPeriodId(dailyPeriodId);
 		billing.setNextInvoiceDayOfPeriod(1);
 		newUser.setMainSubscription(billing);
 		newUser.setNextInvoiceDate(nextInvoiceDate);
-
+		
 		logger.debug("Meta field values set");
 		newUser = api.getUserWS(api.createUser(newUser));
-
+		
 		billing.setPeriodId(dailyPeriodId);
 		billing.setNextInvoiceDayOfPeriod(1);
 		newUser.setMainSubscription(billing);
 		newUser.setNextInvoiceDate(nextInvoiceDate);
 		api.updateUser(newUser);
 		logger.debug("User created with id:{}", newUser.getUserId());
-
+		
 		return newUser;
 	}
-
+    
     private void assertInvoiceForOrder(InvoiceWS invoice, Integer orderId) {
     	List<Integer> orderIds = Arrays.asList(invoice.getOrders());
     	assertTrue("Invoice Does not Contain  Order  "+ orderId, orderIds!=null && !orderIds.isEmpty() &&  orderIds.contains(orderId));
     }
-
+    
     private void triggerBilling(Date runDate) {
         BillingProcessConfigurationWS config = api.getBillingProcessConfiguration();
 
@@ -330,7 +330,7 @@ public class SuspendedUsersBillingProcessFilterTaskTest {
         logger.debug("Running Billing Process for {}", runDate );
         api.triggerBilling(runDate);
     }
-
+    
     private void updatePlugin (Integer plugInId, String className) {
 		PluggableTaskTypeWS type = api.getPluginTypeWSByClassName(className);
 	    PluggableTaskWS plugin = api.getPluginWS(plugInId);

@@ -15,29 +15,34 @@
  */
 package com.sapienter.jbilling.server.usagePool;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * CustomerUsagePoolEvaluationSessionBean
- * This is the Spring session bean that implements 
- * IcustomerUsagePoolEvaluationSessionBean interface. It is used for triggering 
+ * This is the Spring session bean that implements
+ * IcustomerUsagePoolEvaluationSessionBean interface. It is used for triggering
  * the customer usage pool evaluation task in a Spring transaction context.
  * @author Amol Gadre
  * @since 01-Dec-2013
  */
 @Transactional(propagation = Propagation.REQUIRED)
-public class CustomerUsagePoolEvaluationSessionBean implements
-		ICustomerUsagePoolEvaluationSessionBean {
+public class CustomerUsagePoolEvaluationSessionBean implements ICustomerUsagePoolEvaluationSessionBean {
 
-	@Override
-	/* (non-Javadoc)
-	 * @see com.sapienter.jbilling.server.usagePool.ICustomerUsagePoolEvaluationSessionBean#trigger()
-	 */
-	public void trigger(Integer entityId, Date runDate) {
-		new CustomerUsagePoolBL().triggerCustomerUsagePoolEvaluation(entityId, runDate);
-	}
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Override
+    /* (non-Javadoc)
+     * @see com.sapienter.jbilling.server.usagePool.ICustomerUsagePoolEvaluationSessionBean#trigger()
+     */
+    public void trigger(Integer entityId, Date runDate) {
+        logger.debug("executing CustomerUsagePoolEvaluation for entity {} on {}", entityId, runDate);
+        new CustomerUsagePoolBL().triggerCustomerUsagePoolEvaluation(entityId, runDate);
+    }
 
 }

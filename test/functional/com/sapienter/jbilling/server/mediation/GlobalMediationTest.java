@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  * @author Vladimir Carevski
  * @since 28-JAN-2014
  */
-@Test(groups = {"web-services", "mediation"}, testName = "GlobalMediationTest", priority = 16)
+@Test(groups = {"web-services", "mediation"}, testName = "GlobalMediationTest")
 public class GlobalMediationTest {
 
     private JbillingAPI parentApi;

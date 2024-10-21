@@ -6,7 +6,6 @@ import static org.testng.Assert.assertTrue;
 import java.math.BigDecimal;
 
 import static org.testng.Assert.assertNotNull;
-import static com.sapienter.jbilling.test.framework.helpers.ApiBuilderHelper.*;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,8 +24,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.sapienter.jbilling.server.item.db.FreeTrialPeriod;
-import com.sapienter.jbilling.server.user.CancellationRequestWS;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -369,6 +366,7 @@ public class FreeTrialConsumptionTest {
         logger.debug("test scenario no 3");
         testBuilder.given(envBuilder ->{
             nextInvoiceDate = Calendar.getInstance();
+            nextInvoiceDate.add(Calendar.MONTH, 1);
             nextInvoiceDate.set(Calendar.DATE, nextInvoiceDate.getActualMinimum(Calendar.DAY_OF_MONTH));
 
             activeSince = Calendar.getInstance();
@@ -388,11 +386,6 @@ public class FreeTrialConsumptionTest {
             orderId = createOrder(envBuilder,WEEKLY_ORDER, activeSince.getTime(),CUSTOMER_CODE_3,activeUntil.getTime(), weeklyOrderPeriod,
                     Constants.ORDER_BILLING_POST_PAID, ORDER_CHANGE_STATUS_APPLY_ID, false,
                     productQuantityMap, productAssetMap, true);
-
-            Date cancellationDate = addDays(nextInvoiceDate.getTime(), 5);
-            Integer customerId = api.getUserWS(api.getUserId(CUSTOMER_CODE_3)).getCustomerId();
-            CancellationRequestWS crWS = constructCancellationRequestWS(cancellationDate, customerId, "user requested for cancellation!");
-            api.createCancellationRequest(crWS);
         }).test(env -> {
             try {
                 assertNotNull(env.idForCode(CUSTOMER_CODE_3),CUSTOMER_CREATION_FAILED);
@@ -817,7 +810,6 @@ public class FreeTrialConsumptionTest {
                 .withPeriodId(periodId)
                 .withItemId(itemId)
                 .withFreeTrial(true)
-                .withFreeTrialPeriodUnit(FreeTrialPeriod.DAYS.name())
                 .withUsagePoolsIds(usagePools)
                 .withPlanItems(Arrays.asList(planItems))
                 .build().getId();

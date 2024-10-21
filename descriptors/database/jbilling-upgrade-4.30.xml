@@ -381,6 +381,29 @@
         </sql>
     </changeSet>
 
+    <changeSet context="base" id="JBSPC-451-Payment Information created date and updated date columns" author="Satyendra Soni">
+        <comment>Add two columns for payment Instrument created and last updated</comment>
+        <addColumn tableName="payment_information">
+            <column name="create_datetime" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="update_datetime" type="java.sql.Types.TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <comment>Add Payment Information table in Jbilling table</comment>
+        <insert tableName="jbilling_table">
+            <column name="id"    valueNumeric="136"/>
+            <column name="name"  value="payment_information"/>
+        </insert>
+
+        <comment>Add Payment Information module Id for event log</comment>
+        <insert tableName="event_log_module">
+            <column name="id"    valueNumeric="16"/>
+        </insert>
+    </changeSet>
+
     <changeSet context = "base" id = "JBSPC-504 Add new column sub scription order id." author = "Mahesh Shivarkar">
         <addColumn tableName = "service_summary">
             <column name = "subscription_order_id" type = "java.sql.Types.INTEGER"/>
@@ -395,4 +418,5 @@
             <column name = "subscription_order_id" />
         </createIndex>
     </changeSet>
+
 </databaseChangeLog>

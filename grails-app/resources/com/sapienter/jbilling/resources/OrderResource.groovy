@@ -31,6 +31,8 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriInfo
 
+import org.json.JSONObject
+
 import java.text.SimpleDateFormat
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON
@@ -420,5 +422,26 @@ class OrderResource {
             return RestErrorHandler.mapErrorToHttpResponse(e);
         }
 
+    }
+
+    @POST
+    @Path("/cancelserviceorder")
+    @Consumes(APPLICATION_JSON)
+    @ApiOperation(value = "Cancel order.")
+    @ApiResponses(value = [
+        @ApiResponse(code = 200, message = "Order successfully updated.", response = OrderWS.class),
+        @ApiResponse(code = 400, message = "Invalid order data.", response = ErrorDetails.class),
+        @ApiResponse(code = 404, message = "Order not found."),
+        @ApiResponse(code = 500, message = "Failure while updating the order.", response = ErrorDetails.class)
+    ])
+    Response cancelServiceOrder(
+            @ApiParam(value="JSON representation of cancel order", required= true)
+            CancelOrderInfo cancelOrderInfo) {
+        try {
+            webServicesSession.cancelServiceOrder(cancelOrderInfo);
+            return Response.ok().entity(JSONObject.quote("Order cancelled successfully.")).build();
+        } catch (Exception e) {
+            return RestErrorHandler.mapErrorToHttpResponse(e);
+        }
     }
 }

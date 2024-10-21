@@ -13,7 +13,7 @@
     <!-- Common Mediation Beans -->
     <bean id="spcRecordSeparatorPolicy"
         class="com.sapienter.jbilling.server.mediation.custommediation.spc.reader.SPCRecordSeparatorPolicy">
-        <property name="cdrTypeIdentifier" value="01,99,PWTHDR,PWTTRL,FDR,UIT,date,username,User Name,*Domain,*Daily" />
+        <property name="cdrTypeIdentifier" value="01,99,PWTHDR,PWTTRL,FDR,UIT,date,username,User Name,*Domain,*Generating,FDRSOU,FTRSOU" />
         <property name="fieldSeparator"  ref = "spcFieldSeparator"/>
     </bean>
 

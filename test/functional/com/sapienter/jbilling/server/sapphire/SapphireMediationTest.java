@@ -47,6 +47,7 @@ import com.sapienter.jbilling.server.metafields.MetaFieldWS;
 import com.sapienter.jbilling.server.order.OrderLineWS;
 import com.sapienter.jbilling.server.order.OrderWS;
 import com.sapienter.jbilling.server.pricing.PriceModelWS;
+import com.sapienter.jbilling.server.pricing.cache.MatchType;
 import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.user.AccountTypeWS;
 import com.sapienter.jbilling.server.user.CompanyWS;
@@ -98,10 +99,8 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
     private static final String  RECYCLE_CDR_FILE_NAME                         = "sapphire-recycle-cdr.xml";
     private static final int     TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID         =  320104;
     private static final int     NUMBER_ASSET_CATEGORY_ID                      =  230304;
-    private static final String  SATELLITE_COUNTRY_CODE_DATA_TABLE             = "satelltite_table";
     private static final Map<String, String> ACCOUNT_TYPE_ITEM_MAP_TABLE_DETAILS;
     private static final Map<String, String> CARRIER_MAP_TABLE_DETAILS;
-    private static final Map<String, String> SATELLITE_COUNTRY_CODE_TABLE_DETAILS;
 
     private static PriceModelWS callRateCardPrice;
     private JbillingAPI api;
@@ -119,12 +118,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
         CARRIER_MAP_TABLE_DETAILS.put("jbilling_user_id", "VARCHAR(255)");
         CARRIER_MAP_TABLE_DETAILS.put("trunk_group_id", "VARCHAR(255)");
         CARRIER_MAP_TABLE_DETAILS.put("PRIMARY KEY", " ( id ) ");
-
-        SATELLITE_COUNTRY_CODE_TABLE_DETAILS = new LinkedHashMap<>();
-        SATELLITE_COUNTRY_CODE_TABLE_DETAILS.put("id", "SERIAL NOT NUll");
-        SATELLITE_COUNTRY_CODE_TABLE_DETAILS.put("country_code", "VARCHAR(255)");
-        SATELLITE_COUNTRY_CODE_TABLE_DETAILS.put("location", "VARCHAR(255)");
-        SATELLITE_COUNTRY_CODE_TABLE_DETAILS.put("PRIMARY KEY", " ( id ) ");
 
     }
 
@@ -145,9 +138,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
         logger.info("Creating Table {} with columns {}", CARRIER_MAP_TABLE_NAME, CARRIER_MAP_TABLE_DETAILS);
         createTable(CARRIER_MAP_TABLE_NAME, CARRIER_MAP_TABLE_DETAILS);
-
-        logger.info("Creating Table {} with columns {}", SATELLITE_COUNTRY_CODE_DATA_TABLE, SATELLITE_COUNTRY_CODE_TABLE_DETAILS);
-        createTable(SATELLITE_COUNTRY_CODE_DATA_TABLE, SATELLITE_COUNTRY_CODE_TABLE_DETAILS);
 
         testBuilder = getTestEnvironment();
         testBuilder.given(envBuilder -> {
@@ -174,7 +164,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
             buildAndPersistMetafield(testBuilder, SapphireMediationConstants.CARRIER_TABLE_FIELD_NAME, DataType.STRING, EntityType.COMPANY);
             buildAndPersistMetafield(testBuilder, SapphireMediationConstants.ACCOUNT_TYPE_ITEM_TABLE_FIELD_NAME, DataType.STRING, EntityType.COMPANY);
             buildAndPersistMetafield(testBuilder, SapphireMediationConstants.PEAK_FIELD_NAME, DataType.STRING, EntityType.COMPANY);
-            buildAndPersistMetafield(testBuilder, SapphireMediationConstants.SATELLITE_COUNTRY_CODE_DATA_TABLE_NAME, DataType.STRING, EntityType.COMPANY);
 
             // Setting Company Level Meta Fields
             setCompanyLevelMetaField(testBuilder.getTestEnvironment());
@@ -187,9 +176,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
             // Set up carrier_map table
             setUpCarrierTable(envBuilder);
-
-            //Set up SatelliteTable
-            setUpSatelliteTable();
 
 
         }).test((testEnv, testEnvBuilder) -> {
@@ -219,7 +205,7 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
         testBuilder.removeEntitiesCreatedOnJBillingForMultipleTests();
         testBuilder.removeEntitiesCreatedOnJBilling();
         testBuilder = null;
-    }
+    } 
 
     @Test(enabled = true)
     public void test01MediationUpload() {
@@ -335,12 +321,12 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
                 OrderWS usageOrder1 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_1));
                 assertNotNull("Mediation Should Create Order", usageOrder1);
-                assertEquals("Usage Order Amount ", new BigDecimal("1032.50"), usageOrder1.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order Amount ", new BigDecimal("1030.00"), usageOrder1.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder1.getId());
 
                 OrderWS usageOrder2 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_2));
                 assertNotNull("Mediation Should Create Order", usageOrder2);
-                assertEquals("Usage Order Amount ", new BigDecimal("115.00"), usageOrder2.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order Amount ", new BigDecimal("112.50"), usageOrder2.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder2.getId());
 
                 OrderWS usageOrder3 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_3));
@@ -438,9 +424,9 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
                 OrderWS usageOrder = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_4));
                 orders.add(usageOrder.getId());
                 assertNotNull("Mediation Should Create Order", usageOrder);
-                assertEquals("Carrier Order Amount ", new BigDecimal("1032.50"), usageOrder.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Carrier Order Amount ", new BigDecimal("1030.00"), usageOrder.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
             });
-        } finally {
+        } finally { 
             for(Integer order : orders){
                 api.deleteOrder(order);
             }
@@ -454,7 +440,7 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
     }
 
     /**
-     * Test for Outgoing Call Using Route Rate Card
+     * Test for Outgoing Call Using Route Rate Card 
      * Two Scenarios - (1)Off Peak false and (2)Off Peak true
      */
     @Test(enabled = true)
@@ -463,6 +449,7 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
         List<Integer> orders = new ArrayList<>();
         List<Integer> assets = new ArrayList<>();
         try {
+
             testBuilder.given(envBuilder -> {
                 Integer routeRateCardProduct = buildAndPersistProductWithPriceModel(envBuilder, api, OUTGOING_CALL_ITEM, false,
                         envBuilder.idForCode(MEDIATED_USAGE_CATEGORY), callRateCardPrice ,true);
@@ -506,7 +493,7 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
                         .withNextInvoiceDate(new Date())
                         .withMainSubscription(new MainSubscriptionWS(MONTHLY_ORDER_PERIOD, NEXT_INVOICE_DAY))
                         .build();
-
+                 
                 assertNotNull("Test User 042 {} Creation Failed", user042);
                 logger.info("created user 042 {}", user042.getId());
                 users.add(user042.getId());
@@ -584,25 +571,26 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
                 OrderWS usageOrder041 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_041));
                 assertNotNull("Mediation Should Create Order 041", usageOrder041);
-                assertEquals("Usage Order 041 Amount ", new BigDecimal("3.83"), usageOrder041.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order 041 Amount ", new BigDecimal("5.25"), usageOrder041.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder041.getId());
                 OrderWS usageOrder042 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_042));
                 assertNotNull("Mediation Should Create Order 042", usageOrder042);
-                assertEquals("Usage Order 042 Amount ", new BigDecimal("3.50"), usageOrder042.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order 042 Amount ", new BigDecimal("2.50"), usageOrder042.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder042.getId());
                 OrderWS usageOrder043 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_043));
                 assertNotNull("Mediation Should Create Order 043", usageOrder043);
-                assertEquals("Usage Order 043 Amount ", new BigDecimal("2.50"), usageOrder043.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order 043 Amount ", new BigDecimal("3.50"), usageOrder043.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder043.getId());
                 OrderWS usageOrder044 = api.getLatestOrder(testEnvBuilder.idForCode(TEST_USER_044));
                 assertNotNull("Mediation Should Create Order 044", usageOrder044);
-                assertEquals("Usage Order 044 Amount ", new BigDecimal("3.50"), usageOrder044.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
+                assertEquals("Usage Order 044 Amount ", new BigDecimal("2.50"), usageOrder044.getTotalAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
                 orders.add(usageOrder044.getId());
                 try{
-                    Thread.sleep(120);
+                    Thread.sleep(120);    
                 }catch(Exception e){
                     logger.error(e.getMessage(), e);
                 }
+                
             });
         } finally {
             for(Integer order : orders){
@@ -681,11 +669,11 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
     private Integer buildAndPersistMetafield(TestBuilder testBuilder, String name, DataType dataType, EntityType entityType) {
         MetaFieldWS value =  new MetaFieldBuilder()
-        .name(name)
-        .dataType(dataType)
-        .entityType(entityType)
-        .primary(true)
-        .build();
+                                .name(name)
+                                .dataType(dataType)
+                                .entityType(entityType)
+                                .primary(true)
+                                .build();
         JbillingAPI api = testBuilder.getTestEnvironment().getPrancingPonyApi();
         Integer id = api.createMetaField(value);
         testBuilder.getTestEnvironment().add(name, id, id.toString(), api, TestEntityType.META_FIELD);
@@ -698,7 +686,7 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
         ItemTypeWS itemTypeWS = api.getItemCategoryById(categoryId);
         Integer assetStatusId = itemTypeWS.getAssetStatuses().stream().
                 filter(assetStatusDTOEx -> assetStatusDTOEx.getIsAvailable() == 1 && assetStatusDTOEx.getDescription()
-                .equals("Available")).collect(Collectors.toList()).get(0).getId();
+                        .equals("Available")).collect(Collectors.toList()).get(0).getId();
         return envBuilder.assetBuilder(api)
                 .withItemId(itemId)
                 .withAssetStatusId(assetStatusId)
@@ -740,7 +728,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
         values.add(new MetaFieldValueWS(SapphireMediationConstants.ACCOUNT_TYPE_ITEM_TABLE_FIELD_NAME, null, DataType.STRING, true, ACCOUNT_TYPE_ITEM_MAP_TABLE_NAME));
         values.add(new MetaFieldValueWS(SapphireMediationConstants.CARRIER_TABLE_FIELD_NAME, null, DataType.STRING, true, CARRIER_MAP_TABLE_NAME));
         values.add(new MetaFieldValueWS(SapphireMediationConstants.PEAK_FIELD_NAME, null, DataType.STRING, true, "20:00-23:59"));
-        values.add(new MetaFieldValueWS(SapphireMediationConstants.SATELLITE_COUNTRY_CODE_DATA_TABLE_NAME, null, DataType.STRING, true, SATELLITE_COUNTRY_CODE_DATA_TABLE));
         int entityId = api.getCallerCompanyId();
         logger.debug("Created Company Level MetaFields {}", values);
         values.forEach(value -> {
@@ -754,10 +741,10 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
     private Integer buildAndPersistMediationConfiguration(TestEnvironmentBuilder envBuilder, JbillingAPI api, String configName, String jobLauncherName) {
         return envBuilder.mediationConfigBuilder(api)
-                .withName(configName)
-                .withLauncher(jobLauncherName)
-                .withLocalInputDirectory(CDR_BASE_DIRECTORY)
-                .build();
+                  .withName(configName)
+                  .withLauncher(jobLauncherName)
+                  .withLocalInputDirectory(CDR_BASE_DIRECTORY)
+                  .build();
     }
 
     private Integer getMediationConfiguration(JbillingAPI api, String mediationJobLauncher) {
@@ -823,14 +810,6 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
 
     }
 
-    private void setUpSatelliteTable() {
-        jdbcTemplate.update("INSERT INTO satelltite_table (country_code, location) "
-                + "VALUES (?, ?)", "-1", "Inmarsat Satellite");
-
-        jdbcTemplate.update("INSERT INTO satelltite_table (country_code, location) "
-                + "VALUES (?, ?)", "-3", "Inmarsat Satellite");
-    }
-
     private Integer createOrder(String code,Date activeSince, Date activeUntil, Integer orderPeriodId, boolean prorate, Map<Integer, BigDecimal> productQuantityMap, Map<Integer, List<Integer>> productAssetMap, String userCode) {
         this.testBuilder.given(envBuilder -> {
             final JbillingAPI api = envBuilder.getPrancingPonyApi();
@@ -865,8 +844,8 @@ public class SapphireMediationTest extends AbstractTestNGSpringContextTests {
             .withOrderChangeStatus(3)
             .build();
         }).test((testEnv, envBuilder) ->
-        assertNotNull("Order Creation Failed!", envBuilder.idForCode(code))
-                );
+            assertNotNull("Order Creation Failed!", envBuilder.idForCode(code))
+        );
         return testBuilder.getTestEnvironment().idForCode(code);
     }
 

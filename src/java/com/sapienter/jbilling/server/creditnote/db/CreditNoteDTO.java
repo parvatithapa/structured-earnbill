@@ -16,12 +16,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 
+import com.sapienter.jbilling.server.order.db.OrderDTO;
+import com.sapienter.jbilling.server.user.db.UserDTO;
 import org.hibernate.annotations.OrderBy;
 
 import com.sapienter.jbilling.server.invoice.db.InvoiceDTO;
@@ -50,6 +53,12 @@ public class CreditNoteDTO extends AbstractDescription implements Exportable {
 	private Set<CreditNoteLineDTO> lines;
 	private int deleted;
 	private Date createDateTime;
+	// Ad hoc credit note fields
+	private Date creditNoteDate;
+	private UserDTO user;
+	private String serviceId;
+	private OrderDTO subscriptionOrder;
+	private String notes;
 
 	public CreditNoteDTO() {
 	}
@@ -169,6 +178,54 @@ public class CreditNoteDTO extends AbstractDescription implements Exportable {
 		this.createDateTime = createDateTime;
 	}
 
+	@Column(name="credit_note_date")
+	public Date getCreditNoteDate() {
+		return creditNoteDate;
+	}
+
+	public void setCreditNoteDate(Date creditNoteDate) {
+		this.creditNoteDate = creditNoteDate;
+	}
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "user_id", nullable = false)
+	public UserDTO getUser() {
+		return user;
+	}
+
+	public void setUser(UserDTO user) {
+		this.user = user;
+	}
+
+	@Column(name="service_id")
+	public String getServiceId() {
+		return serviceId;
+	}
+
+	public void setServiceId(String serviceId) {
+		this.serviceId = serviceId;
+	}
+
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "subscription_order_id")
+	public OrderDTO getSubscriptionOrder() {
+		return subscriptionOrder;
+	}
+
+	public void setSubscriptionOrder(OrderDTO subscriptionOrder) {
+		this.subscriptionOrder = subscriptionOrder;
+	}
+
+	@Column(name = "notes", length = 1000)
+	public String getNotes() {
+		return notes;
+	}
+
+	public void setNotes(String notes) {
+		this.notes = notes;
+	}
+
 	@Override
 	public String toString() {
 		return "CreditNoteDTO [id=" + id + ", balance=" + balance + ", amount="
@@ -216,6 +273,8 @@ public class CreditNoteDTO extends AbstractDescription implements Exportable {
 	public String getCurrencySymbol(){
 		if(creationInvoice != null && creationInvoice.getCurrency() != null){
 			return creationInvoice.getCurrency().getSymbol();
+		} else if (user != null && user.getCurrency() != null) {
+			user.getCurrency().getSymbol();
 		}
 
 		return null;

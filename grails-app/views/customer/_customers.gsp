@@ -13,9 +13,11 @@
   Dissemination of this information or reproduction of this material
   is strictly forbidden.
   --}%
-
+<%@page import="com.sapienter.jbilling.server.item.AssetBL;" %>
 <%@ page import="org.apache.commons.lang.StringEscapeUtils; com.sapienter.jbilling.server.user.UserBL; com.sapienter.jbilling.server.user.contact.db.ContactDTO" %>
 <%@ page import="com.sapienter.jbilling.server.util.PreferenceBL; com.sapienter.jbilling.common.Constants;"%>
+<%@ page import="static com.sapienter.jbilling.server.adennet.AdennetConstants.PERMISSION_TOTAL_CUSTOMER_COUNT;" %>
+
 <%--
   Customer table template. The customer table is used multiple times for rendering the
   main list and for rendering a separate list of sub-accounts. 
@@ -23,43 +25,53 @@
   @author Brian Cowdery
   @since  24-Nov-2010
 --%>
+
 <div id="success-message" class="msg-box successfully" style="display: none;">
     <img src="${resource(dir:'images', file:'icon34.gif')}" alt="${message(code:'info.icon.alt',default:'Information')}"/>
      <strong><g:message code="flash.request.sent.title"/></strong>
      <p><g:message code="records.csv.file.generate"/></p>
  </div>
 <div class="table-box">
-    <table id="users" cellspacing="0" cellpadding="0">
+    <table id="users" data-cy="customerTable" cellspacing="0" cellpadding="0">
         <thead>
             <tr>
                 <th class="header-sortable first">
                     <g:remoteSort action="list" sort="userName" update="column1">
-                        <g:message code="customer.table.th.name"/>
+                        <g:message code="label.user.name"/>
                     </g:remoteSort>
                 </th>
-                <g:isRoot>
-                	<th class="header-sortable">
-                		<g:remoteSort action="list" sort="company.description" update="column1" alias="[company: 'company']">
-                    	    <g:message code="customer.table.th.user.company.name"/>
-                    	</g:remoteSort>
-                	</th>
-                </g:isRoot>
-                <th class="small header-sortable">
+                <th class="header-sortable first">
                     <g:remoteSort action="list" sort="id" update="column1">
-                        <g:message code="customer.table.th.user.id"/>
+                        <g:message code="customer.account.number"/>
                     </g:remoteSort>
                 </th>
-                <th class="tiny2 header-sortable">
+                <th class="header-sortable first">
+                    <g:message code="subscriber.number"/>
+                </th>
+                <th class="header-sortable first">
                     <g:remoteSort action="list" sort="userStatus.id" update="column1">
                         <g:message code="customer.table.th.status"/>
                     </g:remoteSort>
                 </th>
-                <th class="small">
-                    <g:message code="customer.table.th.balance"/>
-                </th>
-                <th class="tiny3 last">
-                    <g:message code="customer.table.th.hierarchy"/>
-                </th>
+                <g:isRoot>
+                    <g:if test="${!session['company_id']==60}">
+                        <th class="header-sortable">
+                            <g:remoteSort action="list" sort="company.description" update="column1" alias="[company: 'company']">
+                                <g:message code="customer.table.th.user.company.name"/>
+                            </g:remoteSort>
+                        </th>
+                    </g:if>
+                </g:isRoot>
+                <g:if test="${!session['company_id']==60}">
+                    <th class="small">
+                        <g:message code="customer.table.th.balance"/>
+                    </th>
+                 </g:if>
+                <g:if test="${!session['company_id']==60}">
+                    <th class="tiny3 last">
+                        <g:message code="customer.table.th.hierarchy"/>
+                    </th>
+                </g:if>
             </tr>
         </thead>
 
@@ -71,38 +83,43 @@
             <tr id="user-${user.id}" class="${selected?.id == user.id ? 'active' : ''}">
                 <td>
                     <jB:secRemoteLink class="cell double" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                        <strong>
+                        <strong data-cy="iccidNumber">
                             <g:if test="${contactVar?.firstName || contactVar?.lastName}">
                                 ${StringEscapeUtils.escapeHtml(contactVar?.firstName)} ${StringEscapeUtils.escapeHtml(contactVar?.lastName)}
                             </g:if>
                             <g:else>
-                                ${StringEscapeUtils.escapeHtml(displayer?.getDisplayName(user))}
+                                ${StringEscapeUtils.escapeHtml(displayer?.getDisplayFirstName(user))}
                             </g:else>
                         </strong>
                         <em>${StringEscapeUtils.escapeHtml(contactVar?.organizationName)}</em>
                     </jB:secRemoteLink>
                 </td>
-                <g:isRoot>
-                	<td>
-                    	<jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                        	<strong>${StringEscapeUtils.escapeHtml(user?.company.description)}</strong>
-                   		</jB:secRemoteLink>
-                	</td>
-                </g:isRoot>
                 <td>
-                    <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
+                    <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);" data-cy="accountId">
                         <span>${user.id}</span>
                     </jB:secRemoteLink>
                 </td>
-                <td class="center">
+                <td>
+                    <jB:secRemoteLink class="cell"  action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);" data-cy="subscriberId">
+                        <g:set var="assets" value="${new AssetBL().getAssetsByUserID(user.id)}"/>
+                        <g:each var="asset" in="${assets}">
+                            ${asset.subscriberNumber}<br>
+                        </g:each>
+                    </jB:secRemoteLink>
+                </td>
+                <td class="center" data-cy="customerStatus">
                     <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                        <span>                        	
+                        <span>
                              <g:if test="${user.deleted}">
-                             	<img src="${resource(dir:'images', file:'cross.png')}" alt="deleted" />
-                             </g:if>        
+                                <img src="${resource(dir:'images', file:'cross.png')}" alt="deleted" />
+                             </g:if>
                             <g:elseif test="${user.userStatus.id == 1}">
                                 <g:message code="customer.status.active"/>
-                            </g:elseif>                       
+                            </g:elseif>
+                            <g:elseif test="${user.userStatus.id == 3}">
+                                <g:message code="customer.status.deactivate"/>
+                            </g:elseif>
+
                             <g:elseif test="${user.userStatus.id > 1 && !user.userStatus.isSuspended()}">
                                 <img src="${resource(dir:'images', file:'icon15.gif')}" alt="overdue" />
                             </g:elseif>
@@ -112,35 +129,51 @@
                         </span>
                     </jB:secRemoteLink>
                 </td>
-                <td>
-                    <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                        <span><g:formatNumber number="${UserBL.getBalance(user.id)}" type="currency"  currencySymbol="${user.currency.symbol}"/></span>
-                    </jB:secRemoteLink>
-                </td>
-                <td class="center">
-                    <g:if test="${customerVar}">
-                        <g:if test="${customerVar.isParent == 1 && customerVar.parent}">
-                            <%-- is a parent, but also a child of another account --%>
-                            <jB:secRemoteLink permissions="CUSTOMER_18" action="subaccounts" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                                <img src="${resource(dir:'images', file:'icon17.gif')}" alt="parent and child" />
-                                <g:set var="children" value="${customerVar.children.findAll{ it.baseUser.deleted == 0 }}"/>
-                                <span>${children.size()}</span>
+
+
+                <g:if test="${!session['company_id']==60}">
+                    <g:isRoot>
+                        <td>
+                            <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
+                                <strong>${StringEscapeUtils.escapeHtml(user?.company.description)}</strong>
                             </jB:secRemoteLink>
+                        </td>
+                    </g:isRoot>
+                </g:if>
+
+                <g:if test="${!session['company_id']==60}">
+                    <td>
+                        <jB:secRemoteLink class="cell" action="show" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
+                            <span><g:formatNumber number="${UserBL.getBalance(user.id)}" type="currency"  currencySymbol="${user.currency.symbol}"/></span>
+                        </jB:secRemoteLink>
+                    </td>
+                </g:if>
+                <g:if test="${!session['company_id']==60}">
+                    <td class="center">
+                        <g:if test="${customerVar}">
+                            <g:if test="${customerVar.isParent == 1 && customerVar.parent}">
+                                <%-- is a parent, but also a child of another account --%>
+                                <jB:secRemoteLink permissions="CUSTOMER_18" action="subaccounts" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
+                                    <img src="${resource(dir:'images', file:'icon17.gif')}" alt="parent and child" />
+                                    <g:set var="children" value="${customerVar.children.findAll{ it.baseUser.deleted == 0 }}"/>
+                                    <span>${children.size()}</span>
+                                </jB:secRemoteLink>
+                            </g:if>
+                            <g:elseif test="${customerVar.isParent == 1 && !customerVar.parent}">
+                                <%-- is a top level parent --%>
+                                <jB:secRemoteLink permissions="CUSTOMER_18" action="subaccounts" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
+                                    <img src="${resource(dir:'images', file:'icon18.gif')}" alt="parent" />
+                                    <g:set var="children" value="${customerVar.children.findAll{ it.baseUser.deleted == 0 }}"/>
+                                    <span>${children.size()}</span>
+                                </jB:secRemoteLink>
+                            </g:elseif>
+                            <g:elseif test="${customerVar.isParent == 0 && customerVar.parent}">
+                                <%-- is a child account, but not a parent --%>
+                                <img src="${resource(dir:'images', file:'icon19.gif')}" alt="child" />
+                            </g:elseif>
                         </g:if>
-                        <g:elseif test="${customerVar.isParent == 1 && !customerVar.parent}">
-                            <%-- is a top level parent --%>
-                            <jB:secRemoteLink permissions="CUSTOMER_18" action="subaccounts" id="${user.id}" before="register(this);" onSuccess="render(data, next);">
-                                <img src="${resource(dir:'images', file:'icon18.gif')}" alt="parent" />
-                                <g:set var="children" value="${customerVar.children.findAll{ it.baseUser.deleted == 0 }}"/>
-                                <span>${children.size()}</span>
-                            </jB:secRemoteLink>
-                        </g:elseif>
-                        <g:elseif test="${customerVar.isParent == 0 && customerVar.parent}">
-                            <%-- is a child account, but not a parent --%>
-                            <img src="${resource(dir:'images', file:'icon19.gif')}" alt="child" />
-                        </g:elseif>
-                    </g:if>
-                </td>
+                    </td>
+                </g:if>
             </tr>
 
         </g:each>
@@ -163,22 +196,31 @@
                 <g:render template="/layouts/includes/pagerShowResults"
                           model="[steps: [10, 20, 50], update: updateColumn, contactFieldTypes: contactFieldTypes]"/>
             </div>
-            <g:if test="${CSV_CONDITION}">
-                <div class="generate" id="generateCsv" style="text-align : right;">
-                    <a class="pager-button" onclick="generateCSV();
-                    showMessage()"><g:message code="generate.csv.link"/></a>
+            <sec:ifAllGranted roles="CUSTOMER_16">
+                <g:if test="${CSV_CONDITION}">
+                    <div class="download" id="generateCsv">
+                        <a class="pager-button" onclick="generateCSV();
+                        showMessage()"><g:message code="generate.csv.link"/></a>
+                    </div>
+                </g:if>
+                <g:else>
+                    <div class="download">
+                        <sec:access url="/customer/csv">
+                            <g:link action="${csvAction}" id="${id}" class="pager-button"
+                                    params="${sortableParams(params: [partial: true, contactFieldTypes: contactFieldTypes])}">
+                                <g:message code="download.csv.link"/>
+                            </g:link>
+                        </sec:access>
+                    </div>
+                </g:else>
+            </sec:ifAllGranted>
+
+            <sec:ifAllGranted roles="${PERMISSION_TOTAL_CUSTOMER_COUNT}">
+                <div class ="total-count"  data-cy="customerCount">
+                    <g:message code="total.count.customer"/>
+                        <span data-cy="subscriberCount"><g:formatNumber number="${users?.totalCount ?: 0}" type="number"/></span>
                 </div>
-            </g:if>
-            <g:else>
-                <div class="download">
-                    <sec:access url="/customer/csv">
-                        <g:link action="${csvAction}" id="${id}" class="pager-button"
-                                params="${sortableParams(params: [partial: true, contactFieldTypes: contactFieldTypes])}">
-                            <g:message code="download.csv.link"/>
-                        </g:link>
-                    </sec:access>
-                </div>
-            </g:else>
+            </sec:ifAllGranted>
     </div>
     <jB:isPaginationAvailable total="${users?.totalCount ?: 0}">
         <div class="row-center">
@@ -197,7 +239,7 @@
             </sec:ifAnyGranted>
         </g:if>
         <g:else>
-            <g:link action='edit' class="submit add button-primary"><span><g:message code="button.create"/></span></g:link>
+            <g:link action='edit' class="submit add button-primary" data-cy="addNewCustomer"><span><g:message code="button.create"/></span></g:link>
         </g:else>
     </sec:ifAllGranted>
 </div>

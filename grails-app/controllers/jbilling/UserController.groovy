@@ -63,8 +63,6 @@ import org.springframework.security.authentication.CredentialsExpiredException
 import org.springframework.security.authentication.DisabledException
 import org.springframework.security.authentication.LockedException
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter
-import java.util.regex.Pattern
-import org.apache.commons.lang.StringUtils;
 
 @Secured(["MENU_99"])
 class UserController {
@@ -84,8 +82,8 @@ class UserController {
     def springSecurityService
     def securitySession
     def userService
+    def messageSource
     SecurityValidator securityValidator
-
 
     def index () {
         flash.invalidToken = flash.invalidToken
@@ -97,6 +95,7 @@ class UserController {
         params.offset = params?.offset?.toInteger() ?: pagination.offset
         params.sort = params?.sort ?: pagination.sort
         params.order = params?.order ?: pagination.order
+        def defaultFilter = messageSource.resolveCode('prompt.login.name', session.locale).format((Object[]) [])
 
         def company_id = session['company_id']
         RoleDTO loggedInUserRole = UserDTO.get(springSecurityService.principal.id).roles?.first()
@@ -105,6 +104,11 @@ class UserController {
                 offset: params.offset
         ) {
             and {
+                if (params.filterBy && params.filterBy != defaultFilter) {
+                    or {
+                        ilike('userName', "%${params.filterBy}%")
+                    }
+                }
                 or {
                     isEmpty('roles')
                     roles {
@@ -382,9 +386,7 @@ class UserController {
     @Secured(["hasAnyRole('MY_ACCOUNT_161', 'MY_ACCOUNT_162','USER_147','USER_1405')"])
     def saveUser (){
         def user = new UserWS()
-        def existingId = params.existingId as Integer
         UserHelper.bindUser(user, params)
-        user.setId(existingId)
         boolean isMyAccount = (flash.isChainModel != null)
 
         if(user.id) {
@@ -405,7 +407,7 @@ class UserController {
 
         def contacts = []
         def availableFields = new ArrayList<MetaField>()
-        def userId= existingId == 0 ? null : existingId as Integer
+        def userId= params['user']['userId'] as Integer
         def loggedInUserId = session['user_id'] as Integer
 
         log.debug "Save called for user ${userId}"
@@ -486,27 +488,12 @@ class UserController {
             // save or update
             if (!oldUser) {
                 log.debug("creating user ${user}")
-                if (!(StringUtils.isBlank(user?.userName)) && Pattern.compile("^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\$").matcher(user?.userName).matches()) {
-                    user.userId = webServicesSession.createUser(user)
-                    flash.message = 'user.created'
-                    flash.args = [user.id as String]
-                } else {
-                    flash.isChainModel ?: flash.clear()
-                    if (StringUtils.isBlank(user?.userName)) {
-                        flash.error = message(code: 'user.error.name.blank')
-                    } else {
-                        flash.error = message(code: 'loginName.email.validation')
-                    }
-                    contacts = userId ? webServicesSession.getUserContactsWS(userId) : null
-                    if (!contacts && !userId) {
-                        contacts = [user.getContact()]
-                    }
-                    if (!flash.isChainModel) {
-                        FlowHelper.display(this, false, [view : '/user/edit',
-                                                         model: [user: user, contacts: contacts, company: company, loggedInUser: loggedInUser, roles: loadRoles(isMyAccount, oldUser), availableFields: availableFields, companyInfoTypes: companyInfoTypes, ssoActive: ssoActive]])
-                    }
-                    return
-                }
+
+                user.userId = webServicesSession.createUser(user)
+
+                flash.message = 'user.created'
+                flash.args = [user.id as String]
+
             } else {
                 securityValidator.validateCompany(user, oldUser.entityId, Validator.Type.EDIT);
 

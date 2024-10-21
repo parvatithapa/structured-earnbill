@@ -79,7 +79,7 @@ class AuditLogController {
                 eq('company', new CompanyDTO(session['company_id']))
             }
 
-            order("id", "desc")
+            order("createDatetime", "desc")
         }
 
         def selected = params.id ? new EventLogDAS().getEventsByAffectedUser(params.int("id")).asList().stream().findFirst().value : null

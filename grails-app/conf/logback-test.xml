@@ -2,7 +2,9 @@
 <!DOCTYPE configuration>
 
 <configuration debug = "false" scan = "true" scanPeriod = "3 seconds">
-
+    <!-- Enable JMX configuration -->
+    <contextName>jBilling</contextName>
+    <jmxConfigurator/>
     <!--  ===================================== Properties ========================================================= -->
 
     <property name  = "CONSOLE_COLOR_PATTERN"
@@ -21,9 +23,7 @@
     <property name = "ROLLOVER_DATE_PATTERN" value = "%d{yyyy-MM-dd}" />
 
     <property name = "MAX_HISTORY"           value = "10" />
-    <property name = "MAX_HISTORY_100"       value = "100" />
     <property name = "MAX_FILE_SIZE"         value = "10MB" />
-    <property name = "MAX_FILE_SIZE_30"      value = "30MB" />
     <property name = "TOTALCAP_PER_APPENDER" value = "100MB" />
 
     <property name = "IMMEDIATE_FLUSH"       value = "true" />
@@ -54,15 +54,17 @@
         </encoder>
     </appender>
 
-    <appender name  = "jbilling"
+     <appender name  = "jbilling"
               class = "ch.qos.logback.core.rolling.RollingFileAppender">
+
         <filter class = "com.sapienter.jbilling.log.EnhancedLoggerFilter" />
+
         <file>${LOG_DIR}/jbilling.log</file>
         <rollingPolicy class = "ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling-.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_ROLLOVER_DIR}/jbilling.${ROLLOVER_DATE_PATTERN}.%i.log</fileNamePattern>
             <totalSizeCap>${TOTALCAP_PER_APPENDER}</totalSizeCap>
-            <maxFileSize>${MAX_FILE_SIZE_30}</maxFileSize>
-            <maxHistory>${MAX_HISTORY_100}</maxHistory>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
         </rollingPolicy>
         <encoder class = "com.sapienter.jbilling.log.PatternLayoutEncoder">
             <pattern>${ADVANCED_PATTERN}</pattern>
@@ -196,33 +198,33 @@
     <logger level = "warn"  name = "org.apache.catalina" />
 
 
-    <logger level = "debug" additivity = "false" name = "com.mchange">
+    <logger level = "warn" additivity = "false" name = "com.mchange">
         <appender-ref ref = "jbilling-c3p0" />
     </logger>
 
 
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling">
+    <logger level = "info" additivity = "false" name = "com.sapienter.jbilling">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "grails.app">
+    <logger level = "info" additivity = "false" name = "grails.app">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "grails.app.service">
+    <logger level = "info" additivity = "false" name = "grails.app.service">
         <appender-ref ref = "jbilling" />
     </logger>
     <logger level = "error" additivity = "false" name = "grails.app.controller">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.processor">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation.processor">
         <appender-ref ref = "jbilling" />
     </logger>
     <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.order.OrderServiceImpl">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation">
         <appender-ref ref = "jbilling-mediation" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative">
         <appender-ref ref = "fc-mediation" />
     </logger>
 
@@ -235,7 +237,7 @@
     </logger>
 
 
-    <logger level = "debug" additivity = "false" name = "org.jdiameter">
+    <logger level = "error" additivity = "false" name = "org.jdiameter">
         <appender-ref ref = "diameter" />
     </logger>
 
@@ -246,11 +248,11 @@
         <appender-ref ref = "jbilling-debug" />
     </logger>
 
-    <logger level = "debug"  additivity = "false" name = "org.codehaus.groovy.grails.webflow">
+    <logger level = "error"  additivity = "false" name = "org.codehaus.groovy.grails.webflow">
         <appender-ref ref = "jbilling-web-flow" />
     </logger>
 
-    <logger level = "debug"  additivity = "false" name = "org.springframework.webflow.engine.impl.FlowExecutionImpl">
+    <logger level = "error"  additivity = "false" name = "org.springframework.webflow.engine.impl.FlowExecutionImpl">
         <appender-ref ref = "jbilling-web-flow" />
     </logger>
 

@@ -15,31 +15,15 @@ final class RestOperationsHelper {
 
     private static final RestConfig restConfig = RemoteContext.getBean("restConfig");
     private static final RestConfig resellerRestConfig = RemoteContext.getBean("resellerRestConfig");
-    private static final RestConfig earnbillRestConfig = RemoteContext.getBean("earnbillRestConfig");
-
-    private static final RestConfig mobileApiRestConfig = RemoteContext.getBean("customerWithMobileApiPermission");
-    private static final RestConfig webApiRestConfig = RemoteContext.getBean("customerWithWebApiPermission");
-    private static final RestConfig apiPermissionRestConfig = RemoteContext.getBean("customerWithBothApiPermission");
-    private static final RestConfig noneApiRestConfig = RemoteContext.getBean("customerWithNoPermission");
 
     private final String fullRestUrl;
     private final HttpHeaders authHeaders;
     private final HttpHeaders resellerAuthHeaders;
-    private final HttpHeaders earnbillAuthHeaders;
-    private final HttpHeaders mobileApiAuthHeaders;
-    private final HttpHeaders webApiAuthHeaders;
-    private final HttpHeaders apiPermissionAuthHeaders;
-    private final HttpHeaders noneApiAuthHeaders;
 
     private RestOperationsHelper(String fullRestUrl, boolean authHeaders){
         this.fullRestUrl = fullRestUrl;
         this.authHeaders = authHeaders ? createAuthHeaders(restConfig.getAuthUsername(), restConfig.getAuthPassword()) : new HttpHeaders();
         this.resellerAuthHeaders = authHeaders ? createAuthHeaders(resellerRestConfig.getAuthUsername(), resellerRestConfig.getAuthPassword()) : new HttpHeaders();
-        this.earnbillAuthHeaders = authHeaders ? createAuthHeaders(earnbillRestConfig.getAuthUsername(), earnbillRestConfig.getAuthPassword()) : new HttpHeaders();
-        this.mobileApiAuthHeaders = authHeaders ? createAuthHeaders(mobileApiRestConfig.getAuthUsername(), mobileApiRestConfig.getAuthPassword()) : new HttpHeaders();
-        this.webApiAuthHeaders = authHeaders ? createAuthHeaders(webApiRestConfig.getAuthUsername(), webApiRestConfig.getAuthPassword()) : new HttpHeaders();
-        this.apiPermissionAuthHeaders = authHeaders ? createAuthHeaders(apiPermissionRestConfig.getAuthUsername(), apiPermissionRestConfig.getAuthPassword()) : new HttpHeaders();
-        this.noneApiAuthHeaders = authHeaders ? createAuthHeaders(noneApiRestConfig.getAuthUsername(), noneApiRestConfig.getAuthPassword()) : new HttpHeaders();
     }
 
     public static RestOperationsHelper getInstance(String urlResourceName){
@@ -82,21 +66,6 @@ final class RestOperationsHelper {
 
     public HttpHeaders getResellerAuthHeaders(){
         return HttpHeaders.readOnlyHttpHeaders(resellerAuthHeaders);
-    }
-    public HttpHeaders getEarnbillAuthHeaders(){
-        return HttpHeaders.readOnlyHttpHeaders(earnbillAuthHeaders);
-    }
-    public HttpHeaders getMobileApiAuthHeaders(){
-        return HttpHeaders.readOnlyHttpHeaders(mobileApiAuthHeaders);
-    }
-    public HttpHeaders getWebApiAuthHeaders(){
-        return HttpHeaders.readOnlyHttpHeaders(webApiAuthHeaders);
-    }
-    public HttpHeaders getBothApiAuthHeaders(){
-        return HttpHeaders.readOnlyHttpHeaders(apiPermissionAuthHeaders);
-    }
-    public HttpHeaders getNoneApiAuthHeaders(){
-        return HttpHeaders.readOnlyHttpHeaders(noneApiAuthHeaders);
     }
 
     public static HttpHeaders getJSONHeaders(boolean accept, boolean contentType){

@@ -1,7 +1,6 @@
 package com.sapienter.jbilling.resources
 
 import com.sapienter.jbilling.common.ErrorDetails
-import com.sapienter.jbilling.common.SessionInternalError
 import com.sapienter.jbilling.server.payment.PaymentMethodTypeWS
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean
 import com.sapienter.jbilling.utils.RestErrorHandler
@@ -113,8 +112,8 @@ class PaymentMethodTypesResource {
             }
             webServicesSession.deletePaymentMethodType(id);
             return Response.status(Response.Status.NO_CONTENT).build();
-        } catch (SessionInternalError sie) {
-            return RestErrorHandler.mapErrorToHttpResponse(sie);
+        } catch (Exception exp) {
+            return RestErrorHandler.mapErrorToHttpResponse(exp);
         }
     }
 

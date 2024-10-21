@@ -68,7 +68,7 @@
     <div class="buttons">
         <ul>
             <li>
-                <a onclick="$('#user-account-select-form').submit()" class="submit save button-primary">
+                <a onclick="$('#user-account-select-form').submit()" class="submit save button-primary" data-cy="selectAccountType">
                     <span><g:message code="button.select"/></span>
                 </a>
             </li>

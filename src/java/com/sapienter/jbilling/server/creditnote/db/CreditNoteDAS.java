@@ -14,8 +14,11 @@ import org.hibernate.transform.Transformers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.server.creditnote.CreditNoteInvoiceMapWS;
+import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
+import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 
 public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
 
@@ -31,11 +34,11 @@ public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
 
     @SuppressWarnings("unchecked")
     public List<CreditNoteDTO> findCreditNotesWithBalanceOldestFirst(Integer userId) {
-        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class).createAlias("creationInvoice", "inv");
+        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class);
         criteria.add(Restrictions.eq("deleted", 0));
-        criteria.add(Restrictions.eq("inv.baseUser.id", userId));
+        criteria.add(Restrictions.eq("user.id", userId));
         criteria.add(Restrictions.gt("balance", BigDecimal.ZERO));
-        criteria.addOrder(Order.asc("createDateTime"));
+        criteria.addOrder(Order.asc("creditNoteDate"));
         return criteria.list();
     }
 
@@ -44,20 +47,18 @@ public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
         // user's credit notes with balance
         Criteria criteria = getSession().createCriteria(CreditNoteDTO.class)
                 .add(Restrictions.eq("deleted", 0))
-                .createAlias("creationInvoice", "inv")
-                .createAlias("inv.baseUser", "u")
-                .add(Restrictions.eq("u.id", userId));
+                .add(Restrictions.eq("user.id", userId));
 
         return criteria.list();
     }
 
     @SuppressWarnings("unchecked")
     public List<Integer> findIdsByUserLatestFirst(Integer userId, int maxResults) {
-        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class).createAlias("creationInvoice", "inv")
+        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class)
                 .add(Restrictions.eq("deleted", 0))
-                .add(Restrictions.eq("inv.baseUser.id", userId))
+                .add(Restrictions.eq("user.id", userId))
                 .setProjection(Projections.id())
-                .addOrder(Order.desc("createDateTime"))
+                .addOrder(Order.desc("creditNoteDate"))
                 .addOrder(Order.desc("id"))
                 .setMaxResults(maxResults);
         return criteria.list();
@@ -65,10 +66,10 @@ public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
 
     @SuppressWarnings("unchecked")
     public List<CreditNoteDTO> findCreditNotesByUser(Integer userId, Integer offset, Integer limit) {
-        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class).createAlias("creationInvoice", "inv")
+        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class)
                 .add(Restrictions.eq("deleted", 0))
-                .add(Restrictions.eq("inv.baseUser.id", userId))
-                .addOrder(Order.desc("createDateTime"))
+                .add(Restrictions.eq("user.id", userId))
+                .addOrder(Order.desc("creditNoteDate"))
                 .addOrder(Order.desc("id"));
         if(null != limit) {
             criteria = criteria.setMaxResults(limit);
@@ -88,15 +89,39 @@ public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public List<CreditNoteDTO> findCreditNotesBetweenLastAndCurrentInvoiceDates(Integer userId, Date from, Date until) {
-        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class).createAlias("creationInvoice", "inv");
+    public List<CreditNoteDTO> findCreditNotesBetweenLastAndCurrentInvoiceDates(Integer userId, Date from, Date until, String useDatePreference, Integer entityId) {
+        Criteria criteria = getSession().createCriteria(CreditNoteDTO.class);
         criteria.add(Restrictions.eq("deleted", 0));
-        criteria.add(Restrictions.eq("inv.baseUser.id", userId));
-        if (from != null) {
-            criteria.add(Restrictions.gt("createDateTime", from));
+        criteria.add(Restrictions.eq("user.id", userId));
+        
+        switch(useDatePreference) {
+        case CommonConstants.INVOICE_DATE : 
+        	if (from != null) {
+        		from = DateConvertUtils.asUtilDate(
+        				TimezoneHelper.convertTimezoneToUTC(DateConvertUtils.asLocalDateTime(from),
+        						TimezoneHelper.getCompanyLevelTimeZone(entityId)));
+        		criteria.add(Restrictions.ge("createDateTime", from));
+        	}
+        	until = DateConvertUtils.asUtilDate(
+        			TimezoneHelper.convertTimezoneToUTC(DateConvertUtils.asLocalDateTime(until),
+        					TimezoneHelper.getCompanyLevelTimeZone(entityId)));
+        	criteria.add(Restrictions.lt("createDateTime", until));
+        	break;
+        case CommonConstants.INVOICE_TIMESTAMP : 
+        	if (from != null) {
+        		criteria.add(Restrictions.ge("createDateTime", from));
+        	}
+        	criteria.add(Restrictions.lt("createDateTime", until));
+        	break;
+        case CommonConstants.CREDIT_NOTE_DATE :
+        	if (from != null) {
+        		criteria.add(Restrictions.ge("creditNoteDate", from));
+        	}
+        	criteria.add(Restrictions.lt("creditNoteDate", until));
+        	break;   
         }
-        criteria.add(Restrictions.le("createDateTime", until));
-        criteria.addOrder(Order.desc("createDateTime"));
+
+        criteria.addOrder(Order.desc("creditNoteDate"));
         return criteria.list();
     }
 
@@ -118,5 +143,27 @@ public class CreditNoteDAS extends AbstractDAS<CreditNoteDTO> {
         sqlQuery.addScalar("createDatetime");
         sqlQuery.setResultTransformer(Transformers.aliasToBean(CreditNoteInvoiceMapWS.class));
         return sqlQuery.list();
+    }
+
+    /**
+     * Returns the credit notes  list based on the period
+     *
+     * @param start - start date
+     * @param end - end date
+     * @param offset - offset to start from
+     * @param limit - No of records
+     */
+    @SuppressWarnings("unchecked")
+    public List<CreditNoteDTO> getCreditNotesForPeriod(Date start, Date end, Integer offset, Integer limit) {
+        Criteria criteria = getSession().createCriteria(getPersistentClass())
+                .addOrder(Order.asc("creditNoteDate"))
+                .add(Restrictions.ge("creditNoteDate", start))
+                .add(Restrictions.eq("deleted", 0))
+                .setFirstResult(offset)
+                .setMaxResults(limit);
+        if(null!= end) {
+            criteria.add(Restrictions.le("creditNoteDate", end));
+        }
+        return criteria.list();
     }
 }

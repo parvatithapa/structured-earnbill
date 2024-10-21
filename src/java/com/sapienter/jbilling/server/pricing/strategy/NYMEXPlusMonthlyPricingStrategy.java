@@ -1,5 +1,27 @@
 package com.sapienter.jbilling.server.pricing.strategy;
 
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
+import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedMap;
+
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.fileProcessing.FileConstants;
@@ -19,19 +41,6 @@ import com.sapienter.jbilling.server.pricing.util.AttributeDefinition;
 import com.sapienter.jbilling.server.pricing.util.AttributeUtils;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.user.db.MatchingFieldDTO;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
-import java.util.*;
-
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.DECIMAL;
-import static com.sapienter.jbilling.server.pricing.util.AttributeDefinition.Type.INTEGER;
 
 /**
  * Created by aman on 20/6/16.
@@ -43,25 +52,26 @@ public class NYMEXPlusMonthlyPricingStrategy extends DayAheadPricingStrategy {
     private Date to = null;
     private BigDecimal totalUsage;
     private String zone;
-//    private BigDecimal totalUsageByBreakPoint = new BigDecimal(BigInteger.ZERO);
+    //    private BigDecimal totalUsageByBreakPoint = new BigDecimal(BigInteger.ZERO);
 
     public NYMEXPlusMonthlyPricingStrategy() {
         setAttributeDefinitions(
                 new AttributeDefinition(ADDER_FEE, DECIMAL, false),
                 new AttributeDefinition(PARAM_ROUTE_RATE_CARD_ID, INTEGER, true)
-        );
+                );
 
         setChainPositions(
                 ChainPosition.START,
                 ChainPosition.MIDDLE,
                 ChainPosition.END
-        );
+                );
 
         setRequiresUsage(false);
     }
 
+    @Override
     public void applyTo(OrderDTO pricingOrder, PricingResult result, List<PricingField> fields, PriceModelDTO planPrice,
-                        BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
+            BigDecimal quantity, Usage usage, boolean singlePurchase, OrderLineDTO orderLineDTO) {
         fields = new LinkedList<PricingField>(fields);
         if (pricingOrder == null || pricingOrder.getUser() == null) {
             LOG.debug("User not found.");
@@ -100,7 +110,7 @@ public class NYMEXPlusMonthlyPricingStrategy extends DayAheadPricingStrategy {
         fields.add(zonePricingField);
 
         //calculate FUP quantities
-        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(pricingOrder, result, quantity);
+        Map<FupKey, BigDecimal> fupResult = calculateFreeUsageQty(orderLineDTO, result, quantity);
         totalUsage = fupResult.get(FupKey.NEW_QTY);
 
 
@@ -116,32 +126,32 @@ public class NYMEXPlusMonthlyPricingStrategy extends DayAheadPricingStrategy {
     }
 
     /*
-    * This method will calculate usage ratio for different spans divided by Break Point.
-    *       For example, From : 27 Jan, To : 10 Feb. Total usage : 1000.
-    *       And route rate card has rows :
-    *       1 Jan - 1 Feb : 0.01
-    *       1 Feb - 1 Mar : 0.02 NOTE : End date(right date is exclusive)
-    * Here 1 Feb is break point.
-    *
-    * Usage will be divided as :
-    *
-    * Usage for 27 Jan to 31 Jan
-    * (27 Jan - 31 Jan)*1000/(27 Jan - 10 Feb)
-    * => 5*1000/15
-    * => 333.33333333
-    *
-    * Usage for 1 Feb to 10 Feb
-    * (1 Feb - 10 Feb)*1000/(27 Jan - 10 Feb)
-    * => 10*1000/15
-    * => 666.6666666667
-    *
-    * Rate will be calculated as :
-    * For example, From : 27 Jan, To : 5 Feb.
-    * Firstly it will pass 27 Jan as input and get January month rate. In that row, end date is 31 Jan. If that date is smaller or equal than TO date
-    * which is 5 Feb, it will search rate for 1 Feb then. It will return rate 0.02
-    *
-    * Total price : (333.33333333*0.01)+(666.666666666*0.02)
-    * */
+     * This method will calculate usage ratio for different spans divided by Break Point.
+     *       For example, From : 27 Jan, To : 10 Feb. Total usage : 1000.
+     *       And route rate card has rows :
+     *       1 Jan - 1 Feb : 0.01
+     *       1 Feb - 1 Mar : 0.02 NOTE : End date(right date is exclusive)
+     * Here 1 Feb is break point.
+     *
+     * Usage will be divided as :
+     *
+     * Usage for 27 Jan to 31 Jan
+     * (27 Jan - 31 Jan)*1000/(27 Jan - 10 Feb)
+     * => 5*1000/15
+     * => 333.33333333
+     *
+     * Usage for 1 Feb to 10 Feb
+     * (1 Feb - 10 Feb)*1000/(27 Jan - 10 Feb)
+     * => 10*1000/15
+     * => 666.6666666667
+     *
+     * Rate will be calculated as :
+     * For example, From : 27 Jan, To : 5 Feb.
+     * Firstly it will pass 27 Jan as input and get January month rate. In that row, end date is 31 Jan. If that date is smaller or equal than TO date
+     * which is 5 Feb, it will search rate for 1 Feb then. It will return rate 0.02
+     *
+     * Total price : (333.33333333*0.01)+(666.666666666*0.02)
+     * */
     protected BigDecimal getPrice(PriceModelDTO pricingModel, BigDecimal adderFee, List<PricingField> fields) {
         BigDecimal price = new BigDecimal(BigInteger.ZERO);
 

@@ -146,7 +146,7 @@
         <property name="parameters">
             <map>
                 <entry key="url" value="jdbc:mysql://localhost:3306/jbilling_test"/>
-                <entry key="driver" value="com.mysql.jdbc.Driver"/>
+                <entry key="driver" value="com.mysql.cj.jdbc.Driver"/>
                 <entry key="username" value="jbilling"/>
                 <entry key="password" value="password"/>
                 <entry key="table_name" value="rate_center_table"/>

@@ -14,5 +14,5 @@
 # Dissemination of this information or reproduction of this material
 # is strictly forbidden.
 
-export GRAILS_OPTS="-server -Xmx1536M -Xms256M -XX:MaxPermSize=384m"
+export GRAILS_OPTS="-server -Xmx4536M -Xms256M -XX:MaxPermSize=2000M"
 grails -debug -noreloading -Ddisable.auto.recompile=true -Dspring.profiles.active="billing.master,billing.slave,mediation.slave" run-app -offline

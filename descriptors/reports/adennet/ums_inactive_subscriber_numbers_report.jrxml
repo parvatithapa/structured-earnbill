@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="adennet_ums_last_six_month_inactive_subscriber_report" language="groovy" pageWidth="610" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="570" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" whenResourceMissingType="Empty" uuid="e99aa98c-c7de-45f4-bda3-7a82f8b2832e">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="inactive_since" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="inactive_month" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString language="plsql">
+		<![CDATA[SELECT
+  con_usage_map.user_id,
+  subscriber_number,
+  (now() - con_usage_map.end_date) AS days,
+  con_usage_map.end_date,
+  latest_trn.governorate
+FROM
+  consumption_usage_map con_usage_map
+  JOIN(
+    SELECT
+      max(con.id) as id,
+      con.user_id,
+      t.governorate
+    FROM
+      consumption_usage_map con
+      join transaction t on con.txn_id = t.id
+    GROUP BY
+      con.user_id,
+      t.governorate
+  ) latest_trn ON con_usage_map.id = latest_trn.id
+  AND con_usage_map.user_id = latest_trn.user_id
+  AND con_usage_map.end_date <= NOW() - $P{inactive_since} :: INTERVAL
+ORDER BY
+  con_usage_map.end_date;]]>
+	</queryString>
+	<field name="user_id" class="java.lang.Integer"/>
+	<field name="subscriber_number" class="java.lang.String"/>
+	<field name="days" class="org.postgresql.util.PGInterval"/>
+	<field name="end_date" class="java.sql.Timestamp"/>
+	<field name="governorate" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="118" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="358" height="48" forecolor="#441A3D" uuid="0d2eb9fd-6e64-4ff3-8ec7-42dc3d84d3f9"/>
+				<textElement>
+					<font size="20" isBold="true" isItalic="false" isUnderline="false"/>
+				</textElement>
+				<text><![CDATA[Inactive Subscriber Numbers Report ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="358" y="0" width="93" height="48" uuid="fb9faada-bc58-4f54-9770-56ca4de3383d"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Date  :]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="451" y="0" width="119" height="48" uuid="727ab41e-d5a2-4803-9fea-4241907e222c"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_FORMAT_FACTORY}.createDateFormat("dd/MM/yyyy HH:mm",$P{REPORT_LOCALE}, java.util.TimeZone.getTimeZone("Asia/Aden")).format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="358" y="48" width="93" height="17" uuid="056a77bd-0c53-49b7-808e-8f2b3ddf7dca"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Duration     :]]></text>
+			</staticText>
+			<textField pattern="">
+				<reportElement x="451" y="48" width="119" height="17" uuid="6d865322-9ae6-4ac0-bd5a-16b61c74fffe"/>
+				<textElement textAlignment="Left">
+					<font size="11" isBold="true" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{inactive_month}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="48" width="358" height="17" uuid="3a9b1443-ae96-4a17-ae83-056b8541d2e0"/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="76" width="62" height="31" uuid="ef6c2d53-89d1-4593-9522-72b2fa1e46b4"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[#]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="62" y="76" width="86" height="31" uuid="83575ab6-bde9-4864-b81f-59f720db2164"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Account Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="148" y="76" width="100" height="31" uuid="8dc22538-6018-4f0a-b4ac-88f9bc555aac"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="248" y="76" width="110" height="31" uuid="9eb0780f-e7c1-4036-ba58-130d0a193823"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Last Recharge Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="358" y="76" width="93" height="31" uuid="19b3a01d-e5b2-4e1a-955d-34d83463376e"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<text><![CDATA[Inactive Since (Days)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="451" y="76" width="119" height="31" uuid="72030dc4-9268-47ec-8f32-2489703215b6"/>
+				<textElement>
+					<font size="11" isBold="true"/>
+					<paragraph leftIndent="10"/>
+				</textElement>
+				<text><![CDATA[Governorate]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="62" y="0" width="86" height="20" uuid="60f0932f-41aa-4f96-bfbb-a9f8704d2c8e"/>
+				<textElement textAlignment="Left">
+					<font size="11"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{user_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="248" y="0" width="110" height="20" uuid="fc9f8bfe-a1dc-4b74-9133-971191ab6ad7"/>
+				<textElement textAlignment="Left">
+					<font size="11"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_FORMAT_FACTORY}.createDateFormat("dd/MM/yyyy HH:mm",$P{REPORT_LOCALE}, java.util.TimeZone.getTimeZone("Asia/Aden")).format($F{end_date})]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="148" y="0" width="100" height="20" uuid="c5875d27-51f1-4505-8d23-c8c073b07789"/>
+				<textElement textAlignment="Left">
+					<font size="11"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{subscriber_number}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="358" y="0" width="93" height="20" uuid="e741ca04-a910-43f7-af95-45a55df859b1"/>
+				<textElement textAlignment="Center">
+					<font size="11"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{days}.getDays()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="0" width="62" height="20" uuid="20c64f08-0254-431f-92c9-dd6c79a65cbe"/>
+				<textElement textAlignment="Left">
+					<font size="11"/>
+					<paragraph leftIndent="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="451" y="0" width="119" height="20" uuid="b8e7649f-e092-4522-ae44-970d18481ff8"/>
+				<textElement>
+					<font size="11"/>
+					<paragraph leftIndent="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{governorate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="570" height="20" uuid="40bf1273-a967-4cc3-a886-2ed048af6398"/>
+				<textElement textAlignment="Right">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page: " +$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

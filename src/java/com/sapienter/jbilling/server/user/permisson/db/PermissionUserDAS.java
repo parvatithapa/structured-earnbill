@@ -15,20 +15,8 @@
  */
 package com.sapienter.jbilling.server.user.permisson.db;
 
-import org.hibernate.Criteria;
-import org.hibernate.criterion.Restrictions;
-
 import com.sapienter.jbilling.server.util.db.AbstractDAS;
 
 public class PermissionUserDAS extends AbstractDAS<PermissionUserDTO> {
-
-    public PermissionUserDTO findByPermissionIdAndUserId(Integer permissionId, Integer userId) {
-
-        Criteria criteria =getSession().createCriteria(getPersistentClass())
-            .add(Restrictions.eq("permission.id", permissionId))
-            .add(Restrictions.eq("baseUser.id", userId));
-
-        return findFirst(criteria);
-    }
 
 }

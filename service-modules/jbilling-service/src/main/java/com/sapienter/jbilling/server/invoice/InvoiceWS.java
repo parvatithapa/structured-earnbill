@@ -24,7 +24,6 @@ import java.util.List;
 
 import javax.validation.Valid;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sapienter.jbilling.common.Util;
@@ -43,7 +42,6 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
  * @author Emil
  */
 @ApiModel(value = "Invoice data", description = "InvoiceWS model")
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class InvoiceWS implements WSSecured, Serializable, HierarchicalEntity {
 
     private static final long serialVersionUID = 20130704L;
@@ -82,8 +80,6 @@ public class InvoiceWS implements WSSecured, Serializable, HierarchicalEntity {
     //additional fields for the new gui
     private String statusDescr;
     private Integer[] creditNoteIds;
-    private String irn;
-    private Integer[] paymentUrlIds;
 
     @JsonIgnore
     private PaymentInvoiceMapWS[] paymentInvoiceMap;
@@ -375,11 +371,13 @@ public class InvoiceWS implements WSSecured, Serializable, HierarchicalEntity {
      * @return null
      */
     @Override
+    @JsonIgnore
     public Integer getOwningEntityId() {
         return null;
     }
 
     @Override
+    @JsonIgnore
     public Integer getOwningUserId() {
         return getUserId();
     }
@@ -417,23 +415,6 @@ public class InvoiceWS implements WSSecured, Serializable, HierarchicalEntity {
     @JsonIgnore
     public void setPaymentInvoiceMap(PaymentInvoiceMapWS[] paymentInvoiceMap) {
         this.paymentInvoiceMap = paymentInvoiceMap;
-    }
-
-	public String getIrn() {
-		return irn;
-	}
-
-	public void setIrn(String irn) {
-		this.irn = irn;
-	}
-
-    @ApiModelProperty(value = "PaymentUrls generated for this invoice")
-    public Integer[] getPaymentUrlIds() {
-        return paymentUrlIds;
-    }
-
-    public void setPaymentUrlIds(Integer[] paymentUrlIds) {
-        this.paymentUrlIds = paymentUrlIds;
     }
 
     @Override
@@ -493,10 +474,6 @@ public class InvoiceWS implements WSSecured, Serializable, HierarchicalEntity {
         builder.append(billingProcess);
         builder.append(", creditNoteIds=");
         builder.append(Arrays.toString(creditNoteIds));
-        builder.append(", irn=");
-        builder.append(irn);
-        builder.append(", paymentUrlIds=");
-        builder.append(Arrays.toString(paymentUrlIds));
         builder.append(']');
         return builder.toString();
     }

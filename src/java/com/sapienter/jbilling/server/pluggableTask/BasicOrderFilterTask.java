@@ -103,8 +103,24 @@ public class BasicOrderFilterTask extends PluggableTask implements OrderFilterTa
 
                 logger.debug("Calculating billing until for user, {} is {}", order.getUser(), billingUntil);
             }
-
+            if(order.getIsMediated() && (activeSince.after(billingUntil) || activeSince.equals(billingUntil))) {
+                logger.debug("Skipping mediated usage order {} as order active since date is greater than or equal to billing until date, {} is {}", order.getId(), activeSince, billingUntil);
+                return false;
+            }
             EventLogger eLog = EventLogger.getInstance();
+            if (null != activeUntil && activeSince.compareTo(activeUntil) > 0) {
+                retValue = false;
+                logger.warn("Order {} was set to be processed but the active since is after the active until", order.getId());
+                eLog.warning(process.getEntity().getId(), 
+                             order.getBaseUserByUserId().getId(),
+                             order.getId(),
+                             EventLogger.MODULE_BILLING_PROCESS,
+                             EventLogger.BILLING_PROCESS_EXPIRED,
+                             Constants.TABLE_PUCHASE_ORDER);
+                OrderBL orderBL = new OrderBL(order);
+                orderBL.setStatus(null, new OrderStatusDAS().getDefaultOrderStatusId(OrderStatusFlag.FINISHED, order.getUser().getCompany().getId()));
+                order.setNextBillableDay(null);
+            }
             if (order.getBillingTypeId().compareTo(Constants.ORDER_BILLING_POST_PAID) == 0) {
 
                 if (order.isSuspended()) {
@@ -149,7 +165,7 @@ public class BasicOrderFilterTask extends PluggableTask implements OrderFilterTa
                     	firstBillingDate = thisOrActiveUntil(cal.getTime(), activeUntil);
                     }
 
-                    if (firstBillingDate.after(billingUntil)) {
+                    if (firstBillingDate.after(calculateBillingUntilWithBillingDelayDays(order, billingUntil))) {
             				eLog.info(process.getEntity().getId(), 
                                       order.getBaseUserByUserId().getId(),
                                       order.getId(),
@@ -206,6 +222,7 @@ public class BasicOrderFilterTask extends PluggableTask implements OrderFilterTa
                         OrderBL orderBL = new OrderBL(order);
                         orderBL.setStatus(null, new OrderStatusDAS().getDefaultOrderStatusId(OrderStatusFlag.FINISHED, order.getUser().getCompany().getId()));
                         order.setNextBillableDay(null);
+                        retValue = false;
                     }
                 }
                 // post paid orders can't be too late to process 
@@ -324,4 +341,9 @@ public class BasicOrderFilterTask extends PluggableTask implements OrderFilterTa
     	OrderPeriodDTO billingCyclePeriod = customerBillingCycle.getSubscriptionPeriod();
     	return billingCyclePeriod.getUnitId().equals(Constants.PERIOD_UNIT_DAY) && 1 == billingCyclePeriod.getValue();
 	}
+
+    protected Date calculateBillingUntilWithBillingDelayDays(OrderDTO order, Date billingUntil) {
+        return billingUntil;
+    }
+
 }

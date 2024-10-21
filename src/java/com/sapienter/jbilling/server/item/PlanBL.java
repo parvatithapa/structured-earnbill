@@ -18,6 +18,7 @@ package com.sapienter.jbilling.server.item;
 
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sapienter.jbilling.server.adennet.ws.PrimaryPlanWS;
+import com.sapienter.jbilling.server.util.Constants;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.LoggerFactory;
@@ -126,20 +129,16 @@ public class PlanBL {
         }
         return null;
     }
-
+    
     public static final PlanWS getWS(PlanDTO dto, List<PlanItemWS> planItems) {
-
+       
     	PlanWS ws =new PlanWS();
     	ws.setId(dto.getId());
         ws.setDescription(dto.getDescription());
         ws.setFreeTrial(dto.isFreeTrial());
-        if(dto.isFreeTrial()) {
-            ws.setFreeTrialPeriodValue(dto.getFreeTrialPeriodValue());
-            ws.setFreeTrialPeriodUnit(dto.getFreeTrialPeriodUnit().name());
-        }
         ws.setEditable(dto.getEditable());
         ws.setPlanItems(planItems);
-
+        
         if (dto.getItem() != null) ws.setItemId(dto.getItem().getId());
         if (dto.getPeriod() != null)ws.setPeriodId(dto.getPeriod().getId());
         if (null != dto.getUsagePools() && !dto.getUsagePools().isEmpty()) {
@@ -149,7 +148,7 @@ public class PlanBL {
         		usagePoolIds[index++] = fupDto.getId();
         	}
         	ws.setUsagePoolIds(usagePoolIds);
-
+        	
         }
         return ws;
     }
@@ -451,7 +450,7 @@ public class PlanBL {
         }
         return false;
     }
-
+    
     public static Map<Integer, BigDecimal> calculateItemDiffQuantityForPlans(Integer sourcePlanItemId, Integer targetPlanItemId) {
         Map<Integer, BigDecimal> itemsQuantityMap = new HashMap<Integer, BigDecimal>();
         PlanBL planBL = new PlanBL();
@@ -483,7 +482,7 @@ public class PlanBL {
             }
         }
     }
-
+    
     public void set(Integer planId) {
         this.plan = planDas.findNow(planId);
     }
@@ -619,16 +618,11 @@ public class PlanBL {
            	}
 
             plan.setDescription(dto.getDescription());
+            plan.setFreeTrial(dto.isFreeTrial());
             plan.setEditable(dto.getEditable());
             plan.setItem(dto.getItem());
             plan.setPeriod(dto.getPeriod());
             plan.setUsagePools(dto.getUsagePools());
-            plan.setFreeTrial(dto.isFreeTrial());
-            if(dto.isFreeTrial()) {
-                plan.setFreeTrialPeriodUnit(dto.getFreeTrialPeriodUnit());
-                plan.setFreeTrialPeriodValue(dto.getFreeTrialPeriodValue());
-            }
-            plan.setNumberOfFreeCalls(dto.getNumberOfFreeCalls());
 
             /*
               Purge prices for removed plan items:
@@ -672,7 +666,6 @@ public class PlanBL {
             	planUpdatedEvent.setEntityId(entityId);
             	EventManager.process(planUpdatedEvent);
             }
-
         } else {
             logger.error("Cannot update, PlanDTO not found or not set!");
         }
@@ -769,7 +762,7 @@ public class PlanBL {
 
     /**
      * Subscribes a customer to all plans held by the given "plan subscription" item, adding all
-     * plan item prices to a customer price map.
+     * plan item prices to a customer price map. 
      *
      * @param userId user id of the customer to subscribe
      * @param itemId item representing the subscription to a plan
@@ -935,5 +928,31 @@ public class PlanBL {
 
     public List<PlanDTO> findPlanByPlanNumber(String planNumber, Integer entityId) {
         return planDas.findPlanByPlanNumber(planNumber, entityId);
+    }
+
+    public PrimaryPlanWS getPlan(Integer planId, Integer addOnCategoryId, String taxTableName, String taxDateFormat) {
+        PlanDTO plan = planDas.findNow(planId);
+        return buildPrimaryPlanWS(addOnCategoryId, taxTableName, taxDateFormat, plan);
+    }
+
+    public PrimaryPlanWS getPlan(String internalNumber, Integer entityId, Integer addOnCategoryId, String taxTableName, String taxDateFormat) {
+        PlanDTO plan = planDas.findByPlanNumber(internalNumber, entityId);
+        return buildPrimaryPlanWS(addOnCategoryId, taxTableName, taxDateFormat, plan);
+    }
+
+    private PrimaryPlanWS buildPrimaryPlanWS(Integer addOnCategoryId, String taxTableName, String taxDateFormat, PlanDTO plan) {
+        this.plan = plan;
+        Boolean isAddon = Arrays.asList(plan.getItem().getTypes()).contains(addOnCategoryId);
+        BigDecimal taxRate = getTaxRate(new Date(), taxTableName, taxDateFormat);
+        BigDecimal price = plan.getItem().getPrice(new Date()).getRate();
+        BigDecimal planPrice = price.multiply(BigDecimal.ONE.add(taxRate.divide(new BigDecimal(100))))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        return PrimaryPlanWS.builder().id(plan.getId())
+                .description(plan.getItem().getDescription(Constants.LANGUAGE_ENGLISH_ID))
+                .validityInDays(new OrderPeriodDAS().find(plan.getPeriod().getId()).getValue())
+                .price(planPrice)
+                .isAddOn(isAddon)
+                .build();
     }
 }

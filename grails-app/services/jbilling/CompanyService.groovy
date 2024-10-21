@@ -32,8 +32,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 class CompanyService implements Serializable {
 
-	static transactional = false
-
     //maps entity id to the logo version. Used in the construction of the path for the UI
     private static Map<Integer, String> entityLogoVersion = new ConcurrentHashMap<>();
 
@@ -109,12 +107,7 @@ class CompanyService implements Serializable {
         def company = CompanyDTO.get(session['company_id'])
         response['company'] = company
         if(includeChildren) {
-            List<CompanyDTO> childs = new ArrayList<>();
-            for (CompanyDTO childCompany : CompanyDTO.findAllByParent(company)) {
-                if (childCompany.getDeleted() == 0)
-                    childs.add(childCompany)
-            }
-            response['childEntities'] = childs
+            response['childEntities'] = CompanyDTO.findAllByParent(company)
         }
         response
     }

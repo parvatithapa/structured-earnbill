@@ -25,6 +25,8 @@ import org.testng.annotations.Test;
 
 import com.sapienter.jbilling.server.item.PlanItemWS;
 import com.sapienter.jbilling.server.item.RatingConfigurationWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
 import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
@@ -53,7 +55,9 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
     private static final String SEDATA_PLAN_CODE        = "se-data-Plan";
 
     private static final String USER_01                 = "SE-Data-Test-User-01";
+    private static final String USER_01_ASSET_CODE      = "asset-01"+ System.currentTimeMillis();
     private static final String USER_02                 = "SE-Data-Test-User-02";
+    private static final String USER_02_ASSET_CODE      = "asset-02"+ System.currentTimeMillis();
     private static final String SUBSCRIPTION_ORDER_01   = "se-subscription-order-01";
     private static final String MEDIATION_FILE_PREFIX   = "BBS";
     private static final String ORIGINAL_QUANITITY      = "41376014.00";
@@ -111,6 +115,12 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
             Integer planId =  buildAndPersistPlan(envBuilder, api, SEDATA_PLAN_CODE, "100 SE Data Plan", MONTHLY_ORDER_PERIOD,
                     envBuilder.idForCode(SEDATA_PLAN_ITEM), Collections.emptyList(), seDataUsagePlanItem, seDataAssetPlanItem);
             setPlanLevelMetaFieldForInternet(planId, ENUM_INTERNET_TECHNOLOGY_VALUES.get(1).getValue(),ENUM_QUANTITY_RESOLUTION_UNIT_VALUES.get(2).getValue());
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
         }).test((testEnv, testEnvBuilder) -> {
             assertNotNull("SE Data Product Creation Failed", testEnvBuilder.idForCode(DATA_USAGE));
             assertNotNull("SE Data Plan Creation Failed", testEnvBuilder.idForCode(SEDATA_PLAN_CODE));
@@ -139,7 +149,7 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
 
                 Integer userNameAsAsset = buildAndPersistAsset(envBuilder,
                         envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), USER_01);
+                        envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), USER_01, USER_01_ASSET_CODE);
 
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), BigDecimal.ONE));
@@ -233,7 +243,7 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
 
                 Integer userNameAsAsset = buildAndPersistAsset(envBuilder,
                         envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                        envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), USER_02);
+                        envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), USER_02, USER_02_ASSET_CODE);
 
                 Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
                 productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), BigDecimal.ONE));
@@ -305,6 +315,7 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
                         assertEquals("Invalid mediated order line,", 1, order.getOrderLines().length);
 
                         JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+                        validatePricingFields(viewEvents);
                         assertEquals("Invalid original quantity", new BigDecimal(ORIGINAL_QUANITITY),
                                 viewEvents[0].getOriginalQuantity().setScale(2, BigDecimal.ROUND_HALF_UP));
 
@@ -327,6 +338,9 @@ public class ServiceElementsDataMediationTest extends BaseMediationTest {
     @Override
     @AfterClass
     public void tearDown() {
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         super.tearDown();
         try {
             api.deleteEnumeration(enumId1);

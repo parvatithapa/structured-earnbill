@@ -65,10 +65,7 @@ public class ColorConverter {
     }
 
     public static void setBaseColor() {
-        Integer companyId = (Integer) WebUtils.retrieveGrailsWebRequest().getSession().getAttribute("company_id");
-        if(null != companyId) {
-            BASE_COLOR_INT = new EntityBL(companyId).getEntity().getUiColor();
-        }
+        BASE_COLOR_INT = new EntityBL((Integer) WebUtils.retrieveGrailsWebRequest().getSession().getAttribute("company_id")).getEntity().getUiColor();
 
         // Defaults to green  0x6080
         if (BASE_COLOR_INT == null) {

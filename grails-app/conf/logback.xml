@@ -2,7 +2,9 @@
 <!DOCTYPE configuration>
 
 <configuration debug = "false" scan = "true" scanPeriod = "60 seconds">
-
+    <!-- Enable JMX configuration -->
+    <contextName>jBilling</contextName>
+    <jmxConfigurator/>
     <!--  ===================================== Properties ========================================================= -->
 
     <property name  = "CONSOLE_COLOR_PATTERN"
@@ -196,7 +198,7 @@
     <logger level = "warn"  name = "org.apache.catalina" />
 
 
-    <logger level = "debug" additivity = "false" name = "com.mchange">
+    <logger level = "warn" additivity = "false" name = "com.mchange">
         <appender-ref ref = "jbilling-c3p0" />
     </logger>
 
@@ -208,28 +210,28 @@
     //***** END INFO *****
  -->
 
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling">
+    <logger level = "info" additivity = "false" name = "com.sapienter.jbilling">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "grails.app">
+    <logger level = "info" additivity = "false" name = "grails.app">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "grails.app.service">
+    <logger level = "info" additivity = "false" name = "grails.app.service">
         <appender-ref ref = "jbilling" />
     </logger>
     <logger level = "error" additivity = "false" name = "grails.app.controller">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.processor">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation.processor">
         <appender-ref ref = "jbilling" />
     </logger>
     <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.order.OrderServiceImpl">
         <appender-ref ref = "jbilling" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation">
         <appender-ref ref = "jbilling-mediation" />
     </logger>
-    <logger level = "debug" additivity = "false" name = "com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative">
+    <logger level = "error" additivity = "false" name = "com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative">
         <appender-ref ref = "fc-mediation" />
     </logger>
 
@@ -240,7 +242,9 @@
     <logger level = "info"  additivity = "false" name = "com.sapienter.jbilling.client.authentication.CompanyUserRememberMeFilter">
         <appender-ref ref = "jbilling" />
     </logger>
-
+    <logger level="info" additivity="false" name="com.sapienter.jbilling.client.authentication.CompanyUserAuthenticationFilter">
+        <appender-ref ref="jbilling"/>
+    </logger>
 <!-- 
 //      Hibernate logging:
 //      org.hibernate.SQL           Log all SQL DML statements as they are executed
@@ -259,7 +263,7 @@
     </logger>
  -->
 
-    <logger level = "debug" additivity = "false" name = "org.jdiameter">
+    <logger level = "error" additivity = "false" name = "org.jdiameter">
         <appender-ref ref = "diameter" />
     </logger>
 
@@ -270,11 +274,11 @@
         <appender-ref ref = "jbilling-debug" />
     </logger>
 
-	<logger level = "debug"  additivity = "false" name = "org.codehaus.groovy.grails.webflow">
+	<logger level = "error"  additivity = "false" name = "org.codehaus.groovy.grails.webflow">
         <appender-ref ref = "jbilling-web-flow" />
     </logger>
 
-    <logger level = "debug"  additivity = "false" name = "org.springframework.webflow.engine.impl.FlowExecutionImpl">
+    <logger level = "error"  additivity = "false" name = "org.springframework.webflow.engine.impl.FlowExecutionImpl">
         <appender-ref ref = "jbilling-web-flow" />
     </logger>
 

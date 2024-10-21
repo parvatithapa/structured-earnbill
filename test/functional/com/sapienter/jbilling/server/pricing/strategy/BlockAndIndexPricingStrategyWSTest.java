@@ -112,15 +112,15 @@ public class BlockAndIndexPricingStrategyWSTest {
 
     private File createRateCardFile() throws Exception {
         File file = File.createTempFile("ratecard", "csv");
-        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,active_dates,mfkey",
-                "1,JERSYCITY NJ,0,0,1,0.11,11/01/2015-11/30/2015,GROUP1",
-                "2,JERSYCITY NJ,0,0,1,0.12,12/01/2015-12/31/2015,GROUP1",
-                "3,JERSYCITY NJ,0,0,1,0.13,01/01/2016-01/31/2015,GROUP1",
-                "4,JERSYCITY NJ,0,0,1,0.14,02/01/2016-02/28/2015,GROUP1",
-                "5,JERSYCITY NJ,0,0,1,0.21,11/01/2015-11/30/2015,GROUP2",
-                "6,JERSYCITY NJ,0,0,1,0.22,12/01/2015-12/31/2015,GROUP2",
-                "7,JERSYCITY NJ,0,0,1,0.23,01/01/2016-01/31/2015,GROUP2",
-                "8,JERSYCITY NJ,0,0,1,0.24,02/01/2016-02/28/2015,GROUP2");
+        List<String> rows = Arrays.asList("id,name,surcharge,initial_increment,subsequent_increment,charge,markup,capped_charge,capped_increment,minimum_charge,active_dates,mfkey",
+                "1,JERSYCITY NJ,0,0,1,0.11,0,0,0,0,11/01/2015-11/30/2015,GROUP1",
+                "2,JERSYCITY NJ,0,0,1,0.12,0,0,0,0,12/01/2015-12/31/2015,GROUP1",
+                "3,JERSYCITY NJ,0,0,1,0.13,0,0,0,0,01/01/2016-01/31/2015,GROUP1",
+                "4,JERSYCITY NJ,0,0,1,0.14,0,0,0,0,02/01/2016-02/28/2015,GROUP1",
+                "5,JERSYCITY NJ,0,0,1,0.21,0,0,0,0,11/01/2015-11/30/2015,GROUP2",
+                "6,JERSYCITY NJ,0,0,1,0.22,0,0,0,0,12/01/2015-12/31/2015,GROUP2",
+                "7,JERSYCITY NJ,0,0,1,0.23,0,0,0,0,01/01/2016-01/31/2015,GROUP2",
+                "8,JERSYCITY NJ,0,0,1,0.24,0,0,0,0,02/01/2016-02/28/2015,GROUP2");
 
         FileUtils.writeLines(file, rows);
         return file;

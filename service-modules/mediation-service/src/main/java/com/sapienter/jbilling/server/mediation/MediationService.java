@@ -1,11 +1,13 @@
 package com.sapienter.jbilling.server.mediation;
 
+import com.sapienter.jbilling.server.filter.Filter;
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import com.sapienter.jbilling.server.filter.Filter;
+import java.util.Date;
 
 /**
  * Created by marcolin on 08/10/15.
@@ -19,7 +21,7 @@ public interface MediationService {
     void launchMediation(Integer entityId, Integer mediationCfgId, String jobName);
     void launchMediation(Integer entityId, Integer mediationCfgId, String jobName, File file);
     String launchMediationForCdr(Integer entityId, Integer mediationCfgId, String jobName, String records);
-    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file);
+    public UUID triggerMediationJobLauncherByConfiguration(Integer entityId, Integer mediationCfgId, String jobName, File file, String fileName);
     List<JbillingMediationRecord> launchMediation(MediationContext mediationContext);
     void deleteErrorMediationRecords(UUID processId);
     void deleteDuplicateMediationRecords(UUID processId);
@@ -60,11 +62,17 @@ public interface MediationService {
 
     void recycleCdr(Integer entityId, Integer mediationCfgId, String jobName);
     void recycleCdr(Integer entityId, Integer mediationCfgId, String jobName, UUID processId);
-    UUID triggerRecycleCdrAsync(Integer entityId, Integer mediationCfgId, String jobName, UUID processId);
+    UUID triggerRecycleCdrAsync(Integer entityId, Integer mediationCfgId, String jobName, UUID processId, String fileName);
     Integer getMediationErrorRecordCountForMediationConfigId(Integer mediationCfgId);
 
     //TODO: USED FOR DIAMETER, THIS CAN GO IN A DIAMETER TABLE INSTEAD OF BE SAVED HERE
     void saveDiameterEventAsJMR(JbillingMediationRecord diameterEvent);
 
-    List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId, int offset, int limit);
+    List<JbillingMediationRecord> getUnBilledMediationEventsByUser(Integer userId);
+    
+    List<String> getPricingFields(Integer order_id, Integer order_line_id);
+    
+    List<JbillingMediationRecord> getMediationRecordsByCallIdentifierDateRange(String identifier,Integer offset,Integer limit, Date startDate, Date endDate);
+
+    List<JbillingMediationRecord> getUnBilledMediationEventsByCallIdentifier(String identifier);
 }

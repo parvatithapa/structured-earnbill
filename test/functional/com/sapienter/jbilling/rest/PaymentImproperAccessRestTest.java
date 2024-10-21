@@ -64,7 +64,8 @@ public class PaymentImproperAccessRestTest extends BaseRestImproperAccessTest {
         	
         	fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, PAYMENT_ID_COMPANY_1_CUSTOMER_2));
         } catch (RestClientResponseException responseError){
-        	Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(INVALID_REFUND_AMOUNT));
+        	
+        	Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, 2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 		
 		// Login as admin(child company) : create payment for parent company	-- parent1Company3AdminApi	--	admin;3
@@ -244,7 +245,8 @@ public class PaymentImproperAccessRestTest extends BaseRestImproperAccessTest {
         	
         	fail(String.format(UNAUTHORIZED_ACCESS_TO_ID, PAYMENT_ID_COMPANY_1_CUSTOMER_2));
         } catch (RestClientResponseException responseError){
-        	Assert.assertThat(responseError.getResponseBodyAsString(), containsString(INVALID_REFUND_AMOUNT));
+        	
+        	Assert.assertThat(INVALID_ERROR_MESSAGE, responseError.getResponseBodyAsString(), containsString(String.format(CROSS_CUSTOMER_ERROR_MSG, ENTITY_ID_COMPANY_ONE, 2, LOGIN_USER_COMPANY1_CUSTOMER3_PENDUNSUS)));
         }
 		
 		// Login as admin(child company) : create payment for parent company	-- parent1Company3AdminApi	--	admin;3

@@ -171,7 +171,7 @@ public class AddRemovePlanTest {
             Map<Integer, Integer> productAssetMap = buildProductAssetEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, scenario18Asset.getId());
 
             Integer orderId = createOrder(SUBSCRIPTION_ORDER_CODE1 , activeSinceDate, null, envHelper.getOrderPeriodMonth(api),
-                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user01, false);
+                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user01);
 
             logger.debug("Order Created {}", orderId);
 
@@ -208,12 +208,12 @@ public class AddRemovePlanTest {
             Map<Integer, Integer> productAssetMap = buildProductAssetEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, scenario18Asset.getId());
 
             Integer orderId = createOrder(SUBSCRIPTION_ORDER_CODE2 , activeSinceDate, null, envHelper.getOrderPeriodMonth(api),
-                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user02, false);
+                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user02);
 
             logger.debug("Order Created {}", orderId);
 
             Integer usageOrderId = createOrder(USAGE_ORDER_CODE1 , activeSinceDate, null, envHelper.getOrderPeriodOneTime(api),
-                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("50")), null, user02, true);
+                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("50")), null, user02);
 
             logger.debug("Usage Order Created {}", usageOrderId);
 
@@ -256,12 +256,12 @@ public class AddRemovePlanTest {
             Map<Integer, Integer> productAssetMap = buildProductAssetEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, scenario18Asset.getId());
 
             Integer orderId = createOrder(SUBSCRIPTION_ORDER_CODE3 , activeSinceDate, null, envHelper.getOrderPeriodMonth(api),
-                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user03, false);
+                    true, buildProductQuantityEntry(TOLL_FREE_8XX_NUMBER_ASSET_PRODUCT_ID, BigDecimal.ONE), productAssetMap, user03);
 
             logger.debug("Order Created {}", orderId);
 
             Integer usageOrderId = createOrder(USAGE_ORDER_CODE2 , activeSinceDate, null, envHelper.getOrderPeriodOneTime(api),
-                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("50")), null, user03, true);
+                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("50")), null, user03);
 
             logger.debug("Usage Order Created {}", usageOrderId);
 
@@ -314,7 +314,7 @@ public class AddRemovePlanTest {
             productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(subScriptionProd01), BigDecimal.ONE));
 
             Integer orderId = createOrder(SUBSCRIPTION_ORDER_CODE4 , activeSinceDate, null, envHelper.getOrderPeriodMonth(api),
-                    true, productQuantityMap, productAssetMap, user04, false);
+                    true, productQuantityMap, productAssetMap, user04);
 
             logger.debug("Order Created {}", orderId);
 
@@ -326,12 +326,12 @@ public class AddRemovePlanTest {
             productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(subScriptionProd01), BigDecimal.ONE));
 
             orderId = createOrder(SUBSCRIPTION_ORDER_CODE5 , activeSinceDate, null, envHelper.getOrderPeriodMonth(api),
-                    true, productQuantityMap, productAssetMap, user04, false);
+                    true, productQuantityMap, productAssetMap, user04);
 
             logger.debug("Order Created {}", orderId);
 
             Integer usageOrderId = createOrder(USAGE_ORDER_CODE3 , activeSinceDate, null, envHelper.getOrderPeriodOneTime(api),
-                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("250")), null, user04, true);
+                    true, buildProductQuantityEntry(INBOUND_USAGE_PRODUCT_ID, new BigDecimal("250")), null, user04);
 
             logger.debug("Usage Order Created {}", usageOrderId);
 
@@ -476,8 +476,7 @@ public class AddRemovePlanTest {
         return line;
     }
 
-    private Integer createOrder(String code,Date activeSince, Date activeUntil, Integer orderPeriodId, boolean prorate,
-            Map<Integer, BigDecimal> productQuantityMap, Map<Integer, Integer> productAssetMap, String userCode, boolean isUsageOrder) {
+    private Integer createOrder(String code,Date activeSince, Date activeUntil, Integer orderPeriodId, boolean prorate, Map<Integer, BigDecimal> productQuantityMap, Map<Integer, Integer> productAssetMap, String userCode) {
         this.testBuilder.given(envBuilder -> {
             final JbillingAPI api = envBuilder.getPrancingPonyApi();
             List<OrderLineWS> lines = productQuantityMap.entrySet()
@@ -507,7 +506,6 @@ public class AddRemovePlanTest {
             .withProrate(prorate)
             .withOrderLines(lines)
             .withOrderChangeStatus(ORDER_CHANGE_STATUS_APPLY_ID)
-            .withIsMediated(isUsageOrder)
             .build();
         }).test((testEnv, envBuilder) ->
             assertNotNull(ORDER_CREATION_ASSERT, envBuilder.idForCode(code))

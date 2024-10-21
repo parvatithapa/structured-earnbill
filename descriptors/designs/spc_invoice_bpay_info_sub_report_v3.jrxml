@@ -1,78 +1,141 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_bpay_info_sub_report_v3" language="groovy" pageWidth="500" pageHeight="98" columnWidth="500" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6fc0adf1-3561-48b7-9c26-b8b33ad64fc2">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="spc_invoice_bpay_info_sub_report_v3" language="groovy" pageWidth="550" pageHeight="158" columnWidth="550" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6fc0adf1-3561-48b7-9c26-b8b33ad64fc2">
 	<property name="ireport.zoom" value="1.6105100000000039"/>
-	<property name="ireport.x" value="0"/>
+	<property name="ireport.x" value="193"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="invoice_user_id" class="java.lang.Integer"/>
 	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA[$P{SUBREPORT_DIR}+"resources/logos/"]]></defaultValueExpression>
 	</parameter>
 	<parameter name="BASE_DIR" class="java.lang.String"/>
+	<parameter name="accountNumber" class="java.lang.String"/>
+	<parameter name="core.param.total_due" class="java.lang.String"/>
+	<parameter name="barcode" class="java.lang.String"/>
+	<parameter name="refNumber" class="java.lang.String"/>
+	<parameter name="billerCode" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT
 (
  SELECT COUNT(*)
  FROM payment_information pi
  INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
- INNER JOIN payment_method_template pmtp ON pmtp.id = pmt.template_id AND pmtp.template_name in ('Payment Card','ACH')
  WHERE pi.user_id = bu.id
-) AS ach_cc_count,
+ AND pmt.method_name ILIKE '%Westpac Credit Cards%'
+) AS cc_count,
 (
  SELECT COUNT(*)
- FROM meta_field_value mfv
- INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
- INNER JOIN payment_information pi ON pi.user_id = bu.id
- INNER JOIN payment_information_meta_fields_map pimfm ON pimfm.payment_information_id = pi.id
- WHERE pimfm.meta_field_value_id = mfv.id
- AND mfn.name = 'Reference Number'
-) AS bpay_count
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%BPAY%'
+) AS bpay_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Bank Debit%'
+) AS bank_debit_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Australia Post%'
+) AS australia_post_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Cheque%'
+) AS cheque_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Token%'
+) AS token_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Credit Adjustment%'
+) AS credit_adjustment_count,
+(
+ SELECT COUNT(*)
+ FROM payment_information pi
+ INNER JOIN payment_method_type pmt ON pi.payment_method_id = pmt.id
+ WHERE pi.user_id = bu.id
+ AND pmt.method_name ILIKE '%Order Withdrawn%'
+) AS order_withdrawn_count
 FROM base_user bu
-WHERE bu.id = $P{invoice_user_id};]]>
+WHERE bu.id = $P{invoice_user_id}
+AND bu.deleted = 0;]]>
 	</queryString>
-	<field name="ach_cc_count" class="java.lang.Long"/>
+	<field name="cc_count" class="java.lang.Long"/>
 	<field name="bpay_count" class="java.lang.Long"/>
+	<field name="bank_debit_count" class="java.lang.Long"/>
+	<field name="australia_post_count" class="java.lang.Long"/>
+	<field name="cheque_count" class="java.lang.Long"/>
+	<field name="token_count" class="java.lang.Long"/>
+	<field name="credit_adjustment_count" class="java.lang.Long"/>
+	<field name="order_withdrawn_count" class="java.lang.Long"/>
 	<title>
-		<band height="59">
+		<band height="157">
 			<staticText>
-				<reportElement x="2" y="1" width="113" height="15" forecolor="#D6036C" uuid="cb75f3e7-6ff9-4eec-9154-c992d95b6943"/>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
+				<reportElement x="2" y="0" width="52" height="13" forecolor="#D6036C" uuid="cb75f3e7-6ff9-4eec-9154-c992d95b6943"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
 					<font fontName="Calibri" isBold="true"/>
 				</textElement>
-				<text><![CDATA[How to Pay]]></text>
+				<text><![CDATA[How to Pay:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement stretchType="RelativeToBandHeight" x="2" y="18" width="191" height="40" isPrintWhenDetailOverflows="true" forecolor="#D6036C" uuid="d0f912a2-87b2-4123-b73a-e905a912cae9">
-					<printWhenExpression><![CDATA[$F{ach_cc_count} > 0]]></printWhenExpression>
+				<reportElement stretchType="RelativeToBandHeight" x="29" y="29" width="148" height="39" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="d0f912a2-87b2-4123-b73a-e905a912cae9">
+					<printWhenExpression><![CDATA[$F{cc_count} > 0 || $F{bank_debit_count} > 0]]></printWhenExpression>
 				</reportElement>
 				<textElement>
-					<font fontName="Calibri" size="10" isBold="true"/>
+					<font fontName="Calibri" size="10" isBold="false"/>
 				</textElement>
 				<text><![CDATA[Please note that your account
 is set up for direct debit payments
 and no further action is required.]]></text>
 			</staticText>
-			<subreport>
-				<reportElement x="251" y="23" width="122" height="22" uuid="664a4a25-fb97-40e2-b4a8-6f16ac0bf594">
-					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
-				</reportElement>
-				<subreportParameter name="invoice_user_id">
-					<subreportParameterExpression><![CDATA[$P{invoice_user_id}]]></subreportParameterExpression>
-				</subreportParameter>
-				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
-				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "spc_invoice_bpay_info_sub_report2_v3.jasper"]]></subreportExpression>
-			</subreport>
-			<image hAlign="Left" vAlign="Middle">
-				<reportElement x="193" y="18" width="56" height="40" uuid="0e248b44-a58e-422b-9e67-9986bc2ff1f6">
+			<image hAlign="Left" vAlign="Top">
+				<reportElement x="185" y="71" width="35" height="48" uuid="0e248b44-a58e-422b-9e67-9986bc2ff1f6">
 					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
 				</reportElement>
 				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/bpay_logo.png"]]></imageExpression>
 			</image>
-		</band>
-	</title>
-	<summary>
-		<band height="39">
 			<staticText>
-				<reportElement x="195" y="1" width="122" height="37" uuid="11329237-297b-4ecf-a894-31f56c17cbe3">
+				<reportElement x="55" y="0" width="345" height="13" uuid="8aaf971c-b642-40bd-9360-9ab9e6d1f98f"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Please pay by the due date to avoid late payment fees. A fee of $10 may be applied.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="29" y="16" width="61" height="15" forecolor="#000000" uuid="3fbb29cd-60f1-40f8-91a9-9f7046d6e37c">
+					<printWhenExpression><![CDATA[$F{cc_count} == 0 && $F{bank_debit_count} == 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Direct Debit]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="223" y="71" width="61" height="13" forecolor="#000000" uuid="f9819b7b-6386-4c12-98ba-0a2bc85ffe4c">
+					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[BPay]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="223" y="84" width="122" height="37" uuid="8b492ab9-92c2-4bf3-884d-54d1d7342194">
 					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
 				</reportElement>
 				<textElement>
@@ -82,6 +145,130 @@ and no further action is required.]]></text>
 Visit www.bpay.com.au
 for more information.]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="29" y="72" width="61" height="13" forecolor="#000000" uuid="0ebb16c8-5372-4028-93f2-3ee9d78aa83a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Credit Card]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="223" y="16" width="61" height="13" forecolor="#000000" uuid="6c05bbb0-9424-437a-a62f-29e6eee33c45"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Calibri" isBold="true"/>
+				</textElement>
+				<text><![CDATA[By Mail]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="29" y="86" width="148" height="50" uuid="a1aec773-e8e6-4a49-bbcd-c754256357e3"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Online: southernphone.com.au and
+the ‘Pay my Bill’ link. A surcharge of
+1.59% applies for Amex.]]></text>
+			</staticText>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="0" y="76" width="24" height="15" uuid="8b72964d-6dcc-4e25-9791-1ed831923360"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/credit_card.png"]]></imageExpression>
+			</image>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="194" y="19" width="24" height="18" uuid="94c7a262-ccf1-43e4-9f4c-1a8a47b7e123"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/mail.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="223" y="29" width="137" height="37" uuid="682aba44-9168-4f2c-b758-c5fcb93837e4"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Detach this payment slip
+and return it with your cheque
+to: 6 Page St, Moruya NSW 2537]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="400" y="43" width="135" height="74" uuid="549584aa-f620-4851-b019-c10e1be53209"/>
+				<textElement>
+					<font fontName="Calibri"/>
+				</textElement>
+				<text><![CDATA[Pay at any Post Office or agency
+Online: postbillpay.com.au
+Phone: 131 816.
+Southern Phone charge a $1.50
+transaction fee for these payments.]]></text>
+			</staticText>
+			<image hAlign="Left" vAlign="Middle" isUsingCache="false">
+				<reportElement x="376" y="9" width="52" height="35" uuid="7874a5b7-5da3-4762-98be-ce9433e1956b"/>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/austpost_bill_pay.png"]]></imageExpression>
+			</image>
+			<image hAlign="Left" vAlign="Middle">
+				<reportElement x="0" y="20" width="24" height="22" uuid="acc79661-ce5c-44ba-adf5-12ca3c2225d1">
+					<printWhenExpression><![CDATA[$F{cc_count} == 0 && $F{bank_debit_count} == 0]]></printWhenExpression>
+				</reportElement>
+				<imageExpression><![CDATA[$P{BASE_DIR}+"/logos/direct_debit.png"]]></imageExpression>
+			</image>
+			<rectangle radius="4">
+				<reportElement x="223" y="125" width="115" height="30" uuid="5d6c9de5-8fea-4671-9a37-b9e61dbdb941">
+					<printWhenExpression><![CDATA[$F{bpay_count} > 0]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.3"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement stretchType="RelativeToBandHeight" x="29" y="29" width="148" height="39" isPrintWhenDetailOverflows="true" forecolor="#000000" uuid="e776e421-7961-4b06-b707-91825ad6ae65">
+					<printWhenExpression><![CDATA[$F{cc_count} == 0 && $F{bank_debit_count} == 0]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="Calibri" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Pay your bill automatically by Direct
+Debit from your bank account or
+credit card. Call 13 14 64 to register.]]></text>
+			</staticText>
+			<componentElement>
+				<reportElement x="369" y="120" width="166" height="25" uuid="07b2d437-cae2-4cb7-a6b8-53519b162e11"/>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="false" barHeight="48">
+					<jr:codeExpression><![CDATA[$P{barcode}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField isBlankWhenNull="true">
+				<reportElement x="379" y="146" width="156" height="10" uuid="52d6c2ca-d81c-4d0e-9687-f05fa4479585"/>
+				<textElement>
+					<font fontName="Calibri" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[!$P{barcode}.isEmpty() && $P{barcode}.length() > 12 ?
+$P{barcode}.substring(0, 5) + ' ' +
+$P{barcode}.substring( 5, $P{barcode}.length()).substring(0, 4)+ ' ' +
+$P{barcode}.substring( 9, $P{barcode}.length()).substring(0, 3): ""]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="225" y="128" width="48" height="11" uuid="a7495bde-0082-4857-bdb0-a57316e2277d"/>
+				<textElement>
+					<font fontName="Calibri" size="9"/>
+				</textElement>
+				<text><![CDATA[Biller Code:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="225" y="140" width="48" height="11" uuid="9fceab13-5c43-46f1-a473-8ee944241cbb"/>
+				<textElement>
+					<font fontName="Calibri" size="9"/>
+				</textElement>
+				<text><![CDATA[Ref Number:]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="273" y="140" width="65" height="11" uuid="d7add9ff-33ef-4069-8e71-18ef542fd251"/>
+				<textElement>
+					<font fontName="Calibri" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{refNumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="273" y="128" width="65" height="11" uuid="e3f4dbb2-70b4-4bef-a413-81e0db360421"/>
+				<textElement>
+					<font fontName="Calibri" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{billerCode}]]></textFieldExpression>
+			</textField>
 		</band>
-	</summary>
+	</title>
 </jasperReport>

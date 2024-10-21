@@ -39,10 +39,10 @@ public class DiscountBL {
         }
     }
 
-	public DiscountBL(String discountCode, Integer entityId) throws SessionInternalError {
+	public DiscountBL(String discountCode) throws SessionInternalError {
 		try {
 			init();
-			set(discountCode, entityId);
+			set(discountCode);
 		} catch (Exception e) {
 			throw new SessionInternalError("Setting item", DiscountBL.class, e);
 		}
@@ -61,8 +61,8 @@ public class DiscountBL {
         discount = discountDas.find(discountId);
     }
 
-	public void set(String discountCode, Integer entityId) {
-		discount = discountDas.getDiscountByCode(discountCode, entityId);
+	public void set(String discountCode) {
+		discount = discountDas.getDiscountByCode(discountCode);
 	}
 
     private void init() {

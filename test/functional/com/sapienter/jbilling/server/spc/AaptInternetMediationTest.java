@@ -24,6 +24,8 @@ import org.testng.annotations.Test;
 
 import com.sapienter.jbilling.server.item.PlanItemWS;
 import com.sapienter.jbilling.server.item.RatingConfigurationWS;
+import com.sapienter.jbilling.server.item.tasks.BasicItemManager;
+import com.sapienter.jbilling.server.item.tasks.SPCUsageManagerTask;
 import com.sapienter.jbilling.server.mediation.MediationProcess;
 import com.sapienter.jbilling.server.metafields.DataType;
 import com.sapienter.jbilling.server.metafields.EntityType;
@@ -34,7 +36,7 @@ import com.sapienter.jbilling.server.pricing.db.PriceModelStrategy;
 import com.sapienter.jbilling.server.user.MainSubscriptionWS;
 import com.sapienter.jbilling.server.user.UserWS;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
-
+import com.sapienter.jbilling.server.mediation.JbillingMediationRecord;
 
 @Test(testName = "spc.AaptInternetMediationTest")
 public class AaptInternetMediationTest  extends BaseMediationTest {
@@ -109,6 +111,12 @@ public class AaptInternetMediationTest  extends BaseMediationTest {
             Integer planId = buildAndPersistPlan(envBuilder, api, AAPT_INTERNET_PLAN_CODE, "100 Aapt Interent Plan", MONTHLY_ORDER_PERIOD,
                     envBuilder.idForCode(AAPT_INTERNET_PLAN_ITEM), Collections.emptyList(), aaptInternetUsagePlanItem, aaptAssetPlanItem);
             setPlanLevelMetaFieldForInternet(planId, ENUM_INTERNET_TECHNOLOGY_VALUES.get(1).getValue(),ENUM_QUANTITY_RESOLUTION_UNIT_VALUES.get(2).getValue());
+            // configure spc usage manager task.
+            Map<String, String> params = new HashMap<>();
+            params.put("VOIP_Usage_Field_Name", "SERVICE_NUMBER");
+            params.put("Internate_Usage_Field_Name", "USER_NAME");
+            updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                    SPCUsageManagerTask.class.getName(), params);
         }).test((testEnv, testEnvBuilder) -> {
             assertNotNull("Aapt Internet Product Creation Failed", testEnvBuilder.idForCode(AAPT_INTERNET_PRODUCT));
             assertNotNull("Aapt Internet Plan Creation Failed", testEnvBuilder.idForCode(AAPT_INTERNET_PLAN_CODE));
@@ -131,7 +139,7 @@ public class AaptInternetMediationTest  extends BaseMediationTest {
 
             Integer userNameAsAsset = buildAndPersistAsset(envBuilder,
                     envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                    envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), "spc0249388477@southernphone.com.au");
+                    envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), "spc0249388477@southernphone.com.au", "asset-01"+ System.currentTimeMillis());
 
             Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
             productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), BigDecimal.ONE));
@@ -172,6 +180,8 @@ public class AaptInternetMediationTest  extends BaseMediationTest {
             assertEquals("Mediation Done And Billable ", Integer.valueOf(1), mediationProcess.getDoneAndBillable());
             assertEquals("Mediation Done And Not Billable", Integer.valueOf(0), mediationProcess.getDoneAndNotBillable());
             OrderWS order = api.getLatestOrder(testEnvBuilder.idForCode(USER_01));
+            JbillingMediationRecord[] viewEvents = api.getMediationEventsForOrder(order.getId());
+            validatePricingFields(viewEvents);
             assertNotNull("Mediation Should Create Order", order);
             assertEquals("Invalid resolved quantity", new BigDecimal("0.16"),
                     order.getOrderLines()[0].getQuantityAsDecimal().setScale(2, BigDecimal.ROUND_HALF_UP));
@@ -195,7 +205,7 @@ public class AaptInternetMediationTest  extends BaseMediationTest {
 
             Integer userNameAsAsset = buildAndPersistAsset(envBuilder,
                     envBuilder.idForCode(SPC_MEDIATED_USAGE_CATEGORY),
-                    envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), "spc0249388478@southernphone.com.au");
+                    envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), "spc0249388478@southernphone.com.au", "asset-02"+ System.currentTimeMillis());
 
             Map<Integer, BigDecimal> productQuantityMap = new HashMap<>();
             productQuantityMap.putAll(buildProductQuantityEntry(envBuilder.idForCode(INTERNET_ASSET_PLAN_ITEM_CODE), BigDecimal.ONE));
@@ -254,6 +264,9 @@ public class AaptInternetMediationTest  extends BaseMediationTest {
     @Override
     @AfterClass
     public void tearDown() {
+        // configure again BasicItemManager task.
+        updateExistingPlugin(api, BASIC_ITEM_MANAGER_PLUGIN_ID,
+                BasicItemManager.class.getName(), Collections.emptyMap());
         super.tearDown();
         try {
             api.deleteEnumeration(enumId1);

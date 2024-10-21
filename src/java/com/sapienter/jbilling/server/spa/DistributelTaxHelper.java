@@ -5,7 +5,6 @@ import com.sapienter.jbilling.server.pricing.db.RouteDAS;
 import com.sapienter.jbilling.server.pricing.db.RouteDTO;
 import com.sapienter.jbilling.server.user.db.AccountInformationTypeDAS;
 import com.sapienter.jbilling.server.user.db.AccountInformationTypeDTO;
-import com.sapienter.jbilling.server.user.db.CustomerAccountInfoTypeMetaField;
 import com.sapienter.jbilling.server.user.db.CustomerDTO;
 import com.sapienter.jbilling.server.user.db.UserDTO;
 import com.sapienter.jbilling.server.util.Util;
@@ -14,7 +13,6 @@ import com.sapienter.jbilling.server.util.search.Filter;
 import com.sapienter.jbilling.server.util.search.SearchCriteria;
 import com.sapienter.jbilling.server.util.search.SearchResultString;
 import com.sapienter.jbilling.server.util.time.DateConvertUtils;
-
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -35,12 +33,7 @@ public class DistributelTaxHelper {
     public String getProvince(UserDTO user) {
         AccountInformationTypeDTO serviceAddressGroupAIT = new AccountInformationTypeDAS().findByName(SpaConstants.SERVICE_ADDRESS_AIT, user.getEntity().getId(), user.getCustomer().getAccountType().getId());
         Integer groupAITId = serviceAddressGroupAIT.getId();
-        CustomerAccountInfoTypeMetaField customerAITMetaField = user.getCustomer().getCurrentCustomerAccountInfoTypeMetaField(SpaConstants.SAME_AS_CUSTOMER_INFORMATION, serviceAddressGroupAIT.getId());
-        boolean isSameAsContactInformation = ((null == customerAITMetaField || 
-                                                null == customerAITMetaField.getMetaFieldValue() || 
-                                                null == customerAITMetaField.getMetaFieldValue().getValue()) ? 
-                                                    Boolean.TRUE : ((Boolean)customerAITMetaField.getMetaFieldValue().getValue()));
-        if (isSameAsContactInformation) {
+        if ((Boolean)user.getCustomer().getCurrentCustomerAccountInfoTypeMetaField(SpaConstants.SAME_AS_CUSTOMER_INFORMATION, serviceAddressGroupAIT.getId()).getMetaFieldValue().getValue()) {
             groupAITId = new AccountInformationTypeDAS().findByName(SpaConstants.CONTACT_INFORMATION_AIT, user.getEntity().getId(), user.getCustomer().getAccountType().getId()).getId();
         }
 

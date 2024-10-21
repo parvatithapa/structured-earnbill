@@ -69,29 +69,13 @@
                 // Validation rules
                 rules: {
                     j_username: {
-                        required: true,
-                        normalizer: function( value ) {
-                            if(${grailsApplication.config.useUniqueLoginName})
-                            {
-                                var username = $('#j_username').val();
-                                $.ajax({
-                                    type: 'POST',
-                                    url: '${request.contextPath}/login/getCompanyId',
-                                    data: { userName: username },
-                                    success: function(response) {
-                                        if (response !== "null") {
-                                            $('#j_client_id').val(response);
-                                        }
-                                    }
-                                });
-                            }
-                        }
+                        required: true
                     },
                     j_password: {
                         required: true
                     },
                     j_client_id: {
-                        required: !${grailsApplication.config.useUniqueLoginName},
+                        required: true,
                         digits: true
                     }
                 },
@@ -134,15 +118,57 @@
 
     <g:render template="/layouts/includes/messages"/>
 
-    <div id="login-without-sso" class="form-edit">
+    <div id="login" class="form-edit">
         <div class="heading">
             <strong><g:message code="login.prompt.title"/></strong>
         </div>
         <div class="form-hold">
+            <div class="form-columns">
+                <div class="column" id="login-column-1">
+                    <form method='POST' id='login-form-sso' autocomplete='off'>
+
+                        <g:hiddenField name="interactive_login" value="true"/>
+
+                        <fieldset>
+                            <div class="form-columns login">
+                                <br><br><br><br>
+
+                                <div class="center-align" style="margin-bottom: 3px;">
+                                    <g:message code="login.sso.label"/>
+                                </div>
+
+                                <g:if test="${companyId}">
+                                    <div class="center-align">
+                                        <g:hiddenField name="j_client_id" value="${companyId}"/>
+                                    </div>
+                                </g:if>
+                                <g:else>
+                                    <g:applyLayout name="form/input">
+                                        <content tag="label">
+                                            <g:message code="login.prompt.client.id"/>
+                                            <span class="error-validate-login" name="sso_j_client_id"/>
+                                        </content>
+                                        <content tag="label.for">j_client_id</content>
+                                        <g:textField class="field" name="j_client_id" />
+                                    </g:applyLayout>
+                                </g:else>
+                                <br><br><br><br><br>
+                            </div>
+                            <div class="buttons">
+                                <ul style="color: transparent">
+                                    <li>
+                                        <input id="ssoSubmitLink" type="submit" formaction="${request.contextPath}/login/authenticateViaIdp" value="<g:message code="login.sso.button.submit"/>" class="submit button-primary">
+                                    </li>
+                                </ul>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+                <div class="column" id="login-column-3">
                     <form method='POST' id='login-form' autocomplete='off'>
                         <g:hiddenField name="interactive_login" value="true"/>
                         <fieldset>
-                            <div class="form-columns-without-sso login">
+                            <div class="form-columns login">
                                 <g:applyLayout name="form/input">
                                     <content tag="label">
                                         <g:message code="login.prompt.username"/>
@@ -160,9 +186,11 @@
                                     <content tag="label.for">password</content>
                                     <g:passwordField class="field" name="j_password"/>
                                 </g:applyLayout>
-                                <g:if test="${!grailsApplication.config.useUniqueLoginName}">
+
                                 <g:if test="${companyId}">
+                                    <div class="center-align">
                                         <g:hiddenField name="j_client_id" value="${companyId}"/>
+                                    </div>
                                 </g:if>
                                 <g:else>
                                     <g:applyLayout name="form/input">
@@ -174,17 +202,14 @@
                                         <g:textField class="field" name="j_client_id" />
                                     </g:applyLayout>
                                 </g:else>
-                                </g:if>
-                                <g:else>
-                                        <g:hiddenField name="j_client_id" value="${companyId}"/>
-                                </g:else>
+
                                 <g:applyLayout name="form/text">
                                     <content tag="label">&nbsp;</content>
                                     <content tag="label.row.class">no-label</content>
                                     <g:link controller="resetPassword" class="a-small"><g:message code="login.prompt.forgotPassword" /></g:link>
                                 </g:applyLayout>
                             </div>
-                            <div class="buttons-without-sso">
+                            <div class="buttons">
                                 <ul style="color: transparent">
                                     <li>
                                         <input id="submitLink" type="submit" formaction="${postUrl}" value="<g:message code="login.button.submit"/>"
@@ -194,6 +219,8 @@
                             </div>
                         </fieldset>
                     </form>
+                </div>
+            </div>
         </div>
     </div>
 </body>

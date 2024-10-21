@@ -20,7 +20,7 @@
 
     <!-- Hessian remote web-service bean -->
     <bean id="apiClient" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;1"/>
@@ -30,7 +30,7 @@
     <!-- SOAP remote web-service bean -->
     <jaxws:client id="apiClient2"
                   serviceClass="com.sapienter.jbilling.server.util.IWebServicesSessionBean"
-                  address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/services/api"
+                  address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/services/api"
                   username="admin;1"
                   password="123qwe"/>
 
@@ -44,39 +44,39 @@
 
     <!-- Spring HTTP Invoker remote web-service bean -->
     <bean id="apiClient3" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/httpinvoker/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/httpinvoker/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
     </bean>
 
     <!-- Hessian remote web-service bean -->
     <bean id="apiClient4" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;3"/>
         <property name="password" value="123qwe"/>
     </bean>
-
-    <!-- Hessian remote web-service bean -->
+    
+     <!-- Hessian remote web-service bean -->
     <bean id="childCompany" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="username" value="sysadmin;4"/>
         <property name="password" value="123qwe"/>
     </bean>
-
+    
     <!-- Hessian remove web-service bean for making calls to Mordor company with Super User-->
-    <bean id="apiClientMordor" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
-        <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
-        <property name="hessian2" value="true"/>
-        <property name="username" value="mordor;2"/>
-        <property name="password" value="123qwe"/>
-    </bean>
+   	<bean id="apiClientMordor" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
+       <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
+       <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
+       <property name="hessian2" value="true"/>
+       <property name="username" value="mordor;2"/>
+       <property name="password" value="123qwe"/>
+   	</bean>
 
     <!-- Hessian remove web-service bean for making calls to Mordor Company with System Admin User -->
     <bean id="apiClientSysAdmin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="sysadmin;2"/>
@@ -85,7 +85,7 @@
 
     <!-- Hessian remote web-service bean -->
     <bean id="apiClientGandalf" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="gandalf;1"/>
@@ -94,7 +94,7 @@
 
     <!-- Hessian remote web-service bean -->
     <bean id="apiClientFrenchSpeaker" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="french-speaker;1"/>
@@ -103,7 +103,7 @@
 
     <!-- Hessian remote web-service bean -->
     <bean id="apiClientPendunsus1" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="pendunsus1;1"/>
@@ -112,70 +112,70 @@
 
     <!-- Hessian remote web-service bean for Company Hierarchy Testing -->
     <bean id="apiClientOscorpAdmin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;1"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientOscorpCustomer" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="gandalf;1"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientO1Admin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;3"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientO1Customer" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="mediation_child;3"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientO2Admin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin2;10"/>
         <property name="password" value="Admin123@"/>
     </bean>
     <bean id="apiClientO2Customer" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="Avgvstvs;10"/>
         <property name="password" value="Admin123@"/>
     </bean>
     <bean id="apiClientCapsuleAdmin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="mordor;2"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientCapsuleCustomer" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="orc1;2"/>
         <property name="password" value="123qwe"/>
     </bean>
     <bean id="apiClientC1Admin" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="mordor2;11"/>
         <property name="password" value="Admin123@"/>
     </bean>
     <bean id="apiClientC1Customer" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/ApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/ApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.IWebServicesSessionBean"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="Caesar;11"/>
@@ -185,49 +185,24 @@
     <bean id="restConfig" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
         <constructor-arg name="authUsername" value="admin;1"/>
         <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
     </bean>
 
-    <bean id="earnbillRestConfig" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="sysadmin;1"/>
-        <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
-    </bean>
-    <bean id="customerWithMobileApiPermission" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="mobilePermission-customer;1"/>
-        <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
-    </bean>
-    <bean id="customerWithWebApiPermission" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="webPermission-customer;1"/>
-        <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
-    </bean>
-    <bean id="customerWithBothApiPermission" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="superCustomer;1"/>
-        <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
-    </bean>
-    <bean id="customerWithNoPermission" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="basicCustomer;1"/>
-        <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
-    </bean>
     <bean id="resellerRestConfig" class="com.sapienter.jbilling.rest.RestConfig" scope="singleton" lazy-init="true">
-        <constructor-arg name="authUsername" value="admin;1"/>
+        <constructor-arg name="authUsername" value="admin;3"/>
         <constructor-arg name="authPassword" value="123qwe"/>
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
     </bean>
 
     <!-- SOAP and Hessian remote web-service beans for Distributel -->
     <jaxws:client id="distributelSOAPClient"
                   serviceClass="com.sapienter.jbilling.server.util.api.JbillingDistributelAPI"
-                  address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/services/distributelApi"
+                  address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/services/distributelApi"
                   username="admin;1"
                   password="123qwe"/>
 
     <bean id="apiDistributelClient" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/DistributelApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/DistributelApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.api.JbillingDistributelAPI"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;1"/>
@@ -236,80 +211,81 @@
 
     <!-- SOAP and Hessian remote web-service beans for Deutsche Telecom -->
     <!--<jaxws:client id="deutscheTelecomSOAPClient"-->
-    <!--serviceClass="com.sapienter.jbilling.server.util.api.JbillingDeutscheTelecomAPI"-->
-    <!--address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/services/deutscheTelecomApi"-->
-    <!--username="admin;1"-->
-    <!--password="123qwe"/>-->
+                  <!--serviceClass="com.sapienter.jbilling.server.util.api.JbillingDeutscheTelecomAPI"-->
+                  <!--address="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/services/deutscheTelecomApi"-->
+                  <!--username="admin;1"-->
+                  <!--password="123qwe"/>-->
 
     <bean id="apiDeutscheTelecomClient" class="org.springframework.remoting.caucho.HessianProxyFactoryBean" lazy-init="true">
-        <property name="serviceUrl" value="http://localhost:8080/hessian/DeutscheTelecomApiService"/>
+        <property name="serviceUrl" value="http://localhost:8080/jbilling/hessian/DeutscheTelecomApiService"/>
         <property name="serviceInterface" value="com.sapienter.jbilling.server.util.api.JbillingDeutscheTelecomAPI"/>
         <property name="hessian2" value="true"/>
         <property name="username" value="admin;1"/>
         <property name="password" value="123qwe"/>
     </bean>
-
-    <!-- REST API remote rest config bean for Company Hierarchy Testing -->
-    <bean id="restConfigCompany1Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+    
+    <!-- saas-236, REST API remote rest config bean for Company Hierarchy Testing -->
+    <bean id="restConfigCompany1Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true"> 
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="admin;1"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigCompany1Customer1" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+	<constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="gandalf;1"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
-    <bean id="restConfigCompany1Customer2" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <bean id="restConfigCompany1Customer2" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="french-speaker;1"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigCompany1Customer3" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="pendunsus1;1"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigParent1Company3Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="admin;3"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigParent1Company3Customer1" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="mediation_child;3"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigParent1Company10Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="admin2;10"/>
         <constructor-arg name="authPassword" value="Admin123@"/>
     </bean>
     <bean id="restConfigParent1Company10Customer1" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="Avgvstvs;10"/>
         <constructor-arg name="authPassword" value="Admin123@"/>
     </bean>
     <bean id="restConfigCompany2Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="mordor;2"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigCompany2Customer1" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="orc1;2"/>
         <constructor-arg name="authPassword" value="123qwe"/>
     </bean>
     <bean id="restConfigParent2Company11Admin" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="mordor2;11"/>
         <constructor-arg name="authPassword" value="Admin123@"/>
     </bean>
     <bean id="restConfigParent2Company11Customer1" class="com.sapienter.jbilling.rest.RestConfig" lazy-init="true">
-        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/api/"/>
+        <constructor-arg name="restUrl" value="http://localhost:#{systemProperties['JBILLING_PORT'] ?: '8080'}/jbilling/api/"/>
         <constructor-arg name="authUsername" value="Caesar;11"/>
         <constructor-arg name="authPassword" value="Admin123@"/>
     </bean>
 
-    <!-- The end REST API remote rest config bean for Company Hierarchy Testing -->
+<!-- End, saas-236, REST API remote rest config bean for Company Hierarchy Testing -->
+
 </beans>

@@ -16,11 +16,8 @@ import com.sapienter.jbilling.server.user.permisson.db.RoleDAS;
 import com.sapienter.jbilling.server.user.permisson.db.RoleDTO;
 import com.sapienter.jbilling.server.util.Context;
 import com.sapienter.jbilling.server.util.IWebServicesSessionBean;
-import org.apache.commons.lang.StringUtils;
+
 import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.http.HttpStatus;
-import grails.util.Holders;
 
 /**
  * Created by vivek on 30/10/14.
@@ -33,7 +30,6 @@ public class CopyCompanyBL {
     private CompanyDAS companyDAS;
     private UserDAS userDAS;
     private IWebServicesSessionBean webServicesSessionSpringBean = Context.getBean("webServicesSession");
-    private final boolean UNIQUE_LOGIN = Boolean.parseBoolean(Holders.getFlatConfig().get("useUniqueLoginName").toString());
 
     List<AbstractCopyTask> abstractCopyTasksList=new ArrayList<>();
     private static final Class copyTask[] = new Class[]{
@@ -60,16 +56,9 @@ public class CopyCompanyBL {
 
     public UserWS copyCompany(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
                               boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail) {
-        return copyCompany(childCompanyTemplateName, entityId, importEntities,
-                isCompanyChild, copyProducts, copyPlans, adminEmail, null);
-    }
-
-    public UserWS copyCompany(String childCompanyTemplateName, Integer entityId, List<String> importEntities,
-                              boolean isCompanyChild, boolean copyProducts, boolean copyPlans, String adminEmail, String systemAdminLoginName) {
 
         synchronized (CopyCompanyUtils.oldNewMetaFieldMap) {
             int targetEntityId=0;
-            UserWS copyUserWS = null;
             try {
                 Integer parentCompanyId = 0;
                 //Need to set template company id in entity Id. Because new company will be copied from template company.
@@ -81,7 +70,7 @@ public class CopyCompanyBL {
 
                 CompanyDTO targetEntity = createCompany(entityId, isCompanyChild, parentCompanyId);
                 copyLiquibaseChangeLogs(entityId, targetEntity.getId());
-                copyUserWS = createUserWithRoles(entityId, targetEntity, adminEmail, systemAdminLoginName);
+                UserWS copyUserWS = createUserWithRoles(entityId, targetEntity, adminEmail);
                 targetEntityId = targetEntity.getId();
                 createCompanyContact(entityId, targetEntity, copyUserWS.getUserId());
 
@@ -93,12 +82,7 @@ public class CopyCompanyBL {
                         continue;
                     }
                     abstractCopyTasksList.add(abstractCopyTask);
-                    if (abstractCopyTask instanceof SystemAdminCopyTask &&
-                            UNIQUE_LOGIN && StringUtils.isNotBlank(systemAdminLoginName)) {
-                        new SystemAdminCopyTask().create(entityId, targetEntityId, systemAdminLoginName, adminEmail);
-                    } else {
-                        abstractCopyTask.create(entityId, targetEntityId);
-                    }
+                    abstractCopyTask.create(entityId, targetEntityId);
                 }
 
                 copyUserWS.setEntityId(targetEntityId);
@@ -179,21 +163,9 @@ public class CopyCompanyBL {
         }
     }
 
-    public UserWS createUserWithRoles(Integer entityId, CompanyDTO targetEntity, String adminEmail, String systemAdminLoginName) {
+    public UserWS createUserWithRoles(Integer entityId, CompanyDTO targetEntity, String adminEmail) {
         UserDTO userDTO = new UserDTO();
-        if (UNIQUE_LOGIN && StringUtils.isNotBlank(systemAdminLoginName)) {
-            String adminLoginName = systemAdminLoginName.replace("@",".su@");
-            UserBL userBL = new UserBL();
-            //validate adminLoginName
-            if (userBL.findUsersByUserName(adminLoginName) == null && userBL.findUsersByUserName(systemAdminLoginName) == null) {
-                userDTO.setUserName(adminLoginName);
-            } else {
-                String msg = "User already exists with username " + adminLoginName+" or "+systemAdminLoginName;
-                throw new SessionInternalError(msg, new String[]{"UserWS,userName,validation.error.user.already.exists"}, HttpStatus.SC_BAD_REQUEST);
-            }
-        } else {
-            userDTO.setUserName("admin");
-        }
+        userDTO.setUserName("admin");
 
         String randPassword = UserBL.generatePCICompliantPassword();
         JBillingPasswordEncoder passwordEncoder = new JBillingPasswordEncoder();

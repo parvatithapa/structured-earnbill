@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice_design_convergent_billing_call_itemisation_subreport" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="d1c30a41-4f20-46cb-b7df-2b6cd88b5a38">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="local_jbilling"/>
+    <parameter name="invoice_id" class="java.lang.Integer"/>
+    <parameter name="call_identifier" class="java.lang.String"/>
+    <parameter name="currency_symbol" class="java.lang.String"/>
+    <parameter name="description" class="java.lang.String"/>
+    <parameter name="SUBREPORT_DIR" class="java.lang.String"/>
+    <parameter name="order_id" class="java.lang.Integer"/>
+    <queryString language="plsql">
+        <![CDATA[
+        SELECT jmr.source AS call_identifier,
+            TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'DD-MM-YYYY') AS event_date,
+            TO_CHAR(event_date AT TIME ZONE 'UTC' AT TIME ZONE (SELECT abbrev FROM pg_timezone_names WHERE name = (SELECT timezone FROM entity WHERE id = bu.entity_id)), 'HH24:MI:SS') AS event_time,
+            jmr.destination AS number_called,
+            TO_CHAR((jmr.original_quantity || ' sec')::interval, 'HH24:MI:SS')  AS min_sec,
+            ROUND(jmr.original_quantity, 2) AS quantity,
+            ROUND((jmr.rated_price + (jmr.rated_price * il.tax_rate/100)), 2) AS inc_gst,
+            il.description
+        FROM jbilling_mediation_record jmr
+        INNER JOIN purchase_order po ON po.id = jmr.order_id
+        INNER JOIN order_line ol ON ol.id = jmr.order_line_id
+        INNER JOIN invoice i ON i.user_id = jmr.user_id
+        INNER JOIN invoice_line il ON il.invoice_id = i.id
+        INNER JOIN base_user bu ON bu.id = i.user_id
+        WHERE i.id = $P{invoice_id}
+            AND il.order_id = po.id
+            AND il.item_id = ol.item_id
+            AND il.call_identifier IS NOT NULL
+            AND il.call_identifier = jmr.source
+            AND il.call_identifier = $P{call_identifier}
+            AND il.description = $P{description}
+            AND il.description !='Mobile Data'
+            AND jmr.order_id = $P{order_id};
+        ]]>
+    </queryString>
+    <field name="call_identifier" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="call_identifier"/>
+        <property name="com.jaspersoft.studio.field.label" value="call_identifier"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="jbilling_mediation_record"/>
+    </field>
+    <field name="event_date" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="event_date"/>
+        <property name="com.jaspersoft.studio.field.label" value="event_date"/>
+    </field>
+    <field name="event_time" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="event_time"/>
+        <property name="com.jaspersoft.studio.field.label" value="event_time"/>
+    </field>
+    <field name="number_called" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="number_called"/>
+        <property name="com.jaspersoft.studio.field.label" value="number_called"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="jbilling_mediation_record"/>
+    </field>
+    <field name="min_sec" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="min_sec"/>
+        <property name="com.jaspersoft.studio.field.label" value="min_sec"/>
+    </field>
+    <field name="quantity" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="jbilling_mediation_record"/>
+    </field>
+    <field name="inc_gst" class="java.math.BigDecimal">
+        <property name="com.jaspersoft.studio.field.name" value="inc_gst"/>
+        <property name="com.jaspersoft.studio.field.label" value="inc_gst"/>
+    </field>
+    <field name="description" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="description"/>
+        <property name="com.jaspersoft.studio.field.label" value="description"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="invoice_line"/>
+    </field>
+    <variable name="sub_total" class="java.math.BigDecimal" resetType="Group" resetGroup="GroupByDescription" calculation="Sum">
+        <variableExpression><![CDATA[$F{inc_gst}]]></variableExpression>
+    </variable>
+    <group name="GroupByDescription">
+        <groupExpression><![CDATA[$F{description}]]></groupExpression>
+        <groupHeader>
+            <band height="48">
+                <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                <textField isBlankWhenNull="true">
+                    <reportElement x="0" y="0" width="222" height="20" uuid="8055ef0b-6cec-4d7a-82b4-b81539f686ed">
+                        <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                    </reportElement>
+                    <textElement verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[$P{description}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement x="1" y="25" width="111" height="20" uuid="12143762-936c-421c-b644-f5c7dc329161"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Date]]></text>
+                </staticText>
+                <textField>
+                    <reportElement x="334" y="25" width="111" height="20" uuid="5829e459-873f-4266-9132-49447309475b"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[($P{description}.equals("SMS")? "Quantity":"Hour:min:sec")]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement x="112" y="25" width="111" height="20" uuid="b805aac8-cf23-4d50-92db-0a67e6e77d59"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Time]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="445" y="25" width="111" height="20" uuid="60472851-d3ee-470c-a409-577ae779b1cb"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Incl. Tax]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="223" y="25" width="111" height="20" uuid="691a44fe-7607-4c0b-b832-0a3a52a7d505"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Number Called]]></text>
+                </staticText>
+                <line>
+                    <reportElement x="0" y="47" width="555" height="1" uuid="3641ebf4-189e-4e24-bb37-bac08c48d989">
+                        <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.x" value="px"/>
+                    </reportElement>
+                </line>
+            </band>
+        </groupHeader>
+        <groupFooter>
+            <band height="20">
+                <staticText>
+                    <reportElement x="261" y="0" width="183" height="20" forecolor="#0F0F0F" uuid="ab3827b9-11f9-46f3-b334-b75e9de77936"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Total]]></text>
+                </staticText>
+                <textField isBlankWhenNull="true">
+                    <reportElement x="446" y="0" width="109" height="20" forecolor="#0F0F0F" uuid="b82848bc-72f8-4ff4-a1d0-5ea12abdba17"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font fontName="SansSerif" isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[$V{sub_total}.setScale(2, RoundingMode.HALF_UP)+$P{currency_symbol}]]></textFieldExpression>
+                </textField>
+            </band>
+        </groupFooter>
+    </group>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <detail>
+        <band height="22" splitType="Stretch">
+            <textField>
+                <reportElement x="446" y="2" width="109" height="20" uuid="2609d19f-db06-42f7-b5f8-a41c69fdc6ab"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{inc_gst}+$P{currency_symbol}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="335" y="2" width="111" height="20" uuid="82c841f5-30d6-497d-b27d-8eb59d584794"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif"/>
+                </textElement>
+                <textFieldExpression><![CDATA[( $P{description}.equals("Mobile to International")? $F{min_sec}:$F{quantity}.toString())]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="224" y="2" width="111" height="20" uuid="4373341c-7825-4a7b-9597-15681e4ca716"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{number_called}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="2" y="2" width="111" height="20" uuid="d55721d2-2a2e-45d8-9bc8-74195a7ab715"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{event_date}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="113" y="2" width="111" height="20" uuid="2e4b4c27-6a63-499a-b724-83b11ecfd8fd"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="SansSerif"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{event_time}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

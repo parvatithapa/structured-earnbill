@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row-center">
         <jB:remotePaginate controller="usagePool" action="list" params="${sortableParams(params: [partial: true])}" total="${usagePools?.totalCount ?: 0}" update="column1"/>
     </div>
 </div>

@@ -1,11 +1,9 @@
-/**
- * 
- */
 package com.sapienter.jbilling.server.payment.tasks.stripe;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -53,12 +51,12 @@ public final class StripeService {
 	private String apiKey ;
 	private static final String PAYMENT_INTENT_DESCRIPTION = "payment created by BillingHub.";
 	private static final String LOG_MESSAGE_STRIPE_CREATE_PAYMENT = "Creating a payment for stripe customer {} using payment method id {}.";
-	private static final String LOG_MESSAGE_STRIPE_SIGN_UP="{}, the customer signs up with stripe ";
+	private static final String LOG_MESSAGE_STRIPE_SIGN_UP="{}, the customer signs up with stripe ";
 	 
 	
 	
 	public StripeService(final String apiKey) {
-		this. apiKey = apiKey;
+		this.apiKey = apiKey;
 	}
 	
 	/*
@@ -179,6 +177,24 @@ public final class StripeService {
 		return SetupIntent.retrieve(setupIntentId, getRequestOptions());
 	}	
 
+	
+	/** This method helps to retrieve payment method id by setup intent id 
+	 * @param setupIntentId
+	 * @return
+	 * @throws StripeException
+	 */
+	public void updateMetadataForSetupIntent(String setupIntentId) throws StripeException{
+		SetupIntent setupIntent =  SetupIntent.retrieve(setupIntentId, getRequestOptions());
+		//Add a new metadata 
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put(StripeHelper.KEY_METADATA_PROCESSED, Boolean.TRUE);
+		
+		Map<String, Object> params = new HashMap<>();
+		params.put("metadata", metadata);
+		
+		setupIntent.update(params, getRequestOptions());
+	}
+	
 	/** Confirm payment intent
 	 * @param paymentIntentId
 	 * @return

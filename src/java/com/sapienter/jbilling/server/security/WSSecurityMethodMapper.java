@@ -168,8 +168,8 @@ public class WSSecurityMethodMapper {
         SecuredMethodFactory.add("createSubscriptionAccountAndOrder", 0, SecuredMethodType.ACCOUNT_TYPE);
         SecuredMethodFactory.add("getAccountType", 0, SecuredMethodType.ACCOUNT_TYPE);
         SecuredMethodFactory.add("getInformationTypesForAccountType", 0, SecuredMethodType.ACCOUNT_TYPE);
-        SecuredMethodFactory.add("getAccountInformationType", 0, SecuredMethodType.META_FIELD_GROUP);
-        SecuredMethodFactory.add("deleteAccountInformationType", 0, SecuredMethodType.META_FIELD_GROUP);
+        SecuredMethodFactory.add("getAccountInformationType", 0, SecuredMethodType.ACCOUNT_TYPE);
+        SecuredMethodFactory.add("deleteAccountInformationType", 0, SecuredMethodType.ACCOUNT_TYPE);
         SecuredMethodFactory.add("deleteRateCard", 0, SecuredMethodType.RATE_CARD);
         SecuredMethodFactory.add("getPaymentMethodType", 0, SecuredMethodType.PAYMENT_METHOD_TYPE);
         SecuredMethodFactory.add("deleteRatingUnit", 0, SecuredMethodType.RATING_UNIT);

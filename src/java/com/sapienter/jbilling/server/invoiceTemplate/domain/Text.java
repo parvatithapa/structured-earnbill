@@ -1,10 +1,8 @@
 package com.sapienter.jbilling.server.invoiceTemplate.domain;
 
-import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 
-import static net.sf.jasperreports.engine.type.EvaluationTimeEnum.AUTO;
-import static net.sf.jasperreports.engine.type.HorizontalAlignEnum.LEFT;
+import static net.sf.jasperreports.engine.type.HorizontalTextAlignEnum.LEFT;
 
 /**
  * @author Klim
@@ -23,7 +21,7 @@ public class Text extends DocElement {
 
     private String bgColor = "#A0A0A0";
 
-    private HorizontalAlignEnum alignment;
+    private HorizontalTextAlignEnum alignment;
 
     private boolean transparent;
 
@@ -79,11 +77,11 @@ public class Text extends DocElement {
         this.padding = padding;
     }
 
-    public HorizontalAlignEnum getAlignment() {
+    public HorizontalTextAlignEnum getAlignment() {
         return alignment == null ? LEFT : alignment;
     }
 
-    public void setAlignment(HorizontalAlignEnum alignment) {
+    public void setAlignment(HorizontalTextAlignEnum alignment) {
         this.alignment = alignment;
     }
 

@@ -9,12 +9,10 @@ import com.wordnik.swagger.annotations.ApiOperation
 import com.wordnik.swagger.annotations.ApiParam
 import com.wordnik.swagger.annotations.ApiResponse
 import com.wordnik.swagger.annotations.ApiResponses
-
 import grails.plugin.springsecurity.annotation.Secured
 
 import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET
 import javax.ws.rs.POST
 import javax.ws.rs.PUT
@@ -162,9 +160,9 @@ class ItemTypeResource {
             @ApiParam(name = "id", value = "The id of the item type assets that needs to be fetched.", required = true)
             @PathParam("id") Integer id,
             @ApiParam(name = "offset", value = "Read all values starting from this value.")
-            @DefaultValue("0")@QueryParam("offset") Integer offset,
+            @QueryParam("offset") Integer offset,
             @ApiParam(name = "max", value = "Limit the number of fetched values.")
-            @DefaultValue("100")@QueryParam("max") Integer max){
+            @QueryParam("max") Integer max){
 
         try {
             if (null == webServicesSession.getItemCategoryById(id)){

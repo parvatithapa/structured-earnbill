@@ -26,8 +26,6 @@ import static org.testng.Assert.fail;
 @Test(groups = {"rest"}, testName = "OrderPeriodRestTest")
 public class OrderPeriodRestTest extends RestTestCase{
 
-    private static final Integer ORDER_PERIOD_ONCE = Integer.valueOf(2);
-
     @BeforeClass
     public void setup(){
         super.setup("orderperiods");
@@ -153,7 +151,7 @@ public class OrderPeriodRestTest extends RestTestCase{
     public void deleteOrderPeriodThatCanNotBeDeleted(){
 
         try {
-            restTemplate.sendRequest(REST_URL + ORDER_PERIOD_ONCE, HttpMethod.DELETE, getOrDeleteHeaders, null);
+            restTemplate.sendRequest(REST_URL + Constants.ORDER_PERIOD_ONCE, HttpMethod.DELETE, getOrDeleteHeaders, null);
             fail("No no");
         } catch (HttpStatusCodeException e){
             assertEquals(e.getStatusCode().value(), Response.Status.CONFLICT.getStatusCode());

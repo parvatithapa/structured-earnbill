@@ -15,50 +15,51 @@
  */
 package com.sapienter.jbilling.server.item.tasks;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.drools.KnowledgeBase;
+import org.drools.runtime.rule.FactHandle;
+
 import com.sapienter.jbilling.common.Constants;
 import com.sapienter.jbilling.common.FormatLogger;
 import com.sapienter.jbilling.server.item.ItemBL;
-import com.sapienter.jbilling.server.mediation.CallDataRecord;
 import com.sapienter.jbilling.server.item.PricingField;
+import com.sapienter.jbilling.server.mediation.CallDataRecord;
 import com.sapienter.jbilling.server.order.OrderBL;
+import com.sapienter.jbilling.server.order.OrderStatusFlag;
 import com.sapienter.jbilling.server.order.db.OrderDAS;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDAS;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.order.db.OrderStatusDAS;
-import com.sapienter.jbilling.server.order.OrderStatusFlag;
 import com.sapienter.jbilling.server.pluggableTask.TaskException;
+import com.sapienter.jbilling.server.rule.RulesBaseTask;
 import com.sapienter.jbilling.server.timezone.TimezoneHelper;
 import com.sapienter.jbilling.server.user.ContactBL;
 import com.sapienter.jbilling.server.user.ContactDTOEx;
 import com.sapienter.jbilling.server.user.UserDTOEx;
 import com.sapienter.jbilling.server.util.DTOFactory;
 import com.sapienter.jbilling.server.util.db.CurrencyDAS;
-import org.apache.log4j.Logger;
-import org.drools.KnowledgeBase;
-import org.drools.runtime.rule.FactHandle;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 @Deprecated
-public class RulesItemManager extends BasicItemManager {
+public class RulesItemManager extends RulesBaseTask implements IItemPurchaseManager {
 
     private static final FormatLogger LOG = new FormatLogger(Logger.getLogger(RulesItemManager.class));
     protected OrderManager helperOrder = null;
     private List<CallDataRecord> records;
     private List<OrderLineDTO> lines;
 
-    public void addItem(Integer itemID, BigDecimal quantity, Integer language,
-                        Integer userId, Integer entityId, Integer currencyId,
-                        OrderDTO order, List<CallDataRecord> records,
-                        List<OrderLineDTO> lines, boolean singlePurchase) throws TaskException {
-        super.addItem(itemID, quantity, language, userId, entityId, currencyId, order, records, lines, singlePurchase, null, null);
-        this.records = records;
-        this.lines = lines;
-        helperOrder = new OrderManager(order, language, userId, entityId, currencyId);
+    @Override
+    public void addItem(ItemPurchaseManagerContext context) throws TaskException {
+        BasicItemManager basicItemManager = new BasicItemManager();
+        basicItemManager.addItem(context);
+        this.records = context.getRecords();
+        this.lines = context.getLines();
+        OrderDTO order = context.getOrder();
+        helperOrder = new OrderManager(order, context.getLanguageId(), context.getUserId(), context.getEntityId(), context.getCurrencyId());
         processRules(order);
     }
 
@@ -160,7 +161,15 @@ public class RulesItemManager extends BasicItemManager {
             if (oldLine != null) {
                 h = handlers.get(oldLine);
             }
-            helper.addItem(itemID, quantity, language, userId, entityId, currencyId, order, records, lines, false, null, null);
+            ItemPurchaseManagerContext context = ItemPurchaseManagerContext.build(itemID, itemID, quantity)
+                    .addLanguageId(language)
+                    .addCallDataRecords(records)
+                    .addCurrencyId(currencyId)
+                    .addOrder(order)
+                    .addOrderLines(lines)
+                    .addEntityId(entityId)
+                    .build();
+            helper.addItem(context);
             OrderLineDTO retValue = helper.getLatestLine();
             if (h != null) {
                 LOG.debug("updating");
@@ -261,5 +270,10 @@ public class RulesItemManager extends BasicItemManager {
         public Integer getUserId() {
             return userId;
         }
+    }
+
+    @Override
+    protected FormatLogger getLog() {
+        return LOG;
     }
 }

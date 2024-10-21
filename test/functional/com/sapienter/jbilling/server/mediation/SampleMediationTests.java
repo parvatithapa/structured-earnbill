@@ -39,11 +39,11 @@ import static org.testng.AssertJUnit.fail;
 */
 @Test(groups = {"web-services", "mediation"}, testName = "SampleMediationTests")
 public class SampleMediationTests  {
-
+	
 	private static final String TELCO_USAGE_MANAGER_TASK_NAME = "com.sapienter.jbilling.server.item.tasks.TelcoUsageManagerTask";
 	private static final String BASIC_ITEM_MANAGER_TASK_NAME = "com.sapienter.jbilling.server.item.tasks.BasicItemManager";
 	private static final Integer ITEM_MANAGER_PLUG_IN_ID = 1;
-
+	
     @Test
     public void testTriggerGlobalMediationWithOneValidCDR() {
         TestBuilder.
@@ -81,7 +81,7 @@ public class SampleMediationTests  {
             assertEquals(new Integer(1), mediationProcess.getDoneAndNotBillable());
         });
     }
-
+    
     @Test
     public void testMediationForDuplicateCDR() {
     	TestBuilder.
@@ -95,7 +95,7 @@ public class SampleMediationTests  {
         }).test(environment -> {
             JbillingAPI api = environment.getPrancingPonyApi();
             String callDataRecord = validCallDataRecord(environment,10);
-            StringBuilder duplicateRecords = new StringBuilder(callDataRecord);
+            StringBuilder duplicateRecords = new StringBuilder(callDataRecord);            
             duplicateRecords.append("\n").append(callDataRecord);
             duplicateRecords.append("\n").append(callDataRecord);
             duplicateRecords.append("\n").append(callDataRecord);
@@ -105,7 +105,7 @@ public class SampleMediationTests  {
             assertEquals(new Integer(4), mediationProcess.getDuplicates());
         });
     }
-
+    
     @Test
     public void testMediationForProcessedWithErrorCDRAndRecycle() {
     	TestBuilder.
@@ -120,7 +120,7 @@ public class SampleMediationTests  {
             JbillingAPI api = environment.getPrancingPonyApi();
             String callDataRecord = validCallDataRecord(environment,10);
             // Updating the plugin BasicItemManager to TelcoUsageManagerTask
-            // to produce mediation error: PROCESSED-WITH-ERROR
+            // to produce mediation error: PROCESSED-WITH-ERROR  
             PluggableTaskTypeWS type = api.getPluginTypeWSByClassName(TELCO_USAGE_MANAGER_TASK_NAME);
             PluggableTaskWS plugin = api.getPluginWS(ITEM_MANAGER_PLUG_IN_ID);
             plugin.setTypeId(type.getId());
@@ -128,7 +128,7 @@ public class SampleMediationTests  {
             parameters.put("DNIS_Field_Name", "DNIS");
             plugin.setParameters(parameters);
             api.updatePlugin(plugin);
-
+    	    
             UUID processId = api.processCDR(environment.idForCode("TestConfiguration"), Arrays.asList(callDataRecord));
             MediationProcess mediationProcess = api.getMediationProcess(processId);
             JbillingMediationErrorRecord[] errorRecords = api.getMediationErrorRecordsByMediationProcess(mediationProcess.getId(), null);
@@ -139,15 +139,15 @@ public class SampleMediationTests  {
             plugin.setTypeId(type.getId());
             plugin.setParameters(new Hashtable<String, String>());
             api.updatePlugin(plugin);
-
+    	    
             UUID recycledProcess = api.runRecycleForProcess(processId);
-
+            
             waitForMediationComplete(api, 70 * 70 * 100);
-
+            
             assertEquals(new Integer(1), api.getMediationProcess(recycledProcess).getDoneAndBillable());
         });
     }
-
+    
     @Test
     public void testTriggerGlobalMediationWithOneUnvalidCDR() {
         TestBuilder.
@@ -164,7 +164,7 @@ public class SampleMediationTests  {
             assertEquals(new Integer(1), mediationProcess.getErrors());
         });
     }
-
+    
     @Test
     public void testOrderCreationWithMediationForFlatItem() {
         TestBuilder.
@@ -250,7 +250,7 @@ public class SampleMediationTests  {
     }
 
 //  Partitioned Mediation can't be used through the WebServiceSessionSpringBean because messages are not retrieved
-//    @Test
+    @Test
     public void testPartitionedMediationWithOneValidCDR() {
         TestBuilder.
                 newTest().given(environmentCreator -> {
@@ -314,7 +314,7 @@ public class SampleMediationTests  {
                 "failure-username"
         ), ",");
     }
-
+    
     private void waitForMediationComplete(JbillingAPI api, Integer maxTime) {
 		Long start = new Date().getTime();
 		while (api.isMediationProcessRunning() && new Date().getTime() < maxTime + start) {

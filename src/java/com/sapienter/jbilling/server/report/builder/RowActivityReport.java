@@ -28,7 +28,7 @@ public class RowActivityReport {
 
     RowActivityReport(RowReportActivityBuilder builder) {
         this.staff = builder.staff;
-        this.createDate = builder.createDate;
+        this.createDate = DateUtils.truncate(builder.createDate, Calendar.DATE);
         this.productId = builder.productId;
         this.productName = builder.productName;
         this.productGroup = builder.productGroup;

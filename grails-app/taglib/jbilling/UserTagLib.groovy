@@ -34,9 +34,6 @@ class UserTagLib {
      * @param name
      */
     def userFriendlyName = { attrs, body ->
-        if(null == session['user_id']) {
-            out << 'not logged in'
-        }
         ContactDTO contact = ContactDTO.findByUserId(session['user_id'])
         if(contact?.firstName && contact?.lastName) {
             out << contact.firstName + ' ' + contact.lastName

@@ -64,14 +64,14 @@
                     <a id="upload-new-template" class="submit load"><span><g:message code="button.upload"/></span></a>
                     <g:form name="create-template" method="POST" action="create">
                         <div id="invoice-template-error-messages" class="msg-box error" style="display: none; padding: 0;">
-                            <ul style="margin-left: 0; list-style: none">
+                            <ul>
                                 <li style="font-weight: normal;"></li>
                             </ul>
                         </div>
 
                         <div id="invoice-template-success-messages" class="msg-box successfully"
                              style="display: none; padding: 0;">
-                            <ul style="margin-left: 0;">
+                            <ul>
                                 <li style="font-weight: normal; list-style: none"></li>
                             </ul>
                         </div>

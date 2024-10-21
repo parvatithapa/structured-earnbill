@@ -16,6 +16,7 @@
 
 package jbilling
 
+import com.opencsv.CSVWriter
 import com.sapienter.jbilling.server.item.AssetBL
 import com.sapienter.jbilling.server.pricing.db.RateCardDTO
 import com.sapienter.jbilling.server.user.db.CompanyDTO
@@ -40,7 +41,6 @@ import org.hibernate.criterion.Restrictions
 import org.hibernate.criterion.CriteriaSpecification
 
 import javax.sql.DataSource
-import au.com.bytecode.opencsv.CSVWriter
 
 @Secured(["MENU_99"])
 class RateCardController {
@@ -288,7 +288,7 @@ class RateCardController {
 
         // outfile
         def file = File.createTempFile(rateCard.tableName, '.csv')
-        CSVWriter writer = new CSVWriter(new FileWriter(file), ',' as char)
+        CSVWriter writer = new CSVWriter(new FileWriter(file))
 
         // write csv header
         def columns = rateCardService.getRateTableColumnNames()

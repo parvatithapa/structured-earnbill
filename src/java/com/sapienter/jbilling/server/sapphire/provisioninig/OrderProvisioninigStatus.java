@@ -7,9 +7,7 @@ enum OrderProvisioninigStatus {
     PENDING_UPDATE_OF_ASSET("Pending Update of Asset"),
     ASSET_DETAILS_UPDATED("Asset Details Updated"),
     PENDING_CHANGE_OF_PLAN("Pending Change of Plan"),
-    PLAN_CHANGED("Plan Changed"),
-    PENDING_NEW_SALE("Pending New Sale"),
-    NEW_SALE("New Sale");
+    PLAN_CHANGED("Plan Changed");
 
     private String status;
 

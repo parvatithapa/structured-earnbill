@@ -24,7 +24,7 @@
 
 --%>
 <%@page import="com.sapienter.jbilling.server.util.LogoType" defaultCodec="none" %>
-<div id="file-upload-cont-${pageProperty(name: 'page.input.name')}" style="padding-right: 10px;">
+<div id="file-upload-cont-${pageProperty(name: 'page.input.name')}" class="custom-div6">
     <input  type = "file"
             name = "${pageProperty(name: 'page.input.name')}"
               id = "${pageProperty(name: 'page.input.name')}"

@@ -30,24 +30,22 @@ import com.sapienter.jbilling.server.util.time.DateConvertUtils;
 
 /**
  * Report Builder class
- *
+ * 
  * Class to handle all reports that need a special handling and their data can not be obtained with a SQL query directly.
- *
+ * 
  * @author Leandro Bagur
  * @since 01/08/17.
  */
 public enum ReportBuilder implements IReportBuilder {
-
-
-
-    REVENUE("deferred_revenue_summary") {
+    
+    REVENUE("deferred_revenue_summary") {        
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
             int month = (int) parameters.get("month");
             int year = (int) parameters.get("year");
-
+            
             parameters.put("month_name", Month.of(month).name());
-
+            
             ReportBuilderRevenueSummary reportBuilderRevenueSummary = new ReportBuilderRevenueSummary(month, year);
             List<RevenueInvoice> revenueInvoices = new DistributelInvoiceDAS().getRevenueInvoices(month, year, entityId);
             return reportBuilderRevenueSummary.getData(revenueInvoices);
@@ -62,29 +60,29 @@ public enum ReportBuilder implements IReportBuilder {
             String revenueType = (String) parameters.get("revenue_type");
             int month = (int) parameters.get("month");
             int year = (int) parameters.get("year");
-
+            
             parameters.put("month_name", Month.of(month).name());
 
             ReportBuilderRevenueDetailed reportBuilderRevenueDetailed = new ReportBuilderRevenueDetailed(month, year);
-            List<RevenueInvoice> revenueInvoices = new DistributelInvoiceDAS().getRevenueInvoices(month, year, entityId);
+            List<RevenueInvoice> revenueInvoices = new DistributelInvoiceDAS().getRevenueInvoices(month, year, entityId);            
             return reportBuilderRevenueDetailed.getData(revenueInvoices, invoicedEntered, revenueType, group);
         }
     },
-
+    
     ACTIVITY_FULL("activity_full") {
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
             return new ReportBuilderActivity(entityId, childs, parameters).getData();
         }
     },
-
+    
     ACTIVITY_DATE("activity_date") {
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
             return new ReportBuilderActivityDate(entityId, childs, parameters).getData();
         }
     },
-
+    
     ACTIVITY_DATE_GROUP("activity_date_group") {
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
@@ -126,22 +124,22 @@ public enum ReportBuilder implements IReportBuilder {
             return new ReportBuilderActivityStaffProduct(entityId, childs, parameters).getData();
         }
     },
-
+    
     ACTIVITY_DATE_TERM("activity_date_term") {
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
             return new ReportBuilderActivityDateTerm(entityId, childs, parameters).getData();
         }
     },
-
-    AVERAGE_REVENUE("average_revenue") {
+    
+    AVERAGE_REVENUE("average_revenue") {        
         @Override
         public List<Map<String, ?>> getData(Integer entityId, List<Integer> childs, Map<String, Object> parameters) {
             int month = (int) parameters.get("month");
             int year = (int) parameters.get("year");
-
+            
             parameters.put("month_name", Month.of(month).name());
-
+            
             ReportBuilderAverageRevenue averageRevenueReportBuilder = new ReportBuilderAverageRevenue();
             List<AverageRevenueData> averageRevenueDataList = new DistributelInvoiceDAS().getAverageRevenueData(month, year, entityId);
             return averageRevenueReportBuilder.getData(averageRevenueDataList);

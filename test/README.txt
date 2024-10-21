@@ -26,7 +26,7 @@ Web Service Tests
 
 Integration Tests
 
-    Integration tests are designed to test the system as a whole. These tests trigger a long running
+    Integration tests are designed to test the system as a whole. These tests trigger a long-running
     process that touches on multiple area of the system, and test the outcome.
 
     Integration tests require a running container with jBilling deployed, and a prepared database.

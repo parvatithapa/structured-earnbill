@@ -15,6 +15,7 @@
  */
 
 import com.sapienter.jbilling.common.CommonConstants
+import com.sapienter.jbilling.server.adennet.AdennetConstants
 import com.sapienter.jbilling.server.user.UserDTOEx
 import com.sapienter.jbilling.server.user.db.UserStatusDAS
 import com.sapienter.jbilling.server.user.permisson.db.RoleDTO;
@@ -128,6 +129,9 @@ class SelectionTagLib {
 		
 		UserStatusDTO cancellationStatus = userStatusDAS.findByDescription(CUSTOMER_CANCELLATION_STATUS_DESCRIPTION, LANGUAGE_ENGLISH_ID)
 		statuses.add(cancellationStatus)
+
+		UserStatusDTO deActiveStatus = userStatusDAS.find(AdennetConstants.USER_STATUS_DEACTIVATED)
+		statuses.add(deActiveStatus)
         if(roleId?.equals(CommonConstants.TYPE_CUSTOMER)) {
             statuses.addAll(UserStatusDTO.createCriteria().list() {
                 createAlias('ageingEntityStep', 'ageingEntitySteps', Criteria.INNER_JOIN)

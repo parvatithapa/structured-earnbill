@@ -24,15 +24,6 @@ public class DistributelSkipListener implements SkipListener<DistributelPriceUpd
     @Value("#{jobParameters['data_table_name']}")
     private String tableName;
 
-    @Value("#{jobParameters['price_increase_data_table']}")
-    private String priceIncreaseTable;
-
-    @Value("#{jobParameters['price_reversal_data_table']}")
-    private String priceReversalTable;
-
-    @Value("#{stepExecution.stepName}")
-    private String stepName;
-
     @Override
     public void onSkipInRead(Throwable ex) {
         logger.error("Failed Read!", ex);
@@ -54,20 +45,7 @@ public class DistributelSkipListener implements SkipListener<DistributelPriceUpd
                 logger.error("writing Failed to path {}", errorFilePath, e);
             }
         }
-        String table = null;
-        if (DistributelPriceJobConstants.PRICE_UPDATE_INCREASE_STEP_NAME.equals(stepName)) {
-            table = priceIncreaseTable;
-        } else if (DistributelPriceJobConstants.PRICE_UPDATE_REVERSE_STEP_NAME.equals(stepName)) {
-            table = priceReversalTable;
-        } else if(DistributelPriceJobConstants.PRICE_UPDATE_STEP_NAME.equals(stepName)) {
-            table = tableName;
-        } else {
-            logger.error("unknown step {} configured in job", stepName);
-        }
-        if(StringUtils.isNotEmpty(table)) {
-            DistributelHelperUtil.updateRequestStatus(request,
-                    DistributelPriceJobConstants.REUQUEST_FAILED_STATUS, table);
-        }
+        DistributelHelperUtil.updateRequestStatus(request, DistributelPriceJobConstants.REUQUEST_FAILED_STATUS, tableName);
     }
 
 }

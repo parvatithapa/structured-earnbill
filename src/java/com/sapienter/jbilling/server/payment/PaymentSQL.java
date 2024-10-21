@@ -138,12 +138,6 @@ public interface PaymentSQL {
         "           and payment_id is not null " +
         "   )" +
         " order by 1 desc";    
-    
-    static final String getLatest = 
-		"select id from payment where create_datetime = " +
-                    "(select max(create_datetime) from payment where deleted = 0 and user_id = ?) " +
-		        " and deleted = 0 " +
-		        " and user_id = ?";
 
     static final String getLatestPaymentTransfer =
             "select id from payment_transfer where " +

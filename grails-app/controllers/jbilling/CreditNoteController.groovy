@@ -3,7 +3,11 @@ package jbilling
 import com.sapienter.jbilling.client.util.DownloadHelper
 import com.sapienter.jbilling.client.util.SortableCriteria
 import com.sapienter.jbilling.common.SessionInternalError
+import com.sapienter.jbilling.csrf.RequiresValidFormToken
 import com.sapienter.jbilling.server.creditnote.CreditNoteBL
+import com.sapienter.jbilling.server.creditnote.CreditNoteWS
+import com.sapienter.jbilling.server.item.ItemBL
+import com.sapienter.jbilling.server.item.ItemDTOEx
 import com.sapienter.jbilling.server.metafields.DataType
 import com.sapienter.jbilling.server.creditnote.db.CreditNoteDTO
 import com.sapienter.jbilling.server.metafields.db.MetaField
@@ -15,8 +19,10 @@ import com.sapienter.jbilling.server.user.db.CustomerDTO
 import com.sapienter.jbilling.server.user.partner.db.PartnerDTO
 import com.sapienter.jbilling.server.util.csv.CsvExporter
 import com.sapienter.jbilling.server.util.csv.Exporter
+import com.sapienter.jbilling.server.util.db.CurrencyDAS
 import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
+import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.hibernate.Criteria
 import org.hibernate.FetchMode
 import org.hibernate.criterion.DetachedCriteria
@@ -71,8 +77,7 @@ class CreditNoteController {
         return CreditNoteDTO.createCriteria().list(
                 max:    params.max,
                 offset: params.offset ) {
-                createAlias('creationInvoice', 'ci')
-                createAlias('ci.baseUser', 'u')
+                createAlias('user', 'u')
 
                 // create alias only if applying invoice filters to prevent duplicate results
                 if (filters.find{ it.field.startsWith('i.') && it.value })
@@ -190,6 +195,7 @@ class CreditNoteController {
         render template: 'show', model: [selected: creditNote, displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
     }
 
+    @Secured(["hasAnyRole('CREDIT_NOTE_2001')"])
     def delete () {
         if (params.id) {
             try {
@@ -244,5 +250,66 @@ class CreditNoteController {
             Exporter<CreditNoteDTO> exporter = CsvExporter.createExporter(CreditNoteDTO.class);
             render text: exporter.export(creditNotes), contentType: "text/csv"
         }
+    }
+
+    @Secured(["hasAnyRole('CREDIT_NOTE_2000')"])
+    def edit() {
+        if (!params.int('userId')) {
+            redirect(action: 'list')
+            return
+        }
+        def creditNote = new CreditNoteWS()
+        def user = webServicesSession.getUserWS(creditNote?.userId ?: params.int('userId'))
+        def currency = new CurrencyDAS().find(user.getCurrencyId()).getDescription(session['language_id'])
+        breadcrumbService.addBreadcrumb(controllerName, actionName, 'create', params.int('id'), creditNote?.id)
+        [creditNote: creditNote, user: user, currency: currency,
+         displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id'])]
+    }
+
+
+    @Secured(["hasAnyRole('CREDIT_NOTE_2000')"])
+    @RequiresValidFormToken
+    def save () {
+
+        CreditNoteWS creditNote = new CreditNoteWS()
+
+
+        try {
+            creditNote = bindCreditNote(creditNote, params)
+
+            // save or update
+            if (!creditNote.id || creditNote.id == 0) {
+                log.debug("creating credit note ${creditNote}")
+                creditNote.id = webServicesSession.createAdhocCreditNote(creditNote)
+                flash.message = 'creditNote.created'
+                flash.args = [creditNote.id]
+
+            }
+
+        } catch (SessionInternalError e) {
+            def user = webServicesSession.getUserWS(creditNote?.userId)
+            def currency = new CurrencyDAS().find(user.getCurrencyId()).getDescription(session['language_id'])
+            viewUtils.resolveException(flash, session.locale, e);
+            render view: 'edit', model: [ creditNote: creditNote , user: user,
+                                          displayer: UserHelperDisplayerFactory.factoryUserHelperDisplayer(session['company_id']),
+                                          currency: currency]
+            return
+        }
+
+        chain action: 'list', params: [id: creditNote.id]
+    }
+
+    private def bindCreditNote(CreditNoteWS creditNote, GrailsParameterMap params) {
+        return bindData(creditNote, params, 'creditNote')
+    }
+
+    /**
+     * Convenience shortcut, this action shows all credit notes for the given user id.
+     */
+    def user () {
+        def filter = new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.EQ, field: 'user.id', template: 'id', visible: true, integerValue: params.int('id'))
+        filterService.setFilter(FilterType.CREDITNOTE, filter)
+
+        redirect action: 'list'
     }
 }

@@ -95,4 +95,8 @@ public class MediationEventResult {
     public void setQuantityResolutionSuccess(boolean quantityResolutionSuccess) {
         this.quantityResolutionSuccess = quantityResolutionSuccess;
     }
+    
+    public boolean hasErrors() {
+        return null!= errorCodes && !errorCodes.isEmpty();
+    }
 }

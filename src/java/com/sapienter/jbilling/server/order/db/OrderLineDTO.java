@@ -17,6 +17,7 @@ package com.sapienter.jbilling.server.order.db;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -135,10 +136,11 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
     private boolean isPercentage =false;
 
     private Long callCounter = 0L;
-    private Long freeCallCounter = 0L;
 
     private String callIdentifier;
     private List<OrderLineTierDTO> orderLineTiers = new ArrayList<>(0);
+    private List<OrderLineItemizedUsageDTO> orderLineItemizedUsages = new ArrayList<>();
+    private OrderLineInfo oldOrderLineInfo;
 
     public OrderLineDTO() {
     }
@@ -416,20 +418,10 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
         this.callCounter = callCounter;
     }
 
-    @Column(name = "free_call_counter")
-    public Long getFreeCallCounter() {
-        return freeCallCounter;
-    }
-
-    public void setFreeCallCounter(Long freeCallCounter) {
-        this.freeCallCounter = freeCallCounter;
-    }
-
     @Column(name="description", length=1000)
     public String getDescription() {
         return this.description;
     }
-
     public void setDescription(String description) {
         if (description != null && description.length() > 1000) {
             description = description.substring(0, 1000);
@@ -489,6 +481,27 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
     @Transient
     public boolean hasItem() {
         return getItem() != null;
+    }
+
+    @Transient
+    public void addQuantityAndAmount(BigDecimal quantity, BigDecimal amount) {
+        if(null == this.quantity) {
+            setQuantity(BigDecimal.ZERO);
+        }
+        if(null == this.amount) {
+            setAmount(BigDecimal.ZERO);
+        }
+        setQuantity(this.quantity.add(quantity, MathContext.DECIMAL128));
+        setAmount(this.amount.add(amount, MathContext.DECIMAL128));
+        setPrice(this.amount.divide(this.quantity, MathContext.DECIMAL128));
+    }
+
+    @Transient
+    public void incrementCallCounter() {
+        if(null == callCounter) {
+            callCounter = 1L;
+        }
+        ++callCounter;
     }
 
     @Transient
@@ -743,6 +756,35 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
         this.endDate = endDate;
     }
 
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "orderLine")
+    public List<OrderLineItemizedUsageDTO> getOrderLineItemizedUsages() {
+        return orderLineItemizedUsages;
+    }
+
+    public void setOrderLineItemizedUsages(List<OrderLineItemizedUsageDTO> orderLineItemizedUsages) {
+        this.orderLineItemizedUsages = orderLineItemizedUsages;
+    }
+
+    @Transient
+    public void addOrderLineItemizedUsage(String separator, BigDecimal amount , BigDecimal quantity) {
+        OrderLineItemizedUsageDTO lineUsageInfo = getOrderLineItemizedUsageDTO(this.getId(), separator);
+        if(null == lineUsageInfo) {
+            lineUsageInfo = new OrderLineItemizedUsageDTO(this, separator);
+            this.orderLineItemizedUsages.add(lineUsageInfo);
+        }
+        lineUsageInfo.addAmountAndQuantity(amount, quantity);
+    }
+
+    @Transient
+    public OrderLineItemizedUsageDTO getOrderLineItemizedUsageDTO(Integer lineId, String separator) {
+        for(OrderLineItemizedUsageDTO usageInfo : getOrderLineItemizedUsages()) {
+            if(usageInfo.getSeparator().equals(separator) &&
+                    usageInfo.getOrderLine().getId() == lineId) {
+                return usageInfo;
+            }
+        }
+        return null;
+    }
 
     public void touch() {
         // touch entity with possible cycle dependencies only once
@@ -931,10 +973,38 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
     }
 
     @Transient
-    public void incrementFreeCallCounter() {
-        freeCallCounter ++;
+    public OrderLineInfo getOldOrderLineInfo() {
+        return oldOrderLineInfo;
     }
 
+    public void setOldOrderLineInfo(OrderLineInfo oldOrderLineInfo) {
+        this.oldOrderLineInfo = oldOrderLineInfo;
+    }
+
+    @Transient
+    public void createOrUpdateOrderLineUsagePool(CustomerUsagePoolDTO customerUsagePool, BigDecimal freeQuantity, Date effectiveDate) {
+        OrderLineUsagePoolDTO orderLineUsagePoolDTO = getOrderLineUsagePoolByCustomerUsagePoolId(customerUsagePool.getId());
+        if(null == orderLineUsagePoolDTO) {
+            orderLineUsagePoolDTO = new OrderLineUsagePoolDTO();
+            orderLineUsagePoolDTO.setCustomerUsagePool(customerUsagePool);
+            orderLineUsagePoolDTO.setQuantity(BigDecimal.ZERO);
+            orderLineUsagePoolDTO.setEffectiveDate(effectiveDate);
+            orderLineUsagePoolDTO.setOrderLine(this);
+            getOrderLineUsagePools().add(orderLineUsagePoolDTO);
+        }
+        orderLineUsagePoolDTO.setQuantity(orderLineUsagePoolDTO.getQuantity()
+                .add(freeQuantity, MathContext.DECIMAL128));
+    }
+
+    @Transient
+    public OrderLineUsagePoolDTO getOrderLineUsagePoolByCustomerUsagePoolId(Integer customerUsagePoolId) {
+        for(OrderLineUsagePoolDTO orderLineUsagePool : getOrderLineUsagePools()) {
+            if(orderLineUsagePool.getCustomerUsagePool().getId() == customerUsagePoolId) {
+                return orderLineUsagePool;
+            }
+        }
+        return null;
+    }
     @Override
     public String toString() {
         return "OrderLine:[id=" + id +
@@ -955,7 +1025,6 @@ public class OrderLineDTO extends CustomizedEntity implements Serializable, Comp
                 " parentLineId=" + (parentLine != null ? parentLine.getId() : "null")  +
                 " metaFields=" + getMetaFieldsList() +
                 " orderLineUsagePools=" + getOrderLineUsagePools() +
-                " freeCallCounter=" + getFreeCallCounter() +
                 " editable=" + editable + "]";
     }
 

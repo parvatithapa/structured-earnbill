@@ -36,7 +36,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.SessionInternalError;
 import com.sapienter.jbilling.server.discount.db.DiscountLineDTO;
@@ -53,7 +53,6 @@ import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 import com.sapienter.jbilling.server.order.db.OrderDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineDTO;
 import com.sapienter.jbilling.server.order.db.OrderLineTierDTO;
-import com.sapienter.jbilling.server.pluggableTask.ActivePeriodChargingTask.SuspendedCycle;
 import com.sapienter.jbilling.server.process.PeriodOfTime;
 import com.sapienter.jbilling.server.process.event.ApplySuspendedPeriods;
 import com.sapienter.jbilling.server.system.event.EventManager;
@@ -61,7 +60,8 @@ import com.sapienter.jbilling.server.user.UserBL;
 import com.sapienter.jbilling.server.util.Constants;
 import com.sapienter.jbilling.server.util.Holder;
 import com.sapienter.jbilling.server.util.PreferenceBL;
-
+import com.sapienter.jbilling.server.mediation.converter.db.JMRRepository;
+import com.sapienter.jbilling.server.util.Context;
 /**
  * @author Leandro Zoi
  * @since 01/15/18
@@ -82,7 +82,7 @@ public abstract class InvoiceComposition extends PluggableTask implements Invoic
     protected String dateFormat;
     private Locale locale;
     private Integer invoiceLinePrecisionPrefValue = null;
-
+    private JdbcTemplate jdbcTemplate = null;
     protected boolean resourceBundleInitialized = false;
 
     /**
@@ -199,12 +199,8 @@ public abstract class InvoiceComposition extends PluggableTask implements Invoic
 
         if (!cycles.isEmpty() && !period.equals(PeriodOfTime.OneTimeOrderPeriodOfTime)) {
             BigDecimal periodAmount = new BigDecimal("0.00");
-            int cycleIndex = 0;
             for (ActivePeriodChargingTask.SuspendedCycle cycle: cycles) {
-                cycleIndex++;
-                Boolean isPreviousCyclePresent = cycleIndex >= 2;
-                SuspendedCycle nextSuspendedCycle = cycleIndex < cycles.size() ? cycles.get(cycleIndex) : null;
-                for (PeriodOfTime periodOfTime : cycle.splitPeriods(period, nextSuspendedCycle, isPreviousCyclePresent)) {
+                for (PeriodOfTime periodOfTime : cycle.splitPeriods(period)) {
                     if (periodOfTime.getDaysInPeriod() > 0) {
                         BigDecimal proratedAmount = calculateProRatedAmountForPeriod(orderLine.getAmount(), periodOfTime);
 
@@ -272,7 +268,6 @@ public abstract class InvoiceComposition extends PluggableTask implements Invoic
         if (!allowLinesWithZero && etalonZero.compareTo(periodAmount) == 0) {
             return BigDecimal.ZERO;
         }
-
         if(null!=orderLine.getOrderLineType() && orderLine.getOrderLineType().getId() == Constants.ORDER_LINE_TYPE_ITEM
                 && PreferenceBL.isTierCreationAllowed(entityId) &&
                 orderLine.hasOrderLineTiers() && !orderLine.getPurchaseOrder().getProrateFlag()) {
@@ -304,24 +299,36 @@ public abstract class InvoiceComposition extends PluggableTask implements Invoic
                     }
                 }
             }
-
         } else {
-
-            InvoiceLineDTO.Builder newLine = new InvoiceLineDTO.Builder()
-                    .description(orderLine.getDescription())
-                    .sourceUserId(order.getUser().getId())
-                    .itemId(orderLine.getItemId())
-                    .amount(taxFlag ? calculateAmountWithTax(periodAmount, taxRate) : periodAmount)
-                    .price(orderLine.getPrice())
-                    .callIdentifier(callIdentifier)
-                    .assetIdentifier(assetIdentifier)
-                    .callCounter(callCounter)
-                    .usagePlanId(usagePlanId)
-                    .isPercentage(orderLine.isPercentage())
-                    .grossAmount(taxFlag ? periodAmount : BigDecimal.ZERO)
-                    .taxAmount(taxFlag ? getTaxAmount(periodAmount, taxRate) : BigDecimal.ZERO)
-                    .taxRate(taxRate);
-
+                InvoiceLineDTO.Builder newLine = new InvoiceLineDTO.Builder();
+                 if(orderLine.getPurchaseOrder().getIsMediated()){
+                     BigDecimal usageAmountWithTax = taxFlag ? getUsagOrderLineAmountWithTax(orderLine.getId()) : periodAmount;
+                     logger.debug("Amount with Tax for mediated order {} ", usageAmountWithTax);
+                     BigDecimal excludingAmountRate = taxRate.divide(new BigDecimal("100")).add(BigDecimal.ONE);
+                     logger.debug("Excluding amount rate : {} ", excludingAmountRate);
+                     BigDecimal grossAmount = usageAmountWithTax.divide(excludingAmountRate, MathContext.DECIMAL128)
+                             .setScale(invoiceLinePrecisionPrefValue, Constants.BIGDECIMAL_ROUND);
+                     logger.debug("Gross Amount : {} ", grossAmount);
+                     newLine
+                      .amount(usageAmountWithTax)
+                      .grossAmount(taxFlag ? grossAmount : BigDecimal.ZERO)
+                      .taxAmount(taxFlag ? usageAmountWithTax.subtract(grossAmount) : BigDecimal.ZERO);
+                 } else {
+                     newLine
+                     .amount(taxFlag ? calculateAmountWithTax(periodAmount, taxRate) : periodAmount)
+                     .taxAmount(taxFlag ? getTaxAmount(periodAmount, taxRate) : BigDecimal.ZERO)
+                     .grossAmount(taxFlag ? periodAmount : BigDecimal.ZERO);
+                 }
+                 newLine.description(orderLine.getDescription())
+                     .sourceUserId(order.getUser().getId())
+                     .itemId(orderLine.getItemId())
+                     .price(orderLine.getPrice())
+                     .callIdentifier(callIdentifier)
+                     .assetIdentifier(assetIdentifier)
+                     .callCounter(callCounter)
+                     .usagePlanId(usagePlanId)
+                     .isPercentage(orderLine.isPercentage())                     
+                     .taxRate(taxRate);
 
             switch (orderLine.getTypeId()) {
                 case Constants.ORDER_LINE_TYPE_ITEM:
@@ -531,7 +538,12 @@ public abstract class InvoiceComposition extends PluggableTask implements Invoic
         return grossAmount != null && taxRate != null ? grossAmount.multiply(taxRate).divide(BigDecimal.valueOf(100L),
                 invoiceLinePrecisionPrefValue, Constants.BIGDECIMAL_ROUND) : BigDecimal.ZERO;
     }
-
+    private BigDecimal getUsagOrderLineAmountWithTax(Integer  orderLineId) {
+        logger.debug("calculating amount with tax for the order line id {}", orderLineId);
+        JMRRepository jmrRepository = Context.getBean(JMRRepository.class);
+        return jmrRepository.findAmountWithTaxForMediatedOrderLine(orderLineId);
+    }
+    
     private BigDecimal getTaxRate(Integer entityId, ItemDTO item, Date invoiceGenerationDate) {
         logger.debug("getting tax rate for {} and {}", item, invoiceGenerationDate);
         String taxTableName = new MetaFieldDAS().getComapanyLevelMetaFieldValue(CommonConstants.TAX_TABLE_NAME, entityId);

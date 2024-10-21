@@ -63,10 +63,10 @@ public class PricingField implements Serializable {
      * @param encoded encoded string to parse
      */
     public PricingField(String encoded) {
-        String[] fields = encoded.split(":", -1);
+        String[] fields = encoded.split(COLONS, -1);
 
-        if (fields == null || fields.length != 4) {
-            this.name = "";
+        if (fields == null || !(fields.length == 4 || fields.length == 2)) {
+            this.name = EMPTY;
             this.type = Type.INTEGER;
             this.value = "0";
             return;
@@ -74,9 +74,14 @@ public class PricingField implements Serializable {
 
         try {
             this.name = fields[0] != null ? URLDecoder.decode(fields[0], STRING_ENCODING) : fields[0];
-            this.position = Integer.parseInt(fields[1]);
-            this.type = mapType(fields[2]);
-            this.value = fields[3].equals("null") ? null : URLDecoder.decode(fields[3], STRING_ENCODING);
+            if(fields.length == 4) {
+                this.position = Integer.parseInt(fields[1]);
+                this.type = mapType(fields[2]);
+                this.value = fields[3].equals("null") ? null : URLDecoder.decode(fields[3], STRING_ENCODING);
+            }
+            if(fields.length == 2) {
+                this.value = fields[1].equals("null") ? null : URLDecoder.decode(fields[1], STRING_ENCODING);
+            }
         } catch (UnsupportedEncodingException e) {
             // Should never happen
         }
@@ -425,8 +430,12 @@ public class PricingField implements Serializable {
 
         List<PricingField> result = new ArrayList<PricingField>();
         for (String field : fields) {
-            if (field != null && !field.equals(EMPTY) && field.split(COLONS, -1).length == 4) {
-                result.add(new PricingField(field));
+            if (field != null && !field.equals(EMPTY)) {
+                String[] tempFields = field.split(COLONS, -1);
+                double length = tempFields.length;
+                if (length == 4 || length == 2) {
+                    result.add(new PricingField(field));
+                }
             }
         }
         return result.toArray(new PricingField[result.size()]);

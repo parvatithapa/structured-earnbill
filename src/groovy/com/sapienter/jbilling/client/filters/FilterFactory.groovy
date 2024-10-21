@@ -81,22 +81,22 @@ class FilterFactory {
         CUSTOMER: [
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'contact.fields', template: 'customer/ccf', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.DATE_BETWEEN, field: 'createDatetime', template: 'date', visible: false),
-            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.STATUS, field: 'userStatus', template: 'customer/status', visible: true),
+            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.STATUS, field: 'userStatus', template: 'customer/status', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'userName', template: 'customer/login', visible: true),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'language.id', template: 'customer/language', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'currency.id', template: 'currency', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.IS_NOT_EMPTY, field: 'orders', template: 'customer/orders', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.IS_NOT_EMPTY, field: 'invoices', template: 'customer/invoices', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.IS_NOT_EMPTY, field: 'payments', template: 'customer/payments', visible: false),
-            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.IS_NOT_NULL, field: 'customer.parent', template: 'customer/child', visible: true),
-            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'customer.isParent', template: 'trueOrFalse', visible: true),
+            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.IS_NOT_NULL, field: 'customer.parent', template: 'customer/child', visible: false),
+            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'customer.isParent', template: 'trueOrFalse', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'customer.partner.id', template: 'id', visible: false),
             new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'userCodes.userCode.identifier', template: 'value', visible: false),
-            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'deleted', template: 'customer/deleted', visible: true, integerValue: 0),
-			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'u.company.description', template: 'company', visible: true),
+            new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.EQ, field: 'deleted', template: 'customer/deleted', visible: false, integerValue: 0),
+			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'u.company.description', template: 'company', visible: false),
 			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'accountTypeFields', template: 'customer/atf', visible: false),			
-			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'as.identifier', template: 'customer/phone', visible: false),
-			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.DATE_BETWEEN, field: 'customer.nextInvoiceDate', template: 'date', visible: true),
+			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.LIKE, field: 'as.subscriberNumber', template: 'customer/phone', visible: true),
+			new Filter(type: FilterType.CUSTOMER, constraintType: FilterConstraint.DATE_BETWEEN, field: 'customer.nextInvoiceDate', template: 'date', visible: false),
 		],
         PARTNER: [
             new Filter(type: FilterType.PARTNER, constraintType: FilterConstraint.LIKE, field: 'contact.firstName', template: 'value', visible: false),
@@ -166,12 +166,11 @@ class FilterFactory {
             new Filter(type: FilterType.EDI_FILE, constraintType: FilterConstraint.EQ, field: 'fileStatus.id', template: 'edi/fileStatus', visible: true),
 		],
         CREDITNOTE:[
-			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.EQ, field: 'u.id', template: 'id', visible: true),
+			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.EQ, field: 'user.id', template: 'id', visible: true),
 			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.LIKE, field: 'u.userName', template: 'customer/login', visible: true),
-			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.DATE_BETWEEN, field: 'createDateTime', template: 'date', visible: true),
+			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.DATE_BETWEEN, field: 'creditNoteDate', template: 'date', visible: true),
 			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.NUMBER_BETWEEN, field: 'amount', template: 'range', visible: true),
 			new Filter(type: FilterType.CREDITNOTE, constraintType: FilterConstraint.NUMBER_BETWEEN, field: 'balance', template: 'range', visible: false),
-
         ],
 		PLAN: [
 			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.LIKE, field: 'plan.i.internalNumber', template: 'plan/internalNumber', visible: true),
@@ -180,7 +179,14 @@ class FilterFactory {
 			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.LIKE, field: 'u.company.description', template: 'company', visible: true),
 			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.NUMBER_BETWEEN, field: 'price.rate', template: 'range', visible: true),
 			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.EQ, field: 'i.global', template: 'isGlobal', visible: true),
-			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.EQ, field: 'contact.fields', template: 'plan/ccf', visible: false)
+			new Filter(type: FilterType.PLAN, constraintType: FilterConstraint.EQ, field: 'contact.fields', template: 'plan/ccf', visible: false),
+		],
+		RECHARGE_HISTORY:[
+				new Filter(type: FilterType.RECHARGE_HISTORY, constraintType: FilterConstraint.EQ, field: 'TRANSACTION_ID', template: 'id', visible: false),
+				new Filter(type: FilterType.RECHARGE_HISTORY, constraintType: FilterConstraint.EQ, field: 'SUBSCRIBER_NUMBER', template: 'recharge_history/phone', visible: true),
+				new Filter(type: FilterType.RECHARGE_HISTORY, constraintType: FilterConstraint.DATE_BETWEEN, field: 'RECHARGE_DATE', template: 'date', visible: true),
+				new Filter(type: FilterType.RECHARGE_HISTORY, constraintType: FilterConstraint.EQ, field: 'TRANSACTION_TYPE', template: 'recharge_history/transactionType', visible: true),
+
 		]
     ] as Map).asImmutable()
 

@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+
 import com.sapienter.jbilling.server.mediation.converter.customMediations.fullCreative.FullCreativeConstants.MetaFieldName;
 import com.sapienter.jbilling.server.metafields.db.MetaFieldDAS;
 
@@ -65,7 +66,7 @@ public class TelcoOrderLineBasedCompositionTask extends InvoiceComposition {
                     usagePlanId = getUsagePlanId(order.getUser().getEntity().getId(),
                                                 userId,
                                                 orderLine.getItemId(),
-                                                order.getActiveSince(),orderLine.getCallIdentifier());
+                                                order.getActiveSince());
                 }
 
                 for (PeriodOfTime period : orderCtx.periods) {
@@ -93,22 +94,16 @@ public class TelcoOrderLineBasedCompositionTask extends InvoiceComposition {
      * @param usageActiveSince
      * @return
      */
-    private Integer getUsagePlanId(Integer entityId, Integer userId, Integer itemId, Date usageActiveSince, String identifier) {
+    private Integer getUsagePlanId(Integer entityId, Integer userId, Integer itemId, Date usageActiveSince) {
         Integer dormancyPlanId = getDormancyPlanId(entityId);
-        Integer usagePlanId;
-        try {
-            usagePlanId = new InvoiceDAS().getUsagePlanId(userId, itemId, usageActiveSince,identifier);
-            /*  This is FC Specific condition to skip Dormancy plan Id while setting usage plan id on usage
-             *  invoice line But If company level meta field not defined then it work as per generic implementation
-             */
-            if (null == dormancyPlanId || (null != usagePlanId && !dormancyPlanId.equals(usagePlanId))) {
-                return usagePlanId;
-            }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        Integer usagePlanId = new InvoiceDAS().getUsagePlanId(userId, itemId, usageActiveSince);
 
+        /*  This is FC Specific condition to skip Dormancy plan Id while setting usage plan id on usage
+         *  invoice line But If company level meta field not defined then it work as per generic implementation
+         */
+        if (null == dormancyPlanId || (null != usagePlanId && !dormancyPlanId.equals(usagePlanId))) {
+            return usagePlanId;
+        }
 		return null;
     }
 

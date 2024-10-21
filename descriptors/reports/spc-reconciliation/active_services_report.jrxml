@@ -9,6 +9,8 @@
 	<parameter name="child_entities" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="offset" class="java.lang.Integer"/>
+	<parameter name="limit" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[SELECT bu.id,
                         bu.user_name,
@@ -36,9 +38,39 @@
                                  WHERE omfm.order_id = pu.id) AS "amaysim Order ID",
                                itm.id "Prod Id",
                                ol.description,
-                               ol.amount,
-                               ol.amount * 0.10 AS "GST" ,
-                               (ol.amount + (ol.amount * 0.10)) AS "Price Inc GST",
+                               ol.amount,                               
+                               (CASE WHEN 
+                               (SELECT id FROM plan WHERE item_id=ol.item_id) is not null THEN
+                               ((ol.amount * (CAST((SELECT tax_rate FROM route_70_tax_scheme 
+                                 WHERE description =((SELECT mfv.string_value  FROM plan_meta_field_map pmfm 
+                                INNER JOIN meta_field_value mfv on pmfm.meta_field_value_id=mfv.id 
+                                INNER JOIN meta_field_name mfn on mfv.meta_field_name_id=mfn.id and 
+                                mfn.name = 'Tax Scheme'   AND pmfm.plan_id = (select id from plan where item_id=ol.item_id) )))
+                                 AS DOUBLE PRECISION ) /100))
+                               ) 
+                                ELSE
+                               ((ol.amount * (CAST((SELECT tax_rate FROM route_70_tax_scheme WHERE description = 
+                                  ((SELECT mfv.string_value    FROM item itm 
+                                  INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                                  INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id 
+                                  INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme' AND mfv.meta_field_name_id = mfn.id 
+                                  AND itm.id = ol.item_id ))) AS DOUBLE PRECISION ) /100))) END)    AS GST,
+                               (ol.amount +  
+                               (CASE WHEN  
+                               (SELECT id FROM plan WHERE item_id=ol.item_id) is not null THEN 
+		                       ((ol.amount * (CAST((SELECT tax_rate FROM route_70_tax_scheme 
+                                 WHERE description =((SELECT mfv.string_value  FROM plan_meta_field_map pmfm 
+                                 INNER JOIN meta_field_value mfv on pmfm.meta_field_value_id=mfv.id 
+                                 INNER JOIN meta_field_name mfn on mfv.meta_field_name_id=mfn.id and 
+                                 mfn.name = 'Tax Scheme'   AND pmfm.plan_id = (select id from plan where item_id=ol.item_id) )))
+                                  AS DOUBLE PRECISION ) /100))
+		                       ) ELSE 
+		                       ((ol.amount * (CAST((SELECT tax_rate FROM route_70_tax_scheme WHERE description = 
+                                  ((SELECT mfv.string_value    FROM item itm 
+                                  INNER JOIN item_meta_field_map imfm ON imfm.item_id = itm.id
+                                  INNER JOIN meta_field_value mfv ON mfv.id = imfm.meta_field_value_id 
+                                  INNER JOIN meta_field_name mfn ON mfn.name = 'Tax Scheme' AND mfv.meta_field_name_id = mfn.id 
+                                  AND itm.id = ol.item_id ))) AS DOUBLE PRECISION ) /100))) END) ) AS  "Price Inc GST",           
                                pu.create_datetime,
                                pu.active_since,
                                pu.active_until,
@@ -78,15 +110,23 @@
                                                AND meta_field_name.entity_type = 'CUSTOMER'
                                                AND meta_field_name.entity_id = bu.entity_id) AS crmAccountNumber,
                         a.identifier,
-                        (SELECT string_value
-                           FROM meta_field_value
-                     INNER JOIN asset_meta_field_map ON meta_field_value.id = asset_meta_field_map.meta_field_value_id
-                                                    AND asset_meta_field_map.asset_id = a.id
-                     INNER JOIN meta_field_name ON meta_field_value.meta_field_name_id = meta_field_name.id
-                                               AND meta_field_name.name = 'ServiceId'
-                                               AND meta_field_name.entity_type = 'ASSET'
-                                               AND meta_field_name.entity_id = bu.entity_id
-                                               AND meta_field_value.string_value is not null) AS ServiceId
+                        (SELECT COALESCE((SELECT string_value
+						FROM meta_field_value mfv
+						INNER JOIN asset_meta_field_map map ON map.meta_field_value_id = mfv.id
+						INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+						WHERE map.asset_id = a.id AND mfn.name = 'ServiceId' AND mfn.entity_type = 'ASSET'
+						AND mfn.entity_id = bu.entity_id),
+						(SELECT string_value
+						FROM meta_field_value mfv
+						INNER JOIN order_line_meta_field_map map ON map.meta_field_value_id = mfv.id
+						INNER JOIN meta_field_name mfn ON mfn.id = mfv.meta_field_name_id
+						WHERE map.order_line_id = ol.id AND mfn.name = 'ServiceId' AND mfn.entity_type = 'ORDER_LINE'
+						AND mfn.entity_id = bu.entity_id))) AS "ServiceId" ,
+						(SELECT mfv.string_value FROM order_meta_field_map omfm   INNER JOIN meta_field_value mfv ON mfv.id = omfm.meta_field_value_id
+                       INNER JOIN meta_field_name mfn ON mfv.meta_field_name_id = mfn.id AND mfn.name = 'crmOrderNumber' AND mfn.is_primary = 't' AND 
+                       mfn.entity_type = 'ORDER' WHERE omfm.order_id = pu.id AND mfn.entity_id = bu.entity_id ) AS crmOrderNumber ,
+                       (SELECT id from plan where item_id=itm.id ) AS "PlanId",
+                       (CASE WHEN (pu.prorate_flag = 't')  THEN 'YES'  ELSE 'NO'  END) as "prorateflag"
                    FROM base_user bu
                   INNER JOIN customer cu ON cu.user_id = bu.id
                   INNER JOIN purchase_order pu ON bu.id = pu.user_id AND pu.deleted =0
@@ -96,7 +136,18 @@
                   INNER JOIN order_line ol ON ol.order_id = pu.id AND ol.deleted = 0
                    LEFT JOIN item itm ON itm.id = ol.item_id
                    LEFT JOIN asset a ON a.order_line_id = ol.id
-                  ORDER BY bu.id, pu.id;]]>
+                  ORDER BY bu.id, pu.id
+	LIMIT CASE WHEN $P{limit} IS NOT NULL
+               THEN (CASE WHEN $P{limit} < 50000
+                          THEN $P{limit}
+                          ELSE 50000
+                          END)
+               ELSE 50000
+               END
+    OFFSET CASE WHEN $P{offset} IS NOT NULL
+                THEN $P{offset}
+                ELSE 0
+                END;]]>
 	</queryString>
 	<field name="id" class="java.lang.Integer"/>
 	<field name="user_name" class="java.lang.String"/>
@@ -120,6 +171,9 @@
 	<field name="crmaccountnumber" class="java.lang.String"/>
 	<field name="identifier" class="java.lang.String"/>
 	<field name="serviceid" class="java.lang.String"/>
+	<field name="crmordernumber" class="java.lang.String"/>
+	<field name="planid" class="java.lang.String"/>
+	<field name="prorateflag" class="java.lang.String"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
@@ -302,6 +356,27 @@
 				</textElement>
 				<text><![CDATA[ServiceId]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="2030" y="0" width="119" height="20" uuid="23ca3b16-d107-4880-beac-67c7a4f82164"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[crmOrderNumber]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2180" y="0" width="119" height="20" uuid="24ca3b16-d107-4880-beac-67c7a4f82164"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PlanId]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2250" y="0" width="110" height="20" uuid="24ba3b16-d107-4880-beac-67c7a4f82164"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[IsProrated]]></text>
+			</staticText>
 		</band>
 	</columnHeader>
 	<detail>
@@ -405,6 +480,18 @@
 			<textField isBlankWhenNull="true">
 				<reportElement x="1931" y="0" width="109" height="20" uuid="51e8b9bc-2708-4c2f-9f55-7158c1006c8d"/>
 				<textFieldExpression><![CDATA[$F{serviceid}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2030" y="0" width="119" height="20" uuid="f9776932-2611-4683-af63-582d9bb30346"/>
+				<textFieldExpression><![CDATA[$F{crmordernumber}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2180" y="0" width="119" height="20" uuid="f9876932-2611-4683-af63-582d9bb30346"/>
+				<textFieldExpression><![CDATA[$F{planid}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2250" y="0" width="110" height="20" uuid="f9976932-2611-4683-af63-582d9bb30346"/>
+				<textFieldExpression><![CDATA[$F{prorateflag}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>

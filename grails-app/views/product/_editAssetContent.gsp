@@ -26,7 +26,7 @@
 
     <g:set var="isNew" value="${!asset || !asset?.id || asset?.id == 0}"/>
     <g:render template="/layouts/includes/messages"/>
-    <div class="heading">
+    <div class="heading" data-cy="assetTitle">
         <strong>
             <g:if test="${isNew}">
                 <g:message code="product.asset.add.title"/>
@@ -64,6 +64,25 @@
                             </content>
                             <content tag="label.for">identifier</content>
                             <g:textField class="field" name="identifier" value="${asset?.identifier}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.subscriber.number"/></content>
+                            <g:textField class="field" name="subscriberNumber" value="${asset?.subscriberNumber}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.imsi"/><span id="mandatory-meta-field">*</span></content>
+                            <g:textField class="field" name="imsi" value="${asset?.imsi}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/checkbox">
+                            <content tag="label"><g:message code="label.adennet.temporary.suspended"/></content>
+                            <g:checkBox   class = "cb checkbox"
+                                                 id = "isSuspended"
+                                               name = "isSuspended"
+                                            checked = "${asset?.isSuspended}"/>
+
                         </g:applyLayout>
 
                         <g:if test="${asset.assetStatus?.isInternal == 1 || asset.assetStatus?.isOrderSaved == 1}">
@@ -112,7 +131,7 @@
 	                        		<g:hiddenField name="global" value="${asset?.global}"/>
 	                        	</g:isNotRoot>
 	                        
-	                        	<div id="childCompanies">          
+	                        <div id="childCompanies">
 	                       		<g:isRoot>
 	                       			<g:applyLayout name="form/select_multiple">
 	                           			<content tag="label">
@@ -164,6 +183,26 @@
                             <content tag="label"><g:message code="asset.detail.notes"/></content>
                             <content tag="label.for">notes</content>
                             <g:textArea class="narrow" name="notes" value="${asset.notes}" rows="5" cols="45"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.pin1"/></content>
+                                <g:textField class="field" name="pin1" value="${asset?.pin1}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.pin2"/></content>
+                            <g:textField class="field" name="pin2" value="${asset?.pin2}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.puk1"/></content>
+                            <g:textField class="field" name="puk1" value="${asset?.puk1}"/>
+                        </g:applyLayout>
+
+                        <g:applyLayout name="form/input">
+                            <content tag="label"><g:message code="label.adennet.puk2"/></content>
+                            <g:textField class="field" name="puk2" value="${asset?.puk2}"/>
                         </g:applyLayout>
 
                     </div>
@@ -407,6 +446,7 @@
         $("#group-assets-view").css("display", (allow?"block":"none"));
         $('#group-asset-search').submit();
     }
+
 
     <%-- event listeners to reload results --%>
     $('#group-search-holder :input[name=filterBy]').blur(function () {

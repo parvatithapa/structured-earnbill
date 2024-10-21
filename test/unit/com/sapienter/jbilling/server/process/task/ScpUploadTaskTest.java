@@ -35,9 +35,24 @@ public class ScpUploadTaskTest extends TestCase {
     private static final File PATH = new File(BASE_DIR);
     private static final String PATH_TO_LOGOS = BASE_DIR + File.separator + "logos";
 
-    public static final List<String> EXPECTED_LOGO_FILES = Arrays.asList("bpay_logo.png", "cell_phone.png", "chat.png", "direct_debit.png","entity-1-jbilling.png", "entity-1.png", "phone.png");
+    public static final List<String> EXPECTED_LOGO_FILES = Arrays.asList("agl_bpay_logo.png", "agl_logo.png", "agl_post_bill_pay.png", "austpost_bill_pay.png", "bpay_logo.png", "chat.png", "computer.png", "credit_card.png", "direct_debit.png","entity-1-jbilling.png", "entity-1.png", "mail.png", "phone.png");
 
-    public static final List<String> EXPECTED_REPORT_FILES = Arrays.asList("commission_run.jasper",
+    public static final List<String> EXPECTED_REPORT_FILES = Arrays.asList(
+            "agl_invoice.jasper",
+            "agl_invoice_account_charges_sub_report.jasper",
+            "agl_invoice_adjustments_sub_report.jasper",
+            "agl_invoice_bar_graph_sub_report.jasper",
+            "agl_invoice_bar_graph_sub_sub_report.jasper",
+            "agl_invoice_last_billing_summary_sub_report2.jasper",
+            "agl_invoice_line_asset_summary.jasper",
+            "agl_invoice_line_asset_summary_subreport.jasper",
+            "agl_invoice_line_report.jasper",
+            "agl_invoice_payment_instruments_sub_report.jasper",
+            "agl_invoice_payments_received_subreport.jasper",
+            "agl_invoice_plan_group.jasper",
+            "agl_invoice_plan_group_sub_report.jasper",
+            "agl_invoice_subreport.jasper",
+            "commission_run.jasper",
             "distributel_payman_details_sub.jasper",
             "distributel_tax_details_sub.jasper",
             "invoice_design.jasper",
@@ -137,13 +152,13 @@ public class ScpUploadTaskTest extends TestCase {
 
     private ScpUploadTask task = new ScpUploadTask(); // task under test
 
-    /*public void testCollectFilesNonRecursive() throws Exception {
+    public void testCollectFilesNonRecursive() throws Exception {
         File path = new File(PATH_TO_LOGOS);
 
         List<File> files = task.collectFiles(path, ".*\\.png", false);
         Collections.sort(files);
 
-        assertEquals(7, files.size());
+        assertEquals(13, files.size());
         assertEquals(EXPECTED_LOGO_FILES, files.stream().map(File::getName).collect(Collectors.toList()));
     }
 
@@ -158,7 +173,7 @@ public class ScpUploadTaskTest extends TestCase {
         List<File> files = task.collectFiles(PATH, ".*designs.*\\.jasper", true);
         Collections.sort(files);
 
-        assertEquals(97, files.size());
+        assertEquals(111, files.size());
         assertEquals(EXPECTED_REPORT_FILES, files.stream().map(File::getName).collect(Collectors.toList()));
     }
 
@@ -171,9 +186,9 @@ public class ScpUploadTaskTest extends TestCase {
         List<String> allExpectedFiles = new ArrayList<>(EXPECTED_REPORT_FILES);
         allExpectedFiles.addAll(EXPECTED_LOGO_FILES);
 
-        assertEquals(104, files.size());
+        assertEquals(124, files.size());
         assertEquals(allExpectedFiles, files.stream().map(File::getName).collect(Collectors.toList()));
-    }*/
-
+    }
+    
 }
 

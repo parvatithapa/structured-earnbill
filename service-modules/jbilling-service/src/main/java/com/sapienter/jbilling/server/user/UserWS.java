@@ -20,10 +20,8 @@
  */
 package com.sapienter.jbilling.server.user;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sapienter.jbilling.common.CommonConstants;
 import com.sapienter.jbilling.common.Constants;
 import com.sapienter.jbilling.common.Util;
 import com.sapienter.jbilling.server.metafields.MetaFieldValueWS;
@@ -38,28 +36,31 @@ import com.sapienter.jbilling.server.util.api.validation.UpdateValidationGroup;
 import com.sapienter.jbilling.server.util.cxf.CxfMapIntegerDateAdapter;
 import com.sapienter.jbilling.server.util.cxf.CxfMapListDateAdapter;
 import com.sapienter.jbilling.server.util.cxf.CxfMapMapListMetafieldAdapter;
-
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+
 import javax.validation.Valid;
-import javax.validation.constraints.*;
+import javax.validation.constraints.Digits;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
-import java.lang.AutoCloseable;
-import java.lang.Integer;
-import java.lang.String;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.util.ObjectUtils.nullSafeEquals;
 import static org.springframework.util.ObjectUtils.nullSafeHashCode;
 
 /** @author Emil */
 @ApiModel(value = "User Data", description = "UserWS Model")
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserWS implements WSSecured, HierarchicalEntity, Serializable, AutoCloseable {
-
 	@Min(value = 1, message = "validation.error.min,1", groups = UpdateValidationGroup.class)
     @Max(value = 0, message = "validation.error.max,0", groups = CreateValidationGroup.class)
     private int id;
@@ -78,8 +79,8 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
     @ConvertToTimezone
     private Date accountDisabledDate;
     @NotNull(message="validation.error.notnull")
-    @Size(min = 1, max = 512, message = "validation.error.size,1,512")
-    @Pattern(regexp=Constants.USERNAME_PATTERN, message="validation.error.invalid.username", groups = {CreateValidationGroup.class, EntitySignupValidationGroup.class })
+    //@Size(min = 9, max = 10, message = "validation.error.size,9,10")
+    //@Pattern(regexp=Constants.ADENNET_USERNAME_PATTERN, message="validation.error.invalid.username", groups = {CreateValidationGroup.class, EntitySignupValidationGroup.class })
     private String userName;
     private int failedAttempts;
     private Integer languageId;
@@ -157,11 +158,13 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
     private List<PaymentInformationWS> paymentInstruments = new ArrayList<PaymentInformationWS>();
 
     private List<Integer> accessEntities;
-
     private Integer cimProfileError;
-
-    private Integer numberOfFreeCalls;
-
+    private String identificationType;
+    private String identificationText;
+    private String identificationImage;
+    private Integer reissueCount;
+    @ConvertToTimezone
+    private Date reissueDate;
     public UserWS() {
     }
 
@@ -370,7 +373,7 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
         this.failedAttempts = failedAttempts;
     }
 
-
+    @JsonIgnore
     public int getUserId() {
         return id;
     }
@@ -432,15 +435,6 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    @ApiModelProperty(value = "Shows the number of free calls", required = true)
-    public Integer getNumberOfFreeCalls() {
-        return numberOfFreeCalls;
-    }
-
-    public void setNumberOfFreeCalls(Integer numberOfFreeCalls) {
-        this.numberOfFreeCalls = numberOfFreeCalls;
     }
 
     @ApiModelProperty(value = "Contains the preferred language id for this user. Can be configured in jBilling")
@@ -867,11 +861,12 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
      *
      * @return null
      */
+    @JsonIgnore
     public Integer getOwningEntityId() {
         return null;
     }
 
-
+    @JsonIgnore
     public Integer getOwningUserId() {
         return getUserId();
     }
@@ -996,8 +991,6 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
         builder.append(userIdBlacklisted);
         builder.append(", userName=");
         builder.append(userName);
-        builder.append(", numberOfFreeCalls=");
-        builder.append(numberOfFreeCalls);
         builder.append(", accountTypeId=");
         builder.append(accountTypeId);
         builder.append(", invoiceDesign=");
@@ -1038,6 +1031,34 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
 		this.cimProfileError = cimProfileError;
 	}
 
+    public String getIdentificationType() { return identificationType; }
+
+    public void setIdentificationType(String identificationType) { this.identificationType = identificationType; }
+
+    public String getIdentificationText() { return identificationText; }
+
+    public void setIdentificationText(String identificationText) { this.identificationText = identificationText; }
+
+    public String getIdentificationImage() { return identificationImage; }
+
+    public void setIdentificationImage(String identificationImage) { this.identificationImage = identificationImage; }
+
+    public Integer getReissueCount() {
+        return reissueCount;
+    }
+
+    public void setReissueCount(Integer reissueCount) {
+        this.reissueCount = reissueCount;
+    }
+
+    public Date getReissueDate() {
+        return reissueDate;
+    }
+
+    public void setReissueDate(Date reissueDate) {
+        this.reissueDate = reissueDate;
+    }
+
     @Override
     public void close() throws Exception {
         for(int i = 0; i < paymentInstruments.size(); i++ ){
@@ -1062,7 +1083,6 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
                 nullSafeEquals(lastLogin, userWS.lastLogin) &&
                 nullSafeEquals(accountDisabledDate, userWS.accountDisabledDate) &&
                 nullSafeEquals(userName, userWS.userName) &&
-                nullSafeEquals(numberOfFreeCalls, userWS.numberOfFreeCalls) &&
                 nullSafeEquals(languageId, userWS.languageId) &&
                 nullSafeEquals(contact, userWS.contact) &&
                 nullSafeEquals(role, userWS.role) &&
@@ -1126,7 +1146,6 @@ public class UserWS implements WSSecured, HierarchicalEntity, Serializable, Auto
         result = 31 * result + (accountExpired ? 1 : 0);
         result = 31 * result + nullSafeHashCode(accountDisabledDate);
         result = 31 * result + nullSafeHashCode(userName);
-        result = 31 * result + nullSafeHashCode(numberOfFreeCalls);
         result = 31 * result + failedAttempts;
         result = 31 * result + nullSafeHashCode(languageId);
         result = 31 * result + nullSafeHashCode(contact);

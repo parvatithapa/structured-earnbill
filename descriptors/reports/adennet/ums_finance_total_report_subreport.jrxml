@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ SARATHI SOFTECH PVT. LTD. CONFIDENTIAL
+ _____________________
+
+ [2024] Sarathi Softech Pvt. Ltd.
+ All Rights Reserved.
+
+ NOTICE:  All information contained herein is and remains
+ the property of Sarathi Softech.
+ The intellectual and technical concepts contained
+ herein are proprietary to Sarathi Softech
+ and are protected by IP copyright law.
+ Dissemination of this information or reproduction of this material
+ is strictly forbidden.
+-->
+
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ums_finance_total_report_subreport" language="groovy" pageWidth="989" pageHeight="802" columnWidth="989" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="75898509-78fb-4212-9599-6999fd41065c">
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+    <parameter name="start_date" class="java.util.Date"/>
+    <parameter name="end_date" class="java.util.Date"/>
+    <parameter name="user_name" class="java.util.List"/>
+    <parameter name="process_type" class="java.util.List"/>
+    <parameter name="subscriber_number" class="java.lang.String"/>
+    <parameter name="governorate" class="java.lang.String"/>
+    <parameter name="actions" class="java.util.List"/>
+    <parameter name="trn_source" class="java.lang.String"/>
+    <parameter name="plan_name" class="java.lang.String"/>
+    <queryString>
+        <![CDATA[SELECT outerOuterDas.narration,
+         SUM(round(outerOuterDas.amount, 2)) AS amount,
+         count(outerOuterDas.amount)
+   FROM
+(
+ SELECT
+		outerDas.process_id,
+		outerDas.subscriber_number,
+		outerDas.created_by,
+		outerDas.bank_user,
+		outerDas.recharge_date,
+		outerDas.action,
+        CASE WHEN outerDas.action like 'Refund%'
+             THEN 'Refund'
+             ELSE outerDas.narration
+        END AS narration,
+		outerDas.plan_description,
+		outerDas.amount,
+		outerDas.actual_amount,
+		outerDas.wallet_amount,
+		outerDas.source,
+		outerDas.governorate,
+		outerDas.account_user
+		FROM
+		(
+			SELECT
+				CASE	WHEN wl.action = 'Refund of wallet top up'
+						THEN trn.parent_txn_id
+					ELSE wl.txn_id
+				END AS process_id,
+				wl.subscriber_number,
+				TRIM(SUBSTRING(
+					CASE 	WHEN wl.action = 'Refund of wallet top up' THEN (SELECT created_by FROM transaction WHERE id = trn.parent_txn_id)
+						ELSE trn.created_by
+					END, POSITION('|' IN
+					CASE 	WHEN wl.action = 'Refund of wallet top up' THEN (SELECT created_by FROM transaction WHERE id = trn.parent_txn_id)
+						ELSE trn.created_by
+					END) + 1
+				)) as created_by,
+				CASE
+					WHEN wl.action = 'Refund of wallet top up' THEN (SELECT created_at FROM transaction WHERE id = trn.parent_txn_id)
+					WHEN wl.action LIKE 'Refund of%' AND wl.action != 'Refund of wallet top up' THEN trn.created_at
+					ELSE wl.recharge_date
+				END at time zone 'utc' at time zone 'Asia/Aden' AS created_at,
+				CASE WHEN trn.source='Bank' AND trn.trn_type !='Refund'  THEN SUBSTRING(trn.created_by, 0, POSITION('|' IN trn.created_by))
+				     WHEN trn.source='Bank' THEN (SELECT SUBSTRING(wl.created_by, 0, POSITION('|' IN wl.created_by)) FROM wallet_ledger wl WHERE wl.txn_id=trn.parent_txn_id)
+					 ELSE 'NA'
+				END AS bank_user,
+				wl.recharge_date at time zone 'utc' at time zone 'Asia/Aden' AS recharge_date,
+				wl.action,
+				CASE WHEN  wl.action='Refund of wallet top up' THEN 'Top up'
+					 WHEN  wl.narration='Refund of SIM re-issue fee' THEN  'SIM reissue fee'
+					 ELSE  wl.narration
+				END AS narration,
+				COALESCE(CASE WHEN wl.action='Refund of wallet top up'
+							  THEN (select plan_description from transaction where id=trn.parent_txn_id)
+							  ELSE plan_description
+						 END, 'NA') as plan_description,
+				round(wl.amount, 2) AS amount,
+				round(wl.actual_amount, 2) AS actual_amount,
+				CASE 	WHEN wl.narration = 'Plan price'
+						THEN round( (wl.amount - wl.actual_amount), 2)
+					ELSE 0.00
+				END AS wallet_amount,
+				wl.source,
+				trn.governorate,
+				SUBSTRING(wl.created_by, POSITION('|' IN wl.created_by) + 1) AS account_user
+
+			FROM
+				wallet_ledger wl JOIN transaction trn on trn.id = wl.txn_id
+			WHERE
+				(wl.amount >= 0 AND wl.narration not like 'Reversal%')
+				OR
+				(wl.amount <= 0	AND wl.action like 'Refund%')
+) AS outerDas
+WHERE
+    ($X{IN, outerDas.action, actions})
+    AND ($X{IN, outerDas.narration, process_type})
+
+    AND CASE
+        WHEN $P{trn_source} = ''
+            THEN outerDas.source not in ('migration', 'auto-renewal', 'auto-recharge')
+            AND outerDas.created_at >= $P{start_date}
+            AND outerDas.created_at <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+                AND ($X{IN, outerDas.created_by, user_name })
+
+        ELSE CASE 	WHEN $P{trn_source} = 'Refund'
+                    THEN outerDas.action like 'Refund%'
+                    AND outerDas.recharge_date >= $P{start_date}
+                    AND outerDas.recharge_date <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+                    AND outerDas.source not in ('migration', 'auto-renewal', 'auto-recharge')
+                        AND ($X{IN, outerDas.account_user, user_name })
+                ELSE
+                    outerDas.source = $P{trn_source}
+                    AND outerDas.created_at >= $P{start_date}
+                    AND outerDas.created_at <= $P{end_date}:: DATE + INTERVAL '1 DAY'
+                        AND ($X{IN, outerDas.created_by, user_name })
+        END
+    END
+    AND CASE
+        WHEN $P{governorate} = '' THEN true
+        ELSE outerDas.governorate = $P{governorate}
+    END
+    AND CASE WHEN $P{subscriber_number} = '' THEN true
+        ELSE outerDas.subscriber_number = $P{subscriber_number}
+    END
+    AND CASE WHEN $P{plan_name} = '' THEN true
+        ELSE outerDas.plan_description = $P{plan_name}
+        END
+)AS outerOuterDas
+GROUP BY outerOuterDas.narration;]]>
+    </queryString>
+    <field name="narration" class="java.lang.String"/>
+    <field name="amount" class="java.math.BigDecimal"/>
+    <field name="count" class="java.lang.Long"/>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="71" splitType="Stretch">
+            <staticText>
+                <reportElement x="0" y="0" width="989" height="39" forecolor="#441A3D" uuid="c7cdfa66-214a-402a-b357-e058ceb162ce"/>
+                <textElement>
+                    <font size="18" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Summary]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="109" y="40" width="70" height="28" uuid="157cd417-b9cb-4d11-84ef-79a2cff718d1"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Count]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="179" y="40" width="810" height="28" uuid="c3913c8d-c430-4050-8ee7-d1da2f364ac8"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total Amount]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="40" width="34" height="28" uuid="9ede81d0-d611-4e50-932b-f9a5b5abead7"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[#]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="34" y="40" width="75" height="28" uuid="7b09c41c-8bfc-4967-8373-c0e0f972f78c"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Type of Process ]]></text>
+            </staticText>
+        </band>
+    </title>
+    <columnHeader>
+        <band splitType="Stretch"/>
+    </columnHeader>
+    <detail>
+        <band height="48" splitType="Stretch">
+            <textField>
+                <reportElement x="109" y="0" width="70" height="37" uuid="12ff12df-e139-4580-b149-71860c0e95d5"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{count}]]></textFieldExpression>
+            </textField>
+            <textField pattern="###0.00">
+                <reportElement x="179" y="0" width="810" height="37" uuid="57c5caa5-254d-4d99-94e5-5faeffcff271"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="0" width="34" height="37" uuid="07801fe1-b4a1-4e0e-82c3-8374ad5468f7"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$V{PAGE_COUNT}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="34" y="0" width="75" height="37" uuid="90e8fea1-d147-4425-a7fd-b8f08a0bc6d7"/>
+                <textElement>
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{narration}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

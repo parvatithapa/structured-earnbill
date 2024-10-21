@@ -34,7 +34,7 @@
         <fieldset>
             <div class="input-row">
                 %{--<label for="filters.${filter.name}.stringValue"><g:message code="filters.value.label"/></label>--}%
-                <div class="select-bg" style="float:right;">
+                <div id="custom-div2" class="select-bg">
                     <g:set var="company" value="${CompanyDTO.get(session['company_id'])}"/>
                     <g:accountTypeMetaFields filter="${filter}" />
 

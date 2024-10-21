@@ -102,7 +102,8 @@ public class EventLogDTO  implements java.io.Serializable {
     @Version
     @Column(name="OPTLOCK")
     private Integer versionNum;
-
+    @Column(name="subscriber_number", length=10)
+    private String subscriberNumber;
 
     protected EventLogDTO() {
     }
@@ -127,7 +128,28 @@ public class EventLogDTO  implements java.io.Serializable {
        this.oldStr = oldStr;
        this.oldDate = oldDate;
     }
-   
+
+    // To log the subscriber number
+    public EventLogDTO(Integer id, JbillingTable jbillingTable,
+                       UserDTO baseUser, UserDTO affectedUser,
+                       EventLogMessageDTO eventLogMessage,
+                       EventLogModuleDTO eventLogModule, CompanyDTO entity, int foreignId,
+                       int levelField, Integer oldNum, String oldStr, Date oldDate, String subscriberNumber) {
+        this.id = id;
+        this.jbillingTable = jbillingTable;
+        this.baseUser = baseUser;
+        this.affectedUser = affectedUser;
+        this.eventLogMessage = eventLogMessage;
+        this.eventLogModule = eventLogModule;
+        this.company = entity;
+        this.foreignId = foreignId;
+        this.createDatetime = Calendar.getInstance().getTime();
+        this.levelField = levelField;
+        this.oldNum = oldNum;
+        this.oldStr = oldStr;
+        this.oldDate = oldDate;
+        this.subscriberNumber = subscriberNumber;
+    }
     public Integer getId() {
         return id;
     }
@@ -181,6 +203,10 @@ public class EventLogDTO  implements java.io.Serializable {
     }
 
     public int getVersionNum() { return versionNum; }
+
+    public String getSubscriberNumber() {
+        return this.subscriberNumber;
+    }
 
     public void touch() {
         getJbillingTable().getName();

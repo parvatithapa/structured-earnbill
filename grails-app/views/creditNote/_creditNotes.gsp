@@ -63,7 +63,7 @@
 
             <tbody>
             <g:each var="creditNote" in="${creditNotes}">
-                <g:set var="contact" value="${creditNote?.creationInvoice?.baseUser?.contact}" />
+                <g:set var="contact" value="${creditNote?.user?.contact}" />
 
                 <tr id="creditNote-${creditNote.id}" class="${selected?.id == creditNote.id ? 'active' : ''}">
 
@@ -79,7 +79,7 @@
                                 ${contact.firstName} &nbsp;${contact.lastName}
                             </g:if>
                             <g:else>
-                            ${StringEscapeUtils.escapeHtml(displayer?.getDisplayName(creditNote?.creationInvoice?.baseUser))}    
+                            ${StringEscapeUtils.escapeHtml(displayer?.getDisplayName(creditNote?.user))}
                             </g:else>
                             </strong>
                             <em>${contact?.organizationName}</em>
@@ -88,7 +88,7 @@
 
                     <td class="medium">
                         <g:remoteLink class="cell" action="show" id="${creditNote.id}" before="register(this);" onSuccess="render(data, next);">
-                            <span><g:formatDate date="${creditNote.createDateTime}" formatName="date.pretty.format"/></span>
+                            <span><g:formatDate date="${creditNote.creditNoteDate}" formatName="date.pretty.format"/></span>
                         </g:remoteLink>
                     </td>
 

@@ -17,6 +17,9 @@
           class = "com.sapienter.jbilling.server.mediation.custommediation.spc.writer.SPCJMRToOrderWriter" 
           scope = "step"/>
 
+    <bean id    = "priceCacheCleaner"
+          class = "com.sapienter.jbilling.server.spc.PriceCacheCleaner"/>
+
     <batch:step id = "spcPartitionedJMRProcessorStep" job-repository="mediationJobRepository">
         <!--TODO throttle-limit="${springbatch.executor.max.pool.size}"-->
         <batch:tasklet  transaction-manager = "jbillingMediationTransactionManager"
@@ -28,6 +31,9 @@
                          commit-interval = "1"
                          skip-policy     = "spcSkipPolicy"/>
         </batch:tasklet>
+        <batch:listeners>
+            <batch:listener ref = "priceCacheCleaner"/>
+        </batch:listeners>
     </batch:step>
 
 </beans>

@@ -28,9 +28,6 @@ target(checkDbConnection: "Checks the connection to the database and prints the 
 
     try {
         println "Checking the connection to the DB..."
-        println "url="+url
-        println "driver="+driver
-        println "userName=":userName
         def sql = Sql.newInstance(url, userName, password, driver)
         println "Connected to the DB successfully!!!"
     } catch (Exception e) {

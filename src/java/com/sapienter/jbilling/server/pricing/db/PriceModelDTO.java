@@ -698,8 +698,6 @@ public class PriceModelDTO implements Serializable {
                         }
 
                     }
-
-                    orderLine.setMediatedQuantity(BigDecimal.ZERO);
                     result.setQuantity(quantity);
                 }
             }

@@ -75,14 +75,19 @@ import org.apache.commons.io.FilenameUtils
 import org.apache.commons.lang.StringUtils
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap
 import org.hibernate.FetchMode
-import org.hibernate.criterion.*
+import org.hibernate.criterion.CriteriaSpecification
+import org.hibernate.criterion.DetachedCriteria
+import org.hibernate.criterion.MatchMode
+import org.hibernate.criterion.Projections
+import org.hibernate.criterion.Property
+import org.hibernate.criterion.Restrictions
 import org.joda.time.format.DateTimeFormat
 
 import java.util.regex.Pattern
 
 @Secured(["MENU_97"])
 class ProductController {
-	static scope = "prototype"
+    static scope = "prototype"
     static pagination = [ max: 10, offset: 0, sort: 'id', order: 'desc' ]
     static versions = [ max: 25 ]
 
@@ -99,7 +104,7 @@ class ProductController {
     def recentItemService
     def breadcrumbService
     def productService
-	def companyService
+    def companyService
     SecurityValidator securityValidator
 
 
@@ -123,12 +128,12 @@ class ProductController {
          * If the category is global, should validate it by the hierarchy of the owner entity
          * If the category is not global, should validate it by the entities added for category
          */
-		if (category && !companyService.isAvailable(category.global, category.entity?.id,
-                                                    category.global ? companyService.getHierarchyEntities(category.entity?.id)*.id : category.entities*.id)) {
-			category= null
-			flash.info = "validation.error.company.hierarchy.invalid.categoryid"
-			flash.args = [ categoryId ]
-		}
+        if (category && !companyService.isAvailable(category.global, category.entity?.id,
+                category.global ? companyService.getHierarchyEntities(category.entity?.id)*.id : category.entities*.id)) {
+            category= null
+            flash.info = "validation.error.company.hierarchy.invalid.categoryid"
+            flash.args = [ categoryId ]
+        }
 
         breadcrumbService.addBreadcrumb(controllerName, actionName, null, params.int('id'), category?.description)
 
@@ -306,18 +311,18 @@ class ProductController {
 
     def getDependencyItemTypes(excludedTypeIds){
         return ItemTypeDTO.createCriteria().list() {
-        	createAlias("entities","entities", CriteriaSpecification.LEFT_JOIN)
-			and {
-				or {
+            createAlias("entities","entities", CriteriaSpecification.LEFT_JOIN)
+            and {
+                or {
                     'in'('entities.id', companyService.getEntityAndChildEntities()*.id)
                     and {
                         eq('global', true)
                         eq('entity.id', companyService.getRootCompanyId())
                     }
-				}
+                }
                 eq('internal', false)
                 if( null != excludedTypeIds && excludedTypeIds.size() > 0 ){
-                   not { 'in'("id", excludedTypeIds) }
+                    not { 'in'("id", excludedTypeIds) }
                 }
             }
             order('id', 'desc')
@@ -330,16 +335,16 @@ class ProductController {
 
     def getItems(itemIds) {
 
-		Integer company_id = session['company_id'] as Integer
+        Integer company_id = session['company_id'] as Integer
         return ItemDTO.createCriteria().list() {
-        	createAlias("entities","ce")
+            createAlias("entities","ce")
             and {
                 or {
-					//query based on item_entity_map always
-					'in'('ce.id', company_id)
-					//list all gloal entities as well
-					eq('global', true)
-				}
+                    //query based on item_entity_map always
+                    'in'('ce.id', company_id)
+                    //list all gloal entities as well
+                    eq('global', true)
+                }
                 isEmpty('plans')
                 eq('deleted', 0)
 
@@ -374,7 +379,7 @@ class ProductController {
         def max = (params.max!=null && !StringUtils.isBlank(params.max))?params.int('max'):null
 
         ItemDependencyDTOEx dep = new ItemDependencyDTOEx(type: typeId?ItemDependencyType.ITEM_TYPE : ItemDependencyType.ITEM,
-                            dependentId: itemId?:typeId, minimum: min, maximum: max)
+                dependentId: itemId?:typeId, minimum: min, maximum: max)
 
         if(typeId!=null && itemId==null){
             ItemTypeBL bl = new ItemTypeBL()
@@ -497,13 +502,13 @@ class ProductController {
         params.offset = params?.offset?.toInteger() ?: pagination.offset
         params.sort = params?.sort ?: pagination.sort
         params.order = params?.order ?: pagination.order
-		def language_id = session['language_id'] as Integer
-		def company_id = session['company_id'] as Integer
+        def language_id = session['language_id'] as Integer
+        def company_id = session['company_id'] as Integer
         def products = ItemDTO.createCriteria().list(
                 max:    params.max,
                 offset: params.offset
         ) {
-		    createAlias("entities","ce", CriteriaSpecification.LEFT_JOIN)
+            createAlias("entities","ce", CriteriaSpecification.LEFT_JOIN)
             def productMetaFieldFilters= []
             and {
                 filters.each { filter ->
@@ -552,7 +557,6 @@ class ProductController {
                                         where epmm2.item_id = {alias}.id
                                         ${filter.decimalValue != null ? "and pm2.rate>=?" : ""}
                                         ${filter.decimalHighValue != null ? "and pm2.rate<=?" : ""}
-
                                         )
                                         """, parameters
                                 )
@@ -577,7 +581,7 @@ class ProductController {
                     'in'('ce.id', companyService.getEntityAndChildEntities()*.id)
                     //list all gloal entities as well
                     and {
-						eq('global', true)
+                        eq('global', true)
                         'in'('entity.id', [session['company_id'], companyService.getRootCompanyId()])
                     }
                 }
@@ -618,7 +622,7 @@ class ProductController {
                     }
                 }
             }
-			resultTransformer org.hibernate.Criteria.DISTINCT_ROOT_ENTITY
+            resultTransformer org.hibernate.Criteria.DISTINCT_ROOT_ENTITY
             // apply sorting
             SortableCriteria.sort(params, delegate)
         }
@@ -634,10 +638,10 @@ class ProductController {
      * Get a list of ALL products regardless of the item type selected, and render the "_products.gsp" template.
      */
     def allProducts () {
-		def filters = filterService.getFilters(FilterType.PRODUCT, params)
-		def item = ItemDTO.get(params.int('id'))
-		def catList = item?.getItemTypes();
-		def category = catList?.getAt(0)
+        def filters = filterService.getFilters(FilterType.PRODUCT, params)
+        def item = ItemDTO.get(params.int('id'))
+        def catList = item?.getItemTypes();
+        def category = catList?.getAt(0)
         def contactFieldTypes = params['contactFieldTypes']
 
         def usingJQGrid = PreferenceBL.getPreferenceValueAsBoolean(session['company_id'], Constants.PREFERENCE_USE_JQGRID);
@@ -676,7 +680,7 @@ class ProductController {
         if (product.deleted == 1) {
             if (params.template) {
                 render template: params.template,
-                          model: [ message: 'product.deleted.error' ]
+                        model: [ message: 'product.deleted.error' ]
             } else {
                 log.debug "redirecting to list"
                 flash.error = 'product.deleted.error'
@@ -716,7 +720,7 @@ class ProductController {
             }
 
             render view: 'list', model: [ categories: categories, products: products, selectedProduct: product,
-                    assetManagementPossible: assetManagementPossible, selectedCategory: productCategory, selectedCategoryId:productCategory.id, filters: filters]
+                                          assetManagementPossible: assetManagementPossible, selectedCategory: productCategory, selectedCategoryId:productCategory.id, filters: filters]
         }
     }
 
@@ -726,7 +730,7 @@ class ProductController {
     @Secured(["PRODUCT_CATEGORY_52"])
     def deleteCategory () {
 
-		def category = params.id ? ItemTypeDTO.get(params.id) : null
+        def category = params.id ? ItemTypeDTO.get(params.id) : null
 
         if (params.id && !category) {
             flash.error = 'product.category.not.found'
@@ -761,8 +765,8 @@ class ProductController {
             }
         }
 
-		params.id = null
-		redirect action: 'index'
+        params.id = null
+        redirect action: 'index'
     }
 
     /**
@@ -772,7 +776,7 @@ class ProductController {
     def deleteProduct () {
 
         if (params.id) {
-        	ItemDTO product = ItemDTO.get(params.int('id'))
+            ItemDTO product = ItemDTO.get(params.int('id'))
 
             securityValidator.validateCompanyHierarchy(product?.entities*.id, product?.entity?.id, product?.global)
             try {
@@ -838,9 +842,9 @@ class ProductController {
         def assetStatuses = assetManType.assetStatuses.findAll{ it.deleted == 0 } as List
         assetStatuses << new AssetStatusDTOEx(0,Constants.RESERVAED_STATUS, 0,0,0,0)
         def model = [        assets: assets,
-                            product: product,
-                         metaFields: assetManType.assetMetaFields.findAll{ it.getDataType() != DataType.STATIC_TEXT },
-                      assetStatuses: assetStatuses]
+                             product: product,
+                             metaFields: assetManType.assetMetaFields.findAll{ it.getDataType() != DataType.STATIC_TEXT },
+                             assetStatuses: assetStatuses]
         if(usingJQGrid) {
             render view: 'assetList', model: model
             return
@@ -940,10 +944,10 @@ class ProductController {
             asset = getCopiedAsset()
         }
 
-		ItemDTO itemDTO = ItemDTO.get(params.prodId)
+        ItemDTO itemDTO = ItemDTO.get(params.prodId)
 
         if(asset.id) {
-		    securityValidator.validateCompanyHierarchy(asset.item?.entities*.id, asset.item?.entity?.id, asset.item?.global)
+            securityValidator.validateCompanyHierarchy(asset.item?.entities*.id, asset.item?.entity?.id, asset.item?.global)
         }
 
         //if param id is provided we are editing
@@ -999,17 +1003,17 @@ class ProductController {
             breadcrumbService.addBreadcrumb(controllerName, actionName, 'update', params.int('id'), asset.identifier)
         }
 
-		def entities = new ArrayList<Integer>(0);
-		if(!asset?.isGlobal()) {
-			if(asset?.entity) {
-				entities.add(asset?.entityId)
-			}
-			if(asset?.entities?.size() > 0) {
-				for(def entity : asset.entities) {
-					entities.add(entity)
-				}
-			}
-		}
+        def entities = new ArrayList<Integer>(0);
+        if(!asset?.isGlobal()) {
+            if(asset?.entity) {
+                entities.add(asset?.entityId)
+            }
+            if(asset?.entities?.size() > 0) {
+                for(def entity : asset.entities) {
+                    entities.add(entity)
+                }
+            }
+        }
 
         def companies = []
 
@@ -1024,29 +1028,29 @@ class ProductController {
             companies = asset.item.getEntities()
         }
 
-		def availableCategories= productService.getItemTypes(session['company_id'], null)
+        def availableCategories= productService.getItemTypes(session['company_id'], null)
 
         if(params.partial) {
             render template: 'editAssetContent',
-                      model: [               asset: asset,
-                               availableCategories: availableCategories,
-                                          statuses: allowedStatuses,
-                                 categoryAssetMgmt: categoryWithAssetManagement,
-                                         companies: companies,
+                    model: [               asset: asset,
+                                           availableCategories: availableCategories,
+                                           statuses: allowedStatuses,
+                                           categoryAssetMgmt: categoryWithAssetManagement,
+                                           companies: companies,
                                            partial: true,
                                            isGroup: params.isGroup,
-                              userCompanyMandatory: params.userCompanyMandatory ?: 'false']
+                                           userCompanyMandatory: params.userCompanyMandatory ?: 'false']
         } else {
             [                asset: asset,
-               availableCategories: availableCategories,
-                          statuses: allowedStatuses,
-                 categoryAssetMgmt: categoryWithAssetManagement,
-                         companies: companies,
-                           isGroup: params.isGroup,
-              userCompanyMandatory: params.userCompanyMandatory ?: 'false']
+                             availableCategories: availableCategories,
+                             statuses: allowedStatuses,
+                             categoryAssetMgmt: categoryWithAssetManagement,
+                             companies: companies,
+                             isGroup: params.isGroup,
+                             userCompanyMandatory: params.userCompanyMandatory ?: 'false']
         }
     }
-    
+
     def getCopiedAsset() {
         def copiedAsset = AssetDTO.get(session.getAttribute(Constants.COPIED_ASSET))
         if (params.categoryId != copiedAsset.item.findItemTypeWithAssetManagement().id as String) {
@@ -1061,7 +1065,7 @@ class ProductController {
         }
         return asset
     }
-    
+
     def showProvisioning () {
 
     }
@@ -1070,6 +1074,12 @@ class ProductController {
      * Display an asset. Asset ID is required.
      */
     def showAsset () {
+        params.max = params?.max?.toInteger() ?: pagination.max
+        params.offset = params?.offset?.toInteger() ?: pagination.offset
+        params.sort = params?.sort ?: pagination.sort
+        params.order = params?.order ?: pagination.order
+        params.alias = SortableCriteria.NO_ALIAS
+        params.fetch = null;
         if (!params.id) {
             flash.error = 'product.asset.not.selected'
             flash.args = [ params.id  as String]
@@ -1080,7 +1090,7 @@ class ProductController {
         //load the asset
         def asset = AssetDTO.get(params.id)
 
-		securityValidator.validateCompanyHierarchy(asset.item.entities*.id, asset.item.entity?.id, asset.item.global)
+        securityValidator.validateCompanyHierarchy(asset.item.entities*.id, asset.item.entity?.id, asset.item.global)
 
         def reservation = asset?.getId()?new AssetReservationDAS().findActiveReservationByAsset(asset?.getId()):null
         asset.setReserved((reservation?true:false) as Boolean)
@@ -1091,21 +1101,21 @@ class ProductController {
             createAlias("items","its")
             eq("its.id", asset.item.id)
         }
-
         if (params.id) {
             breadcrumbService.addBreadcrumb(controllerName, actionName, 'show', params.int('id'), asset.identifier)
         }
-
         //if we must show a template
         if(params.template) {
             render template: 'showAsset', model: [ asset : asset, category: categories?.first(), reservation : reservation]
 
-        //else show the asset list
+            //else show the asset list
         } else {
 
             def itemId = asset.item.id
 
-            def assets = AssetDTO.createCriteria().list(max: params.max) {
+            def assets = AssetDTO.createCriteria().list(
+                    max:    params.max,
+                    offset: params.offset) {
                 eq("item.id", itemId)
                 eq("entity.id", session['company_id'])
                 eq("deleted", 0)
@@ -1113,7 +1123,7 @@ class ProductController {
 
             ItemTypeDTO assetManType = new ItemTypeBL().findItemTypeWithAssetManagementForItem(itemId)
             render view: 'assetList', model: [assets: productService.setReservedFlag(assets), selectedAsset: asset, product: asset.item, id: itemId, category: categories?.first(),
-                    metaFields:  assetManType.assetMetaFields.findAll{it.getDataType() != DataType.STATIC_TEXT}, assetStatuses:  assetManType.assetStatuses, reservation:reservation]
+                                              metaFields:  assetManType.assetMetaFields.findAll{it.getDataType() != DataType.STATIC_TEXT}, assetStatuses:  assetManType.assetStatuses, reservation:reservation]
         }
     }
 
@@ -1122,9 +1132,9 @@ class ProductController {
      */
     def copyAsset () {
         session.setAttribute(Constants.COPIED_ASSET, params.id)
-        redirect action: 'showAsset', params: [id: params.id] 
+        redirect action: 'showAsset', params: [id: params.id]
     }
-    
+
     /**
      * Validate and save an asset
      */
@@ -1172,6 +1182,7 @@ class ProductController {
 
         asset.entityId = session['company_id'].toInteger()
         asset.identifier = params.identifier.trim()
+        asset.isSuspended = params.isSuspended ?: false
 
         //if this is an asset group bind the contained assets
         if (params.isGroup) {
@@ -1185,7 +1196,7 @@ class ProductController {
         try {
             if (asset.id) {
                 //if the user has access update the asset
-                if (SpringSecurityUtils.ifAllGranted("PRODUCT_CATEGORY_STATUS_AND_ASSETS_130")) {
+                if (SpringSecurityUtils.ifAllGranted("PRODUCT_CATEGORY_STATUS_AND_ASSETS_131")) {
                     webServicesSession.updateAsset(asset)
                 } else {
                     render view: '/login/denied'
@@ -1193,7 +1204,7 @@ class ProductController {
                 }
             } else {
                 //if the user has permission add the asset
-                if (SpringSecurityUtils.ifAllGranted("PRODUCT_CATEGORY_STATUS_AND_ASSETS_131")) {
+                if (SpringSecurityUtils.ifAllGranted("PRODUCT_CATEGORY_STATUS_AND_ASSETS_130")) {
                     asset.id = webServicesSession.createAsset(asset)
                 } else {
                     render view: '/login/denied'
@@ -1259,9 +1270,9 @@ class ProductController {
         ItemTypeDTO itemTypeDTO = ItemTypeDTO.get(params.categoryId)
         securityValidator.validateCompanyHierarchy(itemTypeDTO?.entities*.id, itemTypeDTO?.entity?.id, itemTypeDTO?.global)
         render template: 'groupSearchFilter',
-                  model: [assetStatuses: itemTypeDTO?.assetStatuses?.findAll { it.deleted == 0 },
-                               products: itemTypeDTO?.items?.findAll { it.deleted == 0 && !it.isPlan() },
-                             metaFields: itemTypeDTO?.assetMetaFields]
+                model: [assetStatuses: itemTypeDTO?.assetStatuses?.findAll { it.deleted == 0 },
+                        products: itemTypeDTO?.items?.findAll { it.deleted == 0 && !it.isPlan() },
+                        metaFields: itemTypeDTO?.assetMetaFields]
     }
 
     /**
@@ -1341,16 +1352,16 @@ class ProductController {
         securityValidator.validateCompanyHierarchy(itemDTO?.entities*.id, itemDTO?.entity?.id, itemDTO?.global)
 
         def executionId = 0
-		try {
-	        //start a batch job to import the assets
-			executionId = webServicesSession.startImportAssetJob(itemDTO.id,
-				itemDTO.findItemTypeWithAssetManagement().assetIdentifierLabel ?: message([code:  'asset.detail.identifier']),
-				message([code:  'asset.detail.notes']),message([code:  'asset.detail.global']),message([code:  'asset.detail.entities'])
-				,csvFile.absolutePath, csvErrorFile.absolutePath)
-		} catch (SessionInternalError e) {
-			viewUtils.resolveException(flash, session.locale, e);
-			render view: 'uploadAssets'
-		}
+        try {
+            //start a batch job to import the assets
+            executionId = webServicesSession.startImportAssetJob(itemDTO.id,
+                    itemDTO.findItemTypeWithAssetManagement().assetIdentifierLabel ?: message([code:  'asset.detail.identifier']),
+                    message([code:  'asset.detail.notes']),message([code:  'asset.detail.global']),message([code:  'asset.detail.entities'])
+                    ,csvFile.absolutePath, csvErrorFile.absolutePath)
+        } catch (SessionInternalError e) {
+            viewUtils.resolveException(flash, session.locale, e);
+            render view: 'uploadAssets'
+        }
         render view: 'processAssets', model: [jobId: executionId, jobStatus: 'busy']
     }
 
@@ -1373,51 +1384,51 @@ class ProductController {
         bindMetaFields(category,params,isRoot,EntityType.PRODUCT_CATEGORY)
         category.id = !params.id?.equals('') ? params.int('id') : null
 
-		def isNew = false
-		def rootCreated = false
+        def isNew = false
+        def rootCreated = false
 
-		if(!category.id || category.id == 0) {
-			isNew = true
-		} else {
+        if(!category.id || category.id == 0) {
+            isNew = true
+        } else {
             def oldCategory = ItemTypeDTO.get(params.id)
             securityValidator.validateCompanyHierarchy(oldCategory?.entities*.id, oldCategory?.entity?.id, oldCategory?.global, true)
         }
 
-		try {
-			//Validation during edit category.
-			if(!isNew && !category.global){
-				//Load all product for this category to make sure none of the products refer a company thats not part of this category
-				def itemTypesArr = new ArrayList()
-				itemTypesArr.add(ItemTypeDTO.get(category.id))
-				log.debug "TYPES:"+itemTypesArr
-		        def items = ItemDTO.createCriteria().list() {
-		            createAlias("itemTypes", "itemTypes")
-		            and {
-						'in'('itemTypes.id', itemTypesArr?.id)
-		                eq('deleted', 0)
-		            }
-		        }
-		        def companies = new java.util.HashSet()
-		        for(ItemDTO item: items){
-		        	companies.addAll(item.entities)
-		        }
+        try {
+            //Validation during edit category.
+            if(!isNew && !category.global){
+                //Load all product for this category to make sure none of the products refer a company thats not part of this category
+                def itemTypesArr = new ArrayList()
+                itemTypesArr.add(ItemTypeDTO.get(category.id))
+                log.debug "TYPES:"+itemTypesArr
+                def items = ItemDTO.createCriteria().list() {
+                    createAlias("itemTypes", "itemTypes")
+                    and {
+                        'in'('itemTypes.id', itemTypesArr?.id)
+                        eq('deleted', 0)
+                    }
+                }
+                def companies = new java.util.HashSet()
+                for(ItemDTO item: items){
+                    companies.addAll(item.entities)
+                }
 
-		        for(CompanyDTO co: companies){
-		        	def found = false
-		        	def notFoundEntity = null
-		        	for(Integer entId: category.entities){
-		        		if(co.id==entId){
-		        			found = true
-		        		}
-		        	}
+                for(CompanyDTO co: companies){
+                    def found = false
+                    def notFoundEntity = null
+                    for(Integer entId: category.entities){
+                        if(co.id==entId){
+                            found = true
+                        }
+                    }
 
-		        	if(!found){
-	                    String[] errmsgs = new String[1]
+                    if(!found){
+                        String[] errmsgs = new String[1]
                         errmsgs[0] = "ItemTypeWS,companies,validation.error.wrong.company.selected.category," + CompanyDTO.get(co.id)?.description
                         throw new SessionInternalError("Validation of Entities", errmsgs);
-					}
-		        }
-			}
+                    }
+                }
+            }
 
             category.allowAssetManagement = params.allowAssetManagement ? 1 : 0
 
@@ -1472,17 +1483,17 @@ class ProductController {
                 category.assetMetaFields.addAll(metafields)
             }
 
-			if(category.isGlobal()) {
-				//Empty entities
-				category.entities = new ArrayList<Integer>(0);
-			} else {
-				//Validate for entities
-				if(category.getEntities() == null || category.getEntities().size() == 0) {
-					String [] errors = ["ItemTypeWS,companies,validation.error.no.company.selected"]
-					throw new SessionInternalError("validation.error.no.company.selected", errors)
-				}
-			}
-		} catch (SessionInternalError e) {
+            if(category.isGlobal()) {
+                //Empty entities
+                category.entities = new ArrayList<Integer>(0);
+            } else {
+                //Validate for entities
+                if(category.getEntities() == null || category.getEntities().size() == 0) {
+                    String [] errors = ["ItemTypeWS,companies,validation.error.no.company.selected"]
+                    throw new SessionInternalError("validation.error.no.company.selected", errors)
+                }
+            }
+        } catch (SessionInternalError e) {
             viewUtils.resolveException(flash, session.locale, e);
             renderEditCategoryView(category, statuses, metafields)
             return
@@ -1491,9 +1502,9 @@ class ProductController {
         // save or update
         try {
 
-			if(category.description) {
-				category.description= category.description.trim()
-			}
+            if(category.description) {
+                category.description= category.description.trim()
+            }
 
             if (!category.id || category.id == 0) {
                 if (SpringSecurityUtils.ifAllGranted("PRODUCT_CATEGORY_50")) {
@@ -1501,7 +1512,7 @@ class ProductController {
                         log.debug("creating product category ${category}")
 
 
-						category.id = webServicesSession.createItemCategory(category)
+                        category.id = webServicesSession.createItemCategory(category)
 
                         flash.message = 'product.category.created'
                         flash.args = [category.id as String]
@@ -1524,7 +1535,7 @@ class ProductController {
                     if (category.description?.trim()) {
                         log.debug("saving changes to product category ${category.id}, ${category.isGlobal()}")
 
-						webServicesSession.updateItemCategory(category)
+                        webServicesSession.updateItemCategory(category)
 
                         flash.message = 'product.category.updated'
                         flash.args = [category.id as String]
@@ -1561,20 +1572,20 @@ class ProductController {
      */
     private void renderEditCategoryView(ItemTypeWS category, Collection statuses, Collection metafields) {
         List<MetaField> availableFields = new ArrayList<MetaField>()
-		ItemTypeDTO categoryForUI = new ItemTypeDTO();
-		bindData(categoryForUI, params, 'id')
-		categoryForUI.setDescription(category.getDescription());
-		categoryForUI.setGlobal(category.isGlobal());
-		categoryForUI.setOrderLineTypeId(category.getOrderLineTypeId());
-		categoryForUI.setAssetIdentifierLabel(category.getAssetIdentifierLabel());
-		categoryForUI.setOnePerCustomer(category.isOnePerCustomer());
-		categoryForUI.setOnePerOrder(category.isOnePerOrder());
+        ItemTypeDTO categoryForUI = new ItemTypeDTO();
+        bindData(categoryForUI, params, 'id')
+        categoryForUI.setDescription(category.getDescription());
+        categoryForUI.setGlobal(category.isGlobal());
+        categoryForUI.setOrderLineTypeId(category.getOrderLineTypeId());
+        categoryForUI.setAssetIdentifierLabel(category.getAssetIdentifierLabel());
+        categoryForUI.setOnePerCustomer(category.isOnePerCustomer());
+        categoryForUI.setOnePerOrder(category.isOnePerOrder());
 
-		Set<CompanyDTO> childEntities = new HashSet<CompanyDTO>(0);
+        Set<CompanyDTO> childEntities = new HashSet<CompanyDTO>(0);
 
-		for(Integer entity : category.getEntities()){
-			childEntities.add(new CompanyDAS().find(entity));
-		}
+        for(Integer entity : category.getEntities()){
+            childEntities.add(new CompanyDAS().find(entity));
+        }
 
         //select meta fields
         if (category.isGlobal()) {
@@ -1589,7 +1600,7 @@ class ProductController {
             availableFields.addAll(retrieveAvailableCategoryMetaFields(session['company_id']))
         }
 
-		categoryForUI.setEntities(childEntities)
+        categoryForUI.setEntities(childEntities)
 
         categoryForUI.allowAssetManagement = params.allowAssetManagement ? 1 : 0
 
@@ -1599,9 +1610,9 @@ class ProductController {
         ItemTypeBL.fillMetaFieldsFromWS(categoryForUI, category)
 
         render view: "editCategory", model: [category: categoryForUI,companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(),
-                orderedStatuses: (params.id ? categoryForUI.assetStatuses.findAll { it.isInternal == 0 } : []),
-                availableFields: availableFields, availableFieldValues:category.metaFields,
-                parentCategories: getProductCategories(false, category?.id ?: null), entityId: category.entityId]
+                                             orderedStatuses: (params.id ? categoryForUI.assetStatuses.findAll { it.isInternal == 0 } : []),
+                                             availableFields: availableFields, availableFieldValues:category.metaFields,
+                                             parentCategories: getProductCategories(false, category?.id ?: null), entityId: category.entityId]
     }
 
     /**
@@ -1646,8 +1657,9 @@ class ProductController {
         MetaFieldValueWS[] availableFieldValues = MetaFieldBL.convertMetaFieldsToWS(availableFields, category);
         List orderedStatuses = (params.id ? new AssetStatusBL().getStatuses(category.id, false) : [])
 
-        breadcrumbService.addBreadcrumb(controllerName, actionName, params.id ? 'update' : 'create', params.int('id'), category?.description)
-
+        if (params.id) {
+            breadcrumbService.addBreadcrumb(controllerName, actionName, params.id ? 'update' : 'create', params.int('id'), category?.description)
+        }
         [category : category, orderedStatuses: orderedStatuses, parentCategories: getProductCategories(false, category?.id ?: null),
          companies: retrieveChildCompanies(), allCompanies: retrieveCompanies(), entityId: category?.entity?.id,
          availableFields: availableFields,availableFieldValues:availableFieldValues]
@@ -1731,18 +1743,15 @@ class ProductController {
 
         availableFields = MetaFieldBL.getMetaFields([session['company_id'] as Integer], EntityType.PRODUCT)
 
-		def priceModel = product?.defaultPrice
+        def priceModel = product?.defaultPrice
 
         if (params.int('id')) {
             breadcrumbService.addBreadcrumb(controllerName, actionName, params.id ? 'update' : 'create', params.int('id'), product?.number)
-        } else {
-            String parameters = "category:$params.category"
-            breadcrumbService.addBreadcrumb(controllerName, actionName, params.id ? 'update' : 'create', params.int('id'), product?.number, parameters)
         }
         def categories = getProductCategories(false, null)
         def typeSet = (product ? product.types : []) as Set
         def allowAssetManagement = false
-		def subscriptionCategory = false
+        def subscriptionCategory = false
         List<CompanyDTO> categoriesRelatedCompanies
 
         List<ItemTypeDTO> selectedItemTypes
@@ -1775,7 +1784,7 @@ class ProductController {
                         subscriptionCategory = true
                     }
                 }
-			}
+            }
         }
 
         Integer[] excludedItemTypeIds = [] as Integer[]
@@ -1783,7 +1792,7 @@ class ProductController {
             excludedItemTypeIds = product.getDependencyIdsOfType(ItemDependencyType.ITEM_TYPE)
         }
 
-		def showEntityListAndGlobal = CompanyDTO.get(product?.entityId)?.parent == null
+        def showEntityListAndGlobal = CompanyDTO.get(product?.entityId)?.parent == null
         def isCategoryGlobal
 
         if( product?.id || params.copyFrom ) {
@@ -1921,50 +1930,50 @@ class ProductController {
 
 
     private void productNotFoundErrorRedirect(productId) {
-    	flash.error = 'product.not.found'
-		flash.args = [ productId as String ]
-		redirect controller: 'product', action: 'list'
+        flash.error = 'product.not.found'
+        flash.args = [ productId as String ]
+        redirect controller: 'product', action: 'list'
     }
 
     def updateStrategy () {
         def priceModel = PlanHelper.bindPriceModel(params)
         priceModel?.attributes = null;
 
-		// Keep default prices of selected company
-		def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        // Keep default prices of selected company
+        def entityId = params.int('product.priceModelCompanyId')
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
-		product.defaultPrices = defaultPrices
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
+        product.defaultPrices = defaultPrices
 
-		def startDate = params.startDate ? DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate() : null;
+        def startDate = params.startDate ? DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate() : null;
         render template: '/priceModel/model',
-		model: [ model: priceModel, startDate: startDate, models: product?.defaultPrices,
-				 currencies: retrieveCurrencies(),allCompanies : retrieveCompanies(), priceModelData: initPriceModelData(priceModel), product : product]
+                model: [ model: priceModel, startDate: startDate, models: product?.defaultPrices,
+                         currencies: retrieveCurrencies(),allCompanies : retrieveCompanies(), priceModelData: initPriceModelData(priceModel), product : product]
 
     }
 
     def addChainModel () {
         // Keep default prices of selected company
-		def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def entityId = params.int('product.priceModelCompanyId')
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         def priceModel = PlanHelper.bindPriceModel(params)
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
@@ -1977,26 +1986,26 @@ class ProductController {
         model.next = new PriceModelWS();
 
         render template: '/priceModel/model',
-				  model: [ model: priceModel, startDate: startDate, models: defaultPrices,
-						   currencies: retrieveCurrencies(), product : product, allCompanies : retrieveCompanies(),
-						   priceModelData: priceModel ? setPriceModelData(priceModel) : null ]
+                model: [ model: priceModel, startDate: startDate, models: defaultPrices,
+                         currencies: retrieveCurrencies(), product : product, allCompanies : retrieveCompanies(),
+                         priceModelData: priceModel ? setPriceModelData(priceModel) : null ]
     }
 
     def removeChainModel () {
 
         // Keep default prices of selected company
-		def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def entityId = params.int('product.priceModelCompanyId')
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         def priceModel = PlanHelper.bindPriceModel(params)
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
@@ -2014,79 +2023,79 @@ class ProductController {
         }
 
         render template: '/priceModel/model',
-				  model: [ model: priceModel, startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
-					  	   companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product,
-						   priceModelData: priceModel ? setPriceModelData(priceModel) : null  ]
+                model: [ model: priceModel, startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
+                         companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product,
+                         priceModelData: priceModel ? setPriceModelData(priceModel) : null  ]
     }
 
-	def refreshChainModel () {
+    def refreshChainModel () {
 
-		def startDate = TimezoneHelper.currentDateForTimezone(session['company_timezone']).parse(message(code: 'date.format'), params.startDate)
-		def entityId = params.int('product.priceModelCompanyId')
-		def price = new PriceModelWS()
-		def defaultPrices = null
+        def startDate = TimezoneHelper.currentDateForTimezone(session['company_timezone']).parse(message(code: 'date.format'), params.startDate)
+        def entityId = params.int('product.priceModelCompanyId')
+        def price = new PriceModelWS()
+        def defaultPrices = null
         boolean unsaved = false
-		boolean forceRefresh = params.int("forceRefreshModel") == 0
-		if(forceRefresh) {
-			//verify if there are some unsaved prices
-			def priceModel = PlanHelper.bindPriceModel(params)
-			def model = priceModel
-			while (model) {
-				if(model.id == null || model.id == 0) {
-					unsaved = true
-					break
-				}
-				model = model.next
-			}
-		}
+        boolean forceRefresh = params.int("forceRefreshModel") == 0
+        if(forceRefresh) {
+            //verify if there are some unsaved prices
+            def priceModel = PlanHelper.bindPriceModel(params)
+            def model = priceModel
+            while (model) {
+                if(model.id == null || model.id == 0) {
+                    unsaved = true
+                    break
+                }
+                model = model.next
+            }
+        }
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global, true)
             defaultPrices = dto.getPricesForSelectedEntity(entityId)
-			if(!defaultPrices.isEmpty()) {
-				price = defaultPrices?.get(startDate)
-			}
-		}
+            if(!defaultPrices.isEmpty()) {
+                price = defaultPrices?.get(startDate)
+            }
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
-		// if this action has been redirected from updated that means update was successful
-		if(params.int("updated") == 1) {
-			flash.message = 'product.updated'
-			flash.args = [ product.id ]
-		}
+        // if this action has been redirected from updated that means update was successful
+        if(params.int("updated") == 1) {
+            flash.message = 'product.updated'
+            flash.args = [ product.id ]
+        }
 
         def allCompanies = params.list('product.entities') ? params.list('product.entities').collect { CompanyDTO.get(it) } :
-                                                             params.product.global == "on" ? retrieveCompanies() :
-                                                                                             CompanyDTO.get(session['entity_id'])
-		render template: '/priceModel/model',
-				  model: [           model: price,
-                            priceModelData: price ? initPriceModelData(price) : null,
-					  		     startDate: startDate,
-                                    models: defaultPrices,
-                                currencies: retrieveCurrencies(),
+                params.product.global == "on" ? retrieveCompanies() :
+                        CompanyDTO.get(session['entity_id'])
+        render template: '/priceModel/model',
+                model: [           model: price,
+                                   priceModelData: price ? initPriceModelData(price) : null,
+                                   startDate: startDate,
+                                   models: defaultPrices,
+                                   currencies: retrieveCurrencies(),
                                    unsaved: unsaved,
-							     companies: retrieveChildCompanies(),
-                              allCompanies: allCompanies,
+                                   companies: retrieveChildCompanies(),
+                                   allCompanies: allCompanies,
                                    product: product]
-	}
+    }
 
     def addAttribute () {
         def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         def priceModel = PlanHelper.bindPriceModel(params)
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
@@ -2118,24 +2127,24 @@ class ProductController {
         }
 
         render template: '/priceModel/model',
-				  model: [model: priceModel, startDate: startDate, models: defaultPrices,
-					  	  currencies: retrieveCurrencies(), priceModelData: priceModel ? initPriceModelData(priceModel) : null,
-						  companies : retrieveChildCompanies(), product : product, allCompanies : retrieveCompanies()]
+                model: [model: priceModel, startDate: startDate, models: defaultPrices,
+                        currencies: retrieveCurrencies(), priceModelData: priceModel ? initPriceModelData(priceModel) : null,
+                        companies : retrieveChildCompanies(), product : product, allCompanies : retrieveCompanies()]
     }
 
     def removeAttribute () {
         def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         def priceModel = PlanHelper.bindPriceModel(params)
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
@@ -2154,68 +2163,68 @@ class ProductController {
         }
 
         render template: '/priceModel/model',
-				  model: [ model: priceModel, startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
-					  	   companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
+                model: [ model: priceModel, startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
+                         companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
     }
 
     def editDate () {
         def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
 
         render template: '/priceModel/model',
-				  model: [ startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
-					  		companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
+                model: [ startDate: startDate, models: defaultPrices, currencies: retrieveCurrencies(),
+                         companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
     }
 
     def addDate () {
         def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		def product = new ItemDTOEx()
-		product.id = params.int('product.id')
-		product.priceModelCompanyId = entityId
+        def product = new ItemDTOEx()
+        product.id = params.int('product.id')
+        product.priceModelCompanyId = entityId
 
         render template: '/priceModel/model',
-				  model: [ model: new PriceModelWS(), models: defaultPrices, currencies: retrieveCurrencies(),
-					  		companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
+                model: [ model: new PriceModelWS(), models: defaultPrices, currencies: retrieveCurrencies(),
+                         companies : retrieveChildCompanies(), allCompanies : retrieveCompanies(), product : product  ]
     }
 
     def removeDate () {
         def product = params."product.id" ? webServicesSession.getItem(params.int('product.id'), session['user_id'], null) : null
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
 
-		def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def entityId = params.int('product.priceModelCompanyId')
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
-		product.priceModelCompanyId = entityId
+        product.priceModelCompanyId = entityId
 
-		defaultPrices.remove(startDate)
-		product?.defaultPrices?.clear()
-		product?.defaultPrices = defaultPrices
+        defaultPrices.remove(startDate)
+        product?.defaultPrices?.clear()
+        product?.defaultPrices = defaultPrices
 
         if (SpringSecurityUtils.ifAllGranted("PRODUCT_41")) {
             log.debug("saving changes to product ${product.id}")
@@ -2231,24 +2240,24 @@ class ProductController {
         }
         // Passing startDate in model to make sure that if no model is present in product then set default date to EPOCH_DATE
         render template: '/priceModel/model',
-				  model: [  startDate: (defaultPrices?.size()>0?null:CommonConstants.EPOCH_DATE) , models: defaultPrices, currencies: retrieveCurrencies(), companies : retrieveChildCompanies(),
-					  		allCompanies : retrieveCompanies(), product : product  ]
+                model: [  startDate: (defaultPrices?.size()>0?null:CommonConstants.EPOCH_DATE) , models: defaultPrices, currencies: retrieveCurrencies(), companies : retrieveChildCompanies(),
+                          allCompanies : retrieveCompanies(), product : product  ]
     }
 
     def saveDate () {
         def product = params."product.id" ? webServicesSession.getItem(params.int('product.id'), session['user_id'], null) : null
-		def price = PlanHelper.bindPriceModel(params)
+        def price = PlanHelper.bindPriceModel(params)
         def startDate = DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate()
         def originalStartDate = params.originalStartDate ? TimezoneHelper.currentDateForTimezone(session['company_timezone']).parse(message(code: 'date.format'), params.originalStartDate) : null
 
-		def entityId = params.int('product.priceModelCompanyId')
-		def defaultPrices = null
+        def entityId = params.int('product.priceModelCompanyId')
+        def defaultPrices = null
 
-		if(params.int('product.id')) {
-			def dto = ItemDTO.get(params.int('product.id'))
+        if(params.int('product.id')) {
+            def dto = ItemDTO.get(params.int('product.id'))
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global)
-			defaultPrices = dto.getPricesForSelectedEntity(entityId)
-		}
+            defaultPrices = dto.getPricesForSelectedEntity(entityId)
+        }
 
         boolean shouldSetEntityOnPrice = product.getPriceModelCompanyId() == null && new CompanyDAS().find(webServicesSession.getCallerCompanyId()).isInvoiceAsReseller();
         if (shouldSetEntityOnPrice) {
@@ -2256,19 +2265,19 @@ class ProductController {
             price.setId(null);
         }
 
-		product.priceModelCompanyId = entityId
+        product.priceModelCompanyId = entityId
 
-		if(defaultPrices == null || defaultPrices.isEmpty()) {
-			defaultPrices = new TreeMap<Date, PriceModelWS>();
-		}
+        if(defaultPrices == null || defaultPrices.isEmpty()) {
+            defaultPrices = new TreeMap<Date, PriceModelWS>();
+        }
 
-		if(originalStartDate != null) {
-			defaultPrices.remove(originalStartDate)
-		}
+        if(originalStartDate != null) {
+            defaultPrices.remove(originalStartDate)
+        }
 
-		defaultPrices.put(startDate, price)
+        defaultPrices.put(startDate, price)
 
-		product?.defaultPrices = defaultPrices
+        product?.defaultPrices = defaultPrices
 
         try {
             if (SpringSecurityUtils.ifAllGranted("PRODUCT_41")) {
@@ -2279,11 +2288,11 @@ class ProductController {
                 // re get saved price models
                 redirect action: 'refreshChainModel',
                         params: [                    startDate: params.startDate,
-                                 'product.priceModelCompanyId': entityId,
-                                             forceRefreshModel: 1,
-                                                  'product.id': params.int('product.id'),
-                                                      entityId: entityId,
-                                                       updated: 1]
+                                                     'product.priceModelCompanyId': entityId,
+                                                     forceRefreshModel: 1,
+                                                     'product.id': params.int('product.id'),
+                                                     entityId: entityId,
+                                                     updated: 1]
             } else {
                 flash.message = 'product.update.access.denied'
                 flash.args = [product.id]
@@ -2295,20 +2304,20 @@ class ProductController {
         }
 
         render template: '/priceModel/model',
-				  model: [          model: price,
-                                startDate: startDate,
-                                   models: defaultPrices,
-                               currencies: retrieveCurrencies(),
-					  	        companies: retrieveChildCompanies(),
-                             allCompanies: retrieveCompanies(),
+                model: [          model: price,
+                                  startDate: startDate,
+                                  models: defaultPrices,
+                                  currencies: retrieveCurrencies(),
+                                  companies: retrieveChildCompanies(),
+                                  allCompanies: retrieveCompanies(),
                                   product: product,
-							priceModelData: product?.defaultPrices ? setPriceModelData(price) : null  ]
+                                  priceModelData: product?.defaultPrices ? setPriceModelData(price) : null  ]
     }
     /**
-    * Validate the selected companies for the product have a visibility for one of the selected categories
-    */
-	def validateProductSave(product) {
-		if(product.global) {
+     * Validate the selected companies for the product have a visibility for one of the selected categories
+     */
+    def validateProductSave(product) {
+        if(product.global) {
             //If product is global.. then check if it is associated with a global category, else render validation error
             boolean flag = false;
             Integer[] types = product.types
@@ -2322,38 +2331,38 @@ class ProductController {
                 String [] errors = ["ItemDTOEx,companies,validation.error.no.company.category.mismatch," + ((companyDTOList - associatedCompanyDTOList)*.description)?.first()]
                 throw new SessionInternalError("validation.error.no.company.category.mismatch", errors)
             }
-			return;
-		}
+            return;
+        }
         List<Integer> entityIds = product.entities
         Integer[] types = product.types
         for(Integer entityId : entityIds){
-        	CompanyDTO co = CompanyDTO.get(entityId)
-    		boolean flag = false;
-        	for(Integer typeId : types){
+            CompanyDTO co = CompanyDTO.get(entityId)
+            boolean flag = false;
+            for(Integer typeId : types){
                 flag = false;
-	        	ItemTypeDTO itemType = ItemTypeDTO.get(typeId)
-	        	if(itemType.global){
-	        		//If any of the selected types is global.. then the product will have visibility.. no need to validate
-	        		flag=true;
-	        	}
-	        	Set<CompanyDTO> entities = itemType.entities
-	        	for(CompanyDTO compDTO : entities){
-		        	 if(compDTO.id.equals(co.id)){
-	        	    	flag = true;
-	        	    	break;
-	        	    }
-	        	}
+                ItemTypeDTO itemType = ItemTypeDTO.get(typeId)
+                if(itemType.global){
+                    //If any of the selected types is global.. then the product will have visibility.. no need to validate
+                    flag=true;
+                }
+                Set<CompanyDTO> entities = itemType.entities
+                for(CompanyDTO compDTO : entities){
+                    if(compDTO.id.equals(co.id)){
+                        flag = true;
+                        break;
+                    }
+                }
                 //if any category is neither global nor visible to the selected entity then show validation message
                 if (!flag) {
                     break;
                 }
-        	}
-        	if(!flag){
-        	    String [] errors = ["ItemDTOEx,companies,validation.error.no.company.category.mismatch," + co?.description]
-						throw new SessionInternalError("validation.error.no.company.category.mismatch", errors)
-    	    }
+            }
+            if(!flag){
+                String [] errors = ["ItemDTOEx,companies,validation.error.no.company.category.mismatch," + co?.description]
+                throw new SessionInternalError("validation.error.no.company.category.mismatch", errors)
+            }
         }
-	}
+    }
 
     /**
      * Validate and save a product.
@@ -2370,7 +2379,7 @@ class ProductController {
             securityValidator.validateCompanyHierarchy(dto?.entities*.id, dto?.entity?.id, dto?.global, true)
         }
 
-		def availableFields = new ArrayList<MetaField>()
+        def availableFields = new ArrayList<MetaField>()
 
         //BIND THE META FIELDS
         def metaFieldIdxs = []
@@ -2397,40 +2406,40 @@ class ProductController {
 
         try {
 
-			def isRoot = new CompanyDAS().isRoot(session['company_id'])
+            def isRoot = new CompanyDAS().isRoot(session['company_id'])
 
-			bindProduct(product, oldProduct, params, isRoot)
+            bindProduct(product, oldProduct, params, isRoot)
 
             / * #11258 need to check if there is a comma or dot, because grails data binder removes the numbers after the dot
             and, in the case of the comma, grails removes the comma, i.e.: 56,9 is 569 */
             validateReservationDuration(params.product.reservationDuration, product)
 
-			validateProductSave(product)
+            validateProductSave(product)
 
-			boolean isGlobal = product?.global
-			def isNew = false
-			def rootCreated = false
-			def existing
+            boolean isGlobal = product?.global
+            def isNew = false
+            def rootCreated = false
+            def existing
 
-			if(!product.id || product.id == 0) {
-				isNew = true
-			} else {
-				existing = ItemDTO.get(product?.id)?.entity
-				rootCreated =existing == null || existing?.parent == null
-			}
+            if(!product.id || product.id == 0) {
+                isNew = true
+            } else {
+                existing = ItemDTO.get(product?.id)?.entity
+                rootCreated =existing == null || existing?.parent == null
+            }
 
-			if(isGlobal) {
-				product.entities = new ArrayList<Integer>(0);
-			} else {
-				if( org.apache.commons.collections.CollectionUtils.isEmpty(product.entities) ) {
-					String [] errors = ["ItemDTOEx,companies,validation.error.no.company.selected"]
-					throw new SessionInternalError("validation.error.no.company.selected", errors)
-				}
-				//Find all entities belonging to the categories of this product
-				def catEntities = new java.util.HashSet()
-				for (def typeId in product?.types){
-					def itemType = ItemTypeDTO.get(typeId)
-					if(itemType.isGlobal()){
+            if(isGlobal) {
+                product.entities = new ArrayList<Integer>(0);
+            } else {
+                if( org.apache.commons.collections.CollectionUtils.isEmpty(product.entities) ) {
+                    String [] errors = ["ItemDTOEx,companies,validation.error.no.company.selected"]
+                    throw new SessionInternalError("validation.error.no.company.selected", errors)
+                }
+                //Find all entities belonging to the categories of this product
+                def catEntities = new java.util.HashSet()
+                for (def typeId in product?.types){
+                    def itemType = ItemTypeDTO.get(typeId)
+                    if(itemType.isGlobal()){
                         if(new CompanyDAS().isRoot(Integer.valueOf(session['company_id']))){
                             // if current company is root then find children
                             catEntities.addAll(retrieveCompanies())
@@ -2439,55 +2448,55 @@ class ProductController {
                             catEntities.addAll(retrieveCompaniesForNonRootCompany())
                         }
                         break
-					}
-					catEntities.addAll(itemType.entities)
-				}
+                    }
+                    catEntities.addAll(itemType.entities)
+                }
 
-				log.debug "CAT ENT:"+catEntities
-				//Now ensure the entities selected is present in the list of companies for the category
-				for(Integer entId : product.entities){
-					def found=false
-					for(CompanyDTO entity: catEntities){
-						if(entId==entity.id){
-							found=true
-						}
-					}
+                log.debug "CAT ENT:"+catEntities
+                //Now ensure the entities selected is present in the list of companies for the category
+                for(Integer entId : product.entities){
+                    def found=false
+                    for(CompanyDTO entity: catEntities){
+                        if(entId==entity.id){
+                            found=true
+                        }
+                    }
 
-					if(!found){
+                    if(!found){
                         String[] errmsgs = new String[1]
                         errmsgs[0] = "ItemDTOEx,companies,validation.error.wrong.company.selected," + CompanyDTO.get(entId)?.description;
                         throw new SessionInternalError("Validation of Entities", errmsgs);
-					}
-				}
+                    }
+                }
 
-			}
+            }
 
-			//select meta fields
-			if (isGlobal) {
-				for(Integer companyId : retrieveCompaniesIds()) {
-					availableFields.addAll(retrieveAvailableMetaFields(companyId))
-				}
-			} else {
-				for(def company : product.entities) {
-					availableFields.addAll(retrieveAvailableMetaFields(company))
-				}
-			}
+            //select meta fields
+            if (isGlobal) {
+                for(Integer companyId : retrieveCompaniesIds()) {
+                    availableFields.addAll(retrieveAvailableMetaFields(companyId))
+                }
+            } else {
+                for(def company : product.entities) {
+                    availableFields.addAll(retrieveAvailableMetaFields(company))
+                }
+            }
 
-			if(oldProduct?.global && !isGlobal) {
-				if(new OrderDAS().findOrdersOfChildsByItem(product?.id) > 0) {
-					String [] errors = ["ProductWS,global,validation.error.cannot.restrict.visibility"]
-					throw new SessionInternalError("validation.error.cannot.restrict.visibility", errors)
-				}
-			}
+            if(oldProduct?.global && !isGlobal) {
+                if(new OrderDAS().findOrdersOfChildsByItem(product?.id) > 0) {
+                    String [] errors = ["ProductWS,global,validation.error.cannot.restrict.visibility"]
+                    throw new SessionInternalError("validation.error.cannot.restrict.visibility", errors)
+                }
+            }
 
             // validate cycle in dependencies only for product edit
             def mandatoryItems = product.getMandatoryDependencyIdsOfType(ItemDependencyType.ITEM)
             if (product.id && product.id > 0 && mandatoryItems) {
-                 if (findCycleInDependenciesTree(product.id, Arrays.asList(mandatoryItems) )) {
-                     String[] errmsgs= new String[1];
-                     errmsgs[0]= "ItemDTOEx,mandatoryItems,product.error.dependencies.cycle"
-                     throw new SessionInternalError("There is an error in product data.", errmsgs );
-                 }
+                if (findCycleInDependenciesTree(product.id, Arrays.asList(mandatoryItems) )) {
+                    String[] errmsgs= new String[1];
+                    errmsgs[0]= "ItemDTOEx,mandatoryItems,product.error.dependencies.cycle"
+                    throw new SessionInternalError("There is an error in product data.", errmsgs );
+                }
             }
 
             // save or update
@@ -2505,7 +2514,7 @@ class ProductController {
                 if (SpringSecurityUtils.ifAllGranted("PRODUCT_41")) {
                     log.debug("saving changes to product ${product.id}")
                     log.debug("Child entities =  ${product.entities}")
-					webServicesSession.updateItem(product)
+                    webServicesSession.updateItem(product)
                     flash.message = 'product.updated'
                     flash.args = [product.id]
                 } else {
@@ -2536,8 +2545,8 @@ class ProductController {
                 }
             }
 
-			def startDate = params.startDate ? DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate() : TimezoneHelper.currentDateForTimezone(session['company_timezone']);
-			def selectedPriceModel=product?.defaultPrices ? PriceModelBL.getWsPriceForDate(product.defaultPrices, startDate) : null
+            def startDate = params.startDate ? DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDate).toDate() : TimezoneHelper.currentDateForTimezone(session['company_timezone']);
+            def selectedPriceModel=product?.defaultPrices ? PriceModelBL.getWsPriceForDate(product.defaultPrices, startDate) : null
 
             def startDateRating = params.startDateRating ? DateTimeFormat.forPattern(message(code: 'date.format')).parseDateTime(params.startDateRating).toDate() : TimezoneHelper.currentDateForTimezone(session['company_timezone']);
             def currentRatingConfiguration = product?.ratingConfigurations ? RatingConfigurationBL.getWsRatingConfigurationForDate(product.ratingConfigurations, startDateRating) : null;
@@ -2548,7 +2557,7 @@ class ProductController {
                 excludedItemTypeIds = product.getDependencyIdsOfType(ItemDependencyType.ITEM_TYPE)
             }
 
-			def showEntityListAndGlobal = CompanyDTO.get(oldProduct?.entityId)?.parent == null
+            def showEntityListAndGlobal = CompanyDTO.get(oldProduct?.entityId)?.parent == null
             def categories = getProductCategories(false, null)
             List<CompanyDTO> categoriesRelatedCompanies
 
@@ -2604,16 +2613,16 @@ class ProductController {
             return
         }
 
-		chain action: 'show', params: [id: product.id, selectedCategory: product.types[0]]
+        chain action: 'show', params: [id: product.id, selectedCategory: product.types[0]]
     }
 
-	def retrieveMetaFields () {
-		List entities = params['entities'].tokenize(",")
+    def retrieveMetaFields () {
+        List entities = params['entities'].tokenize(",")
         EntityType entityType = params['entityType'] ? EntityType.valueOf(params['entityType']) : null
         MetaFieldValueWS[] availableFieldValues = null
         ItemTypeDTO category = params.int('categoryId') ? ItemTypeDTO.get(params.int('categoryId')) : null
 
-		def availableFields
+        def availableFields
         List<Integer> entityIds = entities.collect { Integer.parseInt(it) }
         availableFields = MetaFieldBL.getMetaFields(entityIds, entityType)
 
@@ -2621,37 +2630,37 @@ class ProductController {
             availableFieldValues = MetaFieldBL.convertMetaFieldsToWS(availableFields, category);
         }
 
-		render template : '/metaFields/editMetaFields',
-			   model : [availableFields: availableFields, fieldValues: availableFieldValues]
-	}
+        render template : '/metaFields/editMetaFields',
+                model : [availableFields: availableFields, fieldValues: availableFieldValues]
+    }
 
-	def retrieveAllMetaFields (){
+    def retrieveAllMetaFields (){
         EntityType entityType = params['entityType'] ? EntityType.valueOf(params['entityType']) : null
         MetaFieldValueWS[] availableFieldValues = null
         ItemTypeDTO category = params.int('categoryId') ? ItemTypeDTO.get(params.int('categoryId')) : null
 
-		def availableFields  = MetaFieldBL.getMetaFields(retrieveCompaniesIds(), entityType)
+        def availableFields  = MetaFieldBL.getMetaFields(retrieveCompaniesIds(), entityType)
 
         if(category){
             availableFieldValues = MetaFieldBL.convertMetaFieldsToWS(availableFields, category);
         }
 
-		render template : '/metaFields/editMetaFields',
-				model : [availableFields: availableFields, fieldValues: availableFieldValues]
-	}
+        render template : '/metaFields/editMetaFields',
+                model : [availableFields: availableFields, fieldValues: availableFieldValues]
+    }
 
-	def getAvailableMetaFields () {
-		render template : '/metaFields/editMetaFields',
-				model : [availableFields: null, fieldValues: null]
-	}
+    def getAvailableMetaFields () {
+        render template : '/metaFields/editMetaFields',
+                model : [availableFields: null, fieldValues: null]
+    }
 
     def bindProduct(product, oldProduct, params, isRoot) {
-		bindData(product, params, 'product')
+        bindData(product, params, 'product')
 
-		// set new product's map is equal to old one, so in case of child values are preserved
-		if (oldProduct != null) {
-			product.metaFieldsMap = oldProduct.metaFieldsMap
-    	}
+        // set new product's map is equal to old one, so in case of child values are preserved
+        if (oldProduct != null) {
+            product.metaFieldsMap = oldProduct.metaFieldsMap
+        }
 
         bindMetaFields(product, params, isRoot);
 
@@ -2697,7 +2706,7 @@ class ProductController {
             if (params['priceModelCompanyId']?.isNumber()) {
                 product.priceModelCompanyId = params['priceModelCompanyId'] as Integer
                 prices = dto.getDefaultPricesByCompany(product.priceModelCompanyId)
-            
+
             } else {
                 prices = dto.getGlobalDefaultPrices()
             }
@@ -2803,25 +2812,25 @@ class ProductController {
         return new CurrencyBL().getCurrenciesWithoutRates(session['language_id'].toInteger(), session['company_id'].toInteger(),true)
     }
 
-	def retrieveChildCompanyIds() {
-		def ids = new ArrayList<Integer>(0);
-		for(CompanyDTO company : retrieveChildCompanies()){
-			ids.add(company.getId())
-		}
-		return ids;
-	}
+    def retrieveChildCompanyIds() {
+        def ids = new ArrayList<Integer>(0);
+        for(CompanyDTO company : retrieveChildCompanies()){
+            ids.add(company.getId())
+        }
+        return ids;
+    }
 
-	def retrieveChildCompanies() {
+    def retrieveChildCompanies() {
         List<CompanyDTO> companies = CompanyDTO.findAllByParent(CompanyDTO.get(session['company_id']))
         return companies
-	}
+    }
 
-	def retrieveCompanies() {
-		def companies = retrieveChildCompanies()
-		companies.add(CompanyDTO.get(session['company_id']))
+    def retrieveCompanies() {
+        def companies = retrieveChildCompanies()
+        companies.add(CompanyDTO.get(session['company_id']))
 
-		return companies
-	}
+        return companies
+    }
 
     def retrieveCompaniesForNonRootCompany() {
         CompanyDTO childCompany = CompanyDTO.get(session['company_id'])
@@ -2833,7 +2842,7 @@ class ProductController {
     private List<CompanyDTO> retrieveCategoryRelatedCompanies(List<ItemTypeDTO> itemTypeDTOList){
 
         if(itemTypeDTOList.any {it.isGlobal()}){
-             retrieveCompanies()
+            retrieveCompanies()
         }else{
             CompanyDTO.createCriteria().list(){
                 createAlias("itemTypes", "itemTypes",CriteriaSpecification.LEFT_JOIN);
@@ -2843,48 +2852,48 @@ class ProductController {
 
     }
 
-	def retrieveCompaniesIds() {
-		def ids = new ArrayList<Integer>();
-		for(CompanyDTO dto : retrieveCompanies()){
-			ids.add(dto.getId())
-		}
-		return ids
-	}
+    def retrieveCompaniesIds() {
+        def ids = new ArrayList<Integer>();
+        for(CompanyDTO dto : retrieveCompanies()){
+            ids.add(dto.getId())
+        }
+        return ids
+    }
 
     def retrieveAvailableMetaFields(entityId) {
-		return MetaFieldBL.getAvailableFieldsList(entityId, EntityType.PRODUCT)
+        return MetaFieldBL.getAvailableFieldsList(entityId, EntityType.PRODUCT)
     }
 
     List<MetaField> retrieveAvailableCategoryMetaFields(entityId) {
-		return MetaFieldBL.getAvailableFieldsList(entityId, EntityType.PRODUCT_CATEGORY)
+        return MetaFieldBL.getAvailableFieldsList(entityId, EntityType.PRODUCT_CATEGORY)
     }
 
-	private def bindMetaFields(product, params, isRoot, EntityType entityType) {
-		def fieldsArray
-		MetaFieldValueWS[] metaFields = null
-		List<MetaFieldValueWS> values = new ArrayList<MetaFieldValueWS>()
-		if(isRoot) {
-			for(Integer entityId : retrieveCompaniesIds()) {
+    private def bindMetaFields(product, params, isRoot, EntityType entityType) {
+        def fieldsArray
+        MetaFieldValueWS[] metaFields = null
+        List<MetaFieldValueWS> values = new ArrayList<MetaFieldValueWS>()
+        if(isRoot) {
+            for(Integer entityId : retrieveCompaniesIds()) {
                 if(entityType && (entityType == EntityType.PRODUCT_CATEGORY)){
                     fieldsArray = MetaFieldBindHelper.bindMetaFields(retrieveAvailableCategoryMetaFields(entityId), params)
                 }else{
                     fieldsArray = MetaFieldBindHelper.bindMetaFields(retrieveAvailableMetaFields(entityId), params)
                 }
-				metaFields = fieldsArray
-				values.addAll(fieldsArray)
-				product.metaFieldsMap.put(entityId, metaFields)
-			}
-		} else {
+                metaFields = fieldsArray
+                values.addAll(fieldsArray)
+                product.metaFieldsMap.put(entityId, metaFields)
+            }
+        } else {
             if(entityType && (entityType == EntityType.PRODUCT_CATEGORY)){
                 fieldsArray = MetaFieldBindHelper.bindMetaFields(retrieveAvailableCategoryMetaFields(session["company_id"]), params)
             }else{
                 fieldsArray = MetaFieldBindHelper.bindMetaFields(retrieveAvailableMetaFields(session["company_id"]), params)
             }
-			metaFields = fieldsArray
-			values.addAll(fieldsArray)
-			product.metaFieldsMap.put(session["company_id"], metaFields)
-		}
-		product.metaFields = values
+            metaFields = fieldsArray
+            values.addAll(fieldsArray)
+            product.metaFieldsMap.put(session["company_id"], metaFields)
+        }
+        product.metaFields = values
     }
 
     private def bindMetaFields(product, params, isRoot) {
@@ -3017,191 +3026,191 @@ class ProductController {
     def assetHistory (){
         def asset = AssetDTO.get(params.int('id'))
 
-		ItemDTO itemDTO = ItemDTO.get(params.prodId)
-		securityValidator.validateCompanyHierarchy(itemDTO?.entities*.id, itemDTO?.entity?.id, itemDTO?.global)
+        ItemDTO itemDTO = ItemDTO.get(params.prodId)
+        securityValidator.validateCompanyHierarchy(itemDTO?.entities*.id, itemDTO?.entity?.id, itemDTO?.global)
 
         def currentAsset = auditBL.getColumnValues(asset)
         def assetVersions = auditBL.get(AssetDTO.class, asset.getAuditKey(asset.id), versions.max)
 
         def records = [
-            [ name: 'asset', id: asset.id, current: currentAsset, versions: assetVersions ]
+                [ name: 'asset', id: asset.id, current: currentAsset, versions: assetVersions ]
         ]
 
         render view: '/audit/history', model: [ records: records, historyid: asset.id ]
     }
 
 
-	/**
-	 * Some Price model required special data in attrbutes.
-	 * Propagate it in priceModelData map.
-	 * pooledItems has been changed to this map
-	 */
-	def setPriceModelData(def priceModel){
+    /**
+     * Some Price model required special data in attrbutes.
+     * Propagate it in priceModelData map.
+     * pooledItems has been changed to this map
+     */
+    def setPriceModelData(def priceModel){
 
-		def priceModelData= []
-		// def pooledItems = []
-		 if (priceModel?.type==PriceModelStrategy.POOLED.toString()) {
-			 priceModelData = productService.getFilteredProducts(CompanyDTO.get(session['company_id']),params, null, true, true)
-		 }else if (priceModel?.type==PriceModelStrategy.ITEM_SELECTOR.toString()
-					 ||priceModel?.type==PriceModelStrategy.ITEM_PERCENTAGE_SELECTOR.toString()) {
-			 priceModelData = getProductCategories(false, null)
-		 }
-		 return priceModelData.sort {it?.description}
+        def priceModelData= []
+        // def pooledItems = []
+        if (priceModel?.type==PriceModelStrategy.POOLED.toString()) {
+            priceModelData = productService.getFilteredProducts(CompanyDTO.get(session['company_id']),params, null, true, true)
+        }else if (priceModel?.type==PriceModelStrategy.ITEM_SELECTOR.toString()
+                ||priceModel?.type==PriceModelStrategy.ITEM_PERCENTAGE_SELECTOR.toString()) {
+            priceModelData = getProductCategories(false, null)
+        }
+        return priceModelData.sort {it?.description}
 
-	}
+    }
 
-	/**
-	 * This call returns meta fields according to an entity
-	 * @param product
-	 * @return
-	 */
-	def getMetaFields (product) {
-		def isRoot = new CompanyDAS().isRoot(session['company_id'])
-		def availableFields = new HashSet<MetaField>();
-		if(!product || !product?.id || product?.id == 0) {
-			availableFields.addAll(retrieveAvailableMetaFields(session['company_id']))
-		} else {
-			if(product.global) { //TODO Global Meta Fields only?
-				for(Integer entityId : retrieveCompaniesIds()) {
-					availableFields.addAll(retrieveAvailableMetaFields(entityId))
-				}
-			} else if (isRoot) { //TODO Root specific product meta fields copied to child entities?
-				if(product?.entityId) {
-					availableFields.addAll(retrieveAvailableMetaFields(product.entityId))
-				} else {
-					for(Integer entityId : product.entities) {
-						availableFields.addAll(retrieveAvailableMetaFields(entityId))
-					}
+    /**
+     * This call returns meta fields according to an entity
+     * @param product
+     * @return
+     */
+    def getMetaFields (product) {
+        def isRoot = new CompanyDAS().isRoot(session['company_id'])
+        def availableFields = new HashSet<MetaField>();
+        if(!product || !product?.id || product?.id == 0) {
+            availableFields.addAll(retrieveAvailableMetaFields(session['company_id']))
+        } else {
+            if(product.global) { //TODO Global Meta Fields only?
+                for(Integer entityId : retrieveCompaniesIds()) {
+                    availableFields.addAll(retrieveAvailableMetaFields(entityId))
                 }
-			} else  {
-				availableFields.addAll(retrieveAvailableMetaFields(session['company_id']))
-			}
-		}
+            } else if (isRoot) { //TODO Root specific product meta fields copied to child entities?
+                if(product?.entityId) {
+                    availableFields.addAll(retrieveAvailableMetaFields(product.entityId))
+                } else {
+                    for(Integer entityId : product.entities) {
+                        availableFields.addAll(retrieveAvailableMetaFields(entityId))
+                    }
+                }
+            } else  {
+                availableFields.addAll(retrieveAvailableMetaFields(session['company_id']))
+            }
+        }
 
-		return availableFields;
-	}
+        return availableFields;
+    }
 
-	def copyPrices(product) {
-		def filterPrice = new ItemDTOEx()
+    def copyPrices(product) {
+        def filterPrice = new ItemDTOEx()
 
-		for(Map.Entry<Date, PriceModelWS> entry : product?.defaultPrices?.entrySet()) {
-			def model = entry.getValue()
-			List<PriceModelWS> wsList = new LinkedList<PriceModelWS>()
-			while(model) {
-				PriceModelWS ws = new PriceModelWS()
-				ws.type = model.type
-				ws.id = model.id
-				ws.attributes = model.attributes
-				ws.currencyId = model.currencyId
-				ws.entityId = model.entityId
-				ws.rate = model.rate
-				ws.next = model.next
-				wsList.add(ws)
+        for(Map.Entry<Date, PriceModelWS> entry : product?.defaultPrices?.entrySet()) {
+            def model = entry.getValue()
+            List<PriceModelWS> wsList = new LinkedList<PriceModelWS>()
+            while(model) {
+                PriceModelWS ws = new PriceModelWS()
+                ws.type = model.type
+                ws.id = model.id
+                ws.attributes = model.attributes
+                ws.currencyId = model.currencyId
+                ws.entityId = model.entityId
+                ws.rate = model.rate
+                ws.next = model.next
+                wsList.add(ws)
 
-				model = model.next
-			}
-			def init = new ItemBL().convertToWSChain(wsList)
+                model = model.next
+            }
+            def init = new ItemBL().convertToWSChain(wsList)
 
-			filterPrice.addDefaultPrice(entry.getKey(), init)
-		}
+            filterPrice.addDefaultPrice(entry.getKey(), init)
+        }
 
-		return filterPrice
-	}
+        return filterPrice
+    }
 
-	def mergePrices(product, price, startDate) {
-		if(!new CompanyDAS().isRoot(session['company_id'] as Integer)) {
-			if(product.defaultPrices.containsKey(startDate)) {
-				// remove deleted models from product and add new ones
+    def mergePrices(product, price, startDate) {
+        if(!new CompanyDAS().isRoot(session['company_id'] as Integer)) {
+            if(product.defaultPrices.containsKey(startDate)) {
+                // remove deleted models from product and add new ones
 
-				ItemBL itemBl = new ItemBL()
-				// find what models been deleted
-				def defaultPrices = product?.defaultPrices?.get(startDate)
-				Map<Integer, PriceModelWS> priceMap = new HashMap<Integer, PriceModelWS>()
+                ItemBL itemBl = new ItemBL()
+                // find what models been deleted
+                def defaultPrices = product?.defaultPrices?.get(startDate)
+                Map<Integer, PriceModelWS> priceMap = new HashMap<Integer, PriceModelWS>()
 
-				def model = defaultPrices
-				while(model) {
-					priceMap.put(model.id,model)
-					model = model.next
-				}
+                def model = defaultPrices
+                while(model) {
+                    priceMap.put(model.id,model)
+                    model = model.next
+                }
 
-				model = price
-				while(model) {
-					if(model.id != null) {
-						priceMap.put(model.id,model)
-					}
-					model = model.next
-				}
+                model = price
+                while(model) {
+                    if(model.id != null) {
+                        priceMap.put(model.id,model)
+                    }
+                    model = model.next
+                }
 
-				// find what models been deleted
-				def filteredPriceProduct = copyPrices(product)
-				itemBl.filterPricesByCompany(filteredPriceProduct, session['company_id'] as Integer)
+                // find what models been deleted
+                def filteredPriceProduct = copyPrices(product)
+                itemBl.filterPricesByCompany(filteredPriceProduct, session['company_id'] as Integer)
 
-				def priceIds = new ArrayList<Integer>()
-				def filteredIds = new ArrayList<Integer>()
-				def deleted = new ArrayList<Integer>()
+                def priceIds = new ArrayList<Integer>()
+                def filteredIds = new ArrayList<Integer>()
+                def deleted = new ArrayList<Integer>()
 
-				def oldModel = product.defaultPrices.get(startDate)
-				def filteredModel = filteredPriceProduct?.defaultPrices?.get(startDate)
+                def oldModel = product.defaultPrices.get(startDate)
+                def filteredModel = filteredPriceProduct?.defaultPrices?.get(startDate)
 
-				model = price
-				while(model) {
-					priceIds.add(model.id)
-					model = model.next
-				}
+                model = price
+                while(model) {
+                    priceIds.add(model.id)
+                    model = model.next
+                }
 
-				model = filteredModel
-				while(model) {
-					filteredIds.add(model.id)
-					model = model.next
-				}
+                model = filteredModel
+                while(model) {
+                    filteredIds.add(model.id)
+                    model = model.next
+                }
 
-				//figure out what models are deleted
-				for(Integer identifier : filteredIds) {
-					if(!priceIds.contains(identifier)) {
-						deleted.add(identifier)
-					}
-				}
+                //figure out what models are deleted
+                for(Integer identifier : filteredIds) {
+                    if(!priceIds.contains(identifier)) {
+                        deleted.add(identifier)
+                    }
+                }
 
-				List<PriceModelWS> prepared = new ArrayList<PriceModelWS>()
+                List<PriceModelWS> prepared = new ArrayList<PriceModelWS>()
 
-				// keep only those models that are not deleted
-				model = oldModel
-				while(model) {
-					if(!deleted.contains(model.id)) {
-						prepared.add(priceMap.get(model.id))
-					}
-					model = model.next
-				}
+                // keep only those models that are not deleted
+                model = oldModel
+                while(model) {
+                    if(!deleted.contains(model.id)) {
+                        prepared.add(priceMap.get(model.id))
+                    }
+                    model = model.next
+                }
 
-				// add new models at the end of the model list
-				model = price
-				while(model) {
-					if(null == model.id) {
-						prepared.add(model)
-					}
-					model = model.next
-				}
+                // add new models at the end of the model list
+                model = price
+                while(model) {
+                    if(null == model.id) {
+                        prepared.add(model)
+                    }
+                    model = model.next
+                }
 
-				// add new models
-				price = itemBl.convertToWSChain(prepared)
+                // add new models
+                price = itemBl.convertToWSChain(prepared)
 
-			}
-		}
-		return price
-	}
+            }
+        }
+        return price
+    }
 
-	def filterPrices(product) {
-		def filtered
-		//filter prices by company if it aint root
-		if(!new CompanyDAS().isRoot(session['company_id'] as Integer)) {
-			def filteredPriceProduct = copyPrices(product)
-			new ItemBL().filterPricesByCompany(filteredPriceProduct, session['company_id'] as Integer)
-			filtered = filteredPriceProduct
-		} else {
-			filtered = product
-		}
-		return filtered
-	}
+    def filterPrices(product) {
+        def filtered
+        //filter prices by company if it aint root
+        if(!new CompanyDAS().isRoot(session['company_id'] as Integer)) {
+            def filteredPriceProduct = copyPrices(product)
+            new ItemBL().filterPricesByCompany(filteredPriceProduct, session['company_id'] as Integer)
+            filtered = filteredPriceProduct
+        } else {
+            filtered = product
+        }
+        return filtered
+    }
 
     private def boolean findCycleInDependenciesTree(Integer targetProductId, List dependencies) {
         if (!dependencies) return false
@@ -3228,17 +3237,17 @@ class ProductController {
     }
 
     def getRatingUnitsForEntity () {
-      def ratingUnits = []
-      try {
-        ratingUnits = webServicesSession.getAllRatingUnits();
+        def ratingUnits = []
+        try {
+            ratingUnits = webServicesSession.getAllRatingUnits();
 
-      } catch (SessionInternalError e) {
-          viewUtils.resolveException(flash, session.locale, e);
-      } catch (Exception e) {
-          flash.error = 'product.category.delete.error'
-          flash.args = [ params.id as String ]
-      }
-      return ratingUnits
+        } catch (SessionInternalError e) {
+            viewUtils.resolveException(flash, session.locale, e);
+        } catch (Exception e) {
+            flash.error = 'product.category.delete.error'
+            flash.args = [ params.id as String ]
+        }
+        return ratingUnits
     }
 
     def getUsageRatingSchemes () {
@@ -3314,12 +3323,12 @@ class ProductController {
 
         render template: '/product/ratingConfiguration',
                 model: [allRatingConfig:ratingConfigurations,
-                         product: product,currentRatingConfig:new RatingConfigurationWS(),allRatingUnits:getRatingUnitsForEntity(),allusageRatingSchemes:getUsageRatingSchemes() ]
+                        product: product,currentRatingConfig:new RatingConfigurationWS(),allRatingUnits:getRatingUnitsForEntity(),allusageRatingSchemes:getUsageRatingSchemes() ]
     }
 
 
     def editRatingDate() {
-        
+
         def ratingConfigurations = null
 
         if (params.int('product.id')) {

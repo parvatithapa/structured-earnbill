@@ -68,6 +68,18 @@ public class OrderChangeDAS extends AbstractDAS<OrderChangeDTO> {
         return (OrderChangeDTO) criteria.uniqueResult();
     }
 
+    public OrderChangeDTO findByOrderChangeByAssetId(Integer assetId) {
+        Criteria criteria = getSession().createCriteria(OrderChangeDTO.class)
+                .createAlias("orderChangePlanItems", "ocpi")
+                .createAlias("ocpi.assets", "a")
+                .add(Restrictions.eq("a.deleted", 0))
+                .add(Restrictions.eq("a.id", assetId))
+                .setComment("findByOrderLineByAssetId " + assetId)
+                .addOrder(Order.desc("id"))
+                .setMaxResults(1);
+        return (OrderChangeDTO) criteria.uniqueResult();
+    }
+
     private final static String FIND_CHANGES_FOR_HIERARCHY_GROUPING_SQL =
             "select new Map(change.id as changeId, o1.id as orderId, o2.id as parentId, o3.id as grandParentId) " +
             " from " + OrderChangeDTO.class.getSimpleName() + " change " +

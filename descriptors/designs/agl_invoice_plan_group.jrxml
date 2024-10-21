@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agl_invoice_plan_group" language="groovy" pageWidth="373" pageHeight="842" columnWidth="373" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="87504ff8-c1ef-42e7-abc4-293786745a63">
+	<property name="ireport.zoom" value="1.2100000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="invoice_id" class="java.lang.Integer"/>
+	<parameter name="account_charges_product_category_id" class="java.lang.Integer"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="other_charges_and_credits_product_category_id" class="java.lang.Integer"/>
+	<parameter name="product_category_id_of_internet_usage_items" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="total_new_charge" class="java.math.BigDecimal"/>
+	<parameter name="gst_in_charges" class="java.math.BigDecimal"/>
+	<parameter name="core.param.total_due" class="java.math.BigDecimal"/>
+	<parameter name="tax_exempt_item_present" class="java.lang.Boolean"/>
+	<parameter name="adhoc_credit_note_amount" class="java.math.BigDecimal"/>
+	<queryString>
+		<![CDATA[SELECT
+DISTINCT ss.subscription_order_id AS subscription_order_id,
+int_des.content AS plan,
+int_des.content || '|' || ss.subscription_order_id AS plan_order_grouping,
+ss.plan_id,
+rc.itemisation_order,
+ss.display_identifier
+FROM service_summary ss
+INNER JOIN plan p ON p.id = ss.plan_id
+LEFT OUTER JOIN invoice_line il ON il.id = ss.invoice_line_id
+INNER JOIN item i ON i.id = p.item_id
+INNER JOIN international_description int_des ON i.id = int_des.foreign_id
+INNER JOIN jbilling_table jt ON (jt.id = int_des.table_id and jt.name = 'item')
+INNER JOIN item_type_map itm ON itm.item_id = i.id
+INNER JOIN item_type it ON it.id = itm.type_id
+INNER JOIN rollup_codes rc ON rc.item_type_description = it.description
+WHERE ss.invoice_id = $P{invoice_id}
+AND ss.plan_id IS NOT NULL
+AND ss.is_plan = 't'
+ORDER BY rc.itemisation_order, plan ASC;]]>
+	</queryString>
+	<field name="subscription_order_id" class="java.lang.Integer"/>
+	<field name="plan" class="java.lang.String"/>
+	<field name="plan_order_grouping" class="java.lang.String"/>
+	<field name="plan_id" class="java.lang.Integer"/>
+	<field name="itemisation_order" class="java.lang.Integer"/>
+	<field name="display_identifier" class="java.lang.String"/>
+	<group name="PlanGroup" isReprintHeaderOnEachPage="true" minHeightToStartNewPage="125">
+		<groupExpression><![CDATA[$F{plan_order_grouping}]]></groupExpression>
+		<groupHeader>
+			<band height="15" splitType="Stretch">
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement mode="Transparent" x="0" y="1" width="356" height="13" forecolor="#000000" backcolor="#FFFFFF" uuid="5baa1bc0-da79-4948-a9fd-cdfc1564150e"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+						<paragraph leftIndent="1"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{plan} +
+(null != $F{display_identifier} && !$F{display_identifier}.isEmpty() && $F{display_identifier}.length() >= 10 ?
+(
+' - '+ $F{display_identifier}.substring(0, 4) + ' ' +
+$F{display_identifier}.substring( 4, $F{display_identifier}.length()).substring(0, 3) + ' ' +
+$F{display_identifier}.substring( 7, $F{display_identifier}.length()).substring(0, 3) +
+	(
+		$F{display_identifier}.length() >= 13 ?
+		' ' + $F{display_identifier}.substring( 10, $F{display_identifier}.length()).substring(0, 3) + ' ' :
+		''
+	) +
+	(
+		$F{display_identifier}.length() > 13 ?
+		' ' + $F{display_identifier}.substring( 13, $F{display_identifier}.length()) :
+		''
+	)
+)
+: (null != $F{display_identifier} ? ' - ' + $F{display_identifier} : ''))]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<title>
+		<band height="25">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="113" height="13" forecolor="#000000" uuid="56c11477-9d45-4322-a580-6e242ab731df"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Service summary]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="154" y="12" width="80" height="13" uuid="9834e00a-277f-4b39-8284-b91633ebf830"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="303" y="12" width="54" height="13" uuid="91f5fc24-ca19-44e1-9ec5-4112a8c2d0b6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Amount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="244" y="12" width="45" height="13" uuid="1abd24e2-adb3-4205-a8a5-4e4cff59f747"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Quantity]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="6" splitType="Stretch">
+			<subreport>
+				<reportElement x="0" y="0" width="358" height="5" uuid="4c038b6d-01dd-4dd2-9fde-ca2334e7ddb6"/>
+				<subreportParameter name="subscription_order_id">
+					<subreportParameterExpression><![CDATA[$F{subscription_order_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id"/>
+				<subreportParameter name="account_charges_product_category_id"/>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="product_category_id_of_internet_usage_items">
+					<subreportParameterExpression><![CDATA[$P{product_category_id_of_internet_usage_items}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="plan_id">
+					<subreportParameterExpression><![CDATA[$F{plan_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_plan_group_sub_report.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<summary>
+		<band height="95">
+			<subreport>
+				<reportElement x="258" y="0" width="90" height="10" uuid="4b66e538-3bf9-49f5-8eca-a7f28396021d"/>
+				<subreportParameter name="currency_symbol">
+					<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="invoice_id">
+					<subreportParameterExpression><![CDATA[$P{invoice_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="account_charges_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{account_charges_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="other_charges_and_credits_product_category_id">
+					<subreportParameterExpression><![CDATA[$P{other_charges_and_credits_product_category_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "agl_invoice_last_billing_summary_sub_report2.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="113" height="13" forecolor="#000000" uuid="90a4444d-2314-4a7e-a599-2c345ea5a31c"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="false" isItalic="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Total service charges]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="17" width="363" height="1" uuid="3702c23e-7ff4-4c9f-97a7-62d6827faa3d"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="21" width="140" height="13" forecolor="#000000" uuid="5ecaee60-45aa-4650-8fca-84f73967d2be"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Total new charges and credits]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="35" width="190" height="13" forecolor="#000000" uuid="cca3930e-4e77-47b5-8719-f681e0634f98"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="false" isItalic="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Total GST included in new charges and credits]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="258" y="22" width="100" height="13" uuid="f056a81c-4594-4baf-8304-82a21d3a5b5e"/>
+				<textElement textAlignment="Right">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+(new java.text.DecimalFormat("#,##0.00").format($P{total_new_charge}.add($P{adhoc_credit_note_amount}).setScale(2, BigDecimal.ROUND_HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="258" y="35" width="100" height="13" uuid="86345317-e488-4b17-afc5-5801efa90ad4"/>
+				<textElement textAlignment="Right">
+					<font fontName="FoundrySterling-Book" isBold="false" isItalic="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+''+
+(new java.text.DecimalFormat("#,##0.00").format($P{gst_in_charges}.setScale(2, BigDecimal.ROUND_HALF_UP)))]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="51" width="363" height="1" uuid="13b74b42-23b0-45b6-9456-8387869882dd"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="55" width="53" height="13" forecolor="#000000" uuid="da00c4e2-dc0e-4f58-a480-761f3fb60bf2"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<text><![CDATA[Total Due:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="84" width="363" height="1" uuid="26dd7857-b423-4a98-b680-7a0841679b53"/>
+				<graphicElement>
+					<pen lineWidth="0.2" lineColor="#C5B9AC"/>
+				</graphicElement>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement x="258" y="55" width="100" height="13" uuid="6a6fbb52-74b4-4781-9a53-621d84125bcb"/>
+				<textElement textAlignment="Right">
+					<font fontName="FoundrySterling-Book" isBold="true" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{currency_symbol}+""+
+(null != $P{core.param.total_due} ?
+new java.text.DecimalFormat("#,##0.00").format($P{core.param.total_due}) : "0.00")]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="69" width="306" height="13" uuid="5205fcde-10a0-48d9-8a27-f2477936ca23"/>
+				<textElement textAlignment="Left">
+					<font fontName="FoundrySterling-Book" size="8" isBold="false" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{tax_exempt_item_present} ? "*Item is not subject to GST. All other items are subject to and inclusive of GST." : "All items subject to and inclusive of GST."]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

@@ -1,18 +1,24 @@
 package com.sapienter.jbilling.server.mediation.custommediation.spc.reader;
 
 import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
+import java.net.InetAddress;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.transform.FieldSet;
 import org.springframework.batch.item.file.transform.LineTokenizer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.sapienter.jbilling.server.item.PricingField;
+import com.sapienter.jbilling.server.mediation.CallDataRecord;
 import com.sapienter.jbilling.server.mediation.ICallDataRecord;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.CDRFormatNotFoundException;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.CdrRecordType.AAPTVoipCtopRecord;
@@ -21,6 +27,7 @@ import com.sapienter.jbilling.server.mediation.custommediation.spc.CdrRecordType
 import com.sapienter.jbilling.server.mediation.custommediation.spc.CdrRecordType.TelstraRecord;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.MediationServiceType;
 import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCConstants;
+import com.sapienter.jbilling.server.mediation.custommediation.spc.SPCMediationHelperService;
 
 /**
  * @author Neelabh
@@ -38,9 +45,12 @@ public class SPCPatternBasedCompositeRecordLineConverter implements LineMapper<I
     private Map<String, LineTokenizer> lineTokenizer;
     private Map<String, SPCRecordFormatContainer> crdRecordFormat;
 
-    @Value("#{jobParameters['filePath']}")
+    @Value("#{stepExecutionContext['fileToRead']}")
     private String resource;
     private MediationServiceType mediationServiceType;
+
+    @Autowired
+    private SPCMediationHelperService spcMediationHelperService;
 
     public SPCPatternBasedCompositeRecordLineConverter(Map<String, LineTokenizer> lineTokenizer,
             Map<String, SPCRecordFormatContainer> crdRecordFormat) {
@@ -63,34 +73,51 @@ public class SPCPatternBasedCompositeRecordLineConverter implements LineMapper<I
                 }
             }
         }
-        switch (mediationServiceType) {
-        case OPTUS_FIXED_LINE:
-            record = convertFixedLengthRecord(line, OptusFixedLineRecord.getTypeCodes());
-            break;
-        case OPTUS_MOBILE:
-            record = convertFixedLengthRecord(line, OptusMobileRecord.getTypeCodes());
-            break;
-        case AAPT_VOIP_CTOP:
-            record = convertFixedLengthRecord(line, AAPTVoipCtopRecord.getTypeCodes());
-            break;
-        case TELSTRA_FIXED_LINE:
-            record = convertFixedLengthRecord(line, TelstraRecord.getTypeCodes());
-            break;
-        case ENGIN:
-        case SCONNECT:
-        case SCONNECT_DATA:
-        case AAPT_INTERNET_USAGE:
-        case TELSTRA_MOBILE_4G:
-        case SERVICE_ELEMENTS_VOICE:
-        case SERVICE_ELEMENTS_DATA:
-            record = convertCommaDelimitedRecord(line);
-            break;
-        default:
-            logger.debug("Invalid mediation file name. Did not find CDR resolver {} ", mediationServiceType);
-            break;
+
+        if (mediationServiceType == null) {
+            logger.error("Invalid mediation file name {} ", mediationServiceType);
+            throw new CDRFormatNotFoundException("Invalid mediation file");
         }
-        if (record != null) {
+
+        try {
+            switch (mediationServiceType) {
+            case OPTUS_FIXED_LINE:
+                record = convertFixedLengthRecord(line, OptusFixedLineRecord.getTypeCodes());
+                break;
+            case OPTUS_MOBILE:
+                record = convertFixedLengthRecord(line, OptusMobileRecord.getTypeCodes());
+                break;
+            case AAPT_VOIP_CTOP:
+                record = convertFixedLengthRecord(line, AAPTVoipCtopRecord.getTypeCodes());
+                break;
+            case TELSTRA_FIXED_LINE:
+                record = convertFixedLengthRecord(line, TelstraRecord.getTypeCodes());
+                break;
+            case TELSTRA_FIXED_LINE_MONTHLY:
+                record = convertTelstraFixedLengthMonthlyRecord(line);
+                break;
+            case ENGIN:
+            case SCONNECT:
+            case SCONNECT_DATA:
+            case AAPT_INTERNET_USAGE:
+            case TELSTRA_MOBILE_4G:
+            case SERVICE_ELEMENTS_VOICE:
+            case SERVICE_ELEMENTS_DATA:
+                record = convertCommaDelimitedRecord(line);
+                break;
+            }
             record.addField(new PricingField(SPCConstants.SERVICE_TYPE, mediationServiceType.getServiceName()), false);
+        } catch (Exception ex) {
+            logger.error("Exception occurred during CDR conversion", ex);
+            String uuid = UUID.randomUUID().toString();
+            String localHostName = InetAddress.getLocalHost().getHostName();
+            String encryptedHostName = spcMediationHelperService.encryptSensitiveData(2, localHostName);
+            String recordKey = encryptedHostName + "-" + uuid;
+            logger.debug("CDR conversion is failed against temporary key '{}' of record line {}", recordKey, line);
+            record = new CallDataRecord();
+            record.setKey(recordKey);
+            record.addField(new PricingField(SPCConstants.SERVICE_TYPE, mediationServiceType.getServiceName()), false);
+            record.addError("INVALID-CDR-OR-DATA-CONVERSION-ERROR");
         }
         return record;
     }
@@ -121,6 +148,28 @@ public class SPCPatternBasedCompositeRecordLineConverter implements LineMapper<I
                     lt = lineTokenizer.get(mediationServiceType.getServiceName() + PERIOD + recordType);
                     break;
                 }
+            }
+        }
+        if(lt == null) {
+            logger.debug("Skipping line {} since no format found for it's cdr type", line);
+            throw new CDRFormatNotFoundException("CDR format not found for " + line);
+        }
+        FieldSet fields = lt.tokenize(line);
+        record = fieldSetMapper.mapLineToRecord(fields, mediationServiceType);
+        return record;
+    }
+
+    private ICallDataRecord convertTelstraFixedLengthMonthlyRecord(String line) {
+        ICallDataRecord record = null;
+        LineTokenizer lt = lineTokenizer.get(mediationServiceType.getServiceName());
+        if (lt == null) {
+            String cdrType = line.substring(37, 40).trim();
+            String amount = line.substring(282,296).trim();
+            if(SPCConstants.CDR_TYPE_SED.equals(cdrType) || (SPCConstants.CDR_TYPE_OCD.equals(cdrType)
+                    && !line.substring(208, 225).trim().equals(SPCConstants.CSG_CONTRIBUTION)
+                    || (NumberUtils.isCreatable(amount)
+                    && new BigDecimal(amount).compareTo(BigDecimal.ZERO) >= 0))){
+                lt = lineTokenizer.get(mediationServiceType.getServiceName() + PERIOD + cdrType);
             }
         }
         if(lt == null) {

@@ -48,6 +48,7 @@ public class PluggableTaskManager<T> {
             throws PluggableTaskException {
 
         try {
+            long pluginLoadTime = System.currentTimeMillis();
             lastProcessingOrder = 0;
             LOG.debug("Entered PluggableTaskManager");
             classes = new ArrayList<>();
@@ -55,6 +56,7 @@ public class PluggableTaskManager<T> {
                     entityId, taskCategory));
             it = classes.iterator();
             LOG.debug("total classes = " + classes.size());
+            LOG.debug("plugin load Took %s", (System.currentTimeMillis() - pluginLoadTime));
 
         } catch (Exception e) {
             throw new PluggableTaskException(e);

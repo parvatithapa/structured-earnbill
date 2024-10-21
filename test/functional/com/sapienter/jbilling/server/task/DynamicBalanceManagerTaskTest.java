@@ -38,7 +38,7 @@ import com.sapienter.jbilling.server.util.InternationalDescriptionWS;
 import com.sapienter.jbilling.server.util.api.JbillingAPI;
 import com.sapienter.jbilling.test.ApiTestCase;
 
-@Test(groups = { "integration", "task", "dynamic-balance" }, testName = "DynamicBalanceManagerTaskTest", priority = 13)
+@Test(groups = { "integration", "task", "dynamic-balance" }, testName = "DynamicBalanceManagerTaskTest")
 public class DynamicBalanceManagerTaskTest extends ApiTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicBalanceManagerTaskTest.class);
@@ -860,7 +860,7 @@ public class DynamicBalanceManagerTaskTest extends ApiTestCase {
 		    recurringOrderId1 		= api.createOrder(recurringOrder1, orderChanges);
 		    assertNotNull("order id should not be null ", recurringOrderId1);
 
-		    //createing recu rring order added prepaid order lines
+		    //createing recurring order added prepaid order lines
 		    recurringOrder2 		= CreateObjectUtil.createOrderObject(userId, US_DOLLAR_ID, Constants.ORDER_BILLING_PRE_PAID, Integer.valueOf(2), new DateMidnight(2008, 11, 27).toDate());
 		    recurringOrder2 		= CreateObjectUtil.addLine(recurringOrder2, Integer.valueOf(1), Constants.ORDER_LINE_TYPE_ITEM, Integer.valueOf(2800), new BigDecimal(25), String.valueOf("recurring order line2"));
 		    orderChanges = OrderChangeBL.buildFromOrder(recurringOrder2, ORDER_CHANGE_STATUS_APPLY_ID);
@@ -951,7 +951,7 @@ public class DynamicBalanceManagerTaskTest extends ApiTestCase {
         api.updateUser(user);
         return api.getUserWS(userId);
     }
-
+    
 	private OrderWS buildOrder(Integer userId) {
 		OrderWS newOrder = new OrderWS();
 		newOrder.setUserId(userId);
